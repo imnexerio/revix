@@ -10,7 +10,8 @@ class TodayPage extends StatefulWidget {
 }
 
 class _TodayPageState extends State<TodayPage> {
-  void _showLectureDetails(BuildContext context, String lectureNo, dynamic details) {
+  void _showLectureDetails(BuildContext context, String lectureNo,String selectedSubjectCode,String selectedSubject, dynamic details) {
+    print('details_today: $details');
     if (details is! Map<String, dynamic>) {
       details = Map<String, dynamic>.from(details);
     }
@@ -58,7 +59,7 @@ class _TodayPageState extends State<TodayPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _detailRow("Type", details['lecture_type']),
+                            // _detailRow("Type", details['lecture_type']),
                             _detailRow('Lecture No', lectureNo),
                             _detailRow('Date Learned', details['date_learnt']),
                             _detailRow('Date Revised', details['date_revised']),
@@ -133,8 +134,8 @@ class _TodayPageState extends State<TodayPage> {
                                         }
 
                                         UpdateRecords(
-                                          widget.selectedSubject,
-                                          widget.selectedSubjectCode,
+                                          selectedSubject,
+                                          selectedSubjectCode,
                                           lectureNo,
                                           dateRevised,
                                           noRevision,
@@ -165,8 +166,8 @@ class _TodayPageState extends State<TodayPage> {
                                       String dateRevised = DateTime.now().toIso8601String().split('T')[0];
 
                                       UpdateRecords(
-                                        widget.selectedSubject,
-                                        widget.selectedSubjectCode,
+                                        selectedSubject,
+                                        selectedSubjectCode,
                                         lectureNo,
                                         dateRevised,
                                         noRevision,
@@ -474,7 +475,7 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['date_scheduled'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                            
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -525,7 +526,7 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['date_scheduled'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                            
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -574,10 +575,10 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['subject_code'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['lecture_no'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['date_learnt'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                           
+
                                           ],
 
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -626,10 +627,10 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['subject_code'])),
                                             DataCell(Text(record['lecture_no'])),
                                             DataCell(Text(record['date_scheduled'])),
-                                           
+
 
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -678,9 +679,9 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['subject_code'])),
                                             DataCell(Text(record['lecture_no'])),
                                             DataCell(Text(record['date_scheduled'])),
-                                           
+
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
                                         );
                                       }).toList(),
                                     ),
