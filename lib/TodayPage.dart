@@ -190,9 +190,38 @@ class _TodayPageState extends State<TodayPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(color: Theme.of(context).colorScheme.error)));
+                  return Center(child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+                      SizedBox(height: 16),
+                      Text('Error: ${snapshot.error}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red[400],
+                        ),
+                      ),
+                    ],
+                  ),
+                  );
                 } else if (!snapshot.hasData || (snapshot.data!['today']!.isEmpty && snapshot.data!['missed']!.isEmpty && snapshot.data!['nextDay']!.isEmpty && snapshot.data!['next7Days']!.isEmpty && snapshot.data!['todayAdded']!.isEmpty)) {
-                  return Center(child: Text('No records scheduled.', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)));
+                  return Center(child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                  Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
+                SizedBox(height: 16),
+                Text(
+                'No scheduled found',
+                style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+                ),
+                ),
+                ],
+                ),
+                );
                 } else {
                   List<Map<String, dynamic>> todayRecords = snapshot.data!['today']!;
                   List<Map<String, dynamic>> missedRecords = snapshot.data!['missed']!;
