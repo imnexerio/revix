@@ -11,7 +11,7 @@ class TodayPage extends StatefulWidget {
 
 class _TodayPageState extends State<TodayPage> {
   void _showLectureDetails(BuildContext context, String lectureNo,String selectedSubjectCode,String selectedSubject, dynamic details) {
-    print('details_today: $details');
+
     if (details is! Map<String, dynamic>) {
       details = Map<String, dynamic>.from(details);
     }
@@ -59,7 +59,7 @@ class _TodayPageState extends State<TodayPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // _detailRow("Type", details['lecture_type']),
+                            _detailRow("Type", details['lecture_type']),
                             _detailRow('Lecture No', lectureNo),
                             _detailRow('Date Learned', details['date_learnt']),
                             _detailRow('Date Revised', details['date_revised']),
@@ -249,6 +249,7 @@ class _TodayPageState extends State<TodayPage> {
                       'lecture_no': recordKey.toString(),
                       'date_scheduled': dateScheduled.toString(),
                       'details': Map<String, dynamic>.from({
+                        'lecture_type': recordValue['lecture_type'],
                         'date_learnt': recordValue['date_learnt'],
                         'date_revised': recordValue['date_revised'],
                         'date_scheduled': recordValue['date_scheduled'],
@@ -278,6 +279,7 @@ class _TodayPageState extends State<TodayPage> {
                       'lecture_no': recordKey.toString(),
                       'date_learnt': dateLearnt.toString(),
                       'details': Map<String, dynamic>.from({
+                        'lecture_type': recordValue['lecture_type'],
                         'date_learnt': recordValue['date_learnt'],
                         'date_revised': recordValue['date_revised'],
                         'date_scheduled': recordValue['date_scheduled'],
@@ -304,7 +306,6 @@ class _TodayPageState extends State<TodayPage> {
         'todayAdded': todayAddedRecords,
       };
     } catch (e) {
-      print('Error fetching records: $e');
       throw Exception('Failed to fetch records');
     }
   }

@@ -305,7 +305,6 @@ class _LectureBarState extends State<LectureBar> {
                   rows: widget.lectureData.entries.map((entry) {
                     final lectureNo = entry.key;
                     final details = entry.value;
-                    print("details_lecture : $details");
                     return DataRow(
                       cells: [
                         DataCell(Text(details['lecture_type'])),
