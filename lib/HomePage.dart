@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -9,8 +10,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Future<Map<String, dynamic>> _getAllRecords() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user');
+    }
+    String uid = user.uid;
+
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref();
+      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
       DataSnapshot snapshot = await ref.get();
 
       if (!snapshot.exists) {
@@ -18,6 +25,9 @@ class _HomePageState extends State<HomePage> {
       }
 
       Map<Object?, Object?> rawData = snapshot.value as Map<Object?, Object?>;
+
+      // Print the raw data
+      print('Raw data: $rawData');
 
       List<Map<String, dynamic>> allRecords = [];
 
@@ -42,7 +52,6 @@ class _HomePageState extends State<HomePage> {
       });
       return {'allRecords': allRecords};
     } catch (e) {
-      // print('Error fetching records: $e');
       throw Exception('Failed to fetch records');
     }
   }

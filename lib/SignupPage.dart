@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,26 +16,56 @@ class _SignupPageState extends State<SignupPage> {
   bool _passwordVisibility = false;
   bool _confirmPasswordVisibility = false;
 
-  void _signup() async {
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Passwords don\'t match!')),
-      );
-      return;
-    }
+  // void _signup() async {
+  //   if (_passwordController.text != _confirmPasswordController.text) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Passwords don\'t match!')),
+  //     );
+  //     return;
+  //   }
 
-    try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      Navigator.pop(context);
-    } catch (e) {
-      // print(e);
-    }
+  //   try {
+  //     UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+  //       email: _emailController.text,
+  //       password: _passwordController.text,
+  //     );
+  //     SharedPreferences prefs = await SharedPreferences.getInstance();
+  //     await prefs.setBool('isLoggedIn', true);
+  //     Navigator.pop(context);
+  //   } catch (e) {
+  //     // print(e);
+  //   }
+  // }
+  
+  void _signup() async {
+  if (_passwordController.text != _confirmPasswordController.text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Passwords don\'t match!')),
+    );
+    return;
   }
+
+  try {
+    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+    User? user = userCredential.user;
+    if (user != null) {
+      String uid = user.uid;
+      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+      await ref.set({
+        'email': user.email,
+        // Add any other user data you want to store
+      });
+    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    Navigator.pop(context);
+  } catch (e) {
+    // Handle error
+  }
+}
 
   @override
   Widget build(BuildContext context) {

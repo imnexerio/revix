@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:retracker/main.dart';
@@ -15,22 +16,47 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _passwordVisibility = false;
 
-  void _login() async {
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MyHomePage()),
-      );
-    } catch (e) {
-      print(e);
+  // void _login() async {
+  //   try {
+  //     UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+  //       email: _emailController.text,
+  //       password: _passwordController.text,
+  //     );
+  //     SharedPreferences prefs = await SharedPreferences.getInstance();
+  //     await prefs.setBool('isLoggedIn', true);
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => MyHomePage()),
+  //     );
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
+
+    void _login() async {
+  try {
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+    User? user = userCredential.user;
+    if (user != null) {
+      String uid = user.uid;
+      // You can read user-specific data here if needed
+      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
+      DataSnapshot snapshot = await ref.get();
+      // Process the data
     }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => MyHomePage()),
+    );
+  } catch (e) {
+    // Handle error
   }
+}
 
   @override
   Widget build(BuildContext context) {
