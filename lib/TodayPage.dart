@@ -2,12 +2,208 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+import 'UpdateRecords.dart';
+
 class TodayPage extends StatefulWidget {
   @override
   _TodayPageState createState() => _TodayPageState();
 }
 
 class _TodayPageState extends State<TodayPage> {
+  void _showLectureDetails(BuildContext context, String lectureNo, dynamic details) {
+    if (details is! Map<String, dynamic>) {
+      details = Map<String, dynamic>.from(details);
+    }
+
+    String revisionFrequency = details['revision_frequency'];
+    int noRevision = details['no_revision'];
+    bool isEnabled = details['status'] == 'Enabled';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Lecture $lectureNo Details',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    Divider(),
+                    SizedBox(height: 8),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _detailRow("Type", details['lecture_type']),
+                            _detailRow('Lecture No', lectureNo),
+                            _detailRow('Date Learned', details['date_learnt']),
+                            _detailRow('Date Revised', details['date_revised']),
+                            _detailRow('No. of Revisions', details['no_revision'].toString()),
+                            _detailRow('Next Revision', details['date_scheduled']),
+                            _detailRow('Missed Revisions', details['missed_revision'].toString()),
+                            _detailRow('Description', details['description']),
+                            SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                labelText: 'Revision Frequency',
+                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                                border: OutlineInputBorder(),
+                              ),
+                              value: revisionFrequency,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  revisionFrequency = newValue!;
+                                });
+                              },
+                              items: [
+                                'Daily',
+                                '2 Day',
+                                '3 Day',
+                                'Weekly',
+                                'Default',
+                              ].map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                              dropdownColor: Theme.of(context).colorScheme.surface,
+                            ),
+                            SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Status', style: Theme.of(context).textTheme.titleMedium),
+                                Switch(
+                                  value: isEnabled,
+                                  onChanged: (bool newValue) {
+                                    setState(() {
+                                      isEnabled = newValue;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    icon: Icon(Icons.add),
+                                    label: Text('Add Revision'),
+                                    onPressed: () {
+                                      setState(() {
+                                        noRevision += 1;
+                                        String dateRevised = DateTime.now().toIso8601String().split('T')[0];
+                                        int missedRevision = (details['missed_revision'] as num).toInt();
+                                        DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
+                                        String dateScheduled = _calculateScheduledDate(
+                                          scheduledDate,
+                                          revisionFrequency,
+                                          noRevision,
+                                        ).toIso8601String().split('T')[0];
+
+                                        if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
+                                          missedRevision += 1;
+                                        }
+
+                                        UpdateRecords(
+                                          widget.selectedSubject,
+                                          widget.selectedSubjectCode,
+                                          lectureNo,
+                                          dateRevised,
+                                          noRevision,
+                                          dateScheduled,
+                                          missedRevision,
+                                          revisionFrequency,
+                                          isEnabled ? 'Enabled' : 'Disabled',
+                                        );
+                                      });
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                      padding: EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 16), // Add spacing between the buttons
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    icon: Icon(Icons.add),
+                                    label: Text('Save Changes'),
+                                    onPressed: () {
+                                      String dateScheduled = _calculateScheduledDate_now(
+                                        revisionFrequency,
+                                        noRevision,
+                                      ).toIso8601String().split('T')[0];
+                                      String dateRevised = DateTime.now().toIso8601String().split('T')[0];
+
+                                      UpdateRecords(
+                                        widget.selectedSubject,
+                                        widget.selectedSubjectCode,
+                                        lectureNo,
+                                        dateRevised,
+                                        noRevision,
+                                        dateScheduled,
+                                        details['missed_revision'],
+                                        revisionFrequency,
+                                        isEnabled ? 'Enabled' : 'Disabled',
+                                      );
+                                      Navigator.pop(context);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                      padding: EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                    // child: Padding(
+                                    //   padding: EdgeInsets.symmetric(vertical: 0),
+                                    //   child: Text('Save Changes'),
+                                  ),
+                                ),
+                                // ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<Map<String, List<Map<String, dynamic>>>> _getRecords() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -112,71 +308,76 @@ class _TodayPageState extends State<TodayPage> {
     }
   }
 
-  Future<void> _addRevision(String subject, String subjectCode, String lectureNo, Map<String, dynamic> details) async {
-    try {
-      int noRevision = (details['no_revision'] as num).toInt() + 1;
-      String revisionFrequency = details['revision_frequency'].toString();
-      bool isEnabled = details['status'].toString() == 'Enabled';
-
-      String dateRevised = DateTime.now().toIso8601String().split('T')[0];
-
-      int missedRevision = (details['missed_revision'] as num).toInt();
-      DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
-      String dateScheduled = _calculateScheduledDate(scheduledDate, revisionFrequency, noRevision).toIso8601String().split('T')[0];
-      if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
-        missedRevision += 1;
-      }
-
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('No authenticated user');
-      }
-      String uid = user.uid;
-
-      DatabaseReference ref = FirebaseDatabase.instance
-          .ref('users/$uid/user_data')
-          .child(subject)
-          .child(subjectCode)
-          .child(lectureNo);
-
-      await ref.update({
-        'date_revised': dateRevised,
-        'no_revision': noRevision,
-        'date_scheduled': dateScheduled,
-        'missed_revision': missedRevision,
-        'revision_frequency': revisionFrequency,
-        'status': isEnabled ? 'Enabled' : 'Disabled',
-      });
-
-      setState(() {});
-    } catch (e) {
-      print('Error updating revision: $e');
-      throw Exception('Failed to update revision');
+    Widget _detailRow(String label, String value) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(value),
+            ),
+          ],
+        ),
+      );
     }
-  }
 
-  DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int noRevision) {
-    switch (frequency) {
-      case 'Daily':
-        return scheduledDate.add(Duration(days: 1));
-      case '2 Day':
-        return scheduledDate.add(Duration(days: 2));
-      case '3 Day':
-        return scheduledDate.add(Duration(days: 3));
-      case 'Weekly':
-        return scheduledDate.add(Duration(days: 7));
-      case 'Default':
-      default:
-        List<int> intervals = [1, 3, 7, 15, 30];
-        int additionalDays = 0;
-        for (int i = 0; i <= noRevision; i++) {
-          additionalDays += (i < intervals.length) ? intervals[i] : 30;
-        }
-        return scheduledDate.add(Duration(days: additionalDays));
-    }
+DateTime _calculateScheduledDate_now(String frequency, int noRevision) {
+  DateTime today = DateTime.now();
+  switch (frequency) {
+    case 'Daily':
+      return today.add(Duration(days: 1));
+    case '2 Day':
+      return today.add(Duration(days: 2));
+    case '3 Day':
+      return today.add(Duration(days: 3));
+    case 'Weekly':
+      return today.add(Duration(days: 7));
+    case 'Default':
+    default:
+      List<int> intervals = [1, 3, 7, 15, 30];
+      int additionalDays = 0;
+      for (int i = 0; i <= noRevision; i++) {
+        additionalDays += (i < intervals.length) ? intervals[i] : 30;
+      }
+      return today.add(Duration(days: additionalDays));
   }
+}
 
-  @override
+DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int noRevision) {
+  switch (frequency) {
+    case 'Daily':
+      return scheduledDate.add(Duration(days: 1));
+    case '2 Day':
+      return scheduledDate.add(Duration(days: 2));
+    case '3 Day':
+      return scheduledDate.add(Duration(days: 3));
+    case 'Weekly':
+      return scheduledDate.add(Duration(days: 7));
+    case 'Default':
+    default:
+      List<int> intervals = [1, 3, 7, 15, 30];
+      int additionalDays = 0;
+      for (int i = 0; i <= noRevision; i++) {
+        additionalDays += (i < intervals.length) ? intervals[i] : 30;
+      }
+      return scheduledDate.add(Duration(days: additionalDays));
+  }
+}
+
+
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -256,12 +457,13 @@ class _TodayPageState extends State<TodayPage> {
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                                     child: DataTable(
+                                      showCheckboxColumn: false,
                                       columns: [
                                         DataColumn(label: Text('Subject', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Subject Code', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Lecture No', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Date Scheduled', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                        DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                                        // DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                       ],
                                       rows: missedRecords.map((record) {
                                         return DataRow(
@@ -270,26 +472,9 @@ class _TodayPageState extends State<TodayPage> {
                                             DataCell(Text(record['subject_code'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['lecture_no'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['date_scheduled'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                            DataCell(
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  _addRevision(
-                                                    record['subject'],
-                                                    record['subject_code'],
-                                                    record['lecture_no'],
-                                                    record['details'],
-                                                  );
-                                                },
-                                                child: Text(
-                                                  'Add Revision (+)',
-                                                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                                ),
-                                              ),
-                                            ),
+                                           
                                           ],
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -323,12 +508,13 @@ class _TodayPageState extends State<TodayPage> {
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                                     child: DataTable(
+                                      showCheckboxColumn: false,
                                       columns: [
                                         DataColumn(label: Text('Subject', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Subject Code', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Lecture No', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Date Scheduled', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                        DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                                        // DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                       ],
                                       rows: todayRecords.map((record) {
                                         return DataRow(
@@ -337,26 +523,9 @@ class _TodayPageState extends State<TodayPage> {
                                             DataCell(Text(record['subject_code'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['lecture_no'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['date_scheduled'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                            DataCell(
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  _addRevision(
-                                                    record['subject'],
-                                                    record['subject_code'],
-                                                    record['lecture_no'],
-                                                    record['details'],
-                                                  );
-                                                },
-                                                child: Text(
-                                                  'Add Revision (+)',
-                                                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                                ),
-                                              ),
-                                            ),
+                                           
                                           ],
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -390,12 +559,13 @@ class _TodayPageState extends State<TodayPage> {
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                                     child: DataTable(
+                                      showCheckboxColumn: false,
                                       columns: [
                                         DataColumn(label: Text('Subject', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Subject Code', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Lecture No', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Date Learnt', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                        DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                                        // DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                       ],
                                       rows: todayAddedRecords.map((record) {
                                         return DataRow(
@@ -404,26 +574,10 @@ class _TodayPageState extends State<TodayPage> {
                                             DataCell(Text(record['subject_code'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['lecture_no'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                             DataCell(Text(record['date_learnt'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                            DataCell(
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  _addRevision(
-                                                    record['subject'],
-                                                    record['subject_code'],
-                                                    record['lecture_no'],
-                                                    record['details'],
-                                                  );
-                                                },
-                                                child: Text(
-                                                  'Add Revision (+)',
-                                                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                                ),
-                                              ),
-                                            ),
+                                           
                                           ],
+
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -457,12 +611,13 @@ class _TodayPageState extends State<TodayPage> {
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                                     child: DataTable(
+                                      showCheckboxColumn: false,
                                       columns: [
                                         DataColumn(label: Text('Subject', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Subject Code', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Lecture No', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Date Scheduled', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                        DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                                        // DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                       ],
                                       rows: nextDayRecords.map((record) {
                                         return DataRow(
@@ -471,26 +626,10 @@ class _TodayPageState extends State<TodayPage> {
                                             DataCell(Text(record['subject_code'])),
                                             DataCell(Text(record['lecture_no'])),
                                             DataCell(Text(record['date_scheduled'])),
-                                            DataCell(
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  _addRevision(
-                                                    record['subject'],
-                                                    record['subject_code'],
-                                                    record['lecture_no'],
-                                                    record['details'],
-                                                  );
-                                                },
-                                                child: Text(
-                                                  'Add Revision (+)',
-                                                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                                ),
-                                              ),
-                                            ),
+                                           
+
                                           ],
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
                                         );
                                       }).toList(),
                                     ),
@@ -524,12 +663,13 @@ class _TodayPageState extends State<TodayPage> {
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                                     child: DataTable(
+                                      showCheckboxColumn: false,
                                       columns: [
                                         DataColumn(label: Text('Subject', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Subject Code', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Lecture No', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                         DataColumn(label: Text('Date Scheduled', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
-                                        DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                                        // DataColumn(label: Text('Actions', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                       ],
                                       rows: next7DaysRecords.map((record) {
                                         return DataRow(
@@ -538,26 +678,9 @@ class _TodayPageState extends State<TodayPage> {
                                             DataCell(Text(record['subject_code'])),
                                             DataCell(Text(record['lecture_no'])),
                                             DataCell(Text(record['date_scheduled'])),
-                                            DataCell(
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  _addRevision(
-                                                    record['subject'],
-                                                    record['subject_code'],
-                                                    record['lecture_no'],
-                                                    record['details'],
-                                                  );
-                                                },
-                                                child: Text(
-                                                  'Add Revision (+)',
-                                                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                                ),
-                                              ),
-                                            ),
+                                           
                                           ],
+                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'], record['details']),
                                         );
                                       }).toList(),
                                     ),

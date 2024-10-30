@@ -291,7 +291,8 @@ class _LectureBarState extends State<LectureBar> {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minWidth: constraints.maxWidth),
                 child: DataTable(
-                  showCheckboxColumn: false,  // This hides the checkbox column
+                  showCheckboxColumn: false,
+                  // This hides the checkbox column
                   columns: [
                     DataColumn(label: Text('Type')),
                     DataColumn(label: Text('Lecture No')),
@@ -304,7 +305,7 @@ class _LectureBarState extends State<LectureBar> {
                   rows: widget.lectureData.entries.map((entry) {
                     final lectureNo = entry.key;
                     final details = entry.value;
-                    // print("details : $details");
+                    print("details_lecture : $details");
                     return DataRow(
                       cells: [
                         DataCell(Text(details['lecture_type'])),
