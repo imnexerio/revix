@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -25,8 +26,13 @@ class _AddLectureFormState extends State<AddLectureForm> {
   }
 
   Future<void> _loadSubjectsAndCodes() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user');
+    }
+    String uid = user.uid;
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref();
+      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
       DataSnapshot snapshot = await ref.get();
 
       if (snapshot.exists) {
@@ -86,19 +92,23 @@ class _AddLectureFormState extends State<AddLectureForm> {
     }
   }
 
-
   Future<void> _saveToFirebase() async {
     try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No authenticated user');
+      }
+      String uid = user.uid;
+
       String todayDate = DateTime.now().toIso8601String().split('T')[0];
       String dateScheduled = _calculateScheduledDate(_revisionFrequency)
           .toIso8601String()
           .split('T')[0];
 
       DatabaseReference ref = FirebaseDatabase.instance
-          .ref()
+          .ref('users/$uid/user_data')
           .child(_selectedSubject)
           .child(_selectedSubjectCode)
-          // .child(_lectureType)
           .child(_lectureNo);
 
       await ref.set({
@@ -113,7 +123,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'status': isEnabled ? 'Enabled' : 'Disabled',
       });
     } catch (e) {
-      // print('Error saving to Firebase: $e');
       throw Exception('Failed to save lecture');
     }
   }

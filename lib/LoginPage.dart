@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:retracker/main.dart';
@@ -9,26 +10,131 @@ class LoginPage extends StatefulWidget {
   _LoginPageState createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  bool _passwordVisibility = false;
+  final _formKey = GlobalKey<FormState>();
 
-  void _login() async {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  bool _passwordVisibility = false;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1000),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeIn,
+      ),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Email is required';
+    }
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+      return 'Please enter a valid email';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MyHomePage()),
-      );
+
+      User? user = userCredential.user;
+      if (user != null) {
+        String uid = user.uid;
+        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
+
+        try {
+          DataSnapshot snapshot = await ref.get();
+          if (!snapshot.exists) {
+            throw Exception('User data not found');
+          }
+
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('isLoggedIn', true);
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MyHomePage()),
+          );
+        } catch (e) {
+          setState(() {
+            _errorMessage = 'Error loading user data. Please try again.';
+            _isLoading = false;
+          });
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorMessage = _getFirebaseErrorMessage(e.code);
+        _isLoading = false;
+      });
     } catch (e) {
-      print(e);
+      setState(() {
+        _errorMessage = 'An unexpected error occurred. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _getFirebaseErrorMessage(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'No user found with this email.';
+      case 'wrong-password':
+        return 'Invalid password.';
+      case 'invalid-email':
+        return 'Invalid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      default:
+        return 'Authentication failed. Please try again.';
     }
   }
 
@@ -38,214 +144,265 @@ class _LoginPageState extends State<LoginPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: Container(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height,
-        child: Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(0, 40, 0, 0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(24, 24, 0, 20),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.start,
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      SizedBox(height: 40),
+                      // Logo
+                      Hero(
+                        tag: 'app_logo',
+                        child: Container(
+                          height: 120,
+                          width: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.primary.withOpacity(0.2),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Image.asset(
+                            'assets/icon/icon.png', // Make sure to add your logo in assets
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 24),
                       Text(
                         'Welcome back',
-                        style: textTheme.headlineSmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Text(
-                            'Login to access your account below.',
-                            style: textTheme.titleMedium,
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(0, 20, 0, 0),
-                        child: TextFormField(
-                          controller: _emailController,
-                          obscureText: false,
-                          decoration: InputDecoration(
-                            labelText: 'Email Address',
-                            labelStyle: textTheme.bodyMedium,
-                            hintText: 'Enter your email...',
-                            hintStyle: textTheme.bodyMedium,
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: colorScheme.onSurface.withOpacity(0.12),
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: colorScheme.primary,
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            filled: true,
-                            fillColor: colorScheme.surface,
-                            contentPadding: EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
-                          ),
-                          style: textTheme.bodyMedium,
+                        style: textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
                         ),
                       ),
-                      Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(0, 12, 0, 0),
-                        child: TextFormField(
-                          controller: _passwordController,
-                          obscureText: !_passwordVisibility,
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            labelStyle: textTheme.bodyMedium,
-                            hintText: 'Enter your password...',
-                            hintStyle: textTheme.bodyMedium,
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: colorScheme.onSurface.withOpacity(0.12),
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: colorScheme.primary,
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            filled: true,
-                            fillColor: colorScheme.surface,
-                            contentPadding: EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
-                            suffixIcon: InkWell(
-                              onTap: () => setState(
-                                () => _passwordVisibility = !_passwordVisibility,
-                              ),
-                              focusNode: FocusNode(skipTraversal: true),
-                              child: Icon(
-                                _passwordVisibility
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: colorScheme.onSurface.withOpacity(0.6),
+                      Text(
+                        'Sign in to continue',
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                      if (_errorMessage != null)
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(bottom: 16),
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: colorScheme.error,
                                 size: 20,
                               ),
-                            ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          style: textTheme.bodyMedium,
+                        ),
+                      TextFormField(
+                        controller: _emailController,
+                        validator: _validateEmail,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: 'Email Address',
+                          hintText: 'Enter your email...',
+                          prefixIcon: Icon(Icons.email_outlined),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.onSurface.withOpacity(0.12),
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(0, 24, 0, 24),
-                            child: TextButton(
-                              onPressed: () {
-                                // Navigate to forgot password page
-                              },
-                              child: Text(
-                                'Forgot Password?',
-                                style: textTheme.bodyMedium,
-                              ),
+                      SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        validator: _validatePassword,
+                        obscureText: !_passwordVisibility,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          hintText: 'Enter your password...',
+                          prefixIcon: Icon(Icons.lock_outline),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.onSurface.withOpacity(0.12),
+                              width: 1.0,
                             ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          ElevatedButton(
-                            onPressed: _login,
-                            child: Text('Login'),
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: colorScheme.onPrimary,
-                              backgroundColor: colorScheme.primary,
-                              textStyle: textTheme.labelLarge,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2.0,
                             ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => SignupPage()),
-                              );
+                          errorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _passwordVisibility
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _passwordVisibility = !_passwordVisibility;
+                              });
                             },
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.8,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: colorScheme.surface,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "Don't have an account?",
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(24, 0, 4, 0),
-                                    child: Text(
-                                      'Create',
-                                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.primary),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    color: colorScheme.primary,
-                                    size: 24,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Continue as Guest
-                          },
-                          child: Text('Continue as Guest'),
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: colorScheme.onSurface,
-                            backgroundColor: colorScheme.surface,
-                            textStyle: textTheme.labelLarge,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                           ),
                         ),
                       ),
+                      SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            // Navigate to forgot password page
+                          },
+                          child: Text('Forgot Password?'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colorScheme.primary,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _login,
+                          child: _isLoading
+                              ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.onPrimary,
+                              ),
+                            ),
+                          )
+                              : Text(
+                            'Login',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: colorScheme.onPrimary,
+                            backgroundColor: colorScheme.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SignupPage(),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Don't have an account? ",
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                'Sign up',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),

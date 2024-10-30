@@ -1,259 +1,4 @@
-// import 'package:flutter/material.dart';
-// import 'package:firebase_database/firebase_database.dart';
-// import 'CodeBar.dart';
-//
-// class SubjectsBar extends StatefulWidget {
-//   @override
-//   _SubjectsBarState createState() => _SubjectsBarState();
-// }
-//
-// class _SubjectsBarState extends State<SubjectsBar> {
-//   String? _selectedSubject;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _initializeSelectedSubject();
-//   }
-//
-//   Future<void> _initializeSelectedSubject() async {
-//     try {
-//       final data = await _fetchDataFromServer();
-//       if (data.isNotEmpty) {
-//         setState(() {
-//           _selectedSubject = data.keys.first;
-//         });
-//       }
-//     } catch (e) {
-//       // print('Error initializing selected subject: $e');
-//     }
-//   }
-//
-//   Future<Map<String, dynamic>> _fetchDataFromServer() async {
-//     DatabaseReference ref = FirebaseDatabase.instance.ref();
-//     DataSnapshot snapshot = await ref.get();
-//     if (snapshot.exists) {
-//       final data = Map<String, dynamic>.from(snapshot.value as Map);
-//       // print('Fetched data: $data'); // Print the fetched data
-//       return data;
-//     } else {
-//       throw Exception('No data found on server');
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: FutureBuilder<Map<String, dynamic>>(
-//         future: _fetchDataFromServer(),
-//         builder: (context, snapshot) {
-//           if (snapshot.connectionState == ConnectionState.waiting) {
-//             return Center(child: CircularProgressIndicator());
-//           } else if (snapshot.hasError) {
-//             return Center(child: Text('Error: ${snapshot.error}'));
-//           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-//             return Center(child: Text('No data found'));
-//           } else {
-//             final data = snapshot.data!;
-//             final subjects = data.keys.toList();
-//
-//             return Column(
-//               children: [
-//                 if (_selectedSubject != null)
-//                   Expanded(
-//                     child: CodeBar(selectedSubject: _selectedSubject!),
-//                   ),
-//                 Container(
-//                   height: 50.0,
-//                   child: Padding(
-//                     padding: EdgeInsets.symmetric(vertical: 4.0), // Add margin at top and bottom
-//                     child: ListView.builder(
-//                       scrollDirection: Axis.horizontal,
-//                       itemCount: subjects.length,
-//                       itemBuilder: (context, index) {
-//                         final subject = subjects[index];
-//                         return GestureDetector(
-//                           onTap: () {
-//                             setState(() {
-//                               _selectedSubject = subject;
-//                             });
-//                           },
-//                           child: Container(
-//                             padding: EdgeInsets.all(5.0),
-//                             margin: EdgeInsets.symmetric(horizontal: 6.0),
-//                             decoration: BoxDecoration(
-//                               color: _selectedSubject == subject
-//                                   ? Theme.of(context).colorScheme.onPrimary
-//                                   : Theme.of(context).colorScheme.primary,
-//                               borderRadius: BorderRadius.circular(10.0),
-//                             ),
-//                             child: Center(
-//                               child: Text(
-//                                 subject,
-//                                 style: TextStyle(
-//                                   color: _selectedSubject == subject
-//                                       ? Theme.of(context).colorScheme.primary
-//                                       : Theme.of(context).colorScheme.onPrimary,
-//                                   fontSize: 16,
-//                                 ),
-//                               ),
-//                             ),
-//                           ),
-//                         );
-//                       },
-//                     ),
-//                   ),
-//                 )
-//               ],
-//             );
-//           }
-//         },
-//       ),
-//     );
-//   }
-// }
-//
-// // import 'package:flutter/material.dart';
-// // import 'package:firebase_database/firebase_database.dart';
-// // import 'CodeBar.dart';
-// //
-// // class SubjectsBar extends StatefulWidget {
-// //   @override
-// //   _SubjectsBarState createState() => _SubjectsBarState();
-// // }
-// //
-// // class _SubjectsBarState extends State<SubjectsBar> {
-// //   String? _selectedSubject;
-// //   Map<String, int> _missedRevisions = {};
-// //
-// //   @override
-// //   void initState() {
-// //     super.initState();
-// //     _initializeSelectedSubject();
-// //   }
-// //
-// //   Future<void> _initializeSelectedSubject() async {
-// //     try {
-// //       final data = await _fetchDataFromServer();
-// //       if (data.isNotEmpty) {
-// //         setState(() {
-// //           _selectedSubject = data.keys.first;
-// //           _missedRevisions = _calculateMissedRevisions(data);
-// //         });
-// //       }
-// //     } catch (e) {
-// //       // Handle error
-// //     }
-// //   }
-// //
-// //   Future<Map<String, dynamic>> _fetchDataFromServer() async {
-// //     DatabaseReference ref = FirebaseDatabase.instance.ref();
-// //     DataSnapshot snapshot = await ref.get();
-// //     if (snapshot.exists) {
-// //       final data = Map<String, dynamic>.from(snapshot.value as Map);
-// //       return data;
-// //     } else {
-// //       throw Exception('No data found on server');
-// //     }
-// //   }
-// //
-// //   Map<String, int> _calculateMissedRevisions(Map<String, dynamic> data) {
-// //     Map<String, int> missedRevisions = {};
-// //     data.forEach((subject, details) {
-// //       int totalMissedRevisions = 0;
-// //       details.forEach((subSubject, lectures) {
-// //         lectures.forEach((lecture, lectureDetails) {
-// //           totalMissedRevisions += (lectureDetails['missed_revision'] ?? 0) as int;
-// //         });
-// //       });
-// //       missedRevisions[subject] = totalMissedRevisions;
-// //     });
-// //     return missedRevisions;
-// //   }
-// //
-// //   Color _getColorForMissedRevisions(int missedRevisions) {
-// //     if (missedRevisions == 0) {
-// //       return Colors.green;
-// //     } else if (missedRevisions >= 10) {
-// //       return Colors.red;
-// //     } else {
-// //       int red = (255 * (missedRevisions / 10)).toInt();
-// //       int green = 255 - red;
-// //       return Color.fromARGB(255, red, green, 0);
-// //     }
-// //   }
-// //
-// //   @override
-// //   Widget build(BuildContext context) {
-// //     return Scaffold(
-// //       body: FutureBuilder<Map<String, dynamic>>(
-// //         future: _fetchDataFromServer(),
-// //         builder: (context, snapshot) {
-// //           if (snapshot.connectionState == ConnectionState.waiting) {
-// //             return Center(child: CircularProgressIndicator());
-// //           } else if (snapshot.hasError) {
-// //             return Center(child: Text('Error: ${snapshot.error}'));
-// //           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-// //             return Center(child: Text('No data found'));
-// //           } else {
-// //             final data = snapshot.data!;
-// //             final subjects = data.keys.toList();
-// //
-// //             return Column(
-// //               children: [
-// //                 if (_selectedSubject != null)
-// //                   Expanded(
-// //                     child: CodeBar(selectedSubject: _selectedSubject!),
-// //                   ),
-// //                 Container(
-// //                   height: 50.0,
-// //                   child: Padding(
-// //                     padding: EdgeInsets.symmetric(vertical: 4.0),
-// //                     child: ListView.builder(
-// //                       scrollDirection: Axis.horizontal,
-// //                       itemCount: subjects.length,
-// //                       itemBuilder: (context, index) {
-// //                         final subject = subjects[index];
-// //                         final missedRevisions = _missedRevisions[subject] ?? 0;
-// //                         final color = _getColorForMissedRevisions(missedRevisions);
-// //
-// //                         return GestureDetector(
-// //                           onTap: () {
-// //                             setState(() {
-// //                               _selectedSubject = subject;
-// //                             });
-// //                           },
-// //                           child: Container(
-// //                             padding: EdgeInsets.all(5.0),
-// //                             margin: EdgeInsets.symmetric(horizontal: 6.0),
-// //                             decoration: BoxDecoration(
-// //                               color: color,
-// //                               borderRadius: BorderRadius.circular(10.0),
-// //                             ),
-// //                             child: Center(
-// //                               child: Text(
-// //                                 subject,
-// //                                 style: TextStyle(
-// //                                   color: Theme.of(context).textTheme.bodyLarge?.color,
-// //                                   fontSize: 16,
-// //                                 ),
-// //                               ),
-// //                             ),
-// //                           ),
-// //                         );
-// //                       },
-// //                     ),
-// //                   ),
-// //                 )
-// //               ],
-// //             );
-// //           }
-// //         },
-// //       ),
-// //     );
-// //   }
-// // }
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'CodeBar.dart';
@@ -302,7 +47,12 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
   }
 
   Future<Map<String, dynamic>> _fetchDataFromServer() async {
-    DatabaseReference ref = FirebaseDatabase.instance.ref();
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user');
+    }
+    String uid = user.uid;
+    DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
     DataSnapshot snapshot = await ref.get();
     if (snapshot.exists) {
       return Map<String, dynamic>.from(snapshot.value as Map);
@@ -329,14 +79,14 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                  Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
                   SizedBox(height: 16),
                   Text(
-                    'Something went wrong',
+                    'No records found try adding some',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.red[300],
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
                     ),
                   ),
                 ],
