@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
       Map<Object?, Object?> rawData = snapshot.value as Map<Object?, Object?>;
 
       // Print the raw data
-      print('Raw data: $rawData');
+      // print('Raw data: $rawData');
 
       List<Map<String, dynamic>> allRecords = [];
 
