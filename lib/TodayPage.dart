@@ -10,8 +10,8 @@ class TodayPage extends StatefulWidget {
 }
 
 class _TodayPageState extends State<TodayPage> {
-  void _showLectureDetails(BuildContext context, String lectureNo,String selectedSubjectCode,String selectedSubject, dynamic details) {
-
+  void _showLectureDetails(BuildContext context, dynamic details) {
+    print('Details_today: $details');
     if (details is! Map<String, dynamic>) {
       details = Map<String, dynamic>.from(details);
     }
@@ -19,6 +19,9 @@ class _TodayPageState extends State<TodayPage> {
     String revisionFrequency = details['revision_frequency'];
     int noRevision = details['no_revision'];
     bool isEnabled = details['status'] == 'Enabled';
+    String lectureNo = details['lecture_no'];
+    String selectedSubject = details['subject'];
+    String selectedSubjectCode = details['subject_code'];
 
     showModalBottomSheet(
       context: context,
@@ -60,56 +63,60 @@ class _TodayPageState extends State<TodayPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _detailRow("Type", details['lecture_type']),
+                            _detailRow('Subject', selectedSubject),
+                            _detailRow('Subject Code', selectedSubjectCode),
                             _detailRow('Lecture No', lectureNo),
                             _detailRow('Date Learned', details['date_learnt']),
                             _detailRow('Date Revised', details['date_revised']),
+                            _detailRow('Scheduled Date', details['date_scheduled']),
+                            _detailRow('Revision Frequency', revisionFrequency),
                             _detailRow('No. of Revisions', details['no_revision'].toString()),
                             _detailRow('Next Revision', details['date_scheduled']),
                             _detailRow('Missed Revisions', details['missed_revision'].toString()),
                             _detailRow('Description', details['description']),
-                            SizedBox(height: 16),
-                            DropdownButtonFormField<String>(
-                              decoration: InputDecoration(
-                                labelText: 'Revision Frequency',
-                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                                border: OutlineInputBorder(),
-                              ),
-                              value: revisionFrequency,
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  revisionFrequency = newValue!;
-                                });
-                              },
-                              items: [
-                                'Daily',
-                                '2 Day',
-                                '3 Day',
-                                'Weekly',
-                                'Default',
-                              ].map<DropdownMenuItem<String>>((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value),
-                                );
-                              }).toList(),
-                              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                              dropdownColor: Theme.of(context).colorScheme.surface,
-                            ),
-                            SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Status', style: Theme.of(context).textTheme.titleMedium),
-                                Switch(
-                                  value: isEnabled,
-                                  onChanged: (bool newValue) {
-                                    setState(() {
-                                      isEnabled = newValue;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
+                            // SizedBox(height: 16),
+                            // DropdownButtonFormField<String>(
+                            //   decoration: InputDecoration(
+                            //     labelText: 'Revision Frequency',
+                            //     labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                            //     border: OutlineInputBorder(),
+                            //   ),
+                            //   value: revisionFrequency,
+                            //   onChanged: (String? newValue) {
+                            //     setState(() {
+                            //       revisionFrequency = newValue!;
+                            //     });
+                            //   },
+                            //   items: [
+                            //     'Daily',
+                            //     '2 Day',
+                            //     '3 Day',
+                            //     'Weekly',
+                            //     'Default',
+                            //   ].map<DropdownMenuItem<String>>((String value) {
+                            //     return DropdownMenuItem<String>(
+                            //       value: value,
+                            //       child: Text(value),
+                            //     );
+                            //   }).toList(),
+                            //   style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                            //   dropdownColor: Theme.of(context).colorScheme.surface,
+                            // ),
+                            // SizedBox(height: 16),
+                            // Row(
+                            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            //   children: [
+                            //     Text('Status', style: Theme.of(context).textTheme.titleMedium),
+                            //     Switch(
+                            //       value: isEnabled,
+                            //       onChanged: (bool newValue) {
+                            //         setState(() {
+                            //           isEnabled = newValue;
+                            //         });
+                            //       },
+                            //     ),
+                            //   ],
+                            // ),
                             SizedBox(height: 16),
                             Row(
                               children: [
@@ -154,40 +161,40 @@ class _TodayPageState extends State<TodayPage> {
                                   ),
                                 ),
                                 SizedBox(width: 16), // Add spacing between the buttons
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    icon: Icon(Icons.add),
-                                    label: Text('Save Changes'),
-                                    onPressed: () {
-                                      String dateScheduled = _calculateScheduledDate_now(
-                                        revisionFrequency,
-                                        noRevision,
-                                      ).toIso8601String().split('T')[0];
-                                      String dateRevised = DateTime.now().toIso8601String().split('T')[0];
-
-                                      UpdateRecords(
-                                        selectedSubject,
-                                        selectedSubjectCode,
-                                        lectureNo,
-                                        dateRevised,
-                                        noRevision,
-                                        dateScheduled,
-                                        details['missed_revision'],
-                                        revisionFrequency,
-                                        isEnabled ? 'Enabled' : 'Disabled',
-                                      );
-                                      Navigator.pop(context);
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context).colorScheme.primary,
-                                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                                      padding: EdgeInsets.symmetric(vertical: 12),
-                                    ),
-                                    // child: Padding(
-                                    //   padding: EdgeInsets.symmetric(vertical: 0),
-                                    //   child: Text('Save Changes'),
-                                  ),
-                                ),
+                                // Expanded(
+                                  // child: ElevatedButton.icon(
+                                  //   icon: Icon(Icons.add),
+                                  //   label: Text('Save Changes'),
+                                  //   onPressed: () {
+                                  //     String dateScheduled = _calculateScheduledDate_now(
+                                  //       revisionFrequency,
+                                  //       noRevision,
+                                  //     ).toIso8601String().split('T')[0];
+                                  //     String dateRevised = DateTime.now().toIso8601String().split('T')[0];
+                                  //
+                                  //     UpdateRecords(
+                                  //       selectedSubject,
+                                  //       selectedSubjectCode,
+                                  //       lectureNo,
+                                  //       dateRevised,
+                                  //       noRevision,
+                                  //       dateScheduled,
+                                  //       details['missed_revision'],
+                                  //       revisionFrequency,
+                                  //       isEnabled ? 'Enabled' : 'Disabled',
+                                  //     );
+                                  //     Navigator.pop(context);
+                                  //   },
+                                  //   style: ElevatedButton.styleFrom(
+                                  //     backgroundColor: Theme.of(context).colorScheme.primary,
+                                  //     foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                  //     padding: EdgeInsets.symmetric(vertical: 12),
+                                  //   ),
+                                  //   // child: Padding(
+                                  //   //   padding: EdgeInsets.symmetric(vertical: 0),
+                                  //   //   child: Text('Save Changes'),
+                                  // ),
+                                // ),
                                 // ),
                               ],
                             ),
@@ -248,23 +255,23 @@ class _TodayPageState extends State<TodayPage> {
                       'subject_code': codeKey.toString(),
                       'lecture_no': recordKey.toString(),
                       'date_scheduled': dateScheduled.toString(),
-                      'details': Map<String, dynamic>.from({
-                        'lecture_type': recordValue['lecture_type'],
-                        'date_learnt': recordValue['date_learnt'],
-                        'date_revised': recordValue['date_revised'],
-                        'date_scheduled': recordValue['date_scheduled'],
-                        'description': recordValue['description'],
-                        'missed_revision': recordValue['missed_revision'],
-                        'no_revision': recordValue['no_revision'],
-                        'revision_frequency': recordValue['revision_frequency'],
-                        'status': recordValue['status'],
-                      }),
+                      'lecture_type': recordValue['lecture_type'],
+                      'date_learnt': recordValue['date_learnt'],
+                      'date_revised': recordValue['date_revised'],
+                      'description': recordValue['description'],
+                      'missed_revision': recordValue['missed_revision'],
+                      'no_revision': recordValue['no_revision'],
+                      'revision_frequency': recordValue['revision_frequency'],
+                      'status': recordValue['status'],
+
                     };
 
                     if (scheduledDate.toIso8601String().split('T')[0] == todayStr) {
                       todayRecords.add(record);
                     } else if (scheduledDate.isBefore(today)) {
                       missedRecords.add(record);
+                    } else if (DateTime.parse(dateLearnt.toString()).toIso8601String().split('T')[0] == todayStr) {
+                      todayAddedRecords.add(record);
                     } else if (scheduledDate.toIso8601String().split('T')[0] == nextDayStr) {
                       nextDayRecords.add(record);
                     } else if (scheduledDate.isAfter(today) && scheduledDate.isBefore(next7Days)) {
@@ -272,25 +279,6 @@ class _TodayPageState extends State<TodayPage> {
                     }
                   }
 
-                  if (dateLearnt != null && DateTime.parse(dateLearnt.toString()).toIso8601String().split('T')[0] == todayStr) {
-                    todayAddedRecords.add({
-                      'subject': subjectKey.toString(),
-                      'subject_code': codeKey.toString(),
-                      'lecture_no': recordKey.toString(),
-                      'date_learnt': dateLearnt.toString(),
-                      'details': Map<String, dynamic>.from({
-                        'lecture_type': recordValue['lecture_type'],
-                        'date_learnt': recordValue['date_learnt'],
-                        'date_revised': recordValue['date_revised'],
-                        'date_scheduled': recordValue['date_scheduled'],
-                        'description': recordValue['description'],
-                        'missed_revision': recordValue['missed_revision'],
-                        'no_revision': recordValue['no_revision'],
-                        'revision_frequency': recordValue['revision_frequency'],
-                        'status': recordValue['status'],
-                      }),
-                    });
-                  }
                 }
               });
             }
@@ -476,7 +464,7 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['date_scheduled'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                            
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record),
                                         );
                                       }).toList(),
                                     ),
@@ -527,7 +515,7 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['date_scheduled'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                                            
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record),
                                         );
                                       }).toList(),
                                     ),
@@ -579,7 +567,7 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
 
                                           ],
 
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record),
                                         );
                                       }).toList(),
                                     ),
@@ -631,7 +619,7 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
 
 
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record),
                                         );
                                       }).toList(),
                                     ),
@@ -682,7 +670,7 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                                             DataCell(Text(record['date_scheduled'])),
 
                                           ],
-                                          onSelectChanged: (_) => _showLectureDetails(context, record['lecture_no'],record['subject_code'],record['subject'], record['details']),
+                                          onSelectChanged: (_) => _showLectureDetails(context, record),
                                         );
                                       }).toList(),
                                     ),
