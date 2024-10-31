@@ -46,7 +46,7 @@ class _TodayPageState extends State<TodayPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Lecture $lectureNo Details',
+                          '$selectedSubject $selectedSubjectCode $lectureNo Details',
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         IconButton(
@@ -74,49 +74,6 @@ class _TodayPageState extends State<TodayPage> {
                             _detailRow('Next Revision', details['date_scheduled']),
                             _detailRow('Missed Revisions', details['missed_revision'].toString()),
                             _detailRow('Description', details['description']),
-                            // SizedBox(height: 16),
-                            // DropdownButtonFormField<String>(
-                            //   decoration: InputDecoration(
-                            //     labelText: 'Revision Frequency',
-                            //     labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                            //     border: OutlineInputBorder(),
-                            //   ),
-                            //   value: revisionFrequency,
-                            //   onChanged: (String? newValue) {
-                            //     setState(() {
-                            //       revisionFrequency = newValue!;
-                            //     });
-                            //   },
-                            //   items: [
-                            //     'Daily',
-                            //     '2 Day',
-                            //     '3 Day',
-                            //     'Weekly',
-                            //     'Default',
-                            //   ].map<DropdownMenuItem<String>>((String value) {
-                            //     return DropdownMenuItem<String>(
-                            //       value: value,
-                            //       child: Text(value),
-                            //     );
-                            //   }).toList(),
-                            //   style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                            //   dropdownColor: Theme.of(context).colorScheme.surface,
-                            // ),
-                            // SizedBox(height: 16),
-                            // Row(
-                            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            //   children: [
-                            //     Text('Status', style: Theme.of(context).textTheme.titleMedium),
-                            //     Switch(
-                            //       value: isEnabled,
-                            //       onChanged: (bool newValue) {
-                            //         setState(() {
-                            //           isEnabled = newValue;
-                            //         });
-                            //       },
-                            //     ),
-                            //   ],
-                            // ),
                             SizedBox(height: 16),
                             Row(
                               children: [
@@ -161,41 +118,7 @@ class _TodayPageState extends State<TodayPage> {
                                   ),
                                 ),
                                 SizedBox(width: 16), // Add spacing between the buttons
-                                // Expanded(
-                                  // child: ElevatedButton.icon(
-                                  //   icon: Icon(Icons.add),
-                                  //   label: Text('Save Changes'),
-                                  //   onPressed: () {
-                                  //     String dateScheduled = _calculateScheduledDate_now(
-                                  //       revisionFrequency,
-                                  //       noRevision,
-                                  //     ).toIso8601String().split('T')[0];
-                                  //     String dateRevised = DateTime.now().toIso8601String().split('T')[0];
-                                  //
-                                  //     UpdateRecords(
-                                  //       selectedSubject,
-                                  //       selectedSubjectCode,
-                                  //       lectureNo,
-                                  //       dateRevised,
-                                  //       noRevision,
-                                  //       dateScheduled,
-                                  //       details['missed_revision'],
-                                  //       revisionFrequency,
-                                  //       isEnabled ? 'Enabled' : 'Disabled',
-                                  //     );
-                                  //     Navigator.pop(context);
-                                  //   },
-                                  //   style: ElevatedButton.styleFrom(
-                                  //     backgroundColor: Theme.of(context).colorScheme.primary,
-                                  //     foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                                  //     padding: EdgeInsets.symmetric(vertical: 12),
-                                  //   ),
-                                  //   // child: Padding(
-                                  //   //   padding: EdgeInsets.symmetric(vertical: 0),
-                                  //   //   child: Text('Save Changes'),
-                                  // ),
-                                // ),
-                                // ),
+
                               ],
                             ),
                           ],
@@ -323,27 +246,6 @@ class _TodayPageState extends State<TodayPage> {
       );
     }
 
-DateTime _calculateScheduledDate_now(String frequency, int noRevision) {
-  DateTime today = DateTime.now();
-  switch (frequency) {
-    case 'Daily':
-      return today.add(Duration(days: 1));
-    case '2 Day':
-      return today.add(Duration(days: 2));
-    case '3 Day':
-      return today.add(Duration(days: 3));
-    case 'Weekly':
-      return today.add(Duration(days: 7));
-    case 'Default':
-    default:
-      List<int> intervals = [1, 3, 7, 15, 30];
-      int additionalDays = 0;
-      for (int i = 0; i <= noRevision; i++) {
-        additionalDays += (i < intervals.length) ? intervals[i] : 30;
-      }
-      return today.add(Duration(days: additionalDays));
-  }
-}
 
 DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int noRevision) {
   switch (frequency) {
@@ -400,19 +302,19 @@ DateTime _calculateScheduledDate(DateTime scheduledDate, String frequency, int n
                   return Center(child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                  Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
-                SizedBox(height: 16),
-                Text(
-                'No scheduled found',
-                style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-                ),
-                ),
-                ],
-                ),
-                );
+                    Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
+                  SizedBox(height: 16),
+                    Text(
+                    'No scheduled found',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600],
+                        ),
+                    ),
+                    ],
+                    ),
+                    );
                 } else {
                   List<Map<String, dynamic>> todayRecords = snapshot.data!['today']!;
                   List<Map<String, dynamic>> missedRecords = snapshot.data!['missed']!;
