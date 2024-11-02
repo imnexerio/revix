@@ -30,12 +30,16 @@ Ensure you have Flutter and Dart installed. You can download them from the [offi
 5. turn on email/password authentication in the Firebase Console.
 6. turm on realtime database in the Firebase Console.
     ```
-    {
+   {
       "rules": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+         "users": {
+            "$uid": {
+               ".read": "auth != null && auth.uid == $uid",
+               ".write": "auth != null && auth.uid == $uid"
+            }
+         }
       }
-    }
+   }
     ```
 
 ### Step 4: Install Dependencies
@@ -59,17 +63,7 @@ flutter pub get
     ```
 
 ### Step 3: Modify Code
-You can start modifying the code in the `lib` directory. The main files to look at are:
-- `lib/main.dart`: Entry point of the application.
-- `lib/SubjectsBar.dart`: Manages the subjects and their details.
-- `lib/DetailsPage.dart`: Displays the details of the selected subject.
-
-### Step 4: Debugging
-Use the debugging tools in Android Studio to set breakpoints, inspect variables, and step through the code.
-
-## Additional Resources
-- [Flutter Documentation](https://flutter.dev/docs)
-- [Firebase Documentation](https://firebase.google.com/docs)
+You can start modifying the code in the `lib` directory. 
 
 ## License
 This project is licensed under the MIT License - see the `LICENSE` file for details.

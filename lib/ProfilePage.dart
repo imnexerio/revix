@@ -126,13 +126,6 @@ class ProfilePage extends StatelessWidget {
                         hint: 'Enter your email',
                         icon: Icons.email_outlined,
                       ),
-                      SizedBox(height: 20),
-                      _buildInputField(
-                        context: context,
-                        label: 'Phone Number',
-                        hint: 'Enter your phone number',
-                        icon: Icons.phone_outlined,
-                      ),
                       SizedBox(height: 40),
                       FilledButton(
                         onPressed: () {
