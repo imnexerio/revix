@@ -2,6 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:retracker/widgets/date_utils.dart';
+import 'package:retracker/widgets/SubjectDropdown.dart';
+import 'package:retracker/widgets/SubjectCodeDropdown.dart';
+import 'package:retracker/widgets/LectureTypeDropdown.dart';
+import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -149,44 +153,19 @@ class _AddLectureFormState extends State<AddLectureForm> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Theme.of(context).cardColor,
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: 'Select Subject',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        value: _selectedSubject.isEmpty ? null : _selectedSubject,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            if (newValue == 'Others') {
-                              _selectedSubject = '';
-                            } else {
-                              _selectedSubject = newValue!;
-                              _selectedSubjectCode = '';
-                            }
-                          });
-                        },
-                        items: [
-                          ..._subjects.map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          DropdownMenuItem<String>(
-                            value: 'Others',
-                            child: Text('Others'),
-                          ),
-                        ],
-                        validator: (value) => value == null ? 'Please select a subject' : null,
-                      ),
+                    SubjectDropdown(
+                      subjects: _subjects,
+                      selectedSubject: _selectedSubject,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          if (newValue == 'Others') {
+                            _selectedSubject = '';
+                          } else {
+                            _selectedSubject = newValue!;
+                            _selectedSubjectCode = '';
+                          }
+                        });
+                      },
                     ),
                     if (_selectedSubject.isEmpty)
                       Container(
@@ -213,45 +192,19 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           },
                         ),
                       ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Theme.of(context).cardColor,
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: 'Select Subject Code',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        value: _selectedSubjectCode.isEmpty ? null : _selectedSubjectCode,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            if (newValue == 'Others') {
-                              _selectedSubjectCode = '';
-                            } else {
-                              _selectedSubjectCode = newValue!;
-                            }
-                          });
-                        },
-                        items: _selectedSubject.isEmpty
-                            ? []
-                            : [
-                          ..._subjectCodes[_selectedSubject]!.map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          DropdownMenuItem<String>(
-                            value: 'Others',
-                            child: Text('Others'),
-                          ),
-                        ],
-                        validator: (value) => value == null ? 'Please select a subject code' : null,
-                      ),
+                    SubjectCodeDropdown(
+                      subjectCodes: _subjectCodes,
+                      selectedSubject: _selectedSubject,
+                      selectedSubjectCode: _selectedSubjectCode,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          if (newValue == 'Others') {
+                            _selectedSubjectCode = '';
+                          } else {
+                            _selectedSubjectCode = newValue!;
+                          }
+                        });
+                      },
                     ),
                     if (_selectedSubjectCode.isEmpty && _selectedSubject.isNotEmpty)
                       Container(
@@ -277,45 +230,13 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           },
                         ),
                       ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Theme.of(context).cardColor,
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: 'Type',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        value: _lectureType,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _lectureType = newValue!;
-                          });
-                        },
-                        items: [
-                          DropdownMenuItem<String>(
-                            value: 'Lectures',
-                            child: Text('Lectures'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'Handouts',
-                            child: Text('Handouts'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'NCERTs',
-                            child: Text('NCERTs'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'Others',
-                            child: Text('Others'),
-                          ),
-                        ],
-                        validator: (value) => value == null ? 'Please select a type' : null,
-                      ),
+                    LectureTypeDropdown(
+                      lectureType: _lectureType,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _lectureType = newValue!;
+                        });
+                      },
                     ),
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
@@ -366,58 +287,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         },
                       ),
                     ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Theme.of(context).cardColor,
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: 'Revision Frequency',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        value: _revisionFrequency,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _revisionFrequency = newValue!;
-                          });
-                        },
-                        items: [
-                          DropdownMenuItem<String>(
-                            value: 'Daily',
-                            child: Text('Daily'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: '2 Day',
-                            child: Text('2 Day'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: '3 Day',
-                            child: Text('3 Day'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'Weekly',
-                            child: Text('Weekly'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'Default',
-                            child: Text('Default'),
-                          ),
-                        ],
-                        validator: (value) => value == null ? 'Please select a revision frequency' : null,
-                      ),
+                    RevisionFrequencyDropdown(
+                      revisionFrequency: _revisionFrequency,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _revisionFrequency = newValue!;
+                        });
+                      },
                     ),
-                    // Row(
-                    //   margin: EdgeInsets.symmetric(vertical: 8),
-                    //   decoration: BoxDecoration(
-                    //     borderRadius: BorderRadius.circular(12),
-                    //     color: Theme.of(context).cardColor,
-                    //     border: Border.all(color: Theme.of(context).dividerColor),
-                    //   ),
-                    //   child:
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -432,8 +309,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ),
                       ],
                     ),
-                    // ),
-
                     SizedBox(height: 24),
                     Row(
                       children: [
@@ -465,7 +340,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   _formKey.currentState!.save();
                                   Navigator.of(context).pop();
                                   await UpdateRecords();
-                                  // Navigator.of(context).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Row(
