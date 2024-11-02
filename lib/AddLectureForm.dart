@@ -75,7 +75,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       // print('Error adding new subject code: $e');
     }
   }
-  
+
   Future<void> UpdateRecords() async {
     try {
       User? user = FirebaseAuth.instance.currentUser;
@@ -418,20 +418,20 @@ class _AddLectureFormState extends State<AddLectureForm> {
                     //     border: Border.all(color: Theme.of(context).dividerColor),
                     //   ),
                     //   child:
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Status', style: Theme.of(context).textTheme.titleMedium),
-                          Switch(
-                            value: isEnabled,
-                            onChanged: (bool newValue) {
-                              setState(() {
-                                isEnabled = newValue;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Status', style: Theme.of(context).textTheme.titleMedium),
+                        Switch(
+                          value: isEnabled,
+                          onChanged: (bool newValue) {
+                            setState(() {
+                              isEnabled = newValue;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                     // ),
 
                     SizedBox(height: 24),
@@ -472,7 +472,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                         children: [
                                           Icon(Icons.check_circle, color: Colors.white),
                                           SizedBox(width: 8),
-                                          Text('Revision added successfully'),
+                                          Text('Record added successfully'),
                                         ],
                                       ),
                                       backgroundColor: Colors.green,
@@ -486,7 +486,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Failed to save lecture: $e'),
+                                      content: Text('Failed to save record: $e'),
                                       backgroundColor: Colors.red,
                                     ),
                                   );
