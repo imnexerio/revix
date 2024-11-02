@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../DetailRow.dart';
-import '../UpdateRecords.dart';
-import 'date_utils.dart';
+
+import '../DetailsPage/DetailRow.dart';
+import '../Utils/UpdateRecords.dart';
+import '../Utils/date_utils.dart';
 
 
 class LectureDetailsModal extends StatefulWidget {

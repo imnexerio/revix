@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'SubjectsBar.dart';
 
 class DetailsPage extends StatefulWidget {

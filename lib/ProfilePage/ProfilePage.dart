@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'LoginPage.dart';
+
+import '../LoginSignupPage/LoginPage.dart';
 
 class ProfilePage extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {

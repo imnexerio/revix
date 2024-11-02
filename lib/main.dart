@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:retracker/DetailsPage.dart';
-import 'package:retracker/AddLectureForm.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:retracker/LoginPage.dart';
-import 'package:retracker/ProfilePage.dart';
+import 'package:flutter/material.dart';
+import 'package:retracker/AddLectureForm.dart';
+import 'package:retracker/DetailsPage/DetailsPage.dart';
+import 'package:retracker/LoginSignupPage/LoginPage.dart';
+import 'package:retracker/ProfilePage/ProfilePage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'HomePage.dart';
-import 'SplashScreen.dart';
-import 'TodayPage.dart';
+
+import 'HomePage/HomePage.dart';
+import 'SchedulePage/TodayPage.dart';
+import 'Utils/SplashScreen.dart';
 import 'firebase_options.dart';
 
 void main() async {

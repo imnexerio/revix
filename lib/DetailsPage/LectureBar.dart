@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'widgets/LectureDetailsModal.dart';
+
+import '../widgets/LectureDetailsModal.dart';
 
 class LectureBar extends StatefulWidget {
   final Map<String, dynamic> lectureData;
