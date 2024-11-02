@@ -130,7 +130,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 String dateRevised = DateTime.now().toIso8601String().split('T')[0];
                                 int missedRevision = (widget.details['missed_revision'] as num).toInt();
                                 DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
-                                String dateScheduled = DateNextRevision.calculateScheduledDate(
+                                String dateScheduled = DateNextRevision.calculateNextRevisionDate(
                                   scheduledDate,
                                   revisionFrequency,
                                   noRevision,
@@ -166,20 +166,14 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             icon: Icon(Icons.add),
                             label: Text('Save Changes'),
                             onPressed: () {
-                              String dateScheduled = DateNextRevision.calculateScheduledDate(
-                                DateTime.now(),
-                                revisionFrequency,
-                                noRevision,
-                              ).toIso8601String().split('T')[0];
-                              String dateRevised = DateTime.now().toIso8601String().split('T')[0];
 
                               UpdateRecords(
                                 widget.selectedSubject,
                                 widget.selectedSubjectCode,
                                 widget.lectureNo,
-                                dateRevised,
+                                widget.details['date_revised'],
                                 noRevision,
-                                dateScheduled,
+                                widget.details['date_scheduled'],
                                 widget.details['missed_revision'],
                                 revisionFrequency,
                                 isEnabled ? 'Enabled' : 'Disabled',
