@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:retracker/widgets/date_utils.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -74,25 +75,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
       // print('Error adding new subject code: $e');
     }
   }
-
-  DateTime _calculateScheduledDate(String frequency) {
-    DateTime today = DateTime.now();
-    switch (frequency) {
-      case 'Daily':
-        return today.add(Duration(days: 1));
-      case '2 Day':
-        return today.add(Duration(days: 2));
-      case '3 Day':
-        return today.add(Duration(days: 3));
-      case 'Weekly':
-        return today.add(Duration(days: 7));
-      case 'Default':
-      default:
-        return today.add(Duration(days: 1));
-    }
-  }
-
-  Future<void> _saveToFirebase() async {
+  
+  Future<void> UpdateRecords() async {
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -101,7 +85,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       String uid = user.uid;
 
       String todayDate = DateTime.now().toIso8601String().split('T')[0];
-      String dateScheduled = _calculateScheduledDate(_revisionFrequency)
+      String dateScheduled = DateNextRevision.calculateFirstScheduledDate(_revisionFrequency)
           .toIso8601String()
           .split('T')[0];
 
@@ -293,32 +277,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           },
                         ),
                       ),
-
-                    // Container(
-                    //   margin: EdgeInsets.symmetric(vertical: 8),
-                    //   decoration: BoxDecoration(
-                    //     borderRadius: BorderRadius.circular(12),
-                    //     color: Theme.of(context).cardColor,
-                    //     border: Border.all(color: Theme.of(context).dividerColor),
-                    //   ),
-                    //   child: TextFormField(
-                    //     decoration: InputDecoration(
-                    //       labelText: 'Description',
-                    //       border: InputBorder.none,
-                    //       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    //     ),
-                    //     maxLines: 3,
-                    //     onSaved: (value) {
-                    //       _description = value!;
-                    //     },
-                    //     validator: (value) {
-                    //       if (value == null || value.isEmpty) {
-                    //         return 'Please enter a description';
-                    //       }
-                    //       return null;
-                    //     },
-                    //   ),
-                    // ),
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
@@ -505,8 +463,26 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               if (_formKey.currentState!.validate()) {
                                 try {
                                   _formKey.currentState!.save();
-                                  await _saveToFirebase();
                                   Navigator.of(context).pop();
+                                  await UpdateRecords();
+                                  // Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text('Revision added successfully'),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

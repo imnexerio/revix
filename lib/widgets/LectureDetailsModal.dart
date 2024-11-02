@@ -124,34 +124,88 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           child: ElevatedButton.icon(
                             icon: Icon(Icons.add),
                             label: Text('Add Revision'),
-                            onPressed: () {
-                              setState(() {
-                                noRevision += 1;
+                            onPressed: () async {
+                              try {
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (BuildContext context) {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                );
+
                                 String dateRevised = DateTime.now().toIso8601String().split('T')[0];
                                 int missedRevision = (widget.details['missed_revision'] as num).toInt();
                                 DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
                                 String dateScheduled = DateNextRevision.calculateNextRevisionDate(
                                   scheduledDate,
                                   revisionFrequency,
-                                  noRevision,
+                                  noRevision + 1,
                                 ).toIso8601String().split('T')[0];
 
                                 if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                                   missedRevision += 1;
                                 }
 
-                                UpdateRecords(
+                                await UpdateRecords(
                                   widget.selectedSubject,
                                   widget.selectedSubjectCode,
                                   widget.lectureNo,
                                   dateRevised,
-                                  noRevision,
+                                  noRevision + 1,
                                   dateScheduled,
                                   missedRevision,
                                   revisionFrequency,
                                   isEnabled ? 'Enabled' : 'Disabled',
                                 );
-                              });
+
+                                Navigator.pop(context);
+                                Navigator.pop(context);
+
+                                // await refreshRecords();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Revision added successfully'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                }
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.error_outline, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Failed to add revision: ${e.toString()}'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: Duration(seconds: 3),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -165,20 +219,77 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           child: ElevatedButton.icon(
                             icon: Icon(Icons.add),
                             label: Text('Save Changes'),
-                            onPressed: () {
 
-                              UpdateRecords(
-                                widget.selectedSubject,
-                                widget.selectedSubjectCode,
-                                widget.lectureNo,
-                                widget.details['date_revised'],
-                                noRevision,
-                                widget.details['date_scheduled'],
-                                widget.details['missed_revision'],
-                                revisionFrequency,
-                                isEnabled ? 'Enabled' : 'Disabled',
-                              );
-                              Navigator.pop(context);
+                            onPressed: () async {
+                              try {
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (BuildContext context) {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                );
+
+
+                                await UpdateRecords(
+                                  widget.selectedSubject,
+                                  widget.selectedSubjectCode,
+                                  widget.lectureNo,
+                                  widget.details['date_revised'],
+                                  noRevision,
+                                  widget.details['date_scheduled'],
+                                  widget.details['missed_revision'],
+                                  revisionFrequency,
+                                  isEnabled ? 'Enabled' : 'Disabled',
+                                );
+
+                                Navigator.pop(context);
+                                Navigator.pop(context);
+
+                                // await refreshRecords();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Update successfull'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                }
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.error_outline, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Update Failed: ${e.toString()}'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: Duration(seconds: 3),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).colorScheme.primary,

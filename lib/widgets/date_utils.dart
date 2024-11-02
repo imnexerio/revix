@@ -18,6 +18,24 @@ class DateNextRevision {
       }
       return scheduledDate.add(Duration(days: additionalDays));
   }
+}
+
+
+  static DateTime calculateFirstScheduledDate(String frequency) {
+    DateTime today = DateTime.now();
+    switch (frequency) {
+      case 'Daily':
+        return today.add(Duration(days: 1));
+      case '2 Day':
+        return today.add(Duration(days: 2));
+      case '3 Day':
+        return today.add(Duration(days: 3));
+      case 'Weekly':
+        return today.add(Duration(days: 7));
+      case 'Default':
+      default:
+        return today.add(Duration(days: 1));
+    }
   }
 
 }
