@@ -38,6 +38,7 @@ class ScheduleTable extends StatelessWidget {
                   DataColumn(label: Text('Subject Code', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                   DataColumn(label: Text('Lecture No', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                   DataColumn(label: Text('Date Scheduled', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                  DataColumn(label: Text('Date Learnt', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                 ],
                 rows: records.map((record) {
                   return DataRow(
@@ -46,6 +47,7 @@ class ScheduleTable extends StatelessWidget {
                       DataCell(Text(record['subject_code'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                       DataCell(Text(record['lecture_no'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                       DataCell(Text(record['date_scheduled'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                      DataCell(Text(record['date_learnt'], style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
                     ],
                     onSelectChanged: (_) => onSelect(context, record),
                   );
