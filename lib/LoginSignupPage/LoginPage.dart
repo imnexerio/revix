@@ -3,8 +3,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:retracker/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 import 'SignupPage.dart';
+import 'UrlLauncher.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -383,7 +384,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                "Don't have an account? ",
+                                "Don't have an account ? ",
                                 style: textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurface.withOpacity(0.7),
                                 ),
@@ -398,8 +399,28 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             ],
                           ),
                         ),
+
                       ),
                       SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
+                        },
+                        icon: ImageIcon(
+                          AssetImage('assets/github.png'),
+                          size: 24,
+                        ),
+                        label: const Text(''),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: colorScheme.onSurface,
+                          backgroundColor: colorScheme.surface,
+                          textStyle: textTheme.labelLarge,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      )
                     ],
                   ),
                 ),
@@ -409,5 +430,4 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         ),
       ),
     );
-  }
-}
+  }}

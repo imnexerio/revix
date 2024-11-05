@@ -13,6 +13,8 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
+
+
   void _showEditProfileBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
@@ -628,7 +630,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Santosh Prajapati',
+                      'Your Name',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,

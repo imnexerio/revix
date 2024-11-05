@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#hexcode",
     "theme_color": "#hexcode",
-    "description": "A new Flutter project.",
+    "description": "A cross platform application is to track any task easily.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

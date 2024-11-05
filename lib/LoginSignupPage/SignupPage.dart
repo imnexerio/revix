@@ -2,16 +2,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'UrlLauncher.dart';
 
 class SignupPage extends StatefulWidget {
   @override
   _SignupPageState createState() => _SignupPageState();
 }
 
-class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateMixin {
+class _SignupPageState extends State<SignupPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
@@ -98,7 +103,8 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
     });
 
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
@@ -106,7 +112,8 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+        DatabaseReference ref =
+            FirebaseDatabase.instance.ref('users/$uid/profile_data');
         await ref.set({
           'email': user.email,
           'name': _nameController.text.trim(),
@@ -162,284 +169,285 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
         ),
       ),
       body: SafeArea(
-      child: FadeTransition(
-      opacity: _fadeAnimation,
-      child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          child: SingleChildScrollView(
-          child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-      child: Form(
-          key: _formKey,
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-              SizedBox(height: 20),
-          Hero(
-            tag: 'app_logo',
-            child: Container(
-              height: 100,
-              width: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.primary.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Image.asset(
-                'assets/icon/icon.png',
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          SizedBox(height: 24),
-          Text(
-            'Create Account',
-            style: textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.primary,
-            ),
-          ),
-          Text(
-            'Sign up to get started',
-            style: textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
-          SizedBox(height: 32),
-          if (_errorMessage != null)
-      Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.error.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: colorScheme.error,
-            size: 20,
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _errorMessage!,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.error,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-    TextFormField(
-    controller: _nameController,
-    validator: _validateName,
-    decoration: InputDecoration(
-    labelText: 'Full Name',
-    hintText: 'Enter your name...',
-    prefixIcon: Icon(Icons.person_outline),
-    enabledBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.onSurface.withOpacity(0.12),
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.primary,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    errorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    ),
-    ),
-    SizedBox(height: 16),
-    TextFormField(
-    controller: _emailController,
-    validator: _validateEmail,
-    keyboardType: TextInputType.emailAddress,
-    decoration: InputDecoration(
-    labelText: 'Email Address',
-    hintText: 'Enter your email...',
-    prefixIcon: Icon(Icons.email_outlined),
-    enabledBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.onSurface.withOpacity(0.12),
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.primary,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    errorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    ),
-    ),
-    SizedBox(height: 16),
-    TextFormField(
-    controller: _passwordController,
-    validator: _validatePassword,
-    obscureText: !_passwordVisibility,
-    decoration: InputDecoration(
-    labelText: 'Password',
-    hintText: 'Enter your password...',
-    prefixIcon: Icon(Icons.lock_outline),
-    enabledBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.onSurface.withOpacity(0.12),
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.primary,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    errorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    suffixIcon: IconButton(
-    icon: Icon(
-    _passwordVisibility
-    ? Icons.visibility_outlined
-        : Icons.visibility_off_outlined,
-    color: colorScheme.onSurface.withOpacity(0.6),
-    size: 20,
-    ),
-    onPressed: () {
-    setState(() {
-    _passwordVisibility = !_passwordVisibility;
-    });
-    },
-    ),
-    ),
-    ),
-    SizedBox(height: 16),
-    TextFormField(
-    controller: _confirmPasswordController,
-    validator: _validateConfirmPassword,
-    obscureText: !_confirmPasswordVisibility,
-    decoration: InputDecoration(
-    labelText: 'Confirm Password',
-    hintText: 'Confirm your password...',
-    prefixIcon: Icon(Icons.lock_outline),
-    enabledBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.onSurface.withOpacity(0.12),
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.primary,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    errorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 1.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-    borderSide: BorderSide(
-    color: colorScheme.error,
-    width: 2.0,
-    ),
-    borderRadius: BorderRadius.circular(12),
-    ),
-    suffixIcon: IconButton(
-    icon: Icon(
-    _confirmPasswordVisibility
-    ? Icons.visibility_outlined
-        : Icons.visibility_off_outlined,
-    color: colorScheme.onSurface.withOpacity(0.6),
-    size: 20,
-    ),
-    onPressed: () {
-    setState(() {
-    _confirmPasswordVisibility = !_confirmPasswordVisibility;
-    });
-    },
-    ),
-    ),
-    ),
-    SizedBox(height: 32),
-    SizedBox(
-    width: double.infinity,
-    height: 48,
-    child: ElevatedButton(
-    onPressed: _isLoading ? null : _signup,
-    child: _isLoading
-    ? SizedBox(
-    width: 24,
-    height: 24,
-    child: CircularProgressIndicator(
-    strokeWidth: 2,
-    valueColor: AlwaysStoppedAnimation<Color>(
-    colorScheme.onPrimary,
-    ),
-    ),
-    )
-        : Text('Create Account'),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 20),
+                      Hero(
+                        tag: 'app_logo',
+                        child: Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.primary.withOpacity(0.2),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Image.asset(
+                            'assets/icon/icon.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      Text(
+                        'Create Account',
+                        style: textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      Text(
+                        'Sign up to get started',
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                      if (_errorMessage != null)
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(bottom: 16),
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: colorScheme.error,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      TextFormField(
+                        controller: _nameController,
+                        validator: _validateName,
+                        decoration: InputDecoration(
+                          labelText: 'Full Name',
+                          hintText: 'Enter your name...',
+                          prefixIcon: Icon(Icons.person_outline),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.onSurface.withOpacity(0.12),
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        validator: _validateEmail,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: 'Email Address',
+                          hintText: 'Enter your email...',
+                          prefixIcon: Icon(Icons.email_outlined),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.onSurface.withOpacity(0.12),
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        validator: _validatePassword,
+                        obscureText: !_passwordVisibility,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          hintText: 'Enter your password...',
+                          prefixIcon: Icon(Icons.lock_outline),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.onSurface.withOpacity(0.12),
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _passwordVisibility
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _passwordVisibility = !_passwordVisibility;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        validator: _validateConfirmPassword,
+                        obscureText: !_confirmPasswordVisibility,
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password',
+                          hintText: 'Confirm your password...',
+                          prefixIcon: Icon(Icons.lock_outline),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.onSurface.withOpacity(0.12),
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: colorScheme.error,
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _confirmPasswordVisibility
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _confirmPasswordVisibility =
+                                    !_confirmPasswordVisibility;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _signup,
+                          child: _isLoading
+                              ? SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      colorScheme.onPrimary,
+                                    ),
+                                  ),
+                                )
+                              : Text('Create Account'),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: colorScheme.onPrimary,
                             backgroundColor: colorScheme.primary,
@@ -447,7 +455,8 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
-                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
                           ),
                         ),
                       ),
@@ -476,14 +485,16 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                                     size: 24,
                                   ),
                                   Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(4, 0, 24, 0),
+                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                        4, 0, 24, 0),
                                     child: Text(
                                       'Login',
-                                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.primary),
+                                      style: textTheme.bodyMedium?.copyWith(
+                                          color: colorScheme.primary),
                                     ),
                                   ),
                                   Text(
-                                    'Already have an account?',
+                                    'Already have an account ?',
                                     style: textTheme.bodyMedium,
                                   ),
                                 ],
@@ -492,28 +503,52 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Continue as Guest
-                          },
-                          child: Text('Continue as Guest'),
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: colorScheme.onSurface,
-                            backgroundColor: colorScheme.surface,
-                            textStyle: textTheme.labelLarge,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          ),
+                      // Padding(
+                      //   padding: EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
+                      //   child: ElevatedButton.icon(
+                      //     onPressed: () async {
+                      //       final url = Uri.parse('https://github.com/your-username/your-repo');
+                      //       if (await canLaunchUrl(url)) {
+                      //         await launchUrl(url);
+                      //       }
+                      //     },
+                      //     icon: Icon(Icons.github, size: 24),
+                      //     label: Text('Github Repository'),
+                      //     style: ElevatedButton.styleFrom(
+                      //       foregroundColor: colorScheme.onSurface,
+                      //       backgroundColor: colorScheme.surface,
+                      //       textStyle: textTheme.labelLarge,
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(30),
+                      //       ),
+                      //       padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      //     ),
+                      //   ),
+                      // ),
+
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
+                        },
+                        icon: ImageIcon(
+                          AssetImage('assets/github.png'),
+                          size: 24,
                         ),
-                      ),
+                        label: const Text(''),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: colorScheme.onSurface,
+                          backgroundColor: colorScheme.surface,
+                          textStyle: textTheme.labelLarge,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      )
                     ],
                   ),
                 ),
-          ),
+              ),
             ),
           ),
         ),
