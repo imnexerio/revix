@@ -61,7 +61,6 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                           DetailRow(label: 'Scheduled Date', value: details['date_scheduled']),
                           DetailRow(label: 'Revision Frequency', value: revisionFrequency),
                           DetailRow(label: 'No. of Revisions', value: details['no_revision'].toString()),
-                          DetailRow(label: 'Next Revision', value: details['date_scheduled']),
                           DetailRow(label: 'Missed Revisions', value: details['missed_revision'].toString()),
                           DetailRow(label: 'Description', value: details['description']),
                           SizedBox(height: 16),

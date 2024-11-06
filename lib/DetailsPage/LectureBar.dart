@@ -59,7 +59,7 @@ class _LectureBarState extends State<LectureBar> {
                     DataColumn(label: Text('Date Learned')),
                     DataColumn(label: Text('Date Revised')),
                     DataColumn(label: Text('No. of Revisions')),
-                    DataColumn(label: Text("Next Revision")),
+                    DataColumn(label: Text("Date Scheduled")),
                     DataColumn(label: Text('Missed revisions')),
                   ],
                   rows: widget.lectureData.entries.map((entry) {
