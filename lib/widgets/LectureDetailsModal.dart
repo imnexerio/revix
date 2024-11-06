@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../DetailRow.dart';
-import '../UpdateRecords.dart';
-import 'date_utils.dart';
+
+import '../DetailsPage/DetailRow.dart';
+import '../Utils/UpdateRecords.dart';
+import '../Utils/date_utils.dart';
 
 
 class LectureDetailsModal extends StatefulWidget {
@@ -50,7 +51,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Lecture ${widget.lectureNo} Details',
+                  '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} Details',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 IconButton(
@@ -67,6 +68,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     DetailRow(label: "Type", value: widget.details['lecture_type']),
+                    DetailRow(label: "Subject", value: widget.selectedSubject),
+                    DetailRow(label: "Subject Code", value: widget.selectedSubjectCode),
                     DetailRow(label: 'Lecture No', value: widget.lectureNo),
                     DetailRow(label: 'Date Learned', value: widget.details['date_learnt']),
                     DetailRow(label: 'Date Revised', value: widget.details['date_revised']),

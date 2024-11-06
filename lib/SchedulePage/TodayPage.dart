@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'ScheduleTable.dart';
-import 'utils/showLectureDetails.dart';
-import 'utils/getRecords.dart';
+import 'getRecords.dart';
+import 'showLectureDetails.dart';
 
 class TodayPage extends StatefulWidget {
   @override

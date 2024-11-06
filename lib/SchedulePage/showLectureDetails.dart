@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../DetailRow.dart';
-import '../UpdateRecords.dart';
-import '../widgets/date_utils.dart';
+
+import '../DetailsPage/DetailRow.dart';
+import '../Utils/UpdateRecords.dart';
+import '../Utils/date_utils.dart';
 
 
 void showLectureDetails(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {

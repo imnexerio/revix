@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'LoginPage.dart';
+
+import '../LoginSignupPage/LoginPage.dart';
 
 class ProfilePage extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
@@ -11,6 +12,8 @@ class ProfilePage extends StatelessWidget {
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
   }
+
+
 
   void _showEditProfileBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -627,7 +630,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Santosh Prajapati',
+                      'Your Name',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
