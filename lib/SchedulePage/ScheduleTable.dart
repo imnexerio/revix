@@ -26,7 +26,16 @@ class ScheduleTable extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color)),
+          Center(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.titleLarge?.color,
+              ),
+            ),
+          ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
