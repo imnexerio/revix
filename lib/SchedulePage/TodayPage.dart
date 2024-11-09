@@ -88,31 +88,31 @@ class _TodayPageState extends State<TodayPage> {
                           if (missedRecords.isNotEmpty)
                             ScheduleTable(
                               records: missedRecords,
-                              title: 'Missed Schedule',
+                              title: 'Missed Schedule (${missedRecords.length})',
                               onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
                             ),
                           if (todayRecords.isNotEmpty)
                             ScheduleTable(
                               records: todayRecords,
-                              title: 'Today\'s Schedule',
+                              title: 'Today\'s Schedule (${todayRecords.length})',
                               onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
                             ),
                           if (todayAddedRecords.isNotEmpty)
                             ScheduleTable(
                               records: todayAddedRecords,
-                              title: 'Today\'s Added Records',
+                              title: 'Today\'s Added Records (${todayAddedRecords.length})',
                               onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
                             ),
                           if (nextDayRecords.isNotEmpty)
                             ScheduleTable(
                               records: nextDayRecords,
-                              title: 'Next Day Schedule',
+                              title: 'Next Day Schedule (${nextDayRecords.length})',
                               onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
                             ),
                           if (next7DaysRecords.isNotEmpty)
                             ScheduleTable(
                               records: next7DaysRecords,
-                              title: 'Next 7 Days Schedule',
+                              title: 'Next 7 Days Schedule (${next7DaysRecords.length})',
                               onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
                             ),
                         ],

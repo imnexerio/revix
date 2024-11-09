@@ -29,10 +29,10 @@ Ensure you have Flutter and Dart installed. You can download them from the [offi
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
 2. Create a new project(with any name).
 3. initiate realtime database and email/password authentication in firebase console.
-4. run-flutterfire configure(remember to run this command in the root of your flutter project and make sure you have the firebase-tools installed)
-5. use android package name: com.imnexerio.retracker (otherwise android app will not build)
+4. run- flutterfire configure (remember to run this command in the root of your flutter project and make sure you have the firebase-tools installed)
+5. use android package name: com.imnexerio.retracker (otherwise android app will not compile)
 5. turn on email/password authentication in the Firebase Console.
-6. turm on realtime database in the Firebase Console.
+6. turn on realtime database in the Firebase Console.
     ```
    {
       "rules": {
@@ -67,7 +67,7 @@ flutter pub get
     ```
 
 ### Step 3: Modify Code
-You can start modifying the code in the `lib` directory. 
+You can start modifying the code in the `lib` directory.
 
 ## License
 This project is licensed under the MIT License - see the `LICENSE` file for details.
