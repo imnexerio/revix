@@ -569,10 +569,7 @@ class _HomePageState extends State<HomePage> {
       ),
       lineBarsData: [
         LineChartBarData(
-          spots: lectureCounts.entries.map((e) => FlSpot(
-            13 - today.difference(DateTime.parse(e.key)).inDays.toDouble(),
-            e.value.toDouble(),
-          )).toList(),
+          spots: lectureSpots,
           isCurved: true,
           color: Colors.blue,
           barWidth: 3,
@@ -583,10 +580,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         LineChartBarData(
-          spots: revisionCounts.entries.map((e) => FlSpot(
-            13 - today.difference(DateTime.parse(e.key)).inDays.toDouble(),
-            e.value.toDouble(),
-          )).toList(),
+          spots: revisionSpots,
           isCurved: true,
           color: Colors.orange,
           barWidth: 3,
