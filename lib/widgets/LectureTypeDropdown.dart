@@ -36,8 +36,12 @@ class LectureTypeDropdown extends StatelessWidget {
             child: Text('Handouts'),
           ),
           DropdownMenuItem<String>(
-            value: 'NCERTs',
-            child: Text('NCERTs'),
+            value: 'O-NCERTs',
+            child: Text('O-NCERTs'),
+          ),
+          DropdownMenuItem<String>(
+            value: 'N-NCERTs',
+            child: Text('N-NCERTs'),
           ),
           DropdownMenuItem<String>(
             value: 'Others',
