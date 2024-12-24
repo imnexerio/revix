@@ -25,11 +25,11 @@ class DateNextRevision {
       case 'Daily':
         return today.add(Duration(days: 1));
       case '2 Day':
-        return today.add(Duration(days: 2));
+        return today.add(Duration(days: 1));
       case '3 Day':
-        return today.add(Duration(days: 3));
+        return today.add(Duration(days: 1));
       case 'Weekly':
-        return today.add(Duration(days: 7));
+        return today.add(Duration(days: 1));
       case 'Default':
       default:
         return today.add(Duration(days: 1));
