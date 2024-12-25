@@ -630,7 +630,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Version 1.0.1',
+                      'Version 1.0.2',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
