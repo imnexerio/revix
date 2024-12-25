@@ -148,8 +148,12 @@ class _HomePageState extends State<HomePage> {
     final cardPadding = screenWidth > 600 ? 24.0 : 16.0;
 
     return Scaffold(
+
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          setState(() {});
+        },
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
           child: LayoutBuilder(
@@ -272,14 +276,14 @@ class _HomePageState extends State<HomePage> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                      Expanded(
-                                        child: _buildStatCard(
-                                          "Percentage Completion",
-                                          "${_calculatePercentageCompltion(allRecords).toStringAsFixed(1)}%",
-                                          _getCompletionColor(_calculatePercentageCompltion(allRecords)),
-                                          cardWidth,
-                                        ),
-                                      ),
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              "Percentage Completion",
+                                              "${_calculatePercentageCompltion(allRecords).toStringAsFixed(1)}%",
+                                              _getCompletionColor(_calculatePercentageCompltion(allRecords)),
+                                              cardWidth,
+                                            ),
+                                          ),
                                           SizedBox(width: 16), // Add some spacing between the cards
                                           Expanded(
                                             child: _buildStatCard(
@@ -334,9 +338,9 @@ class _HomePageState extends State<HomePage> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      _buildLegendItem('Lectures', Color(0xFF6C63FF)),
+                                      _buildLegendItem('Lectures', Colors.blue),
                                       SizedBox(width: 24),
-                                      _buildLegendItem('Revisions', Color(0xFF00C48C)),
+                                      _buildLegendItem('Revisions', Colors.orange),
                                     ],
                                   ),
                                 ],
@@ -505,7 +509,7 @@ class _HomePageState extends State<HomePage> {
     Map<String, int> revisionCounts = {};
 
     DateTime today = DateTime.now();
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 14; i++) {
       DateTime date = today.subtract(Duration(days: i));
       String dateStr = date.toIso8601String().split('T')[0];
       lectureCounts[dateStr] = 0;
@@ -567,21 +571,30 @@ class _HomePageState extends State<HomePage> {
         LineChartBarData(
           spots: lectureSpots,
           isCurved: true,
-          color: Color(0xFF6C63FF),
-          barWidth: 6,
-          isStrokeCapRound: true,
-          belowBarData: BarAreaData(show: false),
+          color: Colors.blue,
+          barWidth: 3,
+          dotData: FlDotData(show: true),
+          belowBarData: BarAreaData(
+            show: true,
+            color: Colors.blue.withOpacity(0.1),
+          ),
         ),
         LineChartBarData(
           spots: revisionSpots,
           isCurved: true,
-          color: Color(0xFF00C48C),
-          barWidth: 4,
-          isStrokeCapRound: true,
-
-          belowBarData: BarAreaData(show: false),
+          color: Colors.orange,
+          barWidth: 3,
+          dotData: FlDotData(show: true),
+          belowBarData: BarAreaData(
+            show: true,
+            color: Colors.orange.withOpacity(0.1),
+          ),
         ),
       ],
+      lineTouchData: LineTouchData(
+        enabled: true,
+        touchTooltipData: LineTouchTooltipData(),
+      ),
     );
   }
 }

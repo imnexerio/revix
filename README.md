@@ -67,7 +67,7 @@ flutter pub get
     ```
 
 ### Step 3: Modify Code
-You can start modifying the code in the `lib` directory. 
+You can start modifying the code in the `lib` directory.
 
 ## License
 This project is licensed under the MIT License - see the `LICENSE` file for details.
