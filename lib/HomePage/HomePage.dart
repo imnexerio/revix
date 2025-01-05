@@ -499,7 +499,7 @@ class _HomePageState extends State<HomePage> {
 
   double _calculatePercentageCompltion(List<Map<String, dynamic>> records) {
     int completedLectures = records.where((record) => record['details']['date_learnt'] != null && record['details']['lecture_type'] == 'Lectures').length;
-    int totalLectures = 200;
+    int totalLectures = 322;
     double percentageCompletion = (completedLectures / totalLectures) * 100;
     return percentageCompletion;
   }
