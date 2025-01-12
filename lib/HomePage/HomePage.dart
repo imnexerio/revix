@@ -660,8 +660,12 @@ class _HomePageState extends State<HomePage> {
     startDate = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
 
     for (var record in records) {
-      String? dateLearnt = record['details']['date_learnt'];
-      String? dateRevised = record['details']['date_revised'];
+      // String? dateLearnt = record['details']['date_learnt'];
+
+      String? dateLearnt;
+      if (record['details']['lecture_type'] == 'Lectures') {
+        dateLearnt = record['details']['date_learnt'];
+      }
 
       if (dateLearnt != null) {
         DateTime lectureDate = DateTime.parse(dateLearnt);
@@ -680,22 +684,6 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      if (dateRevised != null) {
-        DateTime revisionDate = DateTime.parse(dateRevised);
-        if (revisionDate.isAfter(startDate) && revisionDate.isBefore(lastSunday.add(Duration(days: 1)))) {
-          int daysFromLastSunday = lastSunday.difference(revisionDate).inDays;
-          int weekIndex = 3 - (daysFromLastSunday ~/ 7); // Reverse the index
-
-          if (weekIndex >= 0) {
-            var currentData = weeklyData[weekIndex]!;
-            weeklyData[weekIndex] = WeeklyProgressData(
-              weekIndex,
-              currentData.lectures,
-              // currentData.revisions + 1,  // Uncomment if you want to track revisions
-            );
-          }
-        }
-      }
     }
 
     // Calculate maxY from the data
