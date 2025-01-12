@@ -1,7 +1,11 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+
+import 'WeeklyProgressData.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -321,7 +325,7 @@ class _HomePageState extends State<HomePage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Progress Graph',
+                                    'Daily Progress',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
@@ -347,6 +351,44 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                             SizedBox(height: 32),
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              padding: EdgeInsets.all(cardPadding),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Weekly Progress',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).textTheme.titleLarge?.color,
+                                    ),
+                                  ),
+                                  SizedBox(height: 24),
+                                  SizedBox(
+                                    height: 250,
+                                    width: double.infinity,
+                                    child: BarChart(_createBarChartWeeklyData(allRecords)),
+                                  ),
+                                  SizedBox(height: 24),
+
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 32),
+
                             // Subject Distribution Section
                             Container(
                               width: double.infinity,
@@ -594,6 +636,145 @@ class _HomePageState extends State<HomePage> {
       lineTouchData: LineTouchData(
         enabled: true,
         touchTooltipData: LineTouchTooltipData(),
+      ),
+    );
+  }
+
+  // Inside your _HomePageState class, modify the _createBarChartWeeklyData function:
+  BarChartData _createBarChartWeeklyData(List<Map<String, dynamic>> records) {
+    Map<int, WeeklyProgressData> weeklyData = {};
+    DateTime today = DateTime.now();
+
+    // Initialize the last 4 weeks of data
+    for (int i = 0; i < 4; i++) {
+      weeklyData[i] = WeeklyProgressData(i, 0);
+    }
+
+    for (var record in records) {
+      String? dateLearnt = record['details']['date_learnt'];
+      String? dateRevised = record['details']['date_revised'];
+
+      if (dateLearnt != null) {
+        DateTime lectureDate = DateTime.parse(dateLearnt);
+        int weekDifference = today.difference(lectureDate).inDays ~/ 7;
+        if (weekDifference < 4) {
+          var currentData = weeklyData[weekDifference]!;
+          weeklyData[weekDifference] = WeeklyProgressData(
+            weekDifference,
+            currentData.lectures + 1,
+            // currentData.revisions,
+          );
+        }
+      }
+
+      if (dateRevised != null) {
+        DateTime revisionDate = DateTime.parse(dateRevised);
+        int weekDifference = today.difference(revisionDate).inDays ~/ 7;
+        if (weekDifference < 4) {
+          var currentData = weeklyData[weekDifference]!;
+          weeklyData[weekDifference] = WeeklyProgressData(
+            weekDifference,
+            currentData.lectures,
+            // currentData.revisions + 1,
+          );
+        }
+      }
+    }
+
+    // Calculate maxY from the data
+    double maxY = 0;
+    weeklyData.values.forEach((data) {
+      maxY = max(maxY, data.lectures.toDouble());
+    });
+
+    // Add padding to maxY to prevent bars from touching the top
+    maxY = maxY + (maxY * 0.2);
+
+    return BarChartData(
+      alignment: BarChartAlignment.spaceAround,
+      maxY: maxY,
+      barTouchData: BarTouchData(
+        enabled: true,
+        touchTooltipData: BarTouchTooltipData(
+
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            String label = rodIndex == 0 ? 'Lectures' : 'Revisions';
+            return BarTooltipItem(
+              '${label}: ${rod.toY.toInt()}',
+              const TextStyle(color: Colors.white),
+            );
+          },
+        ),
+      ),
+      titlesData: FlTitlesData(
+        show: true,
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) {
+              int weekIndex = value.toInt();
+              return Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Week ${4 - weekIndex}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            },
+            reservedSize: 30,
+          ),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) {
+              return Text(
+                value.toInt().toString(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            },
+            reservedSize: 30,
+          ),
+        ),
+        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      borderData: FlBorderData(show: false),
+      barGroups: weeklyData.entries.map((entry) {
+        final data = entry.value;
+        return BarChartGroupData(
+          x: entry.key,
+          barRods: [
+            BarChartRodData(
+              toY: data.lectures.toDouble(),
+              color: Colors.blue,
+              width: 16,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(4),
+              ),
+            ),
+
+          ],
+        );
+      }).toList(),
+      gridData: FlGridData(
+        show: true,
+        drawHorizontalLine: true,
+        horizontalInterval: 1,
+        drawVerticalLine: false,
+        getDrawingHorizontalLine: (value) {
+          return FlLine(
+            color: Colors.grey.withOpacity(0.2),
+            strokeWidth: 1,
+          );
+        },
       ),
     );
   }
