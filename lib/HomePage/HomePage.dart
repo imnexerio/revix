@@ -643,12 +643,21 @@ class _HomePageState extends State<HomePage> {
   // Inside your _HomePageState class, modify the _createBarChartWeeklyData function:
   BarChartData _createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     Map<int, WeeklyProgressData> weeklyData = {};
-    DateTime today = DateTime.now();
+    DateTime now = DateTime.now();
 
-    // Initialize the last 4 weeks of data
+    // Find the most recent Sunday
+    DateTime lastSunday = now.subtract(Duration(days: now.weekday % 7));
+    lastSunday = DateTime(lastSunday.year, lastSunday.month, lastSunday.day, 23, 59, 59);
+
+    // Initialize the last 4 complete weeks of data
+    // Now 3 represents the most recent week (rightmost)
     for (int i = 0; i < 4; i++) {
       weeklyData[i] = WeeklyProgressData(i, 0);
     }
+
+    // Calculate the start date (Monday) of the earliest week we want to track
+    DateTime startDate = lastSunday.subtract(Duration(days: (4 * 7) - 1));
+    startDate = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
 
     for (var record in records) {
       String? dateLearnt = record['details']['date_learnt'];
@@ -656,27 +665,35 @@ class _HomePageState extends State<HomePage> {
 
       if (dateLearnt != null) {
         DateTime lectureDate = DateTime.parse(dateLearnt);
-        int weekDifference = today.difference(lectureDate).inDays ~/ 7;
-        if (weekDifference < 4) {
-          var currentData = weeklyData[weekDifference]!;
-          weeklyData[weekDifference] = WeeklyProgressData(
-            weekDifference,
-            currentData.lectures + 1,
-            // currentData.revisions,
-          );
+        if (lectureDate.isAfter(startDate) && lectureDate.isBefore(lastSunday.add(Duration(days: 1)))) {
+          // Calculate which week this date belongs to
+          int daysFromLastSunday = lastSunday.difference(lectureDate).inDays;
+          int weekIndex = 3 - (daysFromLastSunday ~/ 7); // Reverse the index so newest week is at index 3
+
+          if (weekIndex >= 0) {
+            var currentData = weeklyData[weekIndex]!;
+            weeklyData[weekIndex] = WeeklyProgressData(
+              weekIndex,
+              currentData.lectures + 1,
+            );
+          }
         }
       }
 
       if (dateRevised != null) {
         DateTime revisionDate = DateTime.parse(dateRevised);
-        int weekDifference = today.difference(revisionDate).inDays ~/ 7;
-        if (weekDifference < 4) {
-          var currentData = weeklyData[weekDifference]!;
-          weeklyData[weekDifference] = WeeklyProgressData(
-            weekDifference,
-            currentData.lectures,
-            // currentData.revisions + 1,
-          );
+        if (revisionDate.isAfter(startDate) && revisionDate.isBefore(lastSunday.add(Duration(days: 1)))) {
+          int daysFromLastSunday = lastSunday.difference(revisionDate).inDays;
+          int weekIndex = 3 - (daysFromLastSunday ~/ 7); // Reverse the index
+
+          if (weekIndex >= 0) {
+            var currentData = weeklyData[weekIndex]!;
+            weeklyData[weekIndex] = WeeklyProgressData(
+              weekIndex,
+              currentData.lectures,
+              // currentData.revisions + 1,  // Uncomment if you want to track revisions
+            );
+          }
         }
       }
     }
@@ -696,7 +713,6 @@ class _HomePageState extends State<HomePage> {
       barTouchData: BarTouchData(
         enabled: true,
         touchTooltipData: BarTouchTooltipData(
-
           getTooltipItem: (group, groupIndex, rod, rodIndex) {
             String label = rodIndex == 0 ? 'Lectures' : 'Revisions';
             return BarTooltipItem(
@@ -713,10 +729,14 @@ class _HomePageState extends State<HomePage> {
             showTitles: true,
             getTitlesWidget: (value, meta) {
               int weekIndex = value.toInt();
+              // Calculate the Monday and Sunday dates for each week
+              // Now we subtract less days for higher indices (newer weeks)
+              DateTime weekStart = lastSunday.subtract(Duration(days: ((3 - weekIndex) * 7) + 6));
+              DateTime weekEnd = lastSunday.subtract(Duration(days: (3 - weekIndex) * 7));
               return Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                  'Week ${4 - weekIndex}',
+                  '${weekStart.day}/${weekStart.month}-${weekEnd.day}/${weekEnd.month}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -724,7 +744,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               );
             },
-            reservedSize: 30,
+            reservedSize: 40,
           ),
         ),
         leftTitles: AxisTitles(
@@ -760,7 +780,6 @@ class _HomePageState extends State<HomePage> {
                 topRight: Radius.circular(4),
               ),
             ),
-
           ],
         );
       }).toList(),
