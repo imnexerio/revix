@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../LoginSignupPage/LoginPage.dart';
@@ -11,6 +12,11 @@ class ProfilePage extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
+  }
+
+  Future<String> _getAppVersion() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    return '${packageInfo.version}+${packageInfo.buildNumber}';
   }
 
 
@@ -630,7 +636,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Version 1.0.4',
+                      'Imnexerio',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
@@ -683,6 +689,27 @@ class ProfilePage extends StatelessWidget {
                     onTap: () => _showPrivacyPolicyBottomSheet(context),
                   ),
                   SizedBox(height: 32),
+                  FutureBuilder<String>(
+                    future: _getAppVersion(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (snapshot.hasError) {
+                        return Text('Error loading version');
+                      } else {
+                        return Text(
+                          'v${snapshot.data}',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
+                            // fontFamily: 'italic',
+                            fontSize: 14,
+
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  SizedBox(height: 5),
                   FilledButton.tonal(
                     onPressed: () => _logout(context),
                     style: FilledButton.styleFrom(

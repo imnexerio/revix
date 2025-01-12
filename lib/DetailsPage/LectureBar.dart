@@ -17,6 +17,8 @@ class LectureBar extends StatefulWidget {
   _LectureBarState createState() => _LectureBarState();
 }
 
+
+
 class _LectureBarState extends State<LectureBar> {
   void _showLectureDetails(BuildContext context, String lectureNo, dynamic details) {
     if (details is! Map<String, dynamic>) {
