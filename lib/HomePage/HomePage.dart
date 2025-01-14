@@ -646,8 +646,12 @@ class _HomePageState extends State<HomePage> {
     DateTime now = DateTime.now();
 
     // Find the most recent Sunday
-    DateTime lastSunday = now.subtract(Duration(days: now.weekday % 7));
-    lastSunday = DateTime(lastSunday.year, lastSunday.month, lastSunday.day, 23, 59, 59);
+    // Find the next Sunday instead of the last Sunday
+    DateTime nextSunday = now.add(Duration(days: 7 - (now.weekday % 7)));
+    nextSunday = DateTime(nextSunday.year, nextSunday.month, nextSunday.day, 23, 59, 59);
+
+    // DateTime lastSunday = now.subtract(Duration(days: now.weekday % 7));
+    // lastSunday = DateTime(lastSunday.year, lastSunday.month, lastSunday.day, 23, 59, 59);
 
     // Initialize the last 4 complete weeks of data
     // Now 3 represents the most recent week (rightmost)
@@ -656,8 +660,9 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Calculate the start date (Monday) of the earliest week we want to track
-    DateTime startDate = lastSunday.subtract(Duration(days: (4 * 7) - 1));
+    DateTime startDate = nextSunday.subtract(Duration(days: (4 * 7) - 1));
     startDate = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
+
 
     for (var record in records) {
       // String? dateLearnt = record['details']['date_learnt'];
@@ -669,10 +674,10 @@ class _HomePageState extends State<HomePage> {
 
       if (dateLearnt != null) {
         DateTime lectureDate = DateTime.parse(dateLearnt);
-        if (lectureDate.isAfter(startDate) && lectureDate.isBefore(lastSunday.add(Duration(days: 1)))) {
+        if (lectureDate.isAfter(startDate) && lectureDate.isBefore(nextSunday.add(Duration(days: 1)))) {
           // Calculate which week this date belongs to
-          int daysFromLastSunday = lastSunday.difference(lectureDate).inDays;
-          int weekIndex = 3 - (daysFromLastSunday ~/ 7); // Reverse the index so newest week is at index 3
+          int daysFromNextSunday = nextSunday.difference(lectureDate).inDays;
+          int weekIndex = 3 - (daysFromNextSunday ~/ 7); // Reverse the index so newest week is at index 3
 
           if (weekIndex >= 0) {
             var currentData = weeklyData[weekIndex]!;
@@ -719,8 +724,10 @@ class _HomePageState extends State<HomePage> {
               int weekIndex = value.toInt();
               // Calculate the Monday and Sunday dates for each week
               // Now we subtract less days for higher indices (newer weeks)
-              DateTime weekStart = lastSunday.subtract(Duration(days: ((3 - weekIndex) * 7) + 6));
-              DateTime weekEnd = lastSunday.subtract(Duration(days: (3 - weekIndex) * 7));
+              // When displaying dates in the bottom titles:
+              DateTime weekStart = nextSunday.subtract(Duration(days: ((3 - weekIndex) * 7) + 6));
+              DateTime weekEnd = nextSunday.subtract(Duration(days: (3 - weekIndex) * 7));
+
               return Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
