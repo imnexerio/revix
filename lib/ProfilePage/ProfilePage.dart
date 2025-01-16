@@ -377,121 +377,121 @@ class ProfilePage extends StatelessWidget {
   }
 
   void _showPrivacyPolicyBottomSheet(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (BuildContext context) {
+  final screenSize = MediaQuery.of(context).size;
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (BuildContext context) {
       return Container(
-          height: screenSize.height * 0.85,
-          decoration: BoxDecoration(
+        height: screenSize.height * 0.85,
+        decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.background,
-    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-    boxShadow: [
-    BoxShadow(
-    color: Colors.black12,
-    blurRadius: 10,
-    spreadRadius: 5,
-    ),
-    ],
-    ),
-    child: Stack(
-    children: [
-    Align(
-    alignment: Alignment.topCenter,
-    child: Padding(
-    padding: const EdgeInsets.only(top: 12),
-    child: Container(
-    width: 40,
-    height: 4,
-    decoration: BoxDecoration(
-    color: Colors.grey.withOpacity(0.3),
-    borderRadius: BorderRadius.circular(2),
-    ),
-    ),
-    ),
-    ),
-    Padding(
-    padding: EdgeInsets.all(24),
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-    Text(
-    'Privacy Policy',
-    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-    fontWeight: FontWeight.bold,
-    ),
-    ),
-    IconButton(
-    onPressed: () => Navigator.pop(context),
-    icon: Icon(Icons.close),
-    style: IconButton.styleFrom(
-    backgroundColor: Colors.grey.withOpacity(0.1),
-    shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
-    ),
-    ),
-    ),
-    ],
-    ),
-    SizedBox(height: 20),
-    Expanded(
-    child: Container(
-    decoration: BoxDecoration(
-    color: Colors.grey.withOpacity(0.1),
-    borderRadius: BorderRadius.circular(16),
-    ),
-    padding: EdgeInsets.all(16),
-    child: SingleChildScrollView(
-    child: Text(
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
-    'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. '
-    'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris '
-    'nisi ut aliquip ex ea commodo consequat.\n\n'
-    'Duis aute irure dolor in reprehenderit in voluptate velit esse '
-    'cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat '
-    'cupidatat non proident, sunt in culpa qui officia deserunt '
-    'mollit anim id est laborum.\n\n'
-    'Sed ut perspiciatis unde omnis iste natus error sit voluptatem '
-    'accusantium doloremque laudantium, totam rem aperiam, eaque ipsa '
-    'quae ab illo inventore veritatis et quasi architecto beatae vitae ''dicta sunt explicabo.\n\n'
-        'Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut '
-        'odit aut fugit, sed quia consequuntur magni dolores eos qui '
-        'ratione voluptatem sequi nesciunt.',
-      style: Theme.of(context).textTheme.bodyLarge,
-    ),
-    ),
-    ),
-    ),
-      SizedBox(height: 20),
-      FilledButton(
-        onPressed: () {
-          Navigator.pop(context);
-        },
-        style: FilledButton.styleFrom(
-          minimumSize: Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              spreadRadius: 5,
+            ),
+          ],
         ),
-        child: Text(
-          'I Understand',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Privacy Policy',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.grey.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: EdgeInsets.all(16),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
+                          'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. '
+                          'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris '
+                          'nisi ut aliquip ex ea commodo consequat.\n\n'
+                          'Duis aute irure dolor in reprehenderit in voluptate velit esse '
+                          'cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat '
+                          'cupidatat non proident, sunt in culpa qui officia deserunt '
+                          'mollit anim id est laborum.\n\n'
+                          'Sed ut perspiciatis unde omnis iste natus error sit voluptatem '
+                          'accusantium doloremque laudantium, totam rem aperiam, eaque ipsa '
+                          'quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.\n\n'
+                          'Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut '
+                          'odit aut fugit, sed quia consequuntur magni dolores eos qui '
+                          'ratione voluptatem sequi nesciunt.',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    style: FilledButton.styleFrom(
+                      minimumSize: Size(double.infinity, 55),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      'I Understand',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ),
-    ],
-    ),
-    ),
-    ],
-    ),
       );
-        },
-    );
-  }
+    },
+  );
+}
 
   Widget _buildInputField({
     required BuildContext context,
