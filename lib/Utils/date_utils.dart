@@ -9,6 +9,12 @@ class DateNextRevision {
         return scheduledDate.add(Duration(days: 3));
       case 'Weekly':
         return scheduledDate.add(Duration(days: 7));
+      case 'Priority':
+        List<int> priorityIntervals = [1, 3, 4, 5, 7, 15, 25, 30];
+        int additionalDays = (noRevision < priorityIntervals.length)
+            ? priorityIntervals[noRevision]
+            : noRevision < 10 ? 30 : 60;
+        return scheduledDate.add(Duration(days: additionalDays));
       case 'Default':
       default:
         List<int> intervals = [1, 4, 7, 15, 30, 60];
