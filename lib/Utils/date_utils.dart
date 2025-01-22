@@ -11,10 +11,10 @@ class DateNextRevision {
         return scheduledDate.add(Duration(days: 7));
       case 'Default':
       default:
-        List<int> intervals = [1, 4, 7, 15, 30];
+        List<int> intervals = [1, 4, 7, 15, 30, 60];
         int additionalDays = (noRevision < intervals.length)
             ? intervals[noRevision]
-            : 30;  // After using all intervals, use 30 days
+            : 60;  // After using all intervals, use 30 days
         return scheduledDate.add(Duration(days: additionalDays));
     }
   }
