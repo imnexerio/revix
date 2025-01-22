@@ -95,6 +95,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         '2 Day',
                         '3 Day',
                         'Weekly',
+                        'Priority',
                         'Default',
                       ].map<DropdownMenuItem<String>>((String value) {
                         return DropdownMenuItem<String>(
