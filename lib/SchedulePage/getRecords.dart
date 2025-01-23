@@ -50,6 +50,7 @@ Future<Map<String, List<Map<String, dynamic>>>> getRecords() async {
                     'description': recordValue['description'],
                     'missed_revision': recordValue['missed_revision'],
                     'dates_missed_revisions': recordValue['dates_missed_revisions'] ?? [],
+                    'dates_revised': recordValue['dates_revised'] ?? [],
                     'no_revision': recordValue['no_revision'],
                     'revision_frequency': recordValue['revision_frequency'],
                     'status': recordValue['status'],
