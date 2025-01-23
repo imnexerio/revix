@@ -8,7 +8,6 @@ import '../Utils/date_utils.dart';
 void showLectureDetails(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {
   String revisionFrequency = details['revision_frequency'];
   int noRevision = details['no_revision'];
-  List<String> datesMissedRevisions= details['dates_missed_revisions'] ?? [];
   bool isEnabled = details['status'] == 'Enabled';
   String lectureNo = details['lecture_no'];
   String selectedSubject = details['subject'];
