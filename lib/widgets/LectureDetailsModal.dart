@@ -158,6 +158,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
                                   datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
                                 }
+                                // Retrieve the existing dates_revised list
+                                List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
+                                // Add the new date to the list
+                                datesRevised.add(dateRevised);
 
                                 await UpdateRecords(
                                   widget.selectedSubject,
@@ -166,6 +170,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   dateRevised,
                                   noRevision + 1,
                                   dateScheduled,
+                                  datesRevised,
                                   missedRevision,
                                   datesMissedRevisions,
                                   revisionFrequency,
@@ -244,6 +249,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 );
                                 List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
 
+                                // Retrieve the existing dates_revised list
+                                List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
+
 
                                 await UpdateRecords(
                                   widget.selectedSubject,
@@ -252,6 +260,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   widget.details['date_revised'],
                                   noRevision,
                                   widget.details['date_scheduled'],
+                                  datesRevised,
                                   widget.details['missed_revision'],
                                   datesMissedRevisions,
                                   revisionFrequency,

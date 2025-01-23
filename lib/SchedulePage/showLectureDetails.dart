@@ -107,6 +107,11 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
 
                                       // print('details_missed_revisions: $datesMissedRevisions');
 
+                                      // Retrieve the existing dates_revised list
+                                      List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
+                                      // Add the new date to the list
+                                      datesRevised.add(dateRevised);
+
                                       await UpdateRecords(
                                         selectedSubject,
                                         selectedSubjectCode,
@@ -114,6 +119,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                         dateRevised,
                                         noRevision + 1,
                                         dateScheduled,
+                                        datesRevised,
                                         missedRevision,
                                         datesMissedRevisions,
                                         revisionFrequency,
