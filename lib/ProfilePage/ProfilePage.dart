@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../LoginSignupPage/LoginPage.dart';
 
@@ -105,7 +106,7 @@ Future<String> _fetchReleaseNotes() async {
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          height: screenSize.height * 0.85,
+          height: screenSize.height * 0.7,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -249,64 +250,69 @@ Future<String> _fetchReleaseNotes() async {
                           },
                         ),
                         SizedBox(height: 40),
-                        FilledButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              _formKey.currentState!.save();
-                              try {
-                                print('Upadeting name to: $_fullName');
-                                User? user = FirebaseAuth.instance.currentUser;
-                                await user?.updateDisplayName(_fullName);
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.check_circle, color: Colors.white),
-                                        SizedBox(width: 8),
-                                        Text('Profile updated successfully'),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
+                          Center(
+                            child: Container(
+                              width: 200, // Set the desired width
+                              child: FilledButton(
+                                onPressed: () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    _formKey.currentState!.save();
+                                    try {
+                                      print('Updating name to: $_fullName');
+                                      User? user = FirebaseAuth.instance.currentUser;
+                                      await user?.updateDisplayName(_fullName);
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: Colors.white),
+                                              SizedBox(width: 8),
+                                              Text('Profile updated successfully'),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.green,
+                                          duration: Duration(seconds: 2),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(Icons.error, color: Colors.white),
+                                              SizedBox(width: 8),
+                                              Text('Failed to update profile: $e'),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          duration: Duration(seconds: 2),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                style: FilledButton.styleFrom(
+                                  minimumSize: Size(double.infinity, 55),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.error, color: Colors.white),
-                                        SizedBox(width: 8),
-                                        Text('Failed to update profile: $e'),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          style: FilledButton.styleFrom(
-                            minimumSize: Size(double.infinity, 55),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  'Save Changes',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                ),
+                              ),
                             ),
                           ),
-                          child: Text(
-                            'Save Changes',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -333,7 +339,7 @@ Future<String> _fetchReleaseNotes() async {
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          height: screenSize.height * 0.85,
+          height: screenSize.height * 0.8,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -447,66 +453,71 @@ Future<String> _fetchReleaseNotes() async {
                           },
                         ),
                         SizedBox(height: 40),
-                        FilledButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              _formKey.currentState!.save();
-                              try {
-                                User? user = FirebaseAuth.instance.currentUser;
-                                AuthCredential credential = EmailAuthProvider.credential(
-                                  email: user!.email!,
-                                  password: _currentPassword!,
-                                );
-                                await user.reauthenticateWithCredential(credential);
-                                await user.updatePassword(_newPassword!);
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.check_circle, color: Colors.white),
-                                        SizedBox(width: 8),
-                                        Text('Password updated successfully'),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.error, color: Colors.white),
-                                        SizedBox(width: 8),
-                                        Text('Failed to update password: $e'),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          style: FilledButton.styleFrom(
-                            minimumSize: Size(double.infinity, 55),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                        Center(
+                          child: Container(
+                            width: 200, // Set the desired width
+                            child: FilledButton(
+                              onPressed: () async {
+                                if (_formKey.currentState!.validate()) {
+                                  _formKey.currentState!.save();
+                                  try {
+                                    User? user = FirebaseAuth.instance.currentUser;
+                                    AuthCredential credential = EmailAuthProvider.credential(
+                                      email: user!.email!,
+                                      password: _currentPassword!,
+                                    );
+                                    await user.reauthenticateWithCredential(credential);
+                                    await user.updatePassword(_newPassword!);
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            Icon(Icons.check_circle, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text('Password updated successfully'),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.green,
+                                        duration: Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            Icon(Icons.error, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text('Failed to update password: $e'),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.red,
+                                        duration: Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              style: FilledButton.styleFrom(
+                                minimumSize: Size(double.infinity, 55),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: Text(
+                                'Update Password',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            'Update Password',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ],
@@ -533,7 +544,7 @@ Future<String> _fetchReleaseNotes() async {
     backgroundColor: Colors.transparent,
     builder: (BuildContext context) {
       return Container(
-        height: screenSize.height * 0.85,
+        height: screenSize.height * 0.6,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.background,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -630,7 +641,12 @@ Future<String> _fetchReleaseNotes() async {
                       SizedBox(height: 40),
                       Builder(
                         builder: (BuildContext newContext) {
-                          return FilledButton(
+                          return Center(
+                          child:
+                            Container(
+                            width: 200,
+                            child:
+                            FilledButton(
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 _formKey.currentState!.save();
@@ -692,7 +708,7 @@ Future<String> _fetchReleaseNotes() async {
                             child: Text(
                               'Update Email',
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                            ),
+                            ),),),
                           );
                         },
                       ),
@@ -803,123 +819,220 @@ Future<String> _fetchReleaseNotes() async {
     );
   }
 
-  void _showPrivacyPolicyBottomSheet(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+  void _showAboutBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          height: screenSize.height * 0.85,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                spreadRadius: 5,
+        return LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return Container(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight * 0.4,
+                maxHeight: constraints.maxHeight * 0.85,
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Align(
-                alignment: Alignment.topCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.background,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'Privacy Policy',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.grey.withOpacity(0.1),
+                              child: ClipOval(
+                                child: Stack(
+                                  children: [
+                                    ColorFiltered(
+                                      colorFilter: ColorFilter.mode(
+                                        Colors.grey,
+                                        BlendMode.saturation,
+                                      ),
+                                      child: Image.asset(
+                                        'assets/icon/icon.png', // Path to your app icon
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.white.withOpacity(0.3),
+                                            Colors.transparent,
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'reTracker',
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onBackground,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            FutureBuilder<String>(
+                              future: _getAppVersion(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                } else if (snapshot.hasError) {
+                                  return Text('Error loading version');
+                                } else {
+                                  return Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'v${snapshot.data}',
+                                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.secondary,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: Theme.of(context).colorScheme.secondary),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              'FOSS',
+                                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.secondary,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.code),
+                                        onPressed: () async {
+                                          const url = 'https://github.com/imnexerio/retracker';
+                                          if (await canLaunch(url)) {
+                                            await launch(url);
+                                          } else {
+                                            throw 'Could not launch $url';
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                }
+                              },
+                            )
+                          ],
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(Icons.close),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.grey.withOpacity(0.1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: EdgeInsets.all(16),
+                          child: SingleChildScrollView(
+                            child: FutureBuilder<String>(
+                              future: _fetchReleaseNotes(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                } else if (snapshot.hasError) {
+                                  return Text(
+                                    'Error loading release notes',
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context).textTheme.bodyLarge,
+                                  );
+                                } else {
+                                  return Text(
+                                    snapshot.data!,
+                                    style: Theme.of(context).textTheme.bodyLarge,
+                                  );
+                                }
+                              },
                             ),
                           ),
                         ),
+                        SizedBox(height: 20),
+                        Container(
+                          width: 200, // Set the desired width
+                          child: FilledButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            style: FilledButton.styleFrom(
+                              minimumSize: Size(double.infinity, 55),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                            ),
+                            child: Text(
+                              'I Understand',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        )
                       ],
                     ),
-                    SizedBox(height: 20),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: EdgeInsets.all(16),
-                        child: SingleChildScrollView(
-                          child: FutureBuilder<String>(
-                            future: _fetchReleaseNotes(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return CircularProgressIndicator();
-                              } else if (snapshot.hasError) {
-                                return Text('Error loading release notes');
-                              } else {
-                                return Text(
-                                  snapshot.data!,
-                                  style: Theme.of(context).textTheme.bodyLarge,
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: FilledButton.styleFrom(
-                        minimumSize: Size(double.infinity, 55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'I Understand',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
 
-Widget _buildInputField({
+  Widget _buildInputField({
   required BuildContext context,
   required String label,
   required String hint,
@@ -1178,33 +1291,13 @@ Widget _buildInputField({
                   SizedBox(height: 16),
                   _buildProfileOptionCard(
                     context: context,
-                    title: 'Privacy Policy',
-                    subtitle: 'Read our privacy policy',
+                    title: 'About',
+                    subtitle: 'Read about this project',
                     icon: Icons.privacy_tip_outlined,
-                    onTap: () => _showPrivacyPolicyBottomSheet(context),
+                    onTap: () => _showAboutBottomSheet(context),
                   ),
                   SizedBox(height: 32),
-                  FutureBuilder<String>(
-                    future: _getAppVersion(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      } else if (snapshot.hasError) {
-                        return Text('Error loading version');
-                      } else {
-                        return Text(
-                          'v${snapshot.data}',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
-                            // fontFamily: 'italic',
-                            fontSize: 14,
 
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  SizedBox(height: 5),
                   FilledButton.tonal(
                     onPressed: () => _logout(context),
                     style: FilledButton.styleFrom(
