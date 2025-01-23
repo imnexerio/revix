@@ -2,7 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../LoginSignupPage/LoginPage.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -79,6 +80,18 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
+
+
+Future<String> _fetchReleaseNotes() async {
+  final response = await http.get(Uri.parse('https://api.github.com/repos/imnexerio/retracker/releases/latest'));
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return data['body'] ?? 'No release notes available';
+  } else {
+    throw Exception('Failed to load release notes');
+  }
+}
 
 
   void _showEditProfileBottomSheet(BuildContext context) {
@@ -308,6 +321,12 @@ class ProfilePage extends StatelessWidget {
 
   void _showChangePasswordBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final _formKey = GlobalKey<FormState>();
+    final TextEditingController _newPasswordController = TextEditingController();
+    String? _currentPassword;
+    String? _newPassword;
+    String? _confirmPassword;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -350,6 +369,208 @@ class ProfilePage extends StatelessWidget {
                   bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                 ),
                 child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Change Password',
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.grey.withOpacity(0.1),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 30),
+                        _buildInputField(
+                          context: context,
+                          label: 'Current Password',
+                          hint: 'Enter current password',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                          onSaved: (value) => _currentPassword = value,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your current password';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 20),
+                        _buildInputField(
+                          context: context,
+                          label: 'New Password',
+                          hint: 'Enter new password',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                          controller: _newPasswordController,
+                          onSaved: (value) => _newPassword = value,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a new password';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 20),
+                        _buildInputField(
+                          context: context,
+                          label: 'Confirm Password',
+                          hint: 'Confirm new password',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                          onSaved: (value) => _confirmPassword = value,
+                          validator: (value) {
+                            print('Confirm Password: $value');
+                            print('New Password: ${_newPasswordController.text}');
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm your new password';
+                            }
+                            if (value != _newPasswordController.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 40),
+                        FilledButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              _formKey.currentState!.save();
+                              try {
+                                User? user = FirebaseAuth.instance.currentUser;
+                                AuthCredential credential = EmailAuthProvider.credential(
+                                  email: user!.email!,
+                                  password: _currentPassword!,
+                                );
+                                await user.reauthenticateWithCredential(credential);
+                                await user.updatePassword(_newPassword!);
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Password updated successfully'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.error, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Failed to update password: $e'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            minimumSize: Size(double.infinity, 55),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            'Update Password',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showChangeEmailBottomSheet(BuildContext context) {
+  final screenSize = MediaQuery.of(context).size;
+  final _formKey = GlobalKey<FormState>();
+  String? _currentPassword;
+  String? _newEmail;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (BuildContext context) {
+      return Container(
+        height: screenSize.height * 0.85,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.background,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: 40,
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -357,7 +578,7 @@ class ProfilePage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Change Password',
+                            'Change Email',
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -375,55 +596,117 @@ class ProfilePage extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: 30),
-                      // _buildInputField(
-                      //   context: context,
-                      //   label: 'Current Password',
-                      //   hint: 'Enter current password',
-                      //   icon: Icons.lock_outline,
-                      //   isPassword: true,
-                      // ),
-                      SizedBox(height: 20),
-                      // _buildInputField(
-                      //   context: context,
-                      //   label: 'New Password',
-                      //   hint: 'Enter new password',
-                      //   icon: Icons.lock_outline,
-                      //   isPassword: true,
-                      // ),
-                      SizedBox(height: 20),
-                      // _buildInputField(
-                      //   context: context,
-                      //   label: 'Confirm Password',
-                      //   hint: 'Confirm new password',
-                      //   icon: Icons.lock_outline,
-                      //   isPassword: true,
-                      // ),
-                      SizedBox(height: 40),
-                      FilledButton(
-                        onPressed: () {
-                          Navigator.pop(context);
+                      _buildInputField(
+                        context: context,
+                        label: 'Current Password',
+                        hint: 'Enter current password',
+                        icon: Icons.lock_outline,
+                        isPassword: true,
+                        onSaved: (value) => _currentPassword = value,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your current password';
+                          }
+                          return null;
                         },
-                        style: FilledButton.styleFrom(
-                          minimumSize: Size(double.infinity, 55),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'Update Password',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
+                      ),
+                      SizedBox(height: 20),
+                      _buildInputField(
+                        context: context,
+                        label: 'New Email',
+                        hint: 'Enter new email',
+                        icon: Icons.email_outlined,
+                        onSaved: (value) => _newEmail = value,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a new email';
+                          }
+                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                            return 'Please enter a valid email address';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 40),
+                      Builder(
+                        builder: (BuildContext newContext) {
+                          return FilledButton(
+                            onPressed: () async {
+                              if (_formKey.currentState!.validate()) {
+                                _formKey.currentState!.save();
+                                try {
+                                  User? user = FirebaseAuth.instance.currentUser;
+                                  AuthCredential credential = EmailAuthProvider.credential(
+                                    email: user!.email!,
+                                    password: _currentPassword!,
+                                  );
+                                  await user.reauthenticateWithCredential(credential);
+                                  await user.verifyBeforeUpdateEmail(_newEmail!);
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(newContext).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text('Verification email sent to $_newEmail. Please verify it to change your login Email.'),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      margin: EdgeInsets.all(16),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(newContext).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.error, color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text('Failed to update email: $e'),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      duration: Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      margin: EdgeInsets.all(16),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              minimumSize: Size(double.infinity, 55),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'Update Email',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   void _showNotificationSettingsBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -492,7 +775,7 @@ class ProfilePage extends StatelessWidget {
                       'Push Notifications',
                       'Get notified about important updates',
                       Icons.notifications_outlined,
-                      true,
+                      false,
                     ),
                     Divider(height: 32),
                     _buildNotificationOption(
@@ -521,121 +804,119 @@ class ProfilePage extends StatelessWidget {
   }
 
   void _showPrivacyPolicyBottomSheet(BuildContext context) {
-  final screenSize = MediaQuery.of(context).size;
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (BuildContext context) {
-      return Container(
-        height: screenSize.height * 0.85,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
+    final screenSize = MediaQuery.of(context).size;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          height: screenSize.height * 0.85,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.background,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Privacy Policy',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+              Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Privacy Policy',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.close),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.grey.withOpacity(0.1),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(Icons.close),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.grey.withOpacity(0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: EdgeInsets.all(16),
+                        child: SingleChildScrollView(
+                          child: FutureBuilder<String>(
+                            future: _fetchReleaseNotes(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return CircularProgressIndicator();
+                              } else if (snapshot.hasError) {
+                                return Text('Error loading release notes');
+                              } else {
+                                return Text(
+                                  snapshot.data!,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                );
+                              }
+                            },
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: EdgeInsets.all(16),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
-                          'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. '
-                          'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris '
-                          'nisi ut aliquip ex ea commodo consequat.\n\n'
-                          'Duis aute irure dolor in reprehenderit in voluptate velit esse '
-                          'cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat '
-                          'cupidatat non proident, sunt in culpa qui officia deserunt '
-                          'mollit anim id est laborum.\n\n'
-                          'Sed ut perspiciatis unde omnis iste natus error sit voluptatem '
-                          'accusantium doloremque laudantium, totam rem aperiam, eaque ipsa '
-                          'quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.\n\n'
-                          'Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut '
-                          'odit aut fugit, sed quia consequuntur magni dolores eos qui '
-                          'ratione voluptatem sequi nesciunt.',
-                          style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: FilledButton.styleFrom(
+                        minimumSize: Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: FilledButton.styleFrom(
-                      minimumSize: Size(double.infinity, 55),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      child: Text(
+                        'I Understand',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),
-                    child: Text(
-                      'I Understand',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+            ],
+          ),
+        );
+      },
+    );
+  }
 
 
 Widget _buildInputField({
@@ -646,6 +927,8 @@ Widget _buildInputField({
   required FormFieldSetter<String> onSaved,
   required FormFieldValidator<String> validator,
   bool isPassword = false,
+  TextEditingController? controller,
+
 }) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,6 +958,7 @@ Widget _buildInputField({
             fillColor: Colors.transparent,
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
+          controller: controller,
           onSaved: onSaved,
           validator: validator,
         ),
@@ -874,6 +1158,14 @@ Widget _buildInputField({
                     subtitle: 'Update your security credentials',
                     icon: Icons.lock_outline,
                     onTap: () => _showChangePasswordBottomSheet(context),
+                  ),
+                  SizedBox(height: 16),
+                  _buildProfileOptionCard(
+                    context: context,
+                    title: 'Change Email',
+                    subtitle: 'Update your Email credentials',
+                    icon: Icons.lock_outline,
+                    onTap: () => _showChangeEmailBottomSheet(context),
                   ),
                   SizedBox(height: 16),
                   _buildProfileOptionCard(
