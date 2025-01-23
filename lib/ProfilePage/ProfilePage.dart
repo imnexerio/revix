@@ -32,6 +32,11 @@ class ProfilePage extends StatelessWidget {
     return user?.emailVerified ?? false;
   }
 
+  Future<String> _getPhotoUrl() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    return user?.photoURL ?? 'assets/icon/icon.png';
+  }
+
   Future<void> _sendVerificationEmail(BuildContext context) async {
   try {
     User? user = FirebaseAuth.instance.currentUser;
@@ -662,30 +667,47 @@ class ProfilePage extends StatelessWidget {
                   children: [
                     Stack(
                       children: [
-                        CircleAvatar(
-                          radius: isSmallScreen ? 50 : 60,
-                          backgroundImage: NetworkImage('https://via.placeholder.com/150'),
-                          backgroundColor: Colors.transparent,
-                        ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.background,
-                                width: 2,
+                        FutureBuilder<String>(
+                          future: _getPhotoUrl(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            } else if (snapshot.hasError) {
+                              return Container(
+                                width: 110,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.onPrimary,
+                                    width: 4,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                radius: 50,
+                                backgroundImage: AssetImage('assets/icon/icon.png'),
+                                backgroundColor: Colors.transparent,
                               ),
-                            ),
-                            child: Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
+                              );
+                            } else {
+                              return Container(
+                                width: 110,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.onPrimary,
+                                    width: 4,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 50,
+                                  backgroundImage: AssetImage('assets/icon/icon.png'),
+                                  backgroundColor: Colors.transparent,
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -723,7 +745,7 @@ class ProfilePage extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Email: ${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
+                                '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
                                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                   color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                                 ),
