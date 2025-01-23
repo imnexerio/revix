@@ -97,6 +97,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         String userEmail = user.email!;
         String userName = user.displayName ?? 'User';
         DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
+        print('userEmail $userEmail');
+        print('userName $userName');
 
         try {
           DataSnapshot snapshot = await ref.get();

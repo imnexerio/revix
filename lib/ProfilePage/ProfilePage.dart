@@ -83,7 +83,8 @@ class ProfilePage extends StatelessWidget {
 
   void _showEditProfileBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final isSmallScreen = screenSize.width < 600;
+    final _formKey = GlobalKey<FormState>();
+    String? _fullName;
 
     showModalBottomSheet(
       context: context,
@@ -129,126 +130,172 @@ class ProfilePage extends StatelessWidget {
                   bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                 ),
                 child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Edit Profile',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: Icon(Icons.close),
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.grey.withOpacity(0.1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Edit Profile',
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 30),
-                      Center(
-                        child: Stack(
-                          children: [
-                            FutureBuilder<String>(
-                              future: _getPhotoUrl(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                } else if (snapshot.hasError) {
-                                  return Container(
-                                    width: 110,
-                                    height: 110,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Theme.of(context).colorScheme.onPrimary,
-                                        width: 4,
-                                      ),
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 50,
-                                      backgroundImage: AssetImage('assets/icon/icon.png'),
-                                      backgroundColor: Colors.transparent,
-                                    ),
-                                  );
-                                } else {
-                                  return Container(
-                                    width: 110,
-                                    height: 110,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Theme.of(context).colorScheme.onPrimary,
-                                        width: 4,
-                                      ),
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 50,
-                                      backgroundImage: AssetImage('assets/icon/icon.png'),
-                                      backgroundColor: Colors.transparent,
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                            Positioned(
-                              right: 0,
-                              bottom: 0,
-                              child: Container(
-                                padding: EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.grey.withOpacity(0.1),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      SizedBox(height: 30),
-                      _buildInputField(
-                        context: context,
-                        label: 'Full Name',
-                        hint: 'Enter your full name',
-                        icon: Icons.person_outline,
-                      ),
-                      SizedBox(height: 20),
-                      _buildInputField(
-                        context: context,
-                        label: 'Email',
-                        hint: 'Enter your email',
-                        icon: Icons.email_outlined,
-                      ),
-                      SizedBox(height: 40),
-                      FilledButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        style: FilledButton.styleFrom(
-                          minimumSize: Size(double.infinity, 55),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                        SizedBox(height: 30),
+                        Center(
+                          child: Stack(
+                            children: [
+                              FutureBuilder<String>(
+                                future: _getPhotoUrl(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return CircularProgressIndicator();
+                                  } else if (snapshot.hasError) {
+                                    return Container(
+                                      width: 110,
+                                      height: 110,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          width: 4,
+                                        ),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 50,
+                                        backgroundImage: AssetImage('assets/icon/icon.png'),
+                                        backgroundColor: Colors.transparent,
+                                      ),
+                                    );
+                                  } else {
+                                    return Container(
+                                      width: 110,
+                                      height: 110,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          width: 4,
+                                        ),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 50,
+                                        backgroundImage: AssetImage('assets/icon/icon.png'),
+                                        backgroundColor: Colors.transparent,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Text(
-                          'Save Changes',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        SizedBox(height: 30),
+                        _buildInputField(
+                          context: context,
+                          label: 'Full Name',
+                          hint: 'Enter your full name',
+                          icon: Icons.person_outline,
+                          onSaved: (value) => _fullName = value,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your full name';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 40),
+                        FilledButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              _formKey.currentState!.save();
+                              try {
+                                print('Upadeting name to: $_fullName');
+                                User? user = FirebaseAuth.instance.currentUser;
+                                await user?.updateDisplayName(_fullName);
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Profile updated successfully'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.error, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Failed to update profile: $e'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            minimumSize: Size(double.infinity, 55),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            'Save Changes',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -328,29 +375,29 @@ class ProfilePage extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: 30),
-                      _buildInputField(
-                        context: context,
-                        label: 'Current Password',
-                        hint: 'Enter current password',
-                        icon: Icons.lock_outline,
-                        isPassword: true,
-                      ),
+                      // _buildInputField(
+                      //   context: context,
+                      //   label: 'Current Password',
+                      //   hint: 'Enter current password',
+                      //   icon: Icons.lock_outline,
+                      //   isPassword: true,
+                      // ),
                       SizedBox(height: 20),
-                      _buildInputField(
-                        context: context,
-                        label: 'New Password',
-                        hint: 'Enter new password',
-                        icon: Icons.lock_outline,
-                        isPassword: true,
-                      ),
+                      // _buildInputField(
+                      //   context: context,
+                      //   label: 'New Password',
+                      //   hint: 'Enter new password',
+                      //   icon: Icons.lock_outline,
+                      //   isPassword: true,
+                      // ),
                       SizedBox(height: 20),
-                      _buildInputField(
-                        context: context,
-                        label: 'Confirm Password',
-                        hint: 'Confirm new password',
-                        icon: Icons.lock_outline,
-                        isPassword: true,
-                      ),
+                      // _buildInputField(
+                      //   context: context,
+                      //   label: 'Confirm Password',
+                      //   hint: 'Confirm new password',
+                      //   icon: Icons.lock_outline,
+                      //   isPassword: true,
+                      // ),
                       SizedBox(height: 40),
                       FilledButton(
                         onPressed: () {
@@ -590,47 +637,51 @@ class ProfilePage extends StatelessWidget {
   );
 }
 
-  Widget _buildInputField({
-    required BuildContext context,
-    required String label,
-    required String hint,
-    required IconData icon,
-    bool isPassword = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: TextField(
-            obscureText: isPassword,
-            decoration: InputDecoration(
-              hintText: hint,
-              prefixIcon: Icon(icon),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: Colors.transparent,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
+Widget _buildInputField({
+  required BuildContext context,
+  required String label,
+  required String hint,
+  required IconData icon,
+  required FormFieldSetter<String> onSaved,
+  required FormFieldValidator<String> validator,
+  bool isPassword = false,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      SizedBox(height: 8),
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: TextFormField(
+          obscureText: isPassword,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: Colors.transparent,
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+          onSaved: onSaved,
+          validator: validator,
+        ),
+      ),
+    ],
+  );
+}
   Widget _buildNotificationOption(
       BuildContext context,
       String title,
