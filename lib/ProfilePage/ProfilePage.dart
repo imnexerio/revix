@@ -157,10 +157,47 @@ class ProfilePage extends StatelessWidget {
                       Center(
                         child: Stack(
                           children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundImage: NetworkImage('https://via.placeholder.com/150'),
-                              backgroundColor: Colors.transparent,
+                            FutureBuilder<String>(
+                              future: _getPhotoUrl(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                } else if (snapshot.hasError) {
+                                  return Container(
+                                    width: 110,
+                                    height: 110,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Theme.of(context).colorScheme.onPrimary,
+                                        width: 4,
+                                      ),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 50,
+                                      backgroundImage: AssetImage('assets/icon/icon.png'),
+                                      backgroundColor: Colors.transparent,
+                                    ),
+                                  );
+                                } else {
+                                  return Container(
+                                    width: 110,
+                                    height: 110,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Theme.of(context).colorScheme.onPrimary,
+                                        width: 4,
+                                      ),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 50,
+                                      backgroundImage: AssetImage('assets/icon/icon.png'),
+                                      backgroundColor: Colors.transparent,
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                             Positioned(
                               right: 0,
