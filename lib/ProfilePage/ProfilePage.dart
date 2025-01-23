@@ -25,10 +25,54 @@ class ProfilePage extends StatelessWidget {
     return user?.displayName ?? 'User';
   }
 
-  Future<String> _getEmail() async {
+
+  Future<bool> _isEmailVerified() async {
     User? user = FirebaseAuth.instance.currentUser;
-    return user?.email ?? 'imnexerio@gmail.com';
+    await user?.reload();
+    return user?.emailVerified ?? false;
   }
+
+  Future<void> _sendVerificationEmail(BuildContext context) async {
+  try {
+    User? user = FirebaseAuth.instance.currentUser;
+    await user?.sendEmailVerification();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Verification email sent successfully'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Failed to send verification email: $e'),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+}
 
 
 
@@ -665,19 +709,35 @@ class ProfilePage extends StatelessWidget {
                       },
                     ),
                     SizedBox(height: 4),
-                    FutureBuilder<String>(
-                      future: _getEmail(),
+                    FutureBuilder<bool>(
+                      future: _isEmailVerified(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return CircularProgressIndicator();
                         } else if (snapshot.hasError) {
-                          return Text('Error loading email');
+                          return Text('Error loading verification status');
                         } else {
-                          return Text(
-                            snapshot.data!,
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                            ),
+                          bool isVerified = snapshot.data!;
+                          return Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Email: ${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              if (isVerified)
+                                Icon(Icons.check_circle, color: Colors.green)
+                              else
+                                TextButton(
+                                  onPressed: () => _sendVerificationEmail(context),
+                                  child: Icon(Icons.error, color: Colors.red),
+                                )
+                            ],
+                          ),
                           );
                         }
                       },
