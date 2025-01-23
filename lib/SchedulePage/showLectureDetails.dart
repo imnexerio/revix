@@ -96,16 +96,16 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       }
                                       // Retrieve the existing list of missed revision dates
                                       List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
-                                      print('details_missed_revisions: $datesMissedRevisions');
+                                      // print('details_missed_revisions: $datesMissedRevisions');
 
                                       if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
                                           datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
                                         }
 
                                       // Update the details map with the new list of missed revision dates
-                                      details['dates_missed_revisions'] = datesMissedRevisions;
+                                      // details['dates_missed_revisions'] = datesMissedRevisions;
 
-                                      print('details_missed_revisions: $datesMissedRevisions');
+                                      // print('details_missed_revisions: $datesMissedRevisions');
 
                                       await UpdateRecords(
                                         selectedSubject,

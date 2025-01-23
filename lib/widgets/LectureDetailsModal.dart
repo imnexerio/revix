@@ -152,7 +152,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                                   missedRevision += 1;
                                 }
-                                List <String> datesMissedRevisions = [];
+                                // List <String> datesMissedRevisions = [];
+                                List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
 
                                 if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
                                   datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
@@ -241,6 +242,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                     );
                                   },
                                 );
+                                List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
 
 
                                 await UpdateRecords(
@@ -251,7 +253,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   noRevision,
                                   widget.details['date_scheduled'],
                                   widget.details['missed_revision'],
-                                  widget.details['dates_missed_revisions'],
+                                  datesMissedRevisions,
                                   revisionFrequency,
                                   isEnabled ? 'Enabled' : 'Disabled',
                                 );
