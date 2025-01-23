@@ -506,25 +506,14 @@ class _SignupPageState extends State<SignupPage>
                         ],
                       ),
 
-                      ElevatedButton.icon(
+                      IconButton(
+                        icon: ImageIcon(
+                          AssetImage('assets/github.png'), // Path to your GitHub icon
+                        ),
                         onPressed: () {
                           UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
                         },
-                        icon: ImageIcon(
-                          AssetImage('assets/github.png'),
-                          size: 24,
-                        ),
-                        label: const Text(''),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: colorScheme.onSurface,
-                          backgroundColor: colorScheme.surface,
-                          textStyle: textTheme.labelLarge,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                      )
+                      ),
                     ],
                   ),
                 ),
