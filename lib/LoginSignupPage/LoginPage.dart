@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retracker/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'SignupPage.dart';
 import 'UrlLauncher.dart';
 
@@ -95,6 +94,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
+        String userEmail = user.email!;
+        String userName = user.displayName ?? 'User';
         DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
 
         try {

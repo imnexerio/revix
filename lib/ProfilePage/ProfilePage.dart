@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,16 @@ class ProfilePage extends StatelessWidget {
   Future<String> _getAppVersion() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     return '${packageInfo.version}+${packageInfo.buildNumber}';
+  }
+
+  Future<String> _getDisplayName() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    return user?.displayName ?? 'User';
+  }
+
+  Future<String> _getEmail() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    return user?.email ?? 'imnexerio@gmail.com';
   }
 
 
@@ -635,19 +646,41 @@ class ProfilePage extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 16),
-                    Text(
-                      'Imnexerio',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    FutureBuilder<String>(
+                      future: _getDisplayName(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Error loading name');
+                        } else {
+                          return Text(
+                            snapshot.data!,
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+                      },
                     ),
                     SizedBox(height: 4),
-                    Text(
-                      'imnexerio@gmail.com',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                      ),
+                    FutureBuilder<String>(
+                      future: _getEmail(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Error loading email');
+                        } else {
+                          return Text(
+                            snapshot.data!,
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
