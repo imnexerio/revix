@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'UrlLauncher.dart';
 
@@ -119,6 +118,9 @@ class _SignupPageState extends State<SignupPage>
           'name': _nameController.text.trim(),
           'createdAt': DateTime.now().toIso8601String(),
         });
+
+        // Update the display name in Firebase Authentication
+        await user.updateProfile(displayName: _nameController.text.trim());
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
@@ -503,28 +505,6 @@ class _SignupPageState extends State<SignupPage>
                           ),
                         ],
                       ),
-                      // Padding(
-                      //   padding: EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
-                      //   child: ElevatedButton.icon(
-                      //     onPressed: () async {
-                      //       final url = Uri.parse('https://github.com/your-username/your-repo');
-                      //       if (await canLaunchUrl(url)) {
-                      //         await launchUrl(url);
-                      //       }
-                      //     },
-                      //     icon: Icon(Icons.github, size: 24),
-                      //     label: Text('Github Repository'),
-                      //     style: ElevatedButton.styleFrom(
-                      //       foregroundColor: colorScheme.onSurface,
-                      //       backgroundColor: colorScheme.surface,
-                      //       textStyle: textTheme.labelLarge,
-                      //       shape: RoundedRectangleBorder(
-                      //         borderRadius: BorderRadius.circular(30),
-                      //       ),
-                      //       padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      //     ),
-                      //   ),
-                      // ),
 
                       ElevatedButton.icon(
                         onPressed: () {

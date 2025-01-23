@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retracker/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'SignupPage.dart';
@@ -9,6 +10,7 @@ import 'UrlLauncher.dart';
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
+
 }
 
 class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
@@ -23,6 +25,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   bool _passwordVisibility = false;
   bool _isLoading = false;
   String? _errorMessage;
+
+  Future<String> _getAppVersion() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    return '${packageInfo.version}+${packageInfo.buildNumber}';
+  }
 
   @override
   void initState() {
@@ -87,7 +94,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
+        String userEmail = user.email!;
+        String userName = user.displayName ?? 'User';
         DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
+        print('userEmail $userEmail');
+        print('userName $userName');
 
         try {
           DataSnapshot snapshot = await ref.get();
@@ -419,7 +430,28 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                      )
+                      ),
+                      SizedBox(height: 16),
+                      FutureBuilder<String>(
+                        future: _getAppVersion(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          } else if (snapshot.hasError) {
+                            return Text('Error loading version');
+                          } else {
+                            return Text(
+                              'v${snapshot.data}',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Theme.of(context).colorScheme.secondary,
+                                // fontFamily: 'italic',
+                                fontSize: 14,
+
+                              ),
+                            );
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),

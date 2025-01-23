@@ -44,6 +44,10 @@ class RevisionFrequencyDropdown extends StatelessWidget {
             child: Text('Weekly'),
           ),
           DropdownMenuItem<String>(
+            value: 'Priority',
+            child: Text('Priority'),
+          ),
+          DropdownMenuItem<String>(
             value: 'Default',
             child: Text('Default'),
           ),
