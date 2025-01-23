@@ -10,6 +10,7 @@ Future<void> UpdateRecords(
     int noRevision,
     String dateScheduled,
     int missedRevision,
+    List<String> datesMissedRevisions,
     String revisionFrequency,
     String status,
     ) async {
@@ -37,14 +38,13 @@ Future<void> UpdateRecords(
   // Add the new date to the list
   datesRevised.add(dateRevised);
 
-  List<String> datesMissed = [];
-
   // Perform the update operation
   await ref.update({
     'date_revised': dateRevised,
     'no_revision': noRevision,
     'date_scheduled': dateScheduled,
     'missed_revision': missedRevision,
+    'dates_missed_revisions': datesMissedRevisions,
     'revision_frequency': revisionFrequency,
     'status': status,
     'dates_revised': datesRevised,

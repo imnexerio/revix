@@ -8,6 +8,7 @@ import '../Utils/date_utils.dart';
 void showLectureDetails(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {
   String revisionFrequency = details['revision_frequency'];
   int noRevision = details['no_revision'];
+  List<String> datesMissedRevisions= details['dates_missed_revisions'] ?? [];
   bool isEnabled = details['status'] == 'Enabled';
   String lectureNo = details['lecture_no'];
   String selectedSubject = details['subject'];
@@ -94,6 +95,18 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                                         missedRevision += 1;
                                       }
+                                      // Retrieve the existing list of missed revision dates
+                                      List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
+                                      print('details_missed_revisions: $datesMissedRevisions');
+
+                                      if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
+                                          datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
+                                        }
+
+                                      // Update the details map with the new list of missed revision dates
+                                      details['dates_missed_revisions'] = datesMissedRevisions;
+
+                                      print('details_missed_revisions: $datesMissedRevisions');
 
                                       await UpdateRecords(
                                         selectedSubject,
@@ -103,6 +116,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                         noRevision + 1,
                                         dateScheduled,
                                         missedRevision,
+                                        datesMissedRevisions,
                                         revisionFrequency,
                                         isEnabled ? 'Enabled' : 'Disabled',
                                       );
