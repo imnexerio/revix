@@ -194,7 +194,7 @@ class _HomePageState extends State<HomePage> {
                           Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
                           SizedBox(height: 16),
                           Text(
-                            'No records scheduled yet',
+                            'No records yet',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -560,12 +560,18 @@ class _HomePageState extends State<HomePage> {
 
     for (var record in records) {
       String? dateLearnt = record['details']['date_learnt'];
-      String? dateRevised = record['details']['date_revised'];
+      List<dynamic>? datesRevised = record['details']['dates_revised'];
+
       if (dateLearnt != null && lectureCounts.containsKey(dateLearnt)) {
         lectureCounts[dateLearnt] = lectureCounts[dateLearnt]! + 1;
       }
-      if (dateRevised != null && revisionCounts.containsKey(dateRevised)) {
-        revisionCounts[dateRevised] = revisionCounts[dateRevised]! + 1;
+
+      if (datesRevised != null) {
+        for (var dateRevised in datesRevised) {
+          if (revisionCounts.containsKey(dateRevised)) {
+            revisionCounts[dateRevised] = revisionCounts[dateRevised]! + 1;
+          }
+        }
       }
     }
 
@@ -639,7 +645,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
   // Inside your _HomePageState class, modify the _createBarChartWeeklyData function:
   BarChartData _createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     Map<int, WeeklyProgressData> weeklyData = {};

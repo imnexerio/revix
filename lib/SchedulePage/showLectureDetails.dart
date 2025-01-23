@@ -105,9 +105,8 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       // Retrieve the existing dates_revised list
                                       List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
                                       // Add the new date to the list
-                                      print('dates_revised: $details');
+
                                       datesRevised.add(dateRevised);
-                                      print('dates_revised: $datesRevised');
 
                                       await UpdateRecords(
                                         selectedSubject,
