@@ -1,12 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../LoginSignupPage/LoginPage.dart';
 import '../LoginSignupPage/UrlLauncher.dart';
+import 'dart:typed_data';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'dart:io';
+import 'package:firebase_database/firebase_database.dart';
+
 
 class ProfilePage extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
@@ -35,10 +40,73 @@ class ProfilePage extends StatelessWidget {
     return user?.emailVerified ?? false;
   }
 
-  Future<String> _getPhotoUrl() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    return user?.photoURL ?? 'assets/icon/icon.png';
+  Future<String?> _getProfilePicture(String uid) async {
+    try {
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+      DataSnapshot snapshot = await databaseRef.child('profile_picture').get();
+      // print('snapshot value: ${snapshot.value}');
+      if (snapshot.exists) {
+        return snapshot.value as String?;
+      }
+    } catch (e) {
+      print('Error retrieving profile picture: $e');
+    }
+    return null;
   }
+
+  Future<Image?> _getProfileImage(String uid) async {
+    const String defaultImagePath = 'assets/icon/icon.png'; // Path to your default image
+
+    try {
+      String? base64String = await _getProfilePicture(uid);
+      if (base64String != null) {
+        Uint8List imageBytes = base64Decode(base64String);
+        return Image.memory(imageBytes);
+      }
+    } catch (e) {
+      print('Error decoding profile picture: $e');
+    }
+    return Image.asset(defaultImagePath);
+  }
+
+
+
+
+  Future<void> uploadProfilePicture(XFile imageFile, String uid) async {
+    try {
+      // Convert image to byte array
+      Uint8List imageBytes = await imageFile.readAsBytes();
+      print('Original image size: ${imageBytes.lengthInBytes} bytes');
+
+      // Compress the image
+      Uint8List? compressedImageBytes = await FlutterImageCompress.compressWithList(
+        imageBytes,
+        minWidth: 120,
+        minHeight: 120,
+        quality: 100,
+      );
+
+      if (compressedImageBytes == null) {
+        throw Exception('Failed to compress image');
+      }
+
+      print('Compressed image size: ${compressedImageBytes.lengthInBytes} bytes');
+
+      // Encode byte array to Base64 string
+      String base64String = base64Encode(compressedImageBytes);
+      // print('base64String: $base64String');
+
+      // Store Base64 string in Firebase Realtime Database at the specified location
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+      await databaseRef.update({'profile_picture': base64String});
+
+      print('Profile picture uploaded as Base64 string to database');
+    } catch (e) {
+      print('Failed to upload profile picture: $e');
+    }
+  }
+
+
 
   Future<void> _sendVerificationEmail(BuildContext context) async {
   try {
@@ -100,6 +168,7 @@ Future<String> _fetchReleaseNotes() async {
     final screenSize = MediaQuery.of(context).size;
     final _formKey = GlobalKey<FormState>();
     String? _fullName;
+    String uid = FirebaseAuth.instance.currentUser!.uid;
 
     showModalBottomSheet(
       context: context,
@@ -175,8 +244,8 @@ Future<String> _fetchReleaseNotes() async {
                         Center(
                           child: Stack(
                             children: [
-                              FutureBuilder<String>(
-                                future: _getPhotoUrl(),
+                              FutureBuilder<Image?>(
+                                future: _getProfileImage(uid),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     return CircularProgressIndicator();
@@ -210,7 +279,7 @@ Future<String> _fetchReleaseNotes() async {
                                       ),
                                       child: CircleAvatar(
                                         radius: 50,
-                                        backgroundImage: AssetImage('assets/icon/icon.png'),
+                                        backgroundImage: snapshot.data!.image,
                                         backgroundColor: Colors.transparent,
                                       ),
                                     );
@@ -220,16 +289,28 @@ Future<String> _fetchReleaseNotes() async {
                               Positioned(
                                 right: 0,
                                 bottom: 0,
-                                child: Container(
-                                  padding: EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 20,
+                                child: InkWell(
+                                  onTap: () async {
+                                    // Implement the image picker and upload logic here
+                                    final ImagePicker _picker = ImagePicker();
+                                    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+
+                                    if (image != null) {
+                                      String uid = FirebaseAuth.instance.currentUser!.uid;
+                                      await uploadProfilePicture(image, uid);
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1128,6 +1209,8 @@ Future<String> _fetchReleaseNotes() async {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
 
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -1151,8 +1234,8 @@ Future<String> _fetchReleaseNotes() async {
                   children: [
                     Stack(
                       children: [
-                        FutureBuilder<String>(
-                          future: _getPhotoUrl(),
+                        FutureBuilder<Image?>(
+                          future: _getProfileImage(uid),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return CircularProgressIndicator();
@@ -1169,7 +1252,7 @@ Future<String> _fetchReleaseNotes() async {
                                 ),
                                 child: CircleAvatar(
                                 radius: 50,
-                                backgroundImage: AssetImage('assets/icon/icon.png'),
+                                  backgroundImage: snapshot.data!.image,
                                 backgroundColor: Colors.transparent,
                               ),
                               );
@@ -1186,7 +1269,7 @@ Future<String> _fetchReleaseNotes() async {
                                 ),
                                 child: CircleAvatar(
                                   radius: 50,
-                                  backgroundImage: AssetImage('assets/icon/icon.png'),
+                                  backgroundImage: snapshot.data!.image,
                                   backgroundColor: Colors.transparent,
                                 ),
                               );
