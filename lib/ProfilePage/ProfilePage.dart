@@ -23,6 +23,10 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
+  String getCurrentUserUid() {
+    return FirebaseAuth.instance.currentUser!.uid;
+  }
+
   Future<String> _getAppVersion() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     return '${packageInfo.version}+${packageInfo.buildNumber}';
@@ -76,25 +80,32 @@ class ProfilePage extends StatelessWidget {
     try {
       // Convert image to byte array
       Uint8List imageBytes = await imageFile.readAsBytes();
-      print('Original image size: ${imageBytes.lengthInBytes} bytes');
+      // print('Original image size: ${imageBytes.lengthInBytes} bytes');
 
-      // Compress the image
-      Uint8List? compressedImageBytes = await FlutterImageCompress.compressWithList(
-        imageBytes,
-        minWidth: 120,
-        minHeight: 120,
-        quality: 100,
-      );
+      // Set initial quality and size threshold
+      int quality = 100;
+      const int maxSizeInBytes = 30 * 1024; // 100 KB
+      Uint8List? compressedImageBytes;
 
-      if (compressedImageBytes == null) {
-        throw Exception('Failed to compress image');
-      }
+      // Compress the image and adjust quality until the size is below the threshold
+      do {
+        compressedImageBytes = await FlutterImageCompress.compressWithList(
+          imageBytes,
+          minWidth: 120,
+          minHeight: 120,
+          quality: quality,
+        );
 
-      print('Compressed image size: ${compressedImageBytes.lengthInBytes} bytes');
+        if (compressedImageBytes == null) {
+          throw Exception('Failed to compress image');
+        }
+
+        // print('Compressed image size at quality $quality: ${compressedImageBytes.lengthInBytes} bytes');
+        quality -= 10; // Decrease quality by 10 for each iteration
+      } while (compressedImageBytes.lengthInBytes > maxSizeInBytes && quality > 0);
 
       // Encode byte array to Base64 string
       String base64String = base64Encode(compressedImageBytes);
-      // print('base64String: $base64String');
 
       // Store Base64 string in Firebase Realtime Database at the specified location
       DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
@@ -105,7 +116,6 @@ class ProfilePage extends StatelessWidget {
       print('Failed to upload profile picture: $e');
     }
   }
-
 
 
   Future<void> _sendVerificationEmail(BuildContext context) async {
@@ -168,7 +178,6 @@ Future<String> _fetchReleaseNotes() async {
     final screenSize = MediaQuery.of(context).size;
     final _formKey = GlobalKey<FormState>();
     String? _fullName;
-    String uid = FirebaseAuth.instance.currentUser!.uid;
 
     showModalBottomSheet(
       context: context,
@@ -245,74 +254,64 @@ Future<String> _fetchReleaseNotes() async {
                           child: Stack(
                             children: [
                               FutureBuilder<Image?>(
-                                future: _getProfileImage(uid),
+                                future: _getProfileImage(getCurrentUserUid()),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     return CircularProgressIndicator();
                                   } else if (snapshot.hasError) {
-                                    return Container(
-                                      width: 110,
-                                      height: 110,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Theme.of(context).colorScheme.onPrimary,
-                                          width: 4,
+                                    return InkWell(
+                                      onTap: () async {
+                                        final ImagePicker _picker = ImagePicker();
+                                        final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                        if (image != null) {
+                                          await uploadProfilePicture(image, getCurrentUserUid());
+                                        }
+                                      },
+                                      child: Container(
+                                        width: 110,
+                                        height: 110,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Theme.of(context).colorScheme.onPrimary,
+                                            width: 4,
+                                          ),
                                         ),
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 50,
-                                        backgroundImage: AssetImage('assets/icon/icon.png'),
-                                        backgroundColor: Colors.transparent,
+                                        child: CircleAvatar(
+                                          radius: 50,
+                                          backgroundImage: AssetImage('assets/icon/icon.png'),
+                                          backgroundColor: Colors.transparent,
+                                        ),
                                       ),
                                     );
                                   } else {
-                                    return Container(
-                                      width: 110,
-                                      height: 110,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Theme.of(context).colorScheme.onPrimary,
-                                          width: 4,
+                                    return InkWell(
+                                      onTap: () async {
+                                        final ImagePicker _picker = ImagePicker();
+                                        final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                        if (image != null) {
+                                          await uploadProfilePicture(image, getCurrentUserUid());
+                                        }
+                                      },
+                                      child: Container(
+                                        width: 110,
+                                        height: 110,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Theme.of(context).colorScheme.onPrimary,
+                                            width: 4,
+                                          ),
                                         ),
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 50,
-                                        backgroundImage: snapshot.data!.image,
-                                        backgroundColor: Colors.transparent,
+                                        child: CircleAvatar(
+                                          radius: 50,
+                                          backgroundImage: snapshot.data!.image,
+                                          backgroundColor: Colors.transparent,
+                                        ),
                                       ),
                                     );
                                   }
                                 },
-                              ),
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: InkWell(
-                                  onTap: () async {
-                                    // Implement the image picker and upload logic here
-                                    final ImagePicker _picker = ImagePicker();
-                                    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-
-                                    if (image != null) {
-                                      String uid = FirebaseAuth.instance.currentUser!.uid;
-                                      await uploadProfilePicture(image, uid);
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.camera_alt,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
                               ),
                             ],
                           ),
@@ -1209,7 +1208,6 @@ Future<String> _fetchReleaseNotes() async {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
 
-    String uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -1235,42 +1233,60 @@ Future<String> _fetchReleaseNotes() async {
                     Stack(
                       children: [
                         FutureBuilder<Image?>(
-                          future: _getProfileImage(uid),
+                          future: _getProfileImage(getCurrentUserUid()),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return CircularProgressIndicator();
                             } else if (snapshot.hasError) {
-                              return Container(
-                                width: 110,
-                                height: 110,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    width: 4,
+                              return InkWell(
+                                onTap: () async {
+                                  final ImagePicker _picker = ImagePicker();
+                                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                  if (image != null) {
+                                    await uploadProfilePicture(image, getCurrentUserUid());
+                                  }
+                                },
+                                child: Container(
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      width: 4,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: AssetImage('assets/icon/icon.png'),
+                                    backgroundColor: Colors.transparent,
                                   ),
                                 ),
-                                child: CircleAvatar(
-                                radius: 50,
-                                  backgroundImage: snapshot.data!.image,
-                                backgroundColor: Colors.transparent,
-                              ),
                               );
                             } else {
-                              return Container(
-                                width: 110,
-                                height: 110,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    width: 4,
+                              return InkWell(
+                                onTap: () async {
+                                  final ImagePicker _picker = ImagePicker();
+                                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                  if (image != null) {
+                                    await uploadProfilePicture(image, getCurrentUserUid());
+                                  }
+                                },
+                                child: Container(
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      width: 4,
+                                    ),
                                   ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: snapshot.data!.image,
-                                  backgroundColor: Colors.transparent,
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: snapshot.data!.image,
+                                    backgroundColor: Colors.transparent,
+                                  ),
                                 ),
                               );
                             }
