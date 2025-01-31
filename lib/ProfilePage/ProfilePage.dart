@@ -23,6 +23,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   int _selectedTemeIndex = 0;
 
+  ThemeData _currentTheme = AppThemes.themes[0];
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
     int themeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
     setState(() {
       _selectedTemeIndex = themeIndex;
+      _currentTheme = AppThemes.themes[themeIndex];
     });
   }
 
@@ -42,6 +45,13 @@ class _ProfilePageState extends State<ProfilePage> {
     await prefs.setInt('selectedThemeIndex', index);
   }
 
+  void _changeTheme(int newIndex) {
+    setState(() {
+      _selectedTemeIndex = newIndex;
+      _currentTheme = AppThemes.themes[newIndex];
+    });
+    _saveTheme(newIndex);
+  }
 
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -523,9 +533,8 @@ Future<String> _fetchReleaseNotes() async {
                   onChanged: (int? newIndex) {
                     if (newIndex != null) {
                       setState(() {
-                        _selectedTemeIndex = newIndex;
+                        _changeTheme(newIndex);
                       });
-                      _saveTheme(newIndex);
                       Navigator.pop(context);
                     }
                   },
@@ -537,7 +546,6 @@ Future<String> _fetchReleaseNotes() async {
       },
     );
   }
-
 
   void _showChangePasswordBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;

@@ -17,23 +17,25 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  runApp(MyApp(isLoggedIn: isLoggedIn));
+  runApp(MyApp(isLoggedIn: isLoggedIn , prefs: prefs));
 }
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
+  final SharedPreferences prefs;
 
-  const MyApp({Key? key, required this.isLoggedIn}) : super(key: key);
+  const MyApp({Key? key, required this.isLoggedIn, required this.prefs}) : super(key: key);
 
   // Custom green color palette
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+
       debugShowCheckedModeBanner: false,
       title: 'reTracker',
-      theme: lightTheme,
-      darkTheme: darkTheme,
+      theme: AppThemes.themes[prefs.getInt('selectedThemeIndex') ?? 0],
+      darkTheme: AppThemes.themes[prefs.getInt('selectedThemeIndex') ?? 0],
       themeMode: ThemeMode.system,
       initialRoute: '/',
       routes: {
