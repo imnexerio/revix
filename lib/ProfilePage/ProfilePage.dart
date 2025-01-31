@@ -221,7 +221,6 @@ Future<String> _fetchReleaseNotes() async {
           ),
           child: Stack(
             children: [
-              // Handle bar at top
               Align(
                 alignment: Alignment.topCenter,
                 child: Padding(
@@ -236,7 +235,6 @@ Future<String> _fetchReleaseNotes() async {
                   ),
                 ),
               ),
-              // Content
               Padding(
                 padding: EdgeInsets.only(
                   top: 40,
@@ -287,6 +285,7 @@ Future<String> _fetchReleaseNotes() async {
                                         final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                                         if (image != null) {
                                           await uploadProfilePicture(context, image, getCurrentUserUid());
+                                          Navigator.pop(context); // Dismiss the bottom sheet
                                         }
                                       },
                                       child: Container(
@@ -313,6 +312,7 @@ Future<String> _fetchReleaseNotes() async {
                                         final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                                         if (image != null) {
                                           await uploadProfilePicture(context, image, getCurrentUserUid());
+                                          Navigator.pop(context); // Dismiss the bottom sheet
                                         }
                                       },
                                       child: Container(
@@ -364,69 +364,69 @@ Future<String> _fetchReleaseNotes() async {
                           },
                         ),
                         SizedBox(height: 40),
-                          Center(
-                            child: Container(
-                              width: 200, // Set the desired width
-                              child: FilledButton(
-                                onPressed: () async {
-                                  if (_formKey.currentState!.validate()) {
-                                    _formKey.currentState!.save();
-                                    try {
-                                      print('Updating name to: $_fullName');
-                                      User? user = FirebaseAuth.instance.currentUser;
-                                      await user?.updateDisplayName(_fullName);
-                                      Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.check_circle, color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Text('Profile updated successfully'),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.green,
-                                          duration: Duration(seconds: 2),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
+                        Center(
+                          child: Container(
+                            width: 200, // Set the desired width
+                            child: FilledButton(
+                              onPressed: () async {
+                                if (_formKey.currentState!.validate()) {
+                                  _formKey.currentState!.save();
+                                  try {
+                                    print('Updating name to: $_fullName');
+                                    User? user = FirebaseAuth.instance.currentUser;
+                                    await user?.updateDisplayName(_fullName);
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            Icon(Icons.check_circle, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text('Profile updated successfully'),
+                                          ],
                                         ),
-                                      );
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.error, color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Text('Failed to update profile: $e'),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          duration: Duration(seconds: 2),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
+                                        backgroundColor: Colors.green,
+                                        duration: Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
                                         ),
-                                      );
-                                    }
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            Icon(Icons.error, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text('Failed to update profile: $e'),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.red,
+                                        duration: Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                    );
                                   }
-                                },
-                                style: FilledButton.styleFrom(
-                                  minimumSize: Size(double.infinity, 55),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
+                                }
+                              },
+                              style: FilledButton.styleFrom(
+                                minimumSize: Size(double.infinity, 55),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: Text(
-                                  'Save Changes',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                ),
+                              ),
+                              child: Text(
+                                'Save Changes',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
+                        ),
                       ],
                     ),
                   ),
