@@ -317,17 +317,28 @@ Future<String> _fetchReleaseNotes() async {
                           ),
                         ),
                         SizedBox(height: 30),
-                        _buildInputField(
-                          context: context,
-                          label: 'Full Name',
-                          hint: 'Enter your full name',
-                          icon: Icons.person_outline,
-                          onSaved: (value) => _fullName = value,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your full name';
+                        FutureBuilder<String>(
+                          future: _getDisplayName(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            } else if (snapshot.hasError) {
+                              return Text('Error loading name');
+                            } else {
+                              return _buildInputField(
+                                context: context,
+                                label: 'Full Name',
+                                hint: snapshot.data ?? 'User',
+                                icon: Icons.person_outline,
+                                onSaved: (value) => _fullName = value,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your full name';
+                                  }
+                                  return null;
+                                },
+                              );
                             }
-                            return null;
                           },
                         ),
                         SizedBox(height: 40),
@@ -807,12 +818,13 @@ Future<String> _fetchReleaseNotes() async {
 
   void _showNotificationSettingsBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final _formKey = GlobalKey<FormState>();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          height: screenSize.height * 0.7,
+          height: screenSize.height * 0.8,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -840,9 +852,18 @@ Future<String> _fetchReleaseNotes() async {
                   ),
                 ),
               ),
+
               Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
+                padding: EdgeInsets.only(
+                  top: 40,
+                  left: 24,
+                  right: 24,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                ),
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -893,6 +914,8 @@ Future<String> _fetchReleaseNotes() async {
                   ],
                 ),
               ),
+                )
+              )
             ],
           ),
         );
