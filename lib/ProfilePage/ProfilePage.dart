@@ -372,7 +372,7 @@ Future<String> _fetchReleaseNotes() async {
                                 if (_formKey.currentState!.validate()) {
                                   _formKey.currentState!.save();
                                   try {
-                                    print('Updating name to: $_fullName');
+                                    // print('Updating name to: $_fullName');
                                     User? user = FirebaseAuth.instance.currentUser;
                                     await user?.updateDisplayName(_fullName);
                                     Navigator.pop(context);
@@ -779,7 +779,7 @@ Future<String> _fetchReleaseNotes() async {
                                         children: [
                                           Icon(Icons.check_circle, color: Colors.white),
                                           SizedBox(width: 8),
-                                          Text('Verification email sent to $_newEmail. Please verify it to change your login Email.'),
+                                          Text('Verification email sent to $_newEmail. Please verify it and restart the app.'),
                                         ],
                                       ),
                                       backgroundColor: Colors.green,
