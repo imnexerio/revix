@@ -13,7 +13,12 @@ import 'dart:io';
 import 'package:firebase_database/firebase_database.dart';
 
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn');
@@ -114,7 +119,7 @@ class ProfilePage extends StatelessWidget {
             children: [
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 8),
-              Text('Profile picture uploaded as Base64 string to database'),
+              Text('Profile picture uploaded successfully'),
             ],
           ),
           backgroundColor: Colors.green,
@@ -125,6 +130,10 @@ class ProfilePage extends StatelessWidget {
           ),
         ),
       );
+
+      setState(() {
+        // Update the profile picture in the UI
+      });
     } catch (e) {
       print('Failed to upload profile picture: $e');
     }
