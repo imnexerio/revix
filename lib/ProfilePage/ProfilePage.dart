@@ -12,6 +12,8 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'dart:io';
 import 'package:firebase_database/firebase_database.dart';
 
+import '../theme_data.dart';
+
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -19,6 +21,28 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  int _selectedTemeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  _loadTheme() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int themeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
+    setState(() {
+      _selectedTemeIndex = themeIndex;
+    });
+  }
+
+  _saveTheme(int index) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('selectedThemeIndex', index);
+  }
+
+
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn');
@@ -445,6 +469,75 @@ Future<String> _fetchReleaseNotes() async {
       },
     );
   }
+
+  void _showThemeBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.background,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Select Theme',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 16),
+                DropdownButton<int>(
+                  value: _selectedTemeIndex,
+                  items: List.generate(AppThemes.themes.length, (index) {
+                    return DropdownMenuItem<int>(
+                      value: index,
+                      child: Text('Theme ${index + 1}'),
+                    );
+                  }),
+                  onChanged: (int? newIndex) {
+                    if (newIndex != null) {
+                      setState(() {
+                        _selectedTemeIndex = newIndex;
+                      });
+                      _saveTheme(newIndex);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 
   void _showChangePasswordBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -1409,6 +1502,14 @@ Future<String> _fetchReleaseNotes() async {
                     subtitle: 'Update your personal information',
                     icon: Icons.edit_outlined,
                     onTap: () => _showEditProfileBottomSheet(context),
+                  ),
+                  SizedBox(height: 16),
+                  _buildProfileOptionCard(
+                    context: context,
+                    title: 'Set Theme',
+                    subtitle: 'Choose your style',
+                    icon: Icons.edit_outlined,
+                    onTap: () => _showThemeBottomSheet(context),
                   ),
                   SizedBox(height: 16),
                   _buildProfileOptionCard(
