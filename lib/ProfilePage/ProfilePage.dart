@@ -1265,13 +1265,7 @@ Future<String> _fetchReleaseNotes() async {
                               );
                             } else {
                               return InkWell(
-                                onTap: () async {
-                                  final ImagePicker _picker = ImagePicker();
-                                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                                  if (image != null) {
-                                    await uploadProfilePicture(image, getCurrentUserUid());
-                                  }
-                                },
+                                onTap: () => _showEditProfileBottomSheet(context),
                                 child: Container(
                                   width: 110,
                                   height: 110,
