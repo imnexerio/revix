@@ -26,6 +26,13 @@ class _ProfilePageState extends State<ProfilePage> {
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
+
+  }
+
+  Future<void> _refreshProfile() async {
+    setState(() {
+      // Trigger a rebuild to refresh the profile data
+    });
   }
 
   String getCurrentUserUid() {
@@ -1255,7 +1262,9 @@ Future<String> _fetchReleaseNotes() async {
 
 
     return Scaffold(
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: _refreshProfile,
+        child: SingleChildScrollView(
         child: Column(
           children: [
             Container(
@@ -1456,7 +1465,7 @@ Future<String> _fetchReleaseNotes() async {
             ),
           ],
         ),
-      ),
+      ),)
     );
   }
 
