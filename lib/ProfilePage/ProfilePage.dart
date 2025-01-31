@@ -75,12 +75,10 @@ class ProfilePage extends StatelessWidget {
 
 
 
-
-  Future<void> uploadProfilePicture(XFile imageFile, String uid) async {
+  Future<void> uploadProfilePicture(BuildContext context, XFile imageFile, String uid) async {
     try {
       // Convert image to byte array
       Uint8List imageBytes = await imageFile.readAsBytes();
-      // print('Original image size: ${imageBytes.lengthInBytes} bytes');
 
       // Set initial quality and size threshold
       int quality = 100;
@@ -100,7 +98,6 @@ class ProfilePage extends StatelessWidget {
           throw Exception('Failed to compress image');
         }
 
-        // print('Compressed image size at quality $quality: ${compressedImageBytes.lengthInBytes} bytes');
         quality -= 10; // Decrease quality by 10 for each iteration
       } while (compressedImageBytes.lengthInBytes > maxSizeInBytes && quality > 0);
 
@@ -111,7 +108,23 @@ class ProfilePage extends StatelessWidget {
       DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
       await databaseRef.update({'profile_picture': base64String});
 
-      print('Profile picture uploaded as Base64 string to database');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Profile picture uploaded as Base64 string to database'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
     } catch (e) {
       print('Failed to upload profile picture: $e');
     }
@@ -264,7 +277,7 @@ Future<String> _fetchReleaseNotes() async {
                                         final ImagePicker _picker = ImagePicker();
                                         final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                                         if (image != null) {
-                                          await uploadProfilePicture(image, getCurrentUserUid());
+                                          await uploadProfilePicture(context, image, getCurrentUserUid());
                                         }
                                       },
                                       child: Container(
@@ -290,7 +303,7 @@ Future<String> _fetchReleaseNotes() async {
                                         final ImagePicker _picker = ImagePicker();
                                         final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                                         if (image != null) {
-                                          await uploadProfilePicture(image, getCurrentUserUid());
+                                          await uploadProfilePicture(context, image, getCurrentUserUid());
                                         }
                                       },
                                       child: Container(
@@ -1266,7 +1279,7 @@ Future<String> _fetchReleaseNotes() async {
                                   final ImagePicker _picker = ImagePicker();
                                   final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                                   if (image != null) {
-                                    await uploadProfilePicture(image, getCurrentUserUid());
+                                    await uploadProfilePicture(context, image, getCurrentUserUid());
                                   }
                                 },
                                 child: Container(
