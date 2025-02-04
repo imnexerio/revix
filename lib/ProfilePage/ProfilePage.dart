@@ -510,21 +510,51 @@ Future<String> _fetchReleaseNotes() async {
                 ),
                 SizedBox(height: 16),
                 DropdownButton<int>(
-                  value: _selectedTemeIndex,
-                  items: List.generate(AppThemes.themes.length, (index) {
+                  value: _selectedTemeIndex ~/ 2,
+                  items: List.generate(AppThemes.themeNames.length, (index) {
                     return DropdownMenuItem<int>(
                       value: index,
-                      child: Text('Theme ${index + 1}'),
+                      child: Text(AppThemes.themeNames[index]),
                     );
                   }),
                   onChanged: (int? newIndex) {
                     if (newIndex != null) {
                       Provider.of<ThemeNotifier>(context, listen: false)
-                          .changeTheme(AppThemes.themes[newIndex]);
+                          .changeTheme(AppThemes.themes[newIndex * 2 + (_selectedTemeIndex % 2)]);
                       setState(() {
-                        _selectedTemeIndex = newIndex;
+                        _selectedTemeIndex = newIndex * 2 + (_selectedTemeIndex % 2);
                       });
-                      // Navigator.pop(context);
+                    }
+                  },
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Select Theme Mode',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 16),
+                DropdownButton<ThemeMode>(
+                  value: Provider.of<ThemeNotifier>(context, listen: false).currentThemeMode,
+                  items: [
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text('System Default'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text('Light'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text('Dark'),
+                    ),
+                  ],
+                  onChanged: (ThemeMode? newMode) {
+                    if (newMode != null) {
+                      Provider.of<ThemeNotifier>(context, listen: false)
+                          .changeThemeMode(newMode);
                     }
                   },
                 ),
@@ -535,6 +565,7 @@ Future<String> _fetchReleaseNotes() async {
       },
     );
   }
+
 
   void _showChangePasswordBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;

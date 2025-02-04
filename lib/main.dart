@@ -23,7 +23,7 @@ void main() async {
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(AppThemes.themes[selectedThemeIndex]),
+      create: (_) => ThemeNotifier(AppThemes.themes[selectedThemeIndex], ThemeMode.system),
       child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
     ),
   );
@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
           title: 'reTracker',
           theme: themeNotifier.currentTheme,
           darkTheme: themeNotifier.currentTheme,
-          themeMode: ThemeMode.system,
+          themeMode: themeNotifier.currentThemeMode,
           initialRoute: '/',
           routes: {
             '/': (context) => SplashScreen(),

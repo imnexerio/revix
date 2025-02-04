@@ -13,6 +13,14 @@ class AppThemes {
     earthLightTheme,
     earthDarkTheme,
   ];
+
+  static final List<String> themeNames = [
+    'Default',
+    'Sea',
+    'Sunset',
+    'Purple',
+    'Earth',
+  ];
 }
 
 final ThemeData defaultLightTheme = ThemeData(
