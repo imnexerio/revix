@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -9,9 +10,9 @@ import '../LoginSignupPage/LoginPage.dart';
 import '../LoginSignupPage/UrlLauncher.dart';
 import 'dart:typed_data';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'dart:io';
 import 'package:firebase_database/firebase_database.dart';
 
+import '../ThemeNotifier.dart';
 import '../theme_data.dart';
 
 
@@ -23,7 +24,6 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   int _selectedTemeIndex = 0;
 
-  ThemeData _currentTheme = AppThemes.themes[0];
 
   @override
   void initState() {
@@ -36,22 +36,9 @@ class _ProfilePageState extends State<ProfilePage> {
     int themeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
     setState(() {
       _selectedTemeIndex = themeIndex;
-      _currentTheme = AppThemes.themes[themeIndex];
     });
   }
 
-  _saveTheme(int index) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('selectedThemeIndex', index);
-  }
-
-  void _changeTheme(int newIndex) {
-    setState(() {
-      _selectedTemeIndex = newIndex;
-      _currentTheme = AppThemes.themes[newIndex];
-    });
-    _saveTheme(newIndex);
-  }
 
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -532,10 +519,12 @@ Future<String> _fetchReleaseNotes() async {
                   }),
                   onChanged: (int? newIndex) {
                     if (newIndex != null) {
+                      Provider.of<ThemeNotifier>(context, listen: false)
+                          .changeTheme(AppThemes.themes[newIndex]);
                       setState(() {
-                        _changeTheme(newIndex);
+                        _selectedTemeIndex = newIndex;
                       });
-                      Navigator.pop(context);
+                      // Navigator.pop(context);
                     }
                   },
                 ),

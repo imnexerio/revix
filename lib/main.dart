@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:retracker/AddLectureForm.dart';
 import 'package:retracker/DetailsPage/DetailsPage.dart';
 import 'package:retracker/LoginSignupPage/LoginPage.dart';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
+import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'firebase_options.dart';
 
@@ -17,7 +19,14 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  runApp(MyApp(isLoggedIn: isLoggedIn , prefs: prefs));
+  int selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(AppThemes.themes[selectedThemeIndex]),
+      child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -26,23 +35,23 @@ class MyApp extends StatelessWidget {
 
   const MyApp({Key? key, required this.isLoggedIn, required this.prefs}) : super(key: key);
 
-  // Custom green color palette
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-
-      debugShowCheckedModeBanner: false,
-      title: 'reTracker',
-      theme: AppThemes.themes[prefs.getInt('selectedThemeIndex') ?? 0],
-      darkTheme: AppThemes.themes[prefs.getInt('selectedThemeIndex') ?? 0],
-      themeMode: ThemeMode.system,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => SplashScreen(),
-        '/home': (context) => isLoggedIn ? MyHomePage() : LoginPage(),
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'reTracker',
+          theme: themeNotifier.currentTheme,
+          darkTheme: themeNotifier.currentTheme,
+          themeMode: ThemeMode.system,
+          initialRoute: '/',
+          routes: {
+            '/': (context) => SplashScreen(),
+            '/home': (context) => isLoggedIn ? MyHomePage() : LoginPage(),
+          },
+        );
       },
-      // home: isLoggedIn ? MyHomePage() : LoginPage(),
     );
   }
 }
