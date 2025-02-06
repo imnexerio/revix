@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'CustomThemeGenerator.dart';
+
+
 class ThemeNotifier extends ChangeNotifier {
   ThemeData _currentTheme;
   ThemeMode _currentThemeMode;
@@ -20,12 +23,6 @@ class ThemeNotifier extends ChangeNotifier {
   int get selectedThemeIndex => _selectedThemeIndex;
   Color? get customThemeColor => _customThemeColor;
   bool get isCustomTheme => _selectedThemeIndex == customThemeIndex;
-
-  // Change the current theme
-  void changeTheme(ThemeData newTheme) {
-    _currentTheme = newTheme;
-    notifyListeners();
-  }
 
   // Change theme mode (light/dark/system)
   void changeThemeMode(ThemeMode newMode) async {
@@ -59,6 +56,7 @@ class ThemeNotifier extends ChangeNotifier {
         _applyCustomTheme(_customThemeColor!);
       }
     } else {
+      // Determine which theme to use based on current theme mode
       if (_currentThemeMode == ThemeMode.system) {
         final brightness = WidgetsBinding.instance.window.platformBrightness;
         _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
@@ -83,28 +81,11 @@ class ThemeNotifier extends ChangeNotifier {
 
   // Apply custom theme based on color
   void _applyCustomTheme(Color color) {
-    final ColorScheme lightScheme = ColorScheme.fromSeed(
-      seedColor: color,
-      brightness: Brightness.light,
-    );
+    // Generate light and dark themes using the CustomThemeGenerator
+    final ThemeData lightTheme = CustomThemeGenerator.generateLightTheme(color);
+    final ThemeData darkTheme = CustomThemeGenerator.generateDarkTheme(color);
 
-    final ColorScheme darkScheme = ColorScheme.fromSeed(
-      seedColor: color,
-      brightness: Brightness.dark,
-    );
-
-    final ThemeData lightTheme = ThemeData(
-      useMaterial3: true,
-      colorScheme: lightScheme,
-      // Add other theme customizations here
-    );
-
-    final ThemeData darkTheme = ThemeData(
-      useMaterial3: true,
-      colorScheme: darkScheme,
-      // Add other theme customizations here
-    );
-
+    // Determine which theme to apply based on current theme mode
     if (_currentThemeMode == ThemeMode.system) {
       final brightness = WidgetsBinding.instance.window.platformBrightness;
       _currentTheme = brightness == Brightness.dark ? darkTheme : lightTheme;

@@ -733,19 +733,19 @@ Future<String> _fetchReleaseNotes() async {
                                     ],
                                     onChanged: (int? newIndex) {
                                       if (newIndex != null) {
-                                        if (newIndex == ThemeNotifier.customThemeIndex &&
-                                            themeNotifier.customThemeColor == null) {
-                                          // Don't switch to custom if no custom color is set
-                                          return;
+                                        if (newIndex == ThemeNotifier.customThemeIndex) {
+                                          // If custom theme is selected but no color is set, initialize with a default
+                                          if (themeNotifier.customThemeColor == null) {
+                                            final defaultCustomColor = Color.fromRGBO(100, 100, 100, 1);
+                                            themeNotifier.setCustomTheme(defaultCustomColor);
+                                            setState(() {
+                                              _redValue = defaultCustomColor.red;
+                                              _greenValue = defaultCustomColor.green;
+                                              _blueValue = defaultCustomColor.blue;
+                                            });
+                                          }
                                         }
                                         themeNotifier.updateThemeBasedOnMode(newIndex);
-                                        setState(() {
-                                          if (themeNotifier.customThemeColor != null) {
-                                            _redValue = themeNotifier.customThemeColor!.red;
-                                            _greenValue = themeNotifier.customThemeColor!.green;
-                                            _blueValue = themeNotifier.customThemeColor!.blue;
-                                          }
-                                        });
                                       }
                                     },
                                   ),
@@ -754,91 +754,102 @@ Future<String> _fetchReleaseNotes() async {
                             },
                           ),
                           SizedBox(height: 32),
-                          // Custom Theme Section
-                          if (themeNotifier.selectedThemeIndex == ThemeNotifier.customThemeIndex ||
-                              themeNotifier.customThemeColor == null) ...[
-                            Text(
-                              'Custom Theme',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            SizedBox(height: 16),
-                            // Color Preview
-                            Center(
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.outline,
-                                    width: 2,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 0.3),
-                                      blurRadius: 12,
-                                      spreadRadius: 4,
+
+                          // Custom Theme Section - Only show when Custom is selected
+                          Consumer<ThemeNotifier>(
+                            builder: (context, themeNotifier, child) {
+                              if (themeNotifier.selectedThemeIndex != ThemeNotifier.customThemeIndex) {
+                                return SizedBox.shrink();
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Custom Theme',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 24),
-                            // RGB Sliders
-                            _buildColorSlider(
-                              context,
-                              'Red',
-                              _redValue,
-                              Colors.red,
-                                  (value) => setState(() => _redValue = value.round()),
-                            ),
-                            SizedBox(height: 16),
-                            _buildColorSlider(
-                              context,
-                              'Green',
-                              _greenValue,
-                              Colors.green,
-                                  (value) => setState(() => _greenValue = value.round()),
-                            ),
-                            SizedBox(height: 16),
-                            _buildColorSlider(
-                              context,
-                              'Blue',
-                              _blueValue,
-                              Colors.blue,
-                                  (value) => setState(() => _blueValue = value.round()),
-                            ),
-                            SizedBox(height: 24),
-                            // Apply Custom Theme Button
-                            FilledButton(
-                              onPressed: () {
-                                final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
-                                themeNotifier.setCustomTheme(customColor);
-                                Navigator.pop(context);
-                              },
-                              style: FilledButton.styleFrom(
-                                minimumSize: Size(double.infinity, 56),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: Text(
-                                'Apply Custom Theme',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ],
+                                  ),
+                                  SizedBox(height: 16),
+                                  // Color Preview
+                                  Center(
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.outline,
+                                          width: 2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 0.3),
+                                            blurRadius: 12,
+                                            spreadRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 24),
+                                  // RGB Sliders
+                                  _buildColorSlider(
+                                    context,
+                                    'Red',
+                                    _redValue,
+                                    Colors.red,
+                                        (value) => setState(() => _redValue = value.round()),
+                                  ),
+                                  SizedBox(height: 16),
+                                  _buildColorSlider(
+                                    context,
+                                    'Green',
+                                    _greenValue,
+                                    Colors.green,
+                                        (value) => setState(() => _greenValue = value.round()),
+                                  ),
+                                  SizedBox(height: 16),
+                                  _buildColorSlider(
+                                    context,
+                                    'Blue',
+                                    _blueValue,
+                                    Colors.blue,
+                                        (value) => setState(() => _blueValue = value.round()),
+                                  ),
+                                  SizedBox(height: 24),
+                                  // Apply Custom Theme Button
+                                  FilledButton(
+                                    onPressed: () {
+                                      final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
+                                      themeNotifier.setCustomTheme(customColor);
+                                      Navigator.pop(context);
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      minimumSize: Size(double.infinity, 56),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Apply Custom Theme',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+
                           SizedBox(height: 32),
-                          // Theme Mode Selection
+                          // Theme Mode Selection (remains the same)
                           Text(
                             'Theme Mode',
                             style: TextStyle(
@@ -921,6 +932,7 @@ Future<String> _fetchReleaseNotes() async {
       },
     );
   }
+
 
 
   // Helper method to build color sliders
