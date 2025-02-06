@@ -25,21 +25,6 @@ class _ProfilePageState extends State<ProfilePage> {
   int _selectedTemeIndex = 0;
 
 
-  @override
-  void initState() {
-    super.initState();
-    _loadTheme();
-  }
-
-  _loadTheme() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int themeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
-    setState(() {
-      _selectedTemeIndex = themeIndex;
-    });
-  }
-
-
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn');
