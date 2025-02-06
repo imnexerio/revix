@@ -209,248 +209,244 @@ Future<String> _fetchReleaseNotes() async {
 }
 
 
-  void _showEditProfileBottomSheet(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final _formKey = GlobalKey<FormState>();
-    String? _fullName;
+  void _showEditProfileBottomSheet(BuildContext context) async {
+  final screenSize = MediaQuery.of(context).size;
+  final _formKey = GlobalKey<FormState>();
+  String? _fullName;
+  String? _displayName;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          height: screenSize.height * 0.7,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Align(
-                alignment: Alignment.topCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+  // Fetch the display name once
+  try {
+    _displayName = await _getDisplayName();
+  } catch (e) {
+    _displayName = 'User';
+  }
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (BuildContext context) {
+      return Container(
+        height: screenSize.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.background,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.only(
-                  top: 40,
-                  left: 24,
-                  right: 24,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-                ),
-                child: SingleChildScrollView(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Edit Profile',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: 40,
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Edit Profile',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.close),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.grey.withOpacity(0.1),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: Icon(Icons.close),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.grey.withOpacity(0.1),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 30),
+                      Center(
+                        child: Stack(
+                          children: [
+                            FutureBuilder<Image?>(
+                              future: _getProfileImage(getCurrentUserUid()),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                } else if (snapshot.hasError) {
+                                  return InkWell(
+                                    onTap: () async {
+                                      final ImagePicker _picker = ImagePicker();
+                                      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                      if (image != null) {
+                                        await uploadProfilePicture(context, image, getCurrentUserUid());
+                                        Navigator.pop(context); // Dismiss the bottom sheet
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 110,
+                                      height: 110,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          width: 4,
+                                        ),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 50,
+                                        backgroundImage: AssetImage('assets/icon/icon.png'),
+                                        backgroundColor: Colors.transparent,
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  return InkWell(
+                                    onTap: () async {
+                                      final ImagePicker _picker = ImagePicker();
+                                      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                      if (image != null) {
+                                        await uploadProfilePicture(context, image, getCurrentUserUid());
+                                        Navigator.pop(context); // Dismiss the bottom sheet
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 110,
+                                      height: 110,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          width: 4,
+                                        ),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 50,
+                                        backgroundImage: snapshot.data!.image,
+                                        backgroundColor: Colors.transparent,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           ],
                         ),
-                        SizedBox(height: 30),
-                        Center(
-                          child: Stack(
-                            children: [
-                              FutureBuilder<Image?>(
-                                future: _getProfileImage(getCurrentUserUid()),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return CircularProgressIndicator();
-                                  } else if (snapshot.hasError) {
-                                    return InkWell(
-                                      onTap: () async {
-                                        final ImagePicker _picker = ImagePicker();
-                                        final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                                        if (image != null) {
-                                          await uploadProfilePicture(context, image, getCurrentUserUid());
-                                          Navigator.pop(context); // Dismiss the bottom sheet
-                                        }
-                                      },
-                                      child: Container(
-                                        width: 110,
-                                        height: 110,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Theme.of(context).colorScheme.onPrimary,
-                                            width: 4,
-                                          ),
-                                        ),
-                                        child: CircleAvatar(
-                                          radius: 50,
-                                          backgroundImage: AssetImage('assets/icon/icon.png'),
-                                          backgroundColor: Colors.transparent,
-                                        ),
+                      ),
+                      SizedBox(height: 30),
+                      _buildInputField(
+                        context: context,
+                        label: 'Full Name',
+                        hint: _displayName ?? 'User',
+                        icon: Icons.person_outline,
+                        onSaved: (value) => _fullName = value,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your full name';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 40),
+                      Center(
+                        child: Container(
+                          width: 200, // Set the desired width
+                          child: FilledButton(
+                            onPressed: () async {
+                              if (_formKey.currentState!.validate()) {
+                                _formKey.currentState!.save();
+                                try {
+                                  User? user = FirebaseAuth.instance.currentUser;
+                                  await user?.updateDisplayName(_fullName);
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text('Profile updated successfully'),
+                                        ],
                                       ),
-                                    );
-                                  } else {
-                                    return InkWell(
-                                      onTap: () async {
-                                        final ImagePicker _picker = ImagePicker();
-                                        final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                                        if (image != null) {
-                                          await uploadProfilePicture(context, image, getCurrentUserUid());
-                                          Navigator.pop(context); // Dismiss the bottom sheet
-                                        }
-                                      },
-                                      child: Container(
-                                        width: 110,
-                                        height: 110,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Theme.of(context).colorScheme.onPrimary,
-                                            width: 4,
-                                          ),
-                                        ),
-                                        child: CircleAvatar(
-                                          radius: 50,
-                                          backgroundImage: snapshot.data!.image,
-                                          backgroundColor: Colors.transparent,
-                                        ),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 30),
-                        FutureBuilder<String>(
-                          future: _getDisplayName(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return CircularProgressIndicator();
-                            } else if (snapshot.hasError) {
-                              return Text('Error loading name');
-                            } else {
-                              return _buildInputField(
-                                context: context,
-                                label: 'Full Name',
-                                hint: snapshot.data ?? 'User',
-                                icon: Icons.person_outline,
-                                onSaved: (value) => _fullName = value,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your full name';
-                                  }
-                                  return null;
-                                },
-                              );
-                            }
-                          },
-                        ),
-                        SizedBox(height: 40),
-                        Center(
-                          child: Container(
-                            width: 200, // Set the desired width
-                            child: FilledButton(
-                              onPressed: () async {
-                                if (_formKey.currentState!.validate()) {
-                                  _formKey.currentState!.save();
-                                  try {
-                                    // print('Updating name to: $_fullName');
-                                    User? user = FirebaseAuth.instance.currentUser;
-                                    await user?.updateDisplayName(_fullName);
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            Icon(Icons.check_circle, color: Colors.white),
-                                            SizedBox(width: 8),
-                                            Text('Profile updated successfully'),
-                                          ],
-                                        ),
-                                        backgroundColor: Colors.green,
-                                        duration: Duration(seconds: 2),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.error, color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text('Failed to update profile: $e'),
+                                        ],
                                       ),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            Icon(Icons.error, color: Colors.white),
-                                            SizedBox(width: 8),
-                                            Text('Failed to update profile: $e'),
-                                          ],
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        duration: Duration(seconds: 2),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
+                                      backgroundColor: Colors.red,
+                                      duration: Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                    );
-                                  }
+                                    ),
+                                  );
                                 }
-                              },
-                              style: FilledButton.styleFrom(
-                                minimumSize: Size(double.infinity, 55),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              minimumSize: Size(double.infinity, 55),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                              child: Text(
-                                'Save Changes',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                              ),
+                            ),
+                            child: Text(
+                              'Save Changes',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
 
   void _showThemeBottomSheet(BuildContext context) {

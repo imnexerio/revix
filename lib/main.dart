@@ -148,7 +148,7 @@ class _MyHomePageState extends State<MyHomePage> {
               BottomNavigationBarItem(
                 icon: Icon(Icons.settings_rounded),
                 activeIcon: Icon(Icons.settings, color: theme.colorScheme.primary),
-                label: 'Profile',
+                label: 'Settings',
               ),
             ],
             currentIndex: _selectedIndex,
