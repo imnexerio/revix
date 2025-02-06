@@ -25,9 +25,12 @@ void main() async {
   final brightness = WidgetsBinding.instance.window.platformBrightness;
   final initialTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
 
+  ThemeNotifier themeNotifier = ThemeNotifier(initialTheme, ThemeMode.system);
+  await themeNotifier.loadPreferences();
+
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(initialTheme, ThemeMode.system),
+      create: (_) => themeNotifier,
       child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
     ),
   );
