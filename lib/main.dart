@@ -19,13 +19,8 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  int selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
 
-  // Determine the initial theme based on the system brightness
-  final brightness = WidgetsBinding.instance.window.platformBrightness;
-  final initialTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
-
-  ThemeNotifier themeNotifier = ThemeNotifier(initialTheme, ThemeMode.system);
+  ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
   await themeNotifier.loadPreferences();
 
   runApp(
