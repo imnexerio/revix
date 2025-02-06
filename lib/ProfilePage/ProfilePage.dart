@@ -227,7 +227,7 @@ Future<String> _fetchReleaseNotes() async {
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          height: screenSize.height * 0.85,
+          height: screenSize.height * 0.7,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
