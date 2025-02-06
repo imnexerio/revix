@@ -21,9 +21,13 @@ void main() async {
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   int selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
 
+  // Determine the initial theme based on the system brightness
+  final brightness = WidgetsBinding.instance.window.platformBrightness;
+  final initialTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(AppThemes.themes[selectedThemeIndex], ThemeMode.system),
+      create: (_) => ThemeNotifier(initialTheme, ThemeMode.system),
       child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
     ),
   );

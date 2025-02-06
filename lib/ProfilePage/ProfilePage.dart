@@ -521,7 +521,7 @@ Future<String> _fetchReleaseNotes() async {
                   onChanged: (int? newIndex) {
                     if (newIndex != null) {
                       Provider.of<ThemeNotifier>(context, listen: false)
-                          .changeTheme(AppThemes.themes[newIndex * 2 + (_selectedTemeIndex % 2)]);
+                          .updateThemeBasedOnMode(newIndex);
                       setState(() {
                         _selectedTemeIndex = newIndex * 2 + (_selectedTemeIndex % 2);
                       });
@@ -557,9 +557,8 @@ Future<String> _fetchReleaseNotes() async {
                       Provider.of<ThemeNotifier>(context, listen: false)
                           .changeThemeMode(newMode);
                       setState(() {
-                        _selectedTemeIndex = (_selectedTemeIndex ~/ 2) * 2 + (newMode == ThemeMode.dark ? 1 : 0);
                         Provider.of<ThemeNotifier>(context, listen: false)
-                            .changeTheme(AppThemes.themes[_selectedTemeIndex]);
+                            .updateThemeBasedOnMode(_selectedTemeIndex ~/ 2);
                       });
                     }
                   },
