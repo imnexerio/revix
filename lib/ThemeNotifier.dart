@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:retracker/theme_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeNotifier extends ChangeNotifier {
   ThemeData _currentTheme;
@@ -15,12 +16,17 @@ class ThemeNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void changeThemeMode(ThemeMode newMode) {
+  void changeThemeMode(ThemeMode newMode) async {
     _currentThemeMode = newMode;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeMode', newMode.toString());
     notifyListeners();
   }
 
-  void updateThemeBasedOnMode(int selectedThemeIndex) {
+  void updateThemeBasedOnMode(int selectedThemeIndex) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('selectedThemeIndex', selectedThemeIndex);
+
     if (_currentThemeMode == ThemeMode.system) {
       final brightness = WidgetsBinding.instance.window.platformBrightness;
       _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
@@ -28,5 +34,15 @@ class ThemeNotifier extends ChangeNotifier {
       _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
     }
     notifyListeners();
+  }
+
+  Future<void> loadPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
+    String themeModeString = prefs.getString('themeMode') ?? ThemeMode.system.toString();
+    ThemeMode themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeString);
+
+    _currentThemeMode = themeMode;
+    updateThemeBasedOnMode(selectedThemeIndex);
   }
 }
