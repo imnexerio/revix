@@ -243,18 +243,18 @@ Future<String> _fetchReleaseNotes() async {
           child: Stack(
             children: [
               // Decorative background element
-              Positioned(
-                top: -100,
-                right: -100,
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  ),
-                ),
-              ),
+              // Positioned(
+              //   top: -100,
+              //   right: -100,
+              //   child: Container(
+              //     width: 200,
+              //     height: 200,
+              //     decoration: BoxDecoration(
+              //       shape: BoxShape.circle,
+              //       color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              //     ),
+              //   ),
+              // ),
               // Main content
               SingleChildScrollView(
                 child: Padding(
@@ -559,7 +559,7 @@ Future<String> _fetchReleaseNotes() async {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
+              height: MediaQuery.of(context).size.height * 0.7,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.background,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -575,18 +575,18 @@ Future<String> _fetchReleaseNotes() async {
               child: Stack(
                 children: [
                   // Decorative background element
-                  Positioned(
-                    top: -100,
-                    right: -100,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      ),
-                    ),
-                  ),
+                  // Positioned(
+                  //   top: -100,
+                  //   right: -100,
+                  //   child: Container(
+                  //     width: 200,
+                  //     height: 200,
+                  //     decoration: BoxDecoration(
+                  //       shape: BoxShape.circle,
+                  //       color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  //     ),
+                  //   ),
+                  // ),
                   SingleChildScrollView(
                     child: Padding(
                       padding: EdgeInsets.all(24),
@@ -1934,7 +1934,7 @@ Future<String> _fetchReleaseNotes() async {
                               ),
                               SizedBox(width: 8),
                               if (isVerified)
-                                Icon(Icons.check_circle, color: Colors.green)
+                                Icon(Icons.verified_outlined, color: Colors.green)
                               else
                                 TextButton(
                                   onPressed: () => _sendVerificationEmail(context),
@@ -2050,17 +2050,17 @@ Future<String> _fetchReleaseNotes() async {
           padding: EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
+              // Container(
+              //   padding: EdgeInsets.all(12),
+              //   decoration: BoxDecoration(
+              //     color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              //     borderRadius: BorderRadius.circular(12),
+              //   ),
+              //   child: Icon(
+              //     icon,
+              //     color: Theme.of(context).colorScheme.primary,
+              //   ),
+              // ),
               SizedBox(width: 16),
               Expanded(
                 child: Column(
