@@ -5,11 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeNotifier extends ChangeNotifier {
   ThemeData _currentTheme;
   ThemeMode _currentThemeMode;
+  int _selectedThemeIndex = 0;  // Add this line
 
   ThemeNotifier(this._currentTheme, this._currentThemeMode);
 
   ThemeData get currentTheme => _currentTheme;
   ThemeMode get currentThemeMode => _currentThemeMode;
+  int get selectedThemeIndex => _selectedThemeIndex;  // Add this getter
 
   void changeTheme(ThemeData newTheme) {
     _currentTheme = newTheme;
@@ -20,10 +22,12 @@ class ThemeNotifier extends ChangeNotifier {
     _currentThemeMode = newMode;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('themeMode', newMode.toString());
+    updateThemeBasedOnMode(_selectedThemeIndex);  // Update theme after mode change
     notifyListeners();
   }
 
   void updateThemeBasedOnMode(int selectedThemeIndex) async {
+    _selectedThemeIndex = selectedThemeIndex;  // Update the stored index
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt('selectedThemeIndex', selectedThemeIndex);
 
@@ -38,11 +42,11 @@ class ThemeNotifier extends ChangeNotifier {
 
   Future<void> loadPreferences() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    int selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
+    _selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
     String themeModeString = prefs.getString('themeMode') ?? ThemeMode.system.toString();
     ThemeMode themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeString);
 
     _currentThemeMode = themeMode;
-    updateThemeBasedOnMode(selectedThemeIndex);
+    updateThemeBasedOnMode(_selectedThemeIndex);
   }
 }
