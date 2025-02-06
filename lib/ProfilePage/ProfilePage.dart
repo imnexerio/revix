@@ -467,6 +467,7 @@ Future<String> _fetchReleaseNotes() async {
     );
   }
 
+
   void _showThemeBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -555,6 +556,11 @@ Future<String> _fetchReleaseNotes() async {
                     if (newMode != null) {
                       Provider.of<ThemeNotifier>(context, listen: false)
                           .changeThemeMode(newMode);
+                      setState(() {
+                        _selectedTemeIndex = (_selectedTemeIndex ~/ 2) * 2 + (newMode == ThemeMode.dark ? 1 : 0);
+                        Provider.of<ThemeNotifier>(context, listen: false)
+                            .changeTheme(AppThemes.themes[_selectedTemeIndex]);
+                      });
                     }
                   },
                 ),
@@ -565,7 +571,6 @@ Future<String> _fetchReleaseNotes() async {
       },
     );
   }
-
 
   void _showChangePasswordBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
