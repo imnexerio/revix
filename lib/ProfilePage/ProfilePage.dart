@@ -545,12 +545,11 @@ Future<String> _fetchReleaseNotes() async {
 
   void _showThemeBottomSheet(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-    _selectedTemeIndex = themeNotifier.selectedThemeIndex;
 
     // RGB values for custom theme
-    int _redValue = 0;
-    int _greenValue = 0;
-    int _blueValue = 0;
+    int _redValue = themeNotifier.customThemeColor?.red ?? 0;
+    int _greenValue = themeNotifier.customThemeColor?.green ?? 0;
+    int _blueValue = themeNotifier.customThemeColor?.blue ?? 0;
 
     showModalBottomSheet(
       context: context,
@@ -646,7 +645,7 @@ Future<String> _fetchReleaseNotes() async {
                           SizedBox(height: 32),
                           // Predefined Themes Section
                           Text(
-                            'Predefined Themes',
+                            'Theme Selection',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -673,9 +672,39 @@ Future<String> _fetchReleaseNotes() async {
                                       Icons.keyboard_arrow_down_rounded,
                                       color: Theme.of(context).colorScheme.primary,
                                     ),
-                                    items: List.generate(AppThemes.themeNames.length, (index) {
-                                      return DropdownMenuItem<int>(
-                                        value: index,
+                                    items: [
+                                      ...List.generate(AppThemes.themeNames.length, (index) {
+                                        return DropdownMenuItem<int>(
+                                          value: index,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 24,
+                                                height: 24,
+                                                margin: EdgeInsets.only(right: 12),
+                                                decoration: BoxDecoration(
+                                                  color: AppThemes.themes[index * 2].colorScheme.primary,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: Colors.white.withOpacity(0.5),
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                AppThemes.themeNames[index],
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                      // Custom theme option
+                                      DropdownMenuItem<int>(
+                                        value: ThemeNotifier.customThemeIndex,
                                         child: Row(
                                           children: [
                                             Container(
@@ -683,7 +712,7 @@ Future<String> _fetchReleaseNotes() async {
                                               height: 24,
                                               margin: EdgeInsets.only(right: 12),
                                               decoration: BoxDecoration(
-                                                color: AppThemes.themes[index].colorScheme.primary,
+                                                color: themeNotifier.customThemeColor ?? Colors.grey,
                                                 shape: BoxShape.circle,
                                                 border: Border.all(
                                                   color: Colors.white.withOpacity(0.5),
@@ -692,7 +721,7 @@ Future<String> _fetchReleaseNotes() async {
                                               ),
                                             ),
                                             Text(
-                                              AppThemes.themeNames[index],
+                                              'Custom',
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -700,11 +729,23 @@ Future<String> _fetchReleaseNotes() async {
                                             ),
                                           ],
                                         ),
-                                      );
-                                    }),
+                                      ),
+                                    ],
                                     onChanged: (int? newIndex) {
                                       if (newIndex != null) {
+                                        if (newIndex == ThemeNotifier.customThemeIndex &&
+                                            themeNotifier.customThemeColor == null) {
+                                          // Don't switch to custom if no custom color is set
+                                          return;
+                                        }
                                         themeNotifier.updateThemeBasedOnMode(newIndex);
+                                        setState(() {
+                                          if (themeNotifier.customThemeColor != null) {
+                                            _redValue = themeNotifier.customThemeColor!.red;
+                                            _greenValue = themeNotifier.customThemeColor!.green;
+                                            _blueValue = themeNotifier.customThemeColor!.blue;
+                                          }
+                                        });
                                       }
                                     },
                                   ),
@@ -714,87 +755,89 @@ Future<String> _fetchReleaseNotes() async {
                           ),
                           SizedBox(height: 32),
                           // Custom Theme Section
-                          Text(
-                            'Custom Theme',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          // Color Preview
-                          Center(
-                            child: Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.outline,
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 0.3),
-                                    blurRadius: 12,
-                                    spreadRadius: 4,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 24),
-                          // RGB Sliders
-                          _buildColorSlider(
-                            context,
-                            'Red',
-                            _redValue,
-                            Colors.red,
-                                (value) => setState(() => _redValue = value.round()),
-                          ),
-                          SizedBox(height: 16),
-                          _buildColorSlider(
-                            context,
-                            'Green',
-                            _greenValue,
-                            Colors.green,
-                                (value) => setState(() => _greenValue = value.round()),
-                          ),
-                          SizedBox(height: 16),
-                          _buildColorSlider(
-                            context,
-                            'Blue',
-                            _blueValue,
-                            Colors.blue,
-                                (value) => setState(() => _blueValue = value.round()),
-                          ),
-                          SizedBox(height: 24),
-                          // Apply Custom Theme Button
-                          FilledButton(
-                            onPressed: () {
-                              // Create and apply custom theme
-                              final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
-                              themeNotifier.setCustomTheme(customColor);
-                              Navigator.pop(context);
-                            },
-                            style: FilledButton.styleFrom(
-                              minimumSize: Size(double.infinity, 56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: Text(
-                              'Apply Custom Theme',
+                          if (themeNotifier.selectedThemeIndex == ThemeNotifier.customThemeIndex ||
+                              themeNotifier.customThemeColor == null) ...[
+                            Text(
+                              'Custom Theme',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
-                          ),
-                          SizedBox(height: 24),
+                            SizedBox(height: 16),
+                            // Color Preview
+                            Center(
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.outline,
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 0.3),
+                                      blurRadius: 12,
+                                      spreadRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 24),
+                            // RGB Sliders
+                            _buildColorSlider(
+                              context,
+                              'Red',
+                              _redValue,
+                              Colors.red,
+                                  (value) => setState(() => _redValue = value.round()),
+                            ),
+                            SizedBox(height: 16),
+                            _buildColorSlider(
+                              context,
+                              'Green',
+                              _greenValue,
+                              Colors.green,
+                                  (value) => setState(() => _greenValue = value.round()),
+                            ),
+                            SizedBox(height: 16),
+                            _buildColorSlider(
+                              context,
+                              'Blue',
+                              _blueValue,
+                              Colors.blue,
+                                  (value) => setState(() => _blueValue = value.round()),
+                            ),
+                            SizedBox(height: 24),
+                            // Apply Custom Theme Button
+                            FilledButton(
+                              onPressed: () {
+                                final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
+                                themeNotifier.setCustomTheme(customColor);
+                                Navigator.pop(context);
+                              },
+                              style: FilledButton.styleFrom(
+                                minimumSize: Size(double.infinity, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: Text(
+                                'Apply Custom Theme',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                          SizedBox(height: 32),
                           // Theme Mode Selection
                           Text(
                             'Theme Mode',
@@ -879,7 +922,8 @@ Future<String> _fetchReleaseNotes() async {
     );
   }
 
-// Helper method to build color sliders
+
+  // Helper method to build color sliders
   Widget _buildColorSlider(
       BuildContext context,
       String label,
@@ -920,12 +964,14 @@ Future<String> _fetchReleaseNotes() async {
             ),
           ),
           child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
+            data: SliderThemeData(
+              trackHeight: 4,
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
               activeTrackColor: color,
               inactiveTrackColor: color.withOpacity(0.2),
               thumbColor: color,
               overlayColor: color.withOpacity(0.2),
-              trackHeight: 4,
             ),
             child: Slider(
               value: value.toDouble(),

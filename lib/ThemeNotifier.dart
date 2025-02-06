@@ -7,6 +7,7 @@ class ThemeNotifier extends ChangeNotifier {
   ThemeMode _currentThemeMode;
   int _selectedThemeIndex;
   Color? _customThemeColor;
+  static const int customThemeIndex = -1; // Special index for custom theme
 
   // Constructor
   ThemeNotifier(this._currentTheme, this._currentThemeMode) : _selectedThemeIndex = 0 {
@@ -18,6 +19,7 @@ class ThemeNotifier extends ChangeNotifier {
   ThemeMode get currentThemeMode => _currentThemeMode;
   int get selectedThemeIndex => _selectedThemeIndex;
   Color? get customThemeColor => _customThemeColor;
+  bool get isCustomTheme => _selectedThemeIndex == customThemeIndex;
 
   // Change the current theme
   void changeTheme(ThemeData newTheme) {
@@ -32,7 +34,7 @@ class ThemeNotifier extends ChangeNotifier {
     await prefs.setString('themeMode', newMode.toString());
 
     // Update theme based on new mode
-    if (_customThemeColor != null) {
+    if (isCustomTheme && _customThemeColor != null) {
       _applyCustomTheme(_customThemeColor!);
     } else {
       updateThemeBasedOnMode(_selectedThemeIndex);
@@ -42,18 +44,27 @@ class ThemeNotifier extends ChangeNotifier {
 
   // Update theme based on selected index and current mode
   void updateThemeBasedOnMode(int selectedThemeIndex) async {
+    if (selectedThemeIndex == customThemeIndex && _customThemeColor == null) {
+      // If selecting custom theme but no custom color is set, keep current theme
+      return;
+    }
+
     _selectedThemeIndex = selectedThemeIndex;
-    _customThemeColor = null; // Reset custom theme when selecting predefined theme
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt('selectedThemeIndex', selectedThemeIndex);
-    await prefs.remove('customThemeColor'); // Clear stored custom theme
 
-    if (_currentThemeMode == ThemeMode.system) {
-      final brightness = WidgetsBinding.instance.window.platformBrightness;
-      _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+    if (selectedThemeIndex == customThemeIndex) {
+      if (_customThemeColor != null) {
+        _applyCustomTheme(_customThemeColor!);
+      }
     } else {
-      _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
+      if (_currentThemeMode == ThemeMode.system) {
+        final brightness = WidgetsBinding.instance.window.platformBrightness;
+        _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+      } else {
+        _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
+      }
     }
     notifyListeners();
   }
@@ -61,8 +72,12 @@ class ThemeNotifier extends ChangeNotifier {
   // Set and apply custom theme
   void setCustomTheme(Color color) async {
     _customThemeColor = color;
+    _selectedThemeIndex = customThemeIndex;
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt('customThemeColor', color.value);
+    await prefs.setInt('selectedThemeIndex', customThemeIndex);
+
     _applyCustomTheme(color);
   }
 
@@ -107,8 +122,11 @@ class ThemeNotifier extends ChangeNotifier {
     String themeModeString = prefs.getString('themeMode') ?? ThemeMode.system.toString();
     _currentThemeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeString);
 
+    // Load selected theme index
+    _selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
+
     // Load custom theme if it exists
-    if (prefs.containsKey('customThemeColor')) {
+    if (_selectedThemeIndex == customThemeIndex) {
       final colorValue = prefs.getInt('customThemeColor');
       if (colorValue != null) {
         _customThemeColor = Color(colorValue);
@@ -117,15 +135,13 @@ class ThemeNotifier extends ChangeNotifier {
       }
     }
 
-    // Load selected theme index
-    _selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
     updateThemeBasedOnMode(_selectedThemeIndex);
   }
 
   // Listen to system theme changes
   void handleSystemThemeChange() {
     if (_currentThemeMode == ThemeMode.system) {
-      if (_customThemeColor != null) {
+      if (isCustomTheme && _customThemeColor != null) {
         _applyCustomTheme(_customThemeColor!);
       } else {
         updateThemeBasedOnMode(_selectedThemeIndex);
