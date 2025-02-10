@@ -37,40 +37,40 @@ class CustomThemeGenerator {
       ),
 
       // Input Decoration Theme
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
-        ),
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-      ),
+      // inputDecorationTheme: InputDecorationTheme(
+      //   border: OutlineInputBorder(
+      //     borderRadius: BorderRadius.circular(12),
+      //     borderSide: BorderSide(color: colorScheme.outline),
+      //   ),
+      //   enabledBorder: OutlineInputBorder(
+      //     borderRadius: BorderRadius.circular(12),
+      //     borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+      //   ),
+      //   focusedBorder: OutlineInputBorder(
+      //     borderRadius: BorderRadius.circular(12),
+      //     borderSide: BorderSide(color: colorScheme.primary, width: 2),
+      //   ),
+      //   labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+      // ),
 
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
+          elevation: 2,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
 
       // Card Theme
       cardTheme: CardTheme(
-        color: colorScheme.surface,
-        elevation: 1,
+        elevation: 3,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
+        clipBehavior: Clip.antiAliasWithSaveLayer,
       ),
     );
   }
@@ -109,40 +109,40 @@ class CustomThemeGenerator {
       ),
 
       // Input Decoration Theme
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
-        ),
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-      ),
+      // inputDecorationTheme: InputDecorationTheme(
+      //   border: OutlineInputBorder(
+      //     borderRadius: BorderRadius.circular(12),
+      //     borderSide: BorderSide(color: colorScheme.outline),
+      //   ),
+      //   enabledBorder: OutlineInputBorder(
+      //     borderRadius: BorderRadius.circular(12),
+      //     borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+      //   ),
+      //   focusedBorder: OutlineInputBorder(
+      //     borderRadius: BorderRadius.circular(12),
+      //     borderSide: BorderSide(color: colorScheme.primary, width: 2),
+      //   ),
+      //   labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+      // ),
 
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
+          elevation: 2,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
 
       // Card Theme
       cardTheme: CardTheme(
-        color: colorScheme.surface,
-        elevation: 1,
+        elevation: 3,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
+        clipBehavior: Clip.antiAliasWithSaveLayer,
       ),
     );
   }
