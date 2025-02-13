@@ -574,19 +574,6 @@ Future<String> _fetchReleaseNotes() async {
               ),
               child: Stack(
                 children: [
-                  // Decorative background element
-                  // Positioned(
-                  //   top: -100,
-                  //   right: -100,
-                  //   child: Container(
-                  //     width: 200,
-                  //     height: 200,
-                  //     decoration: BoxDecoration(
-                  //       shape: BoxShape.circle,
-                  //       color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  //     ),
-                  //   ),
-                  // ),
                   SingleChildScrollView(
                     child: Padding(
                       padding: EdgeInsets.all(24),
