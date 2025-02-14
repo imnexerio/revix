@@ -1993,10 +1993,9 @@ Future<String> _fetchReleaseNotes() async {
                   ),
                   SizedBox(height: 32),
 
-                  FilledButton.tonal(
+                  FilledButton(
                     onPressed: () => _logout(context),
                     style: FilledButton.styleFrom(
-
                       minimumSize: Size(70, 55),
                       backgroundColor: Theme.of(context).colorScheme.errorContainer,
                       foregroundColor: Theme.of(context).colorScheme.error,
@@ -2004,9 +2003,16 @@ Future<String> _fetchReleaseNotes() async {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: Text(
-                      'Logout',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.logout, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Logout',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
                 ],
