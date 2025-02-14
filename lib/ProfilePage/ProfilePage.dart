@@ -546,6 +546,9 @@ Future<String> _fetchReleaseNotes() async {
   void _showThemeBottomSheet(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
+    // Fetch the custom theme color from Firebase
+    themeNotifier.fetchCustomTheme();
+
     // RGB values for custom theme
     int _redValue = themeNotifier.customThemeColor?.red ?? 0;
     int _greenValue = themeNotifier.customThemeColor?.green ?? 0;
@@ -1945,7 +1948,7 @@ Future<String> _fetchReleaseNotes() async {
                     context: context,
                     title: 'Edit Profile',
                     subtitle: 'Update your personal information',
-                    icon: Icons.person_2_rounded,
+                    icon: Icons.person,
                     onTap: () => _showEditProfileBottomSheet(context),
                   ),
                   SizedBox(height: 16),
@@ -2037,17 +2040,17 @@ Future<String> _fetchReleaseNotes() async {
           padding: EdgeInsets.all(16),
           child: Row(
             children: [
-              // Container(
-              //   padding: EdgeInsets.all(12),
-              //   decoration: BoxDecoration(
-              //     color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              //     borderRadius: BorderRadius.circular(12),
-              //   ),
-              //   child: Icon(
-              //     icon,
-              //     color: Theme.of(context).colorScheme.primary,
-              //   ),
-              // ),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
               SizedBox(width: 16),
               Expanded(
                 child: Column(

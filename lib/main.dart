@@ -21,7 +21,8 @@ void main() async {
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
   ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
-  await themeNotifier.loadPreferences();
+  // await themeNotifier.loadPreferences();
+  await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
 
   runApp(
     ChangeNotifierProvider(

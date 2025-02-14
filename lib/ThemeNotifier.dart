@@ -1,9 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:retracker/theme_data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'CustomThemeGenerator.dart';
-
 
 class ThemeNotifier extends ChangeNotifier {
   ThemeData _currentTheme;
@@ -14,7 +14,7 @@ class ThemeNotifier extends ChangeNotifier {
 
   // Constructor
   ThemeNotifier(this._currentTheme, this._currentThemeMode) : _selectedThemeIndex = 0 {
-    loadPreferences();
+    fetchCustomTheme();
   }
 
   // Getters
@@ -27,8 +27,9 @@ class ThemeNotifier extends ChangeNotifier {
   // Change theme mode (light/dark/system)
   void changeThemeMode(ThemeMode newMode) async {
     _currentThemeMode = newMode;
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('themeMode', newMode.toString());
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+    DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/theme_data');
+    await databaseRef.update({'themeMode': newMode.toString()});
 
     // Update theme based on new mode
     if (isCustomTheme && _customThemeColor != null) {
@@ -36,6 +37,54 @@ class ThemeNotifier extends ChangeNotifier {
     } else {
       updateThemeBasedOnMode(_selectedThemeIndex);
     }
+    notifyListeners();
+  }
+
+  // Fetch custom theme from Firebase
+  Future<void> fetchCustomTheme() async {
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+    try {
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/theme_data');
+      DataSnapshot snapshot = await databaseRef.get();
+      if (snapshot.exists) {
+        Map<String, dynamic> themeData = Map<String, dynamic>.from(snapshot.value as Map);
+        int colorValue = themeData['customThemeColor'];
+        int selectedThemeIndex = themeData['selectedThemeIndex'];
+        String themeModeString = themeData['themeMode'] ?? ThemeMode.system.toString();
+        _customThemeColor = Color(colorValue);
+        _selectedThemeIndex = selectedThemeIndex;
+        _currentThemeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeString);
+        if (_selectedThemeIndex == customThemeIndex) {
+          _applyCustomTheme(_customThemeColor!);
+        } else {
+          updateThemeBasedOnMode(_selectedThemeIndex);
+        }
+        notifyListeners();
+      } else {
+        // Use default theme if no data exists
+        _currentThemeMode = ThemeMode.system;
+        _selectedThemeIndex = 0;
+        updateThemeBasedOnMode(_selectedThemeIndex);
+      }
+    } catch (e) {
+      print('Error retrieving theme data: $e');
+    }
+  }
+
+  // Set and apply custom theme, and upload to Firebase
+  void setCustomTheme(Color color) async {
+    _customThemeColor = color;
+    _selectedThemeIndex = customThemeIndex;
+
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+    DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/theme_data');
+    await databaseRef.set({
+      'customThemeColor': color.value,
+      'selectedThemeIndex': customThemeIndex,
+      'themeMode': _currentThemeMode.toString(),
+    });
+
+    _applyCustomTheme(color);
     notifyListeners();
   }
 
@@ -48,8 +97,9 @@ class ThemeNotifier extends ChangeNotifier {
 
     _selectedThemeIndex = selectedThemeIndex;
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('selectedThemeIndex', selectedThemeIndex);
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+    DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/theme_data');
+    await databaseRef.update({'selectedThemeIndex': selectedThemeIndex});
 
     if (selectedThemeIndex == customThemeIndex) {
       if (_customThemeColor != null) {
@@ -64,19 +114,8 @@ class ThemeNotifier extends ChangeNotifier {
         _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
       }
     }
+
     notifyListeners();
-  }
-
-  // Set and apply custom theme
-  void setCustomTheme(Color color) async {
-    _customThemeColor = color;
-    _selectedThemeIndex = customThemeIndex;
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('customThemeColor', color.value);
-    await prefs.setInt('selectedThemeIndex', customThemeIndex);
-
-    _applyCustomTheme(color);
   }
 
   // Apply custom theme based on color
@@ -93,40 +132,5 @@ class ThemeNotifier extends ChangeNotifier {
       _currentTheme = _currentThemeMode == ThemeMode.dark ? darkTheme : lightTheme;
     }
     notifyListeners();
-  }
-
-  // Load saved preferences
-  Future<void> loadPreferences() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Load theme mode
-    String themeModeString = prefs.getString('themeMode') ?? ThemeMode.system.toString();
-    _currentThemeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeString);
-
-    // Load selected theme index
-    _selectedThemeIndex = prefs.getInt('selectedThemeIndex') ?? 0;
-
-    // Load custom theme if it exists
-    if (_selectedThemeIndex == customThemeIndex) {
-      final colorValue = prefs.getInt('customThemeColor');
-      if (colorValue != null) {
-        _customThemeColor = Color(colorValue);
-        _applyCustomTheme(_customThemeColor!);
-        return;
-      }
-    }
-
-    updateThemeBasedOnMode(_selectedThemeIndex);
-  }
-
-  // Listen to system theme changes
-  void handleSystemThemeChange() {
-    if (_currentThemeMode == ThemeMode.system) {
-      if (isCustomTheme && _customThemeColor != null) {
-        _applyCustomTheme(_customThemeColor!);
-      } else {
-        updateThemeBasedOnMode(_selectedThemeIndex);
-      }
-    }
   }
 }
