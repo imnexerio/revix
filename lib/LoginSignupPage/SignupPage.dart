@@ -111,12 +111,19 @@ class _SignupPageState extends State<SignupPage>
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
-        DatabaseReference ref =
-            FirebaseDatabase.instance.ref('users/$uid/profile_data');
+        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
         await ref.set({
           'email': user.email,
           'name': _nameController.text.trim(),
           'createdAt': DateTime.now().toIso8601String(),
+          'custom_frequencies': {
+            '2 Day': [2],
+            '3 Day': [3],
+            'Daily': [1],
+            'Default': [1, 4, 7, 15, 30, 60],
+            'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
+            'Weekly': [7],
+          },
         });
 
         // Update the display name in Firebase Authentication
