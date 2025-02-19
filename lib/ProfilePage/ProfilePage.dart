@@ -924,16 +924,27 @@ Future<String> _fetchReleaseNotes() async {
   }
 
   void _showFrequencyBottomSheet(BuildContext context) {
-    List<Map<String, String>> frequencies = [
-      {'title': 'Daily', 'frequency': '1'},
-      {'title': '2 Days', 'frequency': '2'},
-      {'title': '3 Days', 'frequency': '3'},
-      {'title': 'Weekly', 'frequency': '7'},
-      {'title': 'Default', 'frequency': '1, 4, 7, 15, 30, 60'},
-      {'title': 'Priority', 'frequency': '1, 3, 4, 5, 7, 15, 25, 30'},
-    ];
+    List<Map<String, String>> frequencies = [];
     TextEditingController _customFrequencyController = TextEditingController();
     TextEditingController _customTitleController = TextEditingController();
+
+    // Fetch data from Firebase
+    void fetchFrequencies(StateSetter setState) async {
+      String uid = FirebaseAuth.instance.currentUser!.uid;
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
+      DataSnapshot snapshot = await databaseRef.get();
+      if (snapshot.exists) {
+        Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
+        setState(() {
+          frequencies = data.entries.map((entry) {
+            return {
+              'title': entry.key,
+              'frequency': (entry.value as List<dynamic>).join(', '),
+            };
+          }).toList();
+        });
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -942,6 +953,7 @@ Future<String> _fetchReleaseNotes() async {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
+            fetchFrequencies(setState); // Fetch frequencies when the bottom sheet is shown
             return Container(
               height: MediaQuery.of(context).size.height * 0.7,
               decoration: BoxDecoration(
@@ -1090,13 +1102,26 @@ Future<String> _fetchReleaseNotes() async {
                                           child: Text('Cancel'),
                                         ),
                                         TextButton(
-                                          onPressed: () {
+                                          onPressed: () async {
+                                            String title = _customTitleController.text;
+                                            String frequency = _customFrequencyController.text;
+
+                                            // Add to local list
                                             setState(() {
                                               frequencies.add({
-                                                'title': _customTitleController.text,
-                                                'frequency': _customFrequencyController.text,
+                                                'title': title,
+                                                'frequency': frequency,
                                               });
                                             });
+
+                                            String uid = FirebaseAuth.instance.currentUser!.uid;
+                                            // Store in Firebase Realtime Database
+                                            DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
+                                            List<int> frequencyList = frequency.split(',').map((e) => int.parse(e.trim())).toList();
+                                            await databaseRef.update({
+                                              title: frequencyList,
+                                            });
+
                                             Navigator.of(context).pop();
                                           },
                                           child: Text('Add'),
