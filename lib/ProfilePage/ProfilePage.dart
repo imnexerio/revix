@@ -1121,7 +1121,7 @@ Future<String> _fetchReleaseNotes() async {
                                   backgroundColor: Colors.transparent,
                                   builder: (BuildContext context) {
                                     return Container(
-                                      height: MediaQuery.of(context).size.height * 0.7,
+                                      height: MediaQuery.of(context).size.height * 0.5,
                                       padding: EdgeInsets.only(
                                         bottom: MediaQuery.of(context).viewInsets.bottom,
                                       ),
