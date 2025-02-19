@@ -42,7 +42,17 @@ class ThemeNotifier extends ChangeNotifier {
 
   // Fetch custom theme from Firebase
   Future<void> fetchCustomTheme() async {
-    String uid = FirebaseAuth.instance.currentUser!.uid;
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // User is not logged in, use default theme
+      _currentThemeMode = ThemeMode.system;
+      _selectedThemeIndex = 0;
+      updateThemeBasedOnMode(_selectedThemeIndex);
+      notifyListeners();
+      return;
+    }
+
+    String uid = user.uid;
     try {
       DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/theme_data');
       DataSnapshot snapshot = await databaseRef.get();
@@ -68,9 +78,13 @@ class ThemeNotifier extends ChangeNotifier {
       }
     } catch (e) {
       print('Error retrieving theme data: $e');
+      // Use default theme if an error occurs
+      _currentThemeMode = ThemeMode.system;
+      _selectedThemeIndex = 0;
+      updateThemeBasedOnMode(_selectedThemeIndex);
+      notifyListeners();
     }
   }
-
   // Set and apply custom theme, and upload to Firebase
   void setCustomTheme(Color color) async {
     _customThemeColor = color;
@@ -97,7 +111,20 @@ class ThemeNotifier extends ChangeNotifier {
 
     _selectedThemeIndex = selectedThemeIndex;
 
-    String uid = FirebaseAuth.instance.currentUser!.uid;
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // User is not logged in, use default theme
+      if (_currentThemeMode == ThemeMode.system) {
+        final brightness = WidgetsBinding.instance.window.platformBrightness;
+        _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+      } else {
+        _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
+      }
+      notifyListeners();
+      return;
+    }
+
+    String uid = user.uid;
     DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/theme_data');
     await databaseRef.update({'selectedThemeIndex': selectedThemeIndex});
 
