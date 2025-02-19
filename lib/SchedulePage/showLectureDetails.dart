@@ -85,27 +85,21 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       String dateRevised = DateTime.now().toIso8601String().split('T')[0];
                                       int missedRevision = (details['missed_revision'] as num).toInt();
                                       DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
-                                      String dateScheduled = DateNextRevision.calculateNextRevisionDate(
+                                      String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
                                         scheduledDate,
                                         revisionFrequency,
                                         noRevision + 1,
-                                      ).toIso8601String().split('T')[0];
+                                      )).toIso8601String().split('T')[0];
 
                                       if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                                         missedRevision += 1;
                                       }
-                                      // Retrieve the existing list of missed revision dates
                                       List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
-                                      // print('details_missed_revisions: $datesMissedRevisions');
 
                                       if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
-                                          datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
-                                        }
-
-                                      // Retrieve the existing dates_revised list
+                                        datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
+                                      }
                                       List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
-                                      // Add the new date to the list
-
                                       datesRevised.add(dateRevised);
 
                                       await UpdateRecords(
