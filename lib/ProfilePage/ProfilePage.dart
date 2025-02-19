@@ -923,6 +923,204 @@ Future<String> _fetchReleaseNotes() async {
     );
   }
 
+  void _showFrequencyBottomSheet(BuildContext context) {
+    List<Map<String, String>> frequencies = [
+      {'title': 'Daily', 'frequency': '1'},
+      {'title': '2 Days', 'frequency': '2'},
+      {'title': '3 Days', 'frequency': '3'},
+      {'title': 'Weekly', 'frequency': '7'},
+      {'title': 'Default', 'frequency': '1, 4, 7, 15, 30, 60'},
+      {'title': 'Priority', 'frequency': '1, 3, 4, 5, 7, 15, 25, 30'},
+    ];
+    TextEditingController _customFrequencyController = TextEditingController();
+    TextEditingController _customTitleController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.background,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                    offset: Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Frequency(Days)',
+                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onBackground,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Customize your tracking frequency',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: Icon(Icons.close, size: 20),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  padding: EdgeInsets.all(12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 32),
+                          Text(
+                            'Default Frequency',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Table(
+                            border: TableBorder.all(color: Colors.grey),
+                            children: [
+                              TableRow(
+                                children: [
+                                  TableCell(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text('Title'),
+                                    ),
+                                  ),
+                                  TableCell(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text('Frequency'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              ...frequencies.map((frequency) {
+                                return TableRow(
+                                  children: [
+                                    TableCell(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(frequency['title']!),
+                                      ),
+                                    ),
+                                    TableCell(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(frequency['frequency']!),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+                          Center(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: Text('Add Custom Frequency'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: _customTitleController,
+                                            decoration: InputDecoration(hintText: 'Enter title'),
+                                          ),
+                                          TextField(
+                                            controller: _customFrequencyController,
+                                            decoration: InputDecoration(hintText: 'Enter frequency'),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              frequencies.add({
+                                                'title': _customTitleController.text,
+                                                'frequency': _customFrequencyController.text,
+                                              });
+                                            });
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text('Add'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                              child: Text('Add Custom'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
 
   // Helper method to build color sliders
@@ -1958,6 +2156,14 @@ Future<String> _fetchReleaseNotes() async {
                     subtitle: 'Choose your style',
                     icon: Icons.color_lens_outlined,
                     onTap: () => _showThemeBottomSheet(context),
+                  ),
+                  SizedBox(height: 16),
+                  _buildProfileOptionCard(
+                    context: context,
+                    title: 'Custom Frequency',
+                    subtitle: 'Modify your tracking intervals',
+                    icon: Icons.timelapse_sharp,
+                    onTap: () => _showFrequencyBottomSheet(context),
                   ),
                   SizedBox(height: 16),
                   _buildProfileOptionCard(
