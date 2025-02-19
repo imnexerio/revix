@@ -966,13 +966,19 @@ Future<String> _fetchReleaseNotes() async {
           });
         }
       } catch (e) {
+        print('Error fetching frequencies: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 Icon(Icons.error, color: Colors.white),
                 SizedBox(width: 8),
-                Text('Error fetching frequencies: ${e.toString()}'),
+                Expanded(
+                  child: Text(
+                    'Error fetching frequencies: ${e.toString()}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             backgroundColor: Colors.red,
