@@ -1201,6 +1201,9 @@ Future<String> _fetchReleaseNotes() async {
                                                         if (value == null || value.trim().isEmpty) {
                                                           return 'Please enter a title';
                                                         }
+                                                        if (frequencies.any((freq) => freq['title'] == value.trim())) {
+                                                          return 'Title already exists';
+                                                        }
                                                         return null;
                                                       },
                                                     ),
@@ -1236,6 +1239,27 @@ Future<String> _fetchReleaseNotes() async {
                                                                 String title = _customTitleController.text.trim();
                                                                 String frequency = _customFrequencyController.text.trim();
 
+                                                                // Check for duplicate title
+                                                                if (frequencies.any((freq) => freq['title'] == title)) {
+                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                    SnackBar(
+                                                                      content: Row(
+                                                                        children: [
+                                                                          Icon(Icons.error, color: Colors.white),
+                                                                          SizedBox(width: 8),
+                                                                          Text('Title already exists'),
+                                                                        ],
+                                                                      ),
+                                                                      backgroundColor: Colors.red,
+                                                                      behavior: SnackBarBehavior.floating,
+                                                                      shape: RoundedRectangleBorder(
+                                                                        borderRadius: BorderRadius.circular(10),
+                                                                      ),
+                                                                    ),
+                                                                  );
+                                                                  return;
+                                                                }
+
                                                                 // Add to local list
                                                                 setState(() {
                                                                   frequencies.add({
@@ -1250,6 +1274,10 @@ Future<String> _fetchReleaseNotes() async {
                                                                 await databaseRef.update({
                                                                   title: frequencyList,
                                                                 });
+
+                                                                // Clear text fields
+                                                                _customTitleController.clear();
+                                                                _customFrequencyController.clear();
 
                                                                 Navigator.pop(context);
                                                                 ScaffoldMessenger.of(context).showSnackBar(
