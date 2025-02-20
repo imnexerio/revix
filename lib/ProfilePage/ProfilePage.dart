@@ -930,26 +930,23 @@ Future<String> _fetchReleaseNotes() async {
     final TextEditingController _customFrequencyController = TextEditingController();
     final TextEditingController _customTitleController = TextEditingController();
 
-    // Validation function for frequency format
+    // Validation function remains the same
     bool isValidFrequencyFormat(String frequency) {
       if (frequency.isEmpty) return false;
-
       try {
         List<String> numbers = frequency.split(',').map((e) => e.trim()).toList();
         List<int> numericalValues = numbers.map((e) => int.parse(e)).toList();
         numericalValues.sort();
-
         for (int i = 0; i < numericalValues.length - 1; i++) {
           if (numericalValues[i] >= numericalValues[i + 1]) return false;
         }
-
         return true;
       } catch (e) {
         return false;
       }
     }
 
-    // Fetch data from Firebase
+    // Fetch data function remains the same
     void fetchFrequencies(StateSetter setState) async {
       try {
         Map<String, dynamic> data = await FetchFrequenciesUtils.fetchFrequencies();
@@ -966,11 +963,11 @@ Future<String> _fetchReleaseNotes() async {
           }).toList();
         });
       } catch (e) {
-      //   print('Error fetching frequencies: $e');
+        //   print('Error fetching frequencies: $e');
       }
     }
 
-      showModalBottomSheet(
+    showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -981,356 +978,169 @@ Future<String> _fetchReleaseNotes() async {
             return Container(
               height: MediaQuery.of(context).size.height * 0.7,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                    offset: Offset(0, -4),
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    spreadRadius: 0,
+                    offset: Offset(0, -2),
                   ),
                 ],
               ),
-              child: Stack(
+              child: Column(
                 children: [
-                  SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Container(
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
+                  // Handle bar and header
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                          SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Frequency(Days)',
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.onBackground,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Customize your tracking frequency',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              IconButton(
-                                onPressed: () => Navigator.pop(context),
-                                icon: Icon(Icons.close, size: 20),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  padding: EdgeInsets.all(12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                        ),
+                        SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Frequency (Days)',
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Customize your tracking frequency',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IconButton.filledTonal(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close, size: 20),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                minimumSize: Size(40, 40),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                            ],
-                          ),
-                          SizedBox(height: 32),
-                          Table(
-                            border: TableBorder.all(color: Colors.grey),
-                            children: [
-                              TableRow(
-                                children: [
-                                  TableCell(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Text(
-                                        'Title'
-                                        ,style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context).colorScheme.primary
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1),
+                  // Frequencies list
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outlineVariant,
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Title',
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  TableCell(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Text(
-                                        'Frequency'
-                                        ,style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context).colorScheme.primary
+                                      Expanded(
+                                        child: Text(
+                                          'Frequency',
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              ...frequencies.map((frequency) {
-                                return TableRow(
+                                ),
+                                Divider(height: 1),
+                                ...frequencies.map((frequency) => Column(
                                   children: [
-                                    TableCell(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text(frequency['title']!),
-                                      ),
-                                    ),
-                                    TableCell(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text(frequency['frequency']!),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (BuildContext context) {
-                                    return Container(
-                                      height: MediaQuery.of(context).size.height * 0.5,
-                                      padding: EdgeInsets.only(
-                                        bottom: MediaQuery.of(context).viewInsets.bottom,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.background,
-                                        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black12,
-                                            blurRadius: 10,
-                                            spreadRadius: 5,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Stack(
+                                    Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Row(
                                         children: [
-                                          Align(
-                                            alignment: Alignment.topCenter,
-                                            child: Padding(
-                                              padding: const EdgeInsets.only(top: 12),
-                                              child: Container(
-                                                width: 40,
-                                                height: 4,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey.withOpacity(0.3),
-                                                  borderRadius: BorderRadius.circular(2),
-                                                ),
+                                          Expanded(
+                                            child: Text(
+                                              frequency['title']!,
+                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface,
                                               ),
                                             ),
                                           ),
-                                          Padding(
-                                            padding: EdgeInsets.only(
-                                              top: 40,
-                                              left: 24,
-                                              right: 24,
-                                              bottom: 24,
-                                            ),
-                                            child: SingleChildScrollView(
-                                              child: Form(
-                                                key: _formKey,
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        Text(
-                                                          'Add Custom Frequency',
-                                                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                        IconButton(
-                                                          onPressed: () => Navigator.pop(context),
-                                                          icon: Icon(Icons.close),
-                                                          style: IconButton.styleFrom(
-                                                            backgroundColor: Colors.grey.withOpacity(0.1),
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius: BorderRadius.circular(12),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    SizedBox(height: 30),
-                                                    TextFormField(
-                                                      controller: _customTitleController,
-                                                      decoration: InputDecoration(
-                                                        labelText: 'Title',
-                                                        hintText: 'Enter title',
-                                                        border: OutlineInputBorder(
-                                                          borderRadius: BorderRadius.circular(12),
-                                                        ),
-                                                        prefixIcon: Icon(Icons.title),
-                                                      ),
-                                                      validator: (value) {
-                                                        if (value == null || value.trim().isEmpty) {
-                                                          return 'Please enter a title';
-                                                        }
-                                                        if (frequencies.any((freq) => freq['title'] == value.trim())) {
-                                                          return 'Title already exists';
-                                                        }
-                                                        return null;
-                                                      },
-                                                    ),
-                                                    SizedBox(height: 20),
-                                                    TextFormField(
-                                                      controller: _customFrequencyController,
-                                                      decoration: InputDecoration(
-                                                        labelText: 'Frequency',
-                                                        hintText: 'Enter frequency (e.g., 1,2,3)',
-                                                        border: OutlineInputBorder(
-                                                          borderRadius: BorderRadius.circular(12),
-                                                        ),
-                                                        prefixIcon: Icon(Icons.timeline),
-                                                      ),
-                                                      validator: (value) {
-                                                        if (value == null || value.trim().isEmpty) {
-                                                          return 'Please enter frequency values';
-                                                        }
-                                                        if (!isValidFrequencyFormat(value)) {
-                                                          return 'Please enter valid comma-separated numbers in ascending order';
-                                                        }
-                                                        return null;
-                                                      },
-                                                    ),
-                                                    SizedBox(height: 40),
-                                                    Center(
-                                                      child: Container(
-                                                        width: 200,
-                                                        child: FilledButton(
-                                                          onPressed: () async {
-                                                            if (_formKey.currentState!.validate()) {
-                                                              try {
-                                                                String title = _customTitleController.text.trim();
-                                                                String frequency = _customFrequencyController.text.trim();
-
-                                                                // Check for duplicate title
-                                                                if (frequencies.any((freq) => freq['title'] == title)) {
-                                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                                    SnackBar(
-                                                                      content: Row(
-                                                                        children: [
-                                                                          Icon(Icons.error, color: Colors.white),
-                                                                          SizedBox(width: 8),
-                                                                          Text('Title already exists'),
-                                                                        ],
-                                                                      ),
-                                                                      backgroundColor: Colors.red,
-                                                                      behavior: SnackBarBehavior.floating,
-                                                                      shape: RoundedRectangleBorder(
-                                                                        borderRadius: BorderRadius.circular(10),
-                                                                      ),
-                                                                    ),
-                                                                  );
-                                                                  return;
-                                                                }
-
-                                                                // Add to local list
-                                                                setState(() {
-                                                                  frequencies.add({
-                                                                    'title': title,
-                                                                    'frequency': frequency,
-                                                                  });
-                                                                });
-
-                                                                String uid = FirebaseAuth.instance.currentUser!.uid;
-                                                                DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
-                                                                List<int> frequencyList = frequency.split(',').map((e) => int.parse(e.trim())).toList();
-                                                                await databaseRef.update({
-                                                                  title: frequencyList,
-                                                                });
-
-                                                                // Clear text fields
-                                                                _customTitleController.clear();
-                                                                _customFrequencyController.clear();
-
-                                                                Navigator.pop(context);
-                                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                                  SnackBar(
-                                                                    content: Row(
-                                                                      children: [
-                                                                        Icon(Icons.check_circle, color: Colors.white),
-                                                                        SizedBox(width: 8),
-                                                                        Text('Frequency added successfully'),
-                                                                      ],
-                                                                    ),
-                                                                    backgroundColor: Colors.green,
-                                                                    behavior: SnackBarBehavior.floating,
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius: BorderRadius.circular(10),
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              } catch (e) {
-                                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                                  SnackBar(
-                                                                    content: Row(
-                                                                      children: [
-                                                                        Icon(Icons.error, color: Colors.white),
-                                                                        SizedBox(width: 8),
-                                                                        Text('Failed to add frequency: $e'),
-                                                                      ],
-                                                                    ),
-                                                                    backgroundColor: Colors.red,
-                                                                    behavior: SnackBarBehavior.floating,
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius: BorderRadius.circular(10),
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              }
-                                                            }
-                                                          },
-                                                          style: FilledButton.styleFrom(
-                                                            minimumSize: Size(double.infinity, 55),
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius: BorderRadius.circular(16),
-                                                            ),
-                                                          ),
-                                                          child: Text(
-                                                            'Add Frequency',
-                                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
+                                          Expanded(
+                                            child: Text(
+                                              frequency['frequency']!,
+                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface,
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                    );
-                                  },
-                                );
-                              },
-                              child: Text('Add Custom'),
+                                    ),
+                                    if (frequencies.indexOf(frequency) != frequencies.length - 1)
+                                      Divider(height: 1),
+                                  ],
+                                )).toList(),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          FilledButton.icon(
+                            onPressed: () => _showAddFrequencySheet(
+                              context,
+                              _formKey,
+                              _customTitleController,
+                              _customFrequencyController,
+                              frequencies,
+                              setState,
+                              isValidFrequencyFormat,
+                            ),
+                            icon: Icon(Icons.add),
+                            label: Text('Add Custom Frequency'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: Size(200, 48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ],
@@ -1343,6 +1153,240 @@ Future<String> _fetchReleaseNotes() async {
           },
         );
       },
+    );
+  }
+
+// Separate method for add frequency sheet
+  void _showAddFrequencySheet(
+      BuildContext context,
+      GlobalKey<FormState> formKey,
+      TextEditingController titleController,
+      TextEditingController frequencyController,
+      List<Map<String, String>> frequencies,
+      StateSetter setState,
+      bool Function(String) isValidFrequencyFormat,
+      ) {
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (BuildContext context) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+            children: [
+        // Header
+        Container(
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Add Custom Frequency',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                IconButton.filledTonal(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.close, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    minimumSize: Size(40, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    Divider(height: 1),
+    // Form
+    Expanded(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(24),
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Enter frequency title',
+                  prefixIcon: Icon(Icons.title),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a title';
+                  }
+                  if (frequencies.any((freq) => freq['title'] == value.trim())) {
+                    return 'Title already exists';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 24),
+              TextFormField(
+                controller: frequencyController,
+                decoration: InputDecoration(
+                  labelText: 'Frequency',
+                  hintText: 'Enter comma-separated numbers (e.g., 1,2,3)',
+                  prefixIcon: Icon(Icons.timeline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter frequency values';
+                  }
+                  if (!isValidFrequencyFormat(value)) {
+                    return 'Please enter valid comma-separated numbers in ascending order';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+    // Submit button
+              Container(
+                padding: EdgeInsets.all(24),
+                child: FilledButton(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      try {
+                        String title = titleController.text.trim();
+                        String frequency = frequencyController.text.trim();
+
+                        // Firebase update
+                        String uid = FirebaseAuth.instance.currentUser!.uid;
+                        DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
+                        List<int> frequencyList = frequency.split(',').map((e) => int.parse(e.trim())).toList();
+                        await databaseRef.update({
+                          title: frequencyList,
+                        });
+
+                        // Update local state
+                        setState(() {
+                          frequencies.add({
+                            'title': title,
+                            'frequency': frequency,
+                          });
+                        });
+
+                        titleController.clear();
+                        frequencyController.clear();
+                        Navigator.pop(context);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('Frequency added successfully'),
+                              ],
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.error, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('Failed to add frequency'),
+                              ],
+                            ),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    minimumSize: Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save),
+                      SizedBox(width: 8),
+                      Text(
+                        'Save Frequency',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+        ),
+      );
+        },
     );
   }
 
