@@ -13,6 +13,7 @@ class FetchFrequenciesUtils {
       }
     } catch (e) {
       // Handle error
+      // print('Error fetching frequencies: $e');
     }
     return data;
   }

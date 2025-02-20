@@ -966,28 +966,7 @@ Future<String> _fetchReleaseNotes() async {
           }).toList();
         });
       } catch (e) {
-        print('Error fetching frequencies: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Error fetching frequencies: ${e.toString()}',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+      //   print('Error fetching frequencies: $e');
       }
     }
 
@@ -1069,15 +1048,6 @@ Future<String> _fetchReleaseNotes() async {
                             ],
                           ),
                           SizedBox(height: 32),
-                          Text(
-                            'Default Frequency',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          SizedBox(height: 12),
                           Table(
                             border: TableBorder.all(color: Colors.grey),
                             children: [
@@ -1086,13 +1056,27 @@ Future<String> _fetchReleaseNotes() async {
                                   TableCell(
                                     child: Padding(
                                       padding: const EdgeInsets.all(8.0),
-                                      child: Text('Title'),
+                                      child: Text(
+                                        'Title'
+                                        ,style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context).colorScheme.primary
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   TableCell(
                                     child: Padding(
                                       padding: const EdgeInsets.all(8.0),
-                                      child: Text('Frequency'),
+                                      child: Text(
+                                        'Frequency'
+                                        ,style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context).colorScheme.primary
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
