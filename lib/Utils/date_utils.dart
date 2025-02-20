@@ -41,21 +41,4 @@ class DateNextRevision {
     return frequencies;
   }
 
-
-  static DateTime calculateFirstScheduledDate(String frequency) {
-    DateTime today = DateTime.now();
-    switch (frequency) {
-      case 'Daily':
-        return today.add(Duration(days: 1));
-      case '2 Day':
-        return today.add(Duration(days: 1));
-      case '3 Day':
-        return today.add(Duration(days: 1));
-      case 'Weekly':
-        return today.add(Duration(days: 1));
-      case 'Default':
-      default:
-        return today.add(Duration(days: 1));
-    }
-  }
 }
