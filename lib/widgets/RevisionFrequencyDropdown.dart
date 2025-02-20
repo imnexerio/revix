@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import '../Utils/fetchFrequencies_utils.dart';
 
 class RevisionFrequencyDropdown extends StatefulWidget {
   final String revisionFrequency;
@@ -25,25 +24,19 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
   }
 
   Future<void> _fetchFrequencies() async {
-    try {
-      String uid = FirebaseAuth.instance.currentUser!.uid;
-      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
-      DataSnapshot snapshot = await databaseRef.get();
-      if (snapshot.exists) {
-        Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
-        setState(() {
-          _dropdownItems = data.keys.map((key) {
-            return DropdownMenuItem<String>(
-              value: key,
-              child: Text(key),
-            );
-          }).toList();
-        });
-      }
-    } catch (e) {
-      // Handle error
-    }
+    Map<String, dynamic> frequencies = await FetchFrequenciesUtils.fetchFrequencies();
+    List<DropdownMenuItem<String>> items = frequencies.keys.map((key) {
+      return DropdownMenuItem<String>(
+        value: key,
+        child: Text(key),
+      );
+    }).toList();
+
+    setState(() {
+      _dropdownItems = items;
+    });
   }
+
 
   @override
   Widget build(BuildContext context) {

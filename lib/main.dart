@@ -7,7 +7,6 @@ import 'package:retracker/LoginSignupPage/LoginPage.dart';
 import 'package:retracker/ProfilePage/ProfilePage.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
 import 'ThemeNotifier.dart';

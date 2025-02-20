@@ -13,6 +13,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import '../ThemeNotifier.dart';
+import '../Utils/fetchFrequencies_utils.dart';
 import '../theme_data.dart';
 
 
@@ -951,20 +952,19 @@ Future<String> _fetchReleaseNotes() async {
     // Fetch data from Firebase
     void fetchFrequencies(StateSetter setState) async {
       try {
-        String uid = FirebaseAuth.instance.currentUser!.uid;
-        DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
-        DataSnapshot snapshot = await databaseRef.get();
-        if (snapshot.exists) {
-          Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
-          setState(() {
-            frequencies = data.entries.map((entry) {
-              return {
-                'title': entry.key,
-                'frequency': (entry.value as List<dynamic>).join(', '),
-              };
-            }).toList();
-          });
-        }
+        Map<String, dynamic> data = await FetchFrequenciesUtils.fetchFrequencies();
+        setState(() {
+          frequencies = data.entries.map((entry) {
+            String title = entry.key;
+            List<dynamic> frequencyList = entry.value;
+            String frequency = frequencyList.join(', ');
+
+            return {
+              'title': title,
+              'frequency': frequency,
+            };
+          }).toList();
+        });
       } catch (e) {
         print('Error fetching frequencies: $e');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -991,7 +991,7 @@ Future<String> _fetchReleaseNotes() async {
       }
     }
 
-    showModalBottomSheet(
+      showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
