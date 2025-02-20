@@ -89,9 +89,18 @@ class _AddLectureFormState extends State<AddLectureForm> {
       String uid = user.uid;
 
       String todayDate = DateTime.now().toIso8601String().split('T')[0];
-      String dateScheduled = DateNextRevision.calculateFirstScheduledDate(_revisionFrequency)
-          .toIso8601String()
-          .split('T')[0];
+      // print('Today Date: $todayDate');
+      // String dateScheduled = DateNextRevision.calculateFirstScheduledDate(_revisionFrequency)
+      //     .toIso8601String()
+      //     .split('T')[0];
+
+      String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+        DateTime.now(),
+        _revisionFrequency,
+        0,
+      )).toIso8601String().split('T')[0];
+
+      print('Date Scheduled: $dateScheduled');
 
       DatabaseReference ref = FirebaseDatabase.instance
           .ref('users/$uid/user_data')
