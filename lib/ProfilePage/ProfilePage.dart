@@ -1963,6 +1963,21 @@ Future<String> _fetchReleaseNotes() async {
                         children: [
                           Column(
                             children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    icon: Icon(Icons.close),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.grey.withOpacity(0.1),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                               CircleAvatar(
                                 radius: 40,
                                 backgroundColor: Colors.grey.withOpacity(0.1),
