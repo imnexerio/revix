@@ -976,7 +976,7 @@ Future<String> _fetchReleaseNotes() async {
           builder: (BuildContext context, StateSetter setState) {
             fetchFrequencies(setState);
             return Container(
-              height: MediaQuery.of(context).size.height * 0.7,
+              height: MediaQuery.of(context).size.height * 0.73,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -1172,7 +1172,7 @@ Future<String> _fetchReleaseNotes() async {
         backgroundColor: Colors.transparent,
         builder: (BuildContext context) {
       return Container(
-        height: MediaQuery.of(context).size.height * 0.7,
+        height: MediaQuery.of(context).size.height * 0.53,
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
@@ -1298,7 +1298,7 @@ Future<String> _fetchReleaseNotes() async {
     // Submit button
               Container(
                 padding: EdgeInsets.all(24),
-                child: FilledButton(
+                child: FilledButton.icon(
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       try {
@@ -1361,25 +1361,13 @@ Future<String> _fetchReleaseNotes() async {
                       }
                     }
                   },
+                  icon: Icon(Icons.save),
+                  label: Text('Save Frequency'),
                   style: FilledButton.styleFrom(
-                    minimumSize: Size(double.infinity, 56),
+                    minimumSize: Size(200, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.save),
-                      SizedBox(width: 8),
-                      Text(
-                        'Save Frequency',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
