@@ -243,20 +243,6 @@ Future<String> _fetchReleaseNotes() async {
           ),
           child: Stack(
             children: [
-              // Decorative background element
-              // Positioned(
-              //   top: -100,
-              //   right: -100,
-              //   child: Container(
-              //     width: 200,
-              //     height: 200,
-              //     decoration: BoxDecoration(
-              //       shape: BoxShape.circle,
-              //       color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              //     ),
-              //   ),
-              // ),
-              // Main content
               SingleChildScrollView(
                 child: Padding(
                   padding: EdgeInsets.only(
@@ -445,6 +431,11 @@ Future<String> _fetchReleaseNotes() async {
                               _formKey.currentState!.save();
                               try {
                                 User? user = FirebaseAuth.instance.currentUser;
+                                String uid = getCurrentUserUid();
+                                DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+                                await ref.update({
+                                  'name': _fullName
+                                });
                                 await user?.updateDisplayName(_fullName);
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
