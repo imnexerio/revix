@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -13,6 +14,8 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import '../ThemeNotifier.dart';
+import '../Utils/CustomSnackBar.dart';
+import '../Utils/FetchTypesUtils.dart';
 import '../Utils/fetchFrequencies_utils.dart';
 import '../theme_data.dart';
 
@@ -23,8 +26,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int _selectedTemeIndex = 0;
-
 
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -67,12 +68,16 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
       DataSnapshot snapshot = await databaseRef.child('profile_picture').get();
-      // print('snapshot value: ${snapshot.value}');
       if (snapshot.exists) {
         return snapshot.value as String?;
       }
     } catch (e) {
-      print('Error retrieving profile picture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'Error retrieving profile picture: $e',
+        ),
+      );
     }
     return null;
   }
@@ -87,7 +92,12 @@ class _ProfilePageState extends State<ProfilePage> {
         return Image.memory(imageBytes);
       }
     } catch (e) {
-      print('Error decoding profile picture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'Error decoding profile picture: $e',
+        ),
+      );
     }
     return Image.asset(defaultImagePath);
   }
@@ -128,28 +138,22 @@ class _ProfilePageState extends State<ProfilePage> {
       await databaseRef.update({'profile_picture': base64String});
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Profile picture uploaded successfully'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+        customSnackBar(
+          context: context,
+          message: 'Profile picture uploaded successfully',
         ),
-      );
+      );;
 
       setState(() {
         // Update the profile picture in the UI
       });
     } catch (e) {
-      print('Failed to upload profile picture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'Failed to upload profile picture',
+        ),
+      );
     }
   }
 
@@ -158,21 +162,11 @@ class _ProfilePageState extends State<ProfilePage> {
   try {
     User? user = FirebaseAuth.instance.currentUser;
     await user?.sendEmailVerification();
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Verification email sent successfully'),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+      customSnackBar(
+        context: context,
+        message: 'Verification email sent successfully',
       ),
     );
   } catch (e) {
@@ -243,20 +237,6 @@ Future<String> _fetchReleaseNotes() async {
           ),
           child: Stack(
             children: [
-              // Decorative background element
-              // Positioned(
-              //   top: -100,
-              //   right: -100,
-              //   child: Container(
-              //     width: 200,
-              //     height: 200,
-              //     decoration: BoxDecoration(
-              //       shape: BoxShape.circle,
-              //       color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              //     ),
-              //   ),
-              // ),
-              // Main content
               SingleChildScrollView(
                 child: Padding(
                   padding: EdgeInsets.only(
@@ -445,73 +425,26 @@ Future<String> _fetchReleaseNotes() async {
                               _formKey.currentState!.save();
                               try {
                                 User? user = FirebaseAuth.instance.currentUser;
+                                String uid = getCurrentUserUid();
+                                DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+                                await ref.update({
+                                  'name': _fullName
+                                });
                                 await user?.updateDisplayName(_fullName);
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Container(
-                                      padding: EdgeInsets.symmetric(vertical: 8),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(Icons.check_circle, color: Colors.white, size: 20),
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text(
-                                            'Profile updated successfully',
-                                            style: TextStyle(fontWeight: FontWeight.w500),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    margin: EdgeInsets.all(16),
+                                  customSnackBar(
+                                    context: context,
+                                    message: 'Profile uploaded successfully',
                                   ),
-                                );
+                                );;
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Container(
-                                      padding: EdgeInsets.symmetric(vertical: 8),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(Icons.error, color: Colors.white, size: 20),
-                                          ),
-                                          SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              'Failed to update profile: $e',
-                                              style: TextStyle(fontWeight: FontWeight.w500),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    customSnackBar_error(
+                                      context: context,
+                                      message: 'Failed to update profile: $e',
                                     ),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 3),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    margin: EdgeInsets.all(16),
-                                  ),
-                                );
+                                  );;
                               }
                             }
                           },
@@ -963,7 +896,13 @@ Future<String> _fetchReleaseNotes() async {
           }).toList();
         });
       } catch (e) {
-        //   print('Error fetching frequencies: $e');
+
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   customSnackBar_error(
+        //     context: context,
+        //     message: 'Error fetching frequencies: $e',
+        //   ),
+        // );
       }
     }
 
@@ -1326,21 +1265,12 @@ Future<String> _fetchReleaseNotes() async {
                         Navigator.pop(context);
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text('Frequency added successfully'),
-                              ],
-                            ),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                          customSnackBar(
+                            context: context,
+                            message: 'New frequency added successfully',
                           ),
                         );
+
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -1440,6 +1370,381 @@ Future<String> _fetchReleaseNotes() async {
       ],
     );
   }
+
+  void _showtrackingTypeBottomSheet(BuildContext context) {
+    List<Map<String, String>> trackingtype = [];
+    final _formKey = GlobalKey<FormState>();
+    final TextEditingController _customTitleController = TextEditingController();
+
+    // Fetch data function remains the same
+    void fetchtrackingType(StateSetter setState) async {
+      try {
+        List<String> data = await FetchtrackingTypeUtils.fetchtrackingType();
+        print('data: $data');
+        setState(() {
+          trackingtype = data.map((trackingTitle) {
+            return {
+              'trackingTitle': trackingTitle
+            };
+          }).toList();
+        });
+      } catch (e) {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   customSnackBar_error(
+        //     context: context,
+        //     message: 'Error fetching tracking type: $e',
+        //   ),
+        // );
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            fetchtrackingType(setState);
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.73,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    spreadRadius: 0,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Handle bar and header
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tracking Type',
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Customize your tracking types',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IconButton.filledTonal(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close, size: 20),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                minimumSize: Size(40, 40),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outlineVariant,
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Tracking Title',
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Divider(height: 1),
+                                ...trackingtype.map((tracking) => Column(
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              tracking['trackingTitle']!,
+                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (trackingtype.indexOf(tracking) != trackingtype.length - 1)
+                                      Divider(height: 1),
+                                  ],
+                                )).toList(),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          FilledButton.icon(
+                            onPressed: () => _showAddtrackingTypeSheet(
+                              context,
+                              _formKey,
+                              _customTitleController,
+                              setState,
+                            ),
+                            icon: Icon(Icons.add),
+                            label: Text('Add Custom Type'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: Size(200, 48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+// Separate method for add frequency sheet
+  void _showAddtrackingTypeSheet(
+      BuildContext context,
+      GlobalKey<FormState> formKey,
+      TextEditingController titleController,
+      StateSetter setState,
+      ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.53,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Add Custom Type',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(Icons.close, size: 20),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                            minimumSize: Size(40, 40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1),
+              // Form
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(24),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: titleController,
+                          decoration: InputDecoration(
+                            labelText: 'Type',
+                            hintText: 'Enter new tracking type',
+                            prefixIcon: Icon(Icons.title),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter a tracking type';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Submit button
+              Container(
+                padding: EdgeInsets.all(24),
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      try {
+                        String trackingTitle = titleController.text.trim();
+
+                        String uid = FirebaseAuth.instance.currentUser!.uid;
+                        DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_trackingType');
+
+                        DataSnapshot snapshot = await databaseRef.get();
+                        List<String> currentList = [];
+                        if (snapshot.exists) {
+                          currentList = List<String>.from(snapshot.value as List);
+                        }
+
+                        currentList.add(trackingTitle);
+
+                        await databaseRef.set(currentList);
+
+                        titleController.clear();
+                        Navigator.pop(context);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          customSnackBar(
+                            context: context,
+                            message: 'New tracking type added successfully',
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.error, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('Failed to add Type'),
+                              ],
+                            ),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: Icon(Icons.save),
+                  label: Text('Save Type'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: Size(200, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
   void _showChangePasswordBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -1557,8 +1862,6 @@ Future<String> _fetchReleaseNotes() async {
                           isPassword: true,
                           onSaved: (value) => _confirmPassword = value,
                           validator: (value) {
-                            print('Confirm Password: $value');
-                            print('New Password: ${_newPasswordController.text}');
                             if (value == null || value.isEmpty) {
                               return 'Please confirm your new password';
                             }
@@ -1585,23 +1888,14 @@ Future<String> _fetchReleaseNotes() async {
                                     await user.reauthenticateWithCredential(credential);
                                     await user.updatePassword(_newPassword!);
                                     Navigator.pop(context);
+
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            Icon(Icons.check_circle, color: Colors.white),
-                                            SizedBox(width: 8),
-                                            Text('Password updated successfully'),
-                                          ],
-                                        ),
-                                        backgroundColor: Colors.green,
-                                        duration: Duration(seconds: 2),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
+                                      customSnackBar(
+                                        context: context,
+                                        message: 'Password updated successfully',
                                       ),
                                     );
+
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -1775,24 +2069,13 @@ Future<String> _fetchReleaseNotes() async {
                                   await user.reauthenticateWithCredential(credential);
                                   await user.verifyBeforeUpdateEmail(_newEmail!);
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(newContext).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          Icon(Icons.check_circle, color: Colors.white),
-                                          SizedBox(width: 8),
-                                          Text('Verification email sent to $_newEmail. Please verify it and restart the app.'),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.green,
-                                      duration: Duration(seconds: 2),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      margin: EdgeInsets.all(16),
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    customSnackBar(
+                                      context: context,
+                                      message: 'Verification email sent to $_newEmail. Please verify it and Pull to refresh.',
                                     ),
                                   );
+
                                 } catch (e) {
                                   ScaffoldMessenger.of(newContext).showSnackBar(
                                     SnackBar(
@@ -2097,7 +2380,7 @@ Future<String> _fetchReleaseNotes() async {
                                             AssetImage('assets/github.png'), // Path to your GitHub icon
                                           ),
                                           onPressed: () {
-                                            UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
+                                            UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
                                           },
                                         ),
                                       ],
@@ -2435,6 +2718,14 @@ Future<String> _fetchReleaseNotes() async {
                     subtitle: 'Modify your tracking intervals',
                     icon: Icons.timelapse_sharp,
                     onTap: () => _showFrequencyBottomSheet(context),
+                  ),
+                  SizedBox(height: 16),
+                  _buildProfileOptionCard(
+                    context: context,
+                    title: 'Custom Tracking Type',
+                    subtitle: 'Modify your tracking intervals',
+                    icon: Icons.track_changes_rounded,
+                    onTap: () => _showtrackingTypeBottomSheet(context),
                   ),
                   SizedBox(height: 16),
                   _buildProfileOptionCard(

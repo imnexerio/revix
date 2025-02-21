@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-
 import 'LectureBar.dart';
 
 class CodeBar extends StatefulWidget {
@@ -128,7 +127,9 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
               if (_selectedLectureData != null && _selectedSubjectCode != null)
                 Positioned.fill(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 32.0),
+                    padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).size.height * 0.1, // Adjust the factor as needed
+                      ),
                     child: ScaleTransition(
                       scale: _slideAnimation,
                       child: FadeTransition(

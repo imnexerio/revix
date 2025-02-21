@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:retracker/LoginSignupPage/ForgotPassPage.dart';
 import 'package:retracker/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'SignupPage.dart';
@@ -94,11 +95,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
-        // String userEmail = user.email!;
-        // String userName = user.displayName ?? 'User';
         DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
-        // print('userEmail $userEmail');
-        // print('userName $userName');
 
         try {
           DataSnapshot snapshot = await ref.get();
@@ -332,8 +329,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
-                            // Navigate to forgot password page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ForgotPassPage(),
+                              ),
+                            );
                           },
+
                           child: Text('Forgot Password?'),
                           style: TextButton.styleFrom(
                             foregroundColor: colorScheme.primary,
@@ -417,7 +420,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           AssetImage('assets/github.png'), // Path to your GitHub icon
                         ),
                         onPressed: () {
-                          UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
+                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
                         },
                       ),
                       SizedBox(height: 16),

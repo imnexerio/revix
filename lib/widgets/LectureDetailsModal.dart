@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-
 import '../DetailsPage/DetailRow.dart';
+import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
+import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
 
 class LectureDetailsModal extends StatefulWidget {
@@ -56,19 +57,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Error fetching frequencies: ${e.toString()}'),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+        customSnackBar_error(
+          context: context,
+          message: 'Error fetching frequencies: ${e.toString()}',
         ),
       );
     }
@@ -210,20 +201,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 Navigator.pop(context);
 
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.check_circle, color: Colors.white),
-                                        SizedBox(width: 8),
-                                        Text('Revision added successfully'),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
+                                  customSnackBar(
+                                    context: context,
+                                    message: 'Revision added successfully',
                                   ),
                                 );
                               } catch (e) {
@@ -232,20 +212,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 }
 
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.error_outline, color: Colors.white),
-                                        SizedBox(width: 8),
-                                        Text('Failed to add revision: ${e.toString()}'),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 3),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
+                                  customSnackBar_error(
+                                    context: context,
+                                    message: 'Failed to add revision: ${e.toString()}',
                                   ),
                                 );
                               }
@@ -298,20 +267,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 // await refreshRecords();
 
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.check_circle, color: Colors.white),
-                                        SizedBox(width: 8),
-                                        Text('Update successfull'),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
+                                  customSnackBar(
+                                    context: context,
+                                    message: 'Updated successfully',
                                   ),
                                 );
                               } catch (e) {

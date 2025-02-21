@@ -6,6 +6,8 @@ import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'package:retracker/widgets/SubjectCodeDropdown.dart';
 import 'package:retracker/widgets/SubjectDropdown.dart';
+import 'Utils/CustomSnackBar.dart';
+import 'Utils/customSnackBar_error.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -55,7 +57,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
         });
       }
     } catch (e) {
-      // print('Error loading subjects and codes: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'Error loading subjects and codes: $e',
+        ),
+      );
     }
   }
 
@@ -66,7 +73,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
         _subjectCodes[newSubject] = [];
       });
     } catch (e) {
-      // print('Error adding new subject: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'Error adding new subject: $e',
+        ),
+      );
     }
   }
 
@@ -76,7 +88,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
         _subjectCodes[subject]!.add(newCode);
       });
     } catch (e) {
-      // print('Error adding new subject code: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'Error adding new subject code: $e',
+        ),
+      );
     }
   }
 
@@ -116,20 +133,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Record added successfully'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+        customSnackBar(
+          context: context,
+          message: 'Record added successfully',
         ),
       );
     } catch (e) {
@@ -363,9 +369,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   Navigator.of(context).pop(); // Navigate after showing SnackBar
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to save record: $e'),
-                                      backgroundColor: Colors.red,
+                                    customSnackBar_error(
+                                      context: context,
+                                      message: 'Failed to save record: $e',
                                     ),
                                   );
                                 }
