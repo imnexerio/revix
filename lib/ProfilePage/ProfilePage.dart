@@ -162,24 +162,12 @@ class _ProfilePageState extends State<ProfilePage> {
   try {
     User? user = FirebaseAuth.instance.currentUser;
     await user?.sendEmailVerification();
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Flexible(
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Verification email sent successfully'),
-            ],
-          ),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      )
+      customSnackBar(
+        context: context,
+        message: 'Verification email sent successfully',
+      ),
     );
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1276,24 +1264,12 @@ Future<String> _fetchReleaseNotes() async {
                         Navigator.pop(context);
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Flexible(
-                              child: Row(
-                                children: [
-                                  Icon(Icons.check_circle, color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Text('New frequency added successfully'),
-                                ],
-                              ),
-                            ),
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            duration: Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          )
+                          customSnackBar(
+                            context: context,
+                            message: 'New frequency added successfully',
+                          ),
                         );
+
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -1536,25 +1512,14 @@ Future<String> _fetchReleaseNotes() async {
                                     await user.reauthenticateWithCredential(credential);
                                     await user.updatePassword(_newPassword!);
                                     Navigator.pop(context);
+
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Flexible(
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.check_circle, color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Text('Password updated successfully'),
-                                            ],
-                                          ),
-                                        ),
-                                        backgroundColor: Theme.of(context).colorScheme.primary,
-                                        duration: Duration(seconds: 2),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      )
+                                      customSnackBar(
+                                        context: context,
+                                        message: 'Password updated successfully',
+                                      ),
                                     );
+
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -1728,25 +1693,13 @@ Future<String> _fetchReleaseNotes() async {
                                   await user.reauthenticateWithCredential(credential);
                                   await user.verifyBeforeUpdateEmail(_newEmail!);
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(newContext).showSnackBar(
-                                    SnackBar(
-                                      content: Flexible(
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.check_circle, color: Colors.white),
-                                            SizedBox(width: 8),
-                                            Text('Verification email sent to $_newEmail. Please verify it and Pull to refresh.'),
-                                          ],
-                                        ),
-                                      ),
-                                      backgroundColor: Theme.of(context).colorScheme.primary,
-                                      duration: Duration(seconds: 2),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    )
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    customSnackBar(
+                                      context: context,
+                                      message: 'Verification email sent to $_newEmail. Please verify it and Pull to refresh.',
+                                    ),
                                   );
+
                                 } catch (e) {
                                   ScaffoldMessenger.of(newContext).showSnackBar(
                                     SnackBar(

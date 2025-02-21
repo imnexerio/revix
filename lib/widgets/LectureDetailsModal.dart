@@ -267,23 +267,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 // await refreshRecords();
 
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Flexible(
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.check_circle, color: Colors.white),
-                                          SizedBox(width: 8),
-                                          Text('Update successfull'),
-                                        ],
-                                      ),
-                                    ),
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  )
+                                  customSnackBar(
+                                    context: context,
+                                    message: 'Update successfull',
+                                  ),
                                 );
                               } catch (e) {
                                 if (Navigator.canPop(context)) {
