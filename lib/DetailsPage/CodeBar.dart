@@ -127,7 +127,9 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
               if (_selectedLectureData != null && _selectedSubjectCode != null)
                 Positioned.fill(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 80.0),
+                    padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).size.height * 0.1, // Adjust the factor as needed
+                      ),
                     child: ScaleTransition(
                       scale: _slideAnimation,
                       child: FadeTransition(
