@@ -36,22 +36,7 @@ class CustomThemeGenerator {
         headlineSmall: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w600),
       ),
 
-      // Input Decoration Theme
-      // inputDecorationTheme: InputDecorationTheme(
-      //   border: OutlineInputBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //     borderSide: BorderSide(color: colorScheme.outline),
-      //   ),
-      //   enabledBorder: OutlineInputBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //     borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
-      //   ),
-      //   focusedBorder: OutlineInputBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //     borderSide: BorderSide(color: colorScheme.primary, width: 2),
-      //   ),
-      //   labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-      // ),
+
 
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -107,23 +92,6 @@ class CustomThemeGenerator {
         headlineMedium: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500),
         headlineSmall: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w600),
       ),
-
-      // Input Decoration Theme
-      // inputDecorationTheme: InputDecorationTheme(
-      //   border: OutlineInputBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //     borderSide: BorderSide(color: colorScheme.outline),
-      //   ),
-      //   enabledBorder: OutlineInputBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //     borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
-      //   ),
-      //   focusedBorder: OutlineInputBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //     borderSide: BorderSide(color: colorScheme.primary, width: 2),
-      //   ),
-      //   labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-      // ),
 
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(

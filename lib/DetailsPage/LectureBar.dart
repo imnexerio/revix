@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../Utils/lecture_colors.dart';
 import '../widgets/LectureDetailsModal.dart';
 
 class LectureBar extends StatefulWidget {
@@ -41,20 +42,19 @@ class _LectureBarState extends State<LectureBar> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Calculate number of columns based on screen width
           int crossAxisCount = _calculateColumns(constraints.maxWidth);
-
-          // Calculate the aspect ratio based on the available width
-          double aspectRatio = (constraints.maxWidth / crossAxisCount) / 200; // Adjust 200 to your desired card height
+          double aspectRatio = (constraints.maxWidth / crossAxisCount) / 200;
 
           return GridView.builder(
             padding: EdgeInsets.all(16),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              childAspectRatio: aspectRatio, // Use the calculated aspect ratio
+              childAspectRatio: aspectRatio,
               crossAxisSpacing: 6,
               mainAxisSpacing: 6,
             ),
@@ -64,10 +64,6 @@ class _LectureBarState extends State<LectureBar> {
               final details = widget.lectureData[lectureNo];
 
               return Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => _showLectureDetails(context, lectureNo, details),
@@ -79,12 +75,9 @@ class _LectureBarState extends State<LectureBar> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildInfoChip(
-                              details['lecture_type'],
-                              backgroundColor: _getTypeColor(details['lecture_type']),
-                            ),
+                            _buildInfoChip(context, details['lecture_type']),
                             Text(
-                              'Lecture $lectureNo',
+                              lectureNo,
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -112,13 +105,17 @@ class _LectureBarState extends State<LectureBar> {
                               ),
                               Row(
                                 children: [
-                                  Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                                   SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
                                       'Scheduled: ${details['date_scheduled']}',
                                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Colors.grey[600],
+                                        color: colorScheme.onSurfaceVariant,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -139,26 +136,18 @@ class _LectureBarState extends State<LectureBar> {
       ),
     );
   }
-  int _calculateColumns(double width) {
-    if (width < 600) return 1;         // Mobile
-    if (width < 900) return 2;         // Tablet
-    if (width < 1200) return 3;        // Small desktop
-    if (width < 1500) return 4;        // Medium desktop
-    return 5;                          // Large desktop
-  }
 
-  Widget _buildInfoChip(String text, {required Color backgroundColor}) {
+  Widget _buildInfoChip(BuildContext context, String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: LectureColors.getLectureTypeColor(context, text),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 11,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onPrimary,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -173,8 +162,10 @@ class _LectureBarState extends State<LectureBar> {
       String value2, {
         bool isAlert = false,
       }) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     TextStyle? labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: Colors.grey[600],
+      color: colorScheme.onSurfaceVariant,
     );
     TextStyle? valueStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w500,
@@ -207,7 +198,7 @@ class _LectureBarState extends State<LectureBar> {
                 child: Text(
                   value2,
                   style: valueStyle?.copyWith(
-                    color: isAlert ? Colors.red : null,
+                    color: isAlert ? colorScheme.error : null,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -219,18 +210,11 @@ class _LectureBarState extends State<LectureBar> {
     );
   }
 
-  Color _getTypeColor(String type) {
-    switch (type) {
-      case 'Lectures':
-        return Colors.blue;
-      case 'Handouts':
-        return Colors.green;
-      case 'O-NCERTs':
-        return Colors.purple;
-      case 'N-NCERTs':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
+  int _calculateColumns(double width) {
+    if (width < 600) return 1;         // Mobile
+    if (width < 900) return 2;         // Tablet
+    if (width < 1200) return 3;        // Small desktop
+    if (width < 1500) return 4;        // Medium desktop
+    return 5;                          // Large desktop
   }
 }
