@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -74,7 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
+        customSnackBar_error(
           context: context,
           message: 'Error retrieving profile picture: $e',
         ),
@@ -94,7 +95,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
+        customSnackBar_error(
           context: context,
           message: 'Error decoding profile picture: $e',
         ),
@@ -150,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
+        customSnackBar_error(
           context: context,
           message: 'Failed to upload profile picture',
         ),
@@ -441,7 +442,7 @@ Future<String> _fetchReleaseNotes() async {
                                 );;
                               } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    customSnackBar(
+                                    customSnackBar_error(
                                       context: context,
                                       message: 'Failed to update profile: $e',
                                     ),
@@ -897,12 +898,13 @@ Future<String> _fetchReleaseNotes() async {
           }).toList();
         });
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          customSnackBar(
-            context: context,
-            message: 'Error fetching frequencies: $e',
-          ),
-        );
+
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   customSnackBar_error(
+        //     context: context,
+        //     message: 'Error fetching frequencies: $e',
+        //   ),
+        // );
       }
     }
 
@@ -1377,22 +1379,6 @@ Future<String> _fetchReleaseNotes() async {
     final TextEditingController _customFrequencyController = TextEditingController();
     final TextEditingController _customTitleController = TextEditingController();
 
-    // Validation function remains the same
-    bool isValidFrequencyFormat(String frequency) {
-      if (frequency.isEmpty) return false;
-      try {
-        List<String> numbers = frequency.split(',').map((e) => e.trim()).toList();
-        List<int> numericalValues = numbers.map((e) => int.parse(e)).toList();
-        numericalValues.sort();
-        for (int i = 0; i < numericalValues.length - 1; i++) {
-          if (numericalValues[i] >= numericalValues[i + 1]) return false;
-        }
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-
     // Fetch data function remains the same
     void fetchtrackingType(StateSetter setState) async {
       try {
@@ -1406,12 +1392,12 @@ Future<String> _fetchReleaseNotes() async {
           }).toList();
         });
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          customSnackBar(
-            context: context,
-            message: 'Error fetching tracking type: $e',
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   customSnackBar_error(
+        //     context: context,
+        //     message: 'Error fetching tracking type: $e',
+        //   ),
+        // );
       }
     }
 
@@ -1464,7 +1450,7 @@ Future<String> _fetchReleaseNotes() async {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'trackingType',
+                                  'Tracking Type',
                                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).colorScheme.onSurface,
@@ -1497,7 +1483,6 @@ Future<String> _fetchReleaseNotes() async {
                     ),
                   ),
                   Divider(height: 1),
-                  // trackingtype list
                   Expanded(
                     child: SingleChildScrollView(
                       padding: EdgeInsets.all(24),
@@ -2742,7 +2727,7 @@ Future<String> _fetchReleaseNotes() async {
                     context: context,
                     title: 'Custom Tracking Type',
                     subtitle: 'Modify your tracking intervals',
-                    icon: Icons.timelapse_sharp,
+                    icon: Icons.track_changes_rounded,
                     onTap: () => _showtrackingTypeBottomSheet(context),
                   ),
                   SizedBox(height: 16),

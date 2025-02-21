@@ -1,9 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../Utils/CustomSnackBar.dart';
+import '../Utils/customSnackBar_error.dart';
 import 'UrlLauncher.dart';
 
 class ForgotPassPage extends StatefulWidget {
@@ -82,9 +80,12 @@ class _ForgotPassPageState extends State<ForgotPassPage>
         _errorMessage = _getFirebaseErrorMessage(e.code);
       });
     } catch (e) {
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'An unexpected error occurred. Please try again.',
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {

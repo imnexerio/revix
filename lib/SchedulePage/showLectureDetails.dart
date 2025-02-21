@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
 import '../DetailsPage/DetailRow.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
+import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
 
 
@@ -134,7 +134,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       }
 
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        customSnackBar(
+                                        customSnackBar_error(
                                           context: context,
                                           message: 'Failed to add revision: ${e.toString()}',
                                         ),

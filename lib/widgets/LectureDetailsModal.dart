@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-
 import '../DetailsPage/DetailRow.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
+import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
 
 class LectureDetailsModal extends StatefulWidget {
@@ -57,7 +57,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
+        customSnackBar_error(
           context: context,
           message: 'Error fetching frequencies: ${e.toString()}',
         ),
@@ -212,7 +212,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 }
 
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  customSnackBar(
+                                  customSnackBar_error(
                                     context: context,
                                     message: 'Failed to add revision: ${e.toString()}',
                                   ),
@@ -269,7 +269,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   customSnackBar(
                                     context: context,
-                                    message: 'Update successfull',
+                                    message: 'Updated successfully',
                                   ),
                                 );
                               } catch (e) {

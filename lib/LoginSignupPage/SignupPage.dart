@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
+import '../Utils/customSnackBar_error.dart';
 import 'UrlLauncher.dart';
 
 class SignupPage extends StatefulWidget {
@@ -143,9 +144,12 @@ class _SignupPageState extends State<SignupPage>
         _errorMessage = _getFirebaseErrorMessage(e.code);
       });
     } catch (e) {
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar_error(
+          context: context,
+          message: 'An unexpected error occurred. Please try again.',
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {

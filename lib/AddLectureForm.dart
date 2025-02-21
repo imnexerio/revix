@@ -6,8 +6,8 @@ import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'package:retracker/widgets/SubjectCodeDropdown.dart';
 import 'package:retracker/widgets/SubjectDropdown.dart';
-
 import 'Utils/CustomSnackBar.dart';
+import 'Utils/customSnackBar_error.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -58,7 +58,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
+        customSnackBar_error(
           context: context,
           message: 'Error loading subjects and codes: $e',
         ),
@@ -74,7 +74,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
+        customSnackBar_error(
           context: context,
           message: 'Error adding new subject: $e',
         ),
@@ -89,7 +89,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
+        customSnackBar_error(
           context: context,
           message: 'Error adding new subject code: $e',
         ),
@@ -369,7 +369,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   Navigator.of(context).pop(); // Navigate after showing SnackBar
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    customSnackBar(
+                                    customSnackBar_error(
                                       context: context,
                                       message: 'Failed to save record: $e',
                                     ),
