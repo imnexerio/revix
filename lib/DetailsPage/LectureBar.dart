@@ -138,19 +138,56 @@ class _LectureBarState extends State<LectureBar> {
   }
 
   Widget _buildInfoChip(BuildContext context, String text) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: LectureColors.getLectureTypeColor(context, text),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimary,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+    return FutureBuilder<Color>(
+      future: LectureColors.getLectureTypeColor(context, text),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey, // Placeholder color while loading
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          );
+        } else if (snapshot.hasError) {
+          return Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.red, // Error color
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          );
+        } else {
+          return Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: snapshot.data,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 
