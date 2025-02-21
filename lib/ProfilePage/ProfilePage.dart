@@ -13,6 +13,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import '../ThemeNotifier.dart';
+import '../Utils/CustomSnackBar.dart';
 import '../Utils/fetchFrequencies_utils.dart';
 import '../theme_data.dart';
 
@@ -128,28 +129,22 @@ class _ProfilePageState extends State<ProfilePage> {
       await databaseRef.update({'profile_picture': base64String});
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Profile picture uploaded successfully'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+        customSnackBar(
+          context: context,
+          message: 'Profile picture uploaded successfully',
         ),
-      );
+      );;
 
       setState(() {
         // Update the profile picture in the UI
       });
     } catch (e) {
-      print('Failed to upload profile picture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Failed to upload profile picture',
+        ),
+      );
     }
   }
 
@@ -160,20 +155,22 @@ class _ProfilePageState extends State<ProfilePage> {
     await user?.sendEmailVerification();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Verification email sent successfully'),
-          ],
+        content: Flexible(
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Verification email sent successfully'),
+            ],
+          ),
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         duration: Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
-      ),
+      )
     );
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -439,70 +436,18 @@ Future<String> _fetchReleaseNotes() async {
                                 await user?.updateDisplayName(_fullName);
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Container(
-                                      padding: EdgeInsets.symmetric(vertical: 8),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(Icons.check_circle, color: Colors.white, size: 20),
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text(
-                                            'Profile updated successfully',
-                                            style: TextStyle(fontWeight: FontWeight.w500),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    margin: EdgeInsets.all(16),
+                                  customSnackBar(
+                                    context: context,
+                                    message: 'Profile uploaded successfully',
                                   ),
-                                );
+                                );;
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Container(
-                                      padding: EdgeInsets.symmetric(vertical: 8),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(Icons.error, color: Colors.white, size: 20),
-                                          ),
-                                          SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              'Failed to update profile: $e',
-                                              style: TextStyle(fontWeight: FontWeight.w500),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    customSnackBar(
+                                      context: context,
+                                      message: 'Failed to update profile: $e',
                                     ),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 3),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    margin: EdgeInsets.all(16),
-                                  ),
-                                );
+                                  );;
                               }
                             }
                           },
@@ -1318,19 +1263,22 @@ Future<String> _fetchReleaseNotes() async {
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text('Frequency added successfully'),
-                              ],
+                            content: Flexible(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text('New frequency added successfully'),
+                                ],
+                              ),
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            duration: Duration(seconds: 2),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                          ),
+                          )
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -1578,20 +1526,22 @@ Future<String> _fetchReleaseNotes() async {
                                     Navigator.pop(context);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Row(
-                                          children: [
-                                            Icon(Icons.check_circle, color: Colors.white),
-                                            SizedBox(width: 8),
-                                            Text('Password updated successfully'),
-                                          ],
+                                        content: Flexible(
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: Colors.white),
+                                              SizedBox(width: 8),
+                                              Text('Password updated successfully'),
+                                            ],
+                                          ),
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor: Theme.of(context).colorScheme.primary,
                                         duration: Duration(seconds: 2),
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(10),
                                         ),
-                                      ),
+                                      )
                                     );
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1768,21 +1718,22 @@ Future<String> _fetchReleaseNotes() async {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(newContext).showSnackBar(
                                     SnackBar(
-                                      content: Row(
-                                        children: [
-                                          Icon(Icons.check_circle, color: Colors.white),
-                                          SizedBox(width: 8),
-                                          Text('Verification email sent to $_newEmail. Please verify it and restart the app.'),
-                                        ],
+                                      content: Flexible(
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.check_circle, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text('Verification email sent to $_newEmail. Please verify it and Pull to refresh.'),
+                                          ],
+                                        ),
                                       ),
-                                      backgroundColor: Colors.green,
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
                                       duration: Duration(seconds: 2),
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
                                       ),
-                                      margin: EdgeInsets.all(16),
-                                    ),
+                                    )
                                   );
                                 } catch (e) {
                                   ScaffoldMessenger.of(newContext).showSnackBar(

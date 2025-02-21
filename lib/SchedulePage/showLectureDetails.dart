@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../DetailsPage/DetailRow.dart';
+import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/date_utils.dart';
 
@@ -122,20 +123,9 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       await refreshRecords();
 
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.check_circle, color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Text('Revision added successfully'),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.green,
-                                          duration: Duration(seconds: 2),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
+                                        customSnackBar(
+                                          context: context,
+                                          message: 'Revision added successfully',
                                         ),
                                       );
                                     } catch (e) {
@@ -144,20 +134,9 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       }
 
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.error_outline, color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Text('Failed to add revision: ${e.toString()}'),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          duration: Duration(seconds: 3),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
+                                        customSnackBar(
+                                          context: context,
+                                          message: 'Failed to add revision: ${e.toString()}',
                                         ),
                                       );
                                     }

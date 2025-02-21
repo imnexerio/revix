@@ -1,29 +1,24 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../Utils/CustomSnackBar.dart';
 import 'UrlLauncher.dart';
 
-class SignupPage extends StatefulWidget {
+class ForgotPassPage extends StatefulWidget {
   @override
-  _SignupPageState createState() => _SignupPageState();
+  _ForgotPassPageState createState() => _ForgotPassPageState();
 }
 
-class _SignupPageState extends State<SignupPage>
+class _ForgotPassPageState extends State<ForgotPassPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-
-  bool _passwordVisibility = false;
-  bool _confirmPasswordVisibility = false;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -46,19 +41,10 @@ class _SignupPageState extends State<SignupPage>
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _nameController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  String? _validateName(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Name is required';
-    }
-    return null;
-  }
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
@@ -70,27 +56,8 @@ class _SignupPageState extends State<SignupPage>
     return null;
   }
 
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password is required';
-    }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
-    return null;
-  }
 
-  String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
-    }
-    if (value != _passwordController.text) {
-      return 'Passwords do not match';
-    }
-    return null;
-  }
-
-  Future<void> _signup() async {
+  Future<void> _forgotPass() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -101,43 +68,15 @@ class _SignupPageState extends State<SignupPage>
     });
 
     try {
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Password reset email sent successfully',
+        ),
+      );;
+      Navigator.pop(context);
 
-      User? user = userCredential.user;
-      if (user != null) {
-        String uid = user.uid;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
-        await ref.set({
-          'email': user.email,
-          'name': _nameController.text.trim(),
-          'createdAt': DateTime.now().toIso8601String(),
-          'custom_frequencies': {
-            '2 Day': [1,2],
-            '3 Day': [1,3],
-            'Daily': [1],
-            'Default': [1, 4, 7, 15, 30, 60],
-            'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
-            'Weekly': [1,7],
-          },
-        });
-
-        await user.sendEmailVerification();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          customSnackBar(
-            context: context,
-            message: 'Account created successfully. Please check your email for verification.',
-          ),
-        );
-
-        // SharedPreferences prefs = await SharedPreferences.getInstance();
-        // await prefs.setBool('isLoggedIn', true);
-        Navigator.pop(context);
-      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = _getFirebaseErrorMessage(e.code);
@@ -261,43 +200,6 @@ class _SignupPageState extends State<SignupPage>
                             ],
                           ),
                         ),
-                      TextFormField(
-                        controller: _nameController,
-                        validator: _validateName,
-                        decoration: InputDecoration(
-                          labelText: 'Full Name',
-                          hintText: 'Enter your name...',
-                          prefixIcon: Icon(Icons.person_outline),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.onSurface.withOpacity(0.12),
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.primary,
-                              width: 2.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.error,
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.error,
-                              width: 2.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
                       SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
@@ -338,130 +240,25 @@ class _SignupPageState extends State<SignupPage>
                         ),
                       ),
                       SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passwordController,
-                        validator: _validatePassword,
-                        obscureText: !_passwordVisibility,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          hintText: 'Enter your password...',
-                          prefixIcon: Icon(Icons.lock_outline),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.onSurface.withOpacity(0.12),
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.primary,
-                              width: 2.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.error,
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.error,
-                              width: 2.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _passwordVisibility
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _passwordVisibility = !_passwordVisibility;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        validator: _validateConfirmPassword,
-                        obscureText: !_confirmPasswordVisibility,
-                        decoration: InputDecoration(
-                          labelText: 'Confirm Password',
-                          hintText: 'Confirm your password...',
-                          prefixIcon: Icon(Icons.lock_outline),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.onSurface.withOpacity(0.12),
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.primary,
-                              width: 2.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.error,
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: colorScheme.error,
-                              width: 2.0,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _confirmPasswordVisibility
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _confirmPasswordVisibility =
-                                    !_confirmPasswordVisibility;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
+
                       SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _signup,
+                          onPressed: _isLoading ? null : _forgotPass,
                           child: _isLoading
                               ? SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                )
-                              : Text('Create Account'),
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.onPrimary,
+                              ),
+                            ),
+                          )
+                              : Text('Send Password Reset Email'),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: colorScheme.onPrimary,
                             backgroundColor: colorScheme.primary,
@@ -506,10 +303,6 @@ class _SignupPageState extends State<SignupPage>
                                       style: textTheme.bodyMedium?.copyWith(
                                           color: colorScheme.primary),
                                     ),
-                                  ),
-                                  Text(
-                                    'Already have an account ?',
-                                    style: textTheme.bodyMedium,
                                   ),
                                 ],
                               ),

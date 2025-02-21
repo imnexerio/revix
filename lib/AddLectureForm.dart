@@ -7,6 +7,8 @@ import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'package:retracker/widgets/SubjectCodeDropdown.dart';
 import 'package:retracker/widgets/SubjectDropdown.dart';
 
+import 'Utils/CustomSnackBar.dart';
+
 class AddLectureForm extends StatefulWidget {
   @override
   _AddLectureFormState createState() => _AddLectureFormState();
@@ -116,20 +118,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Record added successfully'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+        customSnackBar(
+          context: context,
+          message: 'Record added successfully',
         ),
       );
     } catch (e) {
@@ -363,9 +354,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   Navigator.of(context).pop(); // Navigate after showing SnackBar
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to save record: $e'),
-                                      backgroundColor: Colors.red,
+                                    customSnackBar(
+                                      context: context,
+                                      message: 'Failed to save record: $e',
                                     ),
                                   );
                                 }

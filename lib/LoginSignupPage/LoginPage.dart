@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:retracker/LoginSignupPage/ForgotPassPage.dart';
 import 'package:retracker/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'SignupPage.dart';
@@ -332,8 +333,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
-                            // Navigate to forgot password page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ForgotPassPage(),
+                              ),
+                            );
                           },
+
                           child: Text('Forgot Password?'),
                           style: TextButton.styleFrom(
                             foregroundColor: colorScheme.primary,
