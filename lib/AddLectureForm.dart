@@ -80,7 +80,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     }
   }
 
-  Future<void> UpdateRecords() async {
+  Future<void> UpdateRecords(BuildContext context) async {
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -89,9 +89,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
       String uid = user.uid;
 
       String todayDate = DateTime.now().toIso8601String().split('T')[0];
-      String dateScheduled = DateNextRevision.calculateFirstScheduledDate(_revisionFrequency)
-          .toIso8601String()
-          .split('T')[0];
+
+      String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+        DateTime.now(),
+        _revisionFrequency,
+        0,
+      )).toIso8601String().split('T')[0];
 
       DatabaseReference ref = FirebaseDatabase.instance
           .ref('users/$uid/user_data')
@@ -110,11 +113,29 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'revision_frequency': _revisionFrequency,
         'status': isEnabled ? 'Enabled' : 'Disabled',
       });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Record added successfully'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
     } catch (e) {
-      throw Exception('Failed to save lecture');
+      throw Exception('Failed to save lecture: $e');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -338,25 +359,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               if (_formKey.currentState!.validate()) {
                                 try {
                                   _formKey.currentState!.save();
-                                  Navigator.of(context).pop();
-                                  await UpdateRecords();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          Icon(Icons.check_circle, color: Colors.white),
-                                          SizedBox(width: 8),
-                                          Text('Record added successfully'),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.green,
-                                      duration: Duration(seconds: 2),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  );
+                                  await UpdateRecords(context); // Pass context to UpdateRecords
+                                  Navigator.of(context).pop(); // Navigate after showing SnackBar
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

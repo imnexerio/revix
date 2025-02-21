@@ -1,44 +1,44 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+
 class DateNextRevision {
-  static DateTime calculateNextRevisionDate(DateTime scheduledDate, String frequency, int noRevision) {
-    switch (frequency) {
-      case 'Daily':
-        return scheduledDate.add(Duration(days: 1));
-      case '2 Day':
-        return scheduledDate.add(Duration(days: 2));
-      case '3 Day':
-        return scheduledDate.add(Duration(days: 3));
-      case 'Weekly':
-        return scheduledDate.add(Duration(days: 7));
-      case 'Priority':
-        List<int> priorityIntervals = [1, 3, 4, 5, 7, 15, 25, 30];
-        int additionalDays = (noRevision < priorityIntervals.length)
-            ? priorityIntervals[noRevision]
-            : noRevision < 10 ? 30 : 60;
-        return scheduledDate.add(Duration(days: additionalDays));
-      case 'Default':
-      default:
-        List<int> intervals = [1, 4, 7, 15, 30, 60];
-        int additionalDays = (noRevision < intervals.length)
-            ? intervals[noRevision]
-            : 60;  // After using all intervals, use 30 days
-        return scheduledDate.add(Duration(days: additionalDays));
+  static Future<DateTime> calculateNextRevisionDate(DateTime scheduledDate, String frequency, int noRevision) async {
+    List<Map<String, String>> frequencies = await fetchFrequencies();
+
+    // Check if the frequency is in the fetched frequencies
+    Map<String, String>? customFrequency = frequencies.firstWhere(
+          (freq) => freq['title'] == frequency,
+      orElse: () => {'title': '', 'frequency': ''},
+    );
+
+    if (customFrequency['title']!.isNotEmpty) {
+      List<int> intervals = customFrequency['frequency']!.split(',').map((e) => int.parse(e.trim())).toList();
+      int additionalDays = (noRevision < intervals.length) ? intervals[noRevision] : intervals.last;
+      return scheduledDate.add(Duration(days: additionalDays));
     }
+
+    return scheduledDate;
   }
 
-  static DateTime calculateFirstScheduledDate(String frequency) {
-    DateTime today = DateTime.now();
-    switch (frequency) {
-      case 'Daily':
-        return today.add(Duration(days: 1));
-      case '2 Day':
-        return today.add(Duration(days: 1));
-      case '3 Day':
-        return today.add(Duration(days: 1));
-      case 'Weekly':
-        return today.add(Duration(days: 1));
-      case 'Default':
-      default:
-        return today.add(Duration(days: 1));
+  static Future<List<Map<String, String>>> fetchFrequencies() async {
+    List<Map<String, String>> frequencies = [];
+    try {
+      String uid = FirebaseAuth.instance.currentUser!.uid;
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
+      DataSnapshot snapshot = await databaseRef.get();
+      if (snapshot.exists) {
+        Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
+        frequencies = data.entries.map((entry) {
+          return {
+            'title': entry.key,
+            'frequency': (entry.value as List<dynamic>).join(', '),
+          };
+        }).toList();
+      }
+    } catch (e) {
+      // Handle error
     }
+    return frequencies;
   }
+
 }

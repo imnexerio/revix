@@ -1,13 +1,15 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:retracker/AddLectureForm.dart';
 import 'package:retracker/DetailsPage/DetailsPage.dart';
 import 'package:retracker/LoginSignupPage/LoginPage.dart';
 import 'package:retracker/ProfilePage/ProfilePage.dart';
+import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
+import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'firebase_options.dart';
 
@@ -16,181 +18,42 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  runApp(MyApp(isLoggedIn: isLoggedIn));
+
+  ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
+  // await themeNotifier.loadPreferences();
+  await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => themeNotifier,
+      child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
+  final SharedPreferences prefs;
 
-  const MyApp({Key? key, required this.isLoggedIn}) : super(key: key);
-
-  // Custom green color palette
-  static const MaterialColor customGreen = MaterialColor(
-    0xFF2E7D32,
-    <int, Color>{
-      50: Color(0xFFE8F5E9),
-      100: Color(0xFFC8E6C9),
-      200: Color(0xFFA5D6A7),
-      300: Color(0xFF81C784),
-      400: Color(0xFF66BB6A),
-      500: Color(0xFF4CAF50),
-      600: Color(0xFF43A047),
-      700: Color(0xFF388E3C),
-      800: Color(0xFF2E7D32),
-      900: Color(0xFF1B5E20),
-    },
-  );
+  const MyApp({Key? key, required this.isLoggedIn, required this.prefs}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'reTracker',
-      theme: ThemeData(
-        useMaterial3: true,
-        primarySwatch: customGreen,
-        colorScheme: ColorScheme.light(
-          // Primary colors
-          primary: Color(0xFF2E7D32),      // Deep forest green
-          primaryContainer: Color(0xFF43A047), // Slightly lighter green for containers
-
-          // Secondary colors
-          secondary: Color(0xFF66BB6A),    // Medium bright green
-          secondaryContainer: Color(0xFF81C784), // Lighter container green
-
-          // Tertiary colors
-          tertiary: Color(0xFFA5D6A7),     // Soft pale green
-          tertiaryContainer: Color(0xFFC8E6C9), // Very light green container
-
-          // Surface and background colors
-          surface: Colors.white,
-          background: Color(0xFFF5F5F5),
-          surfaceVariant: Color(0xFFE8F5E9), // Lightest green for variants
-
-          // Error colors with green tint
-          error: Color(0xFFE57373),
-          errorContainer: Color(0xFFFFCDD2),
-
-          // On colors
-          onPrimary: Colors.white,
-          onPrimaryContainer: Color(0xFF002200),
-          onSecondary: Color(0xFF0D3A0D),
-          onSecondaryContainer: Color(0xFF002200),
-          onTertiary: Color(0xFF0D3A0D),
-          onTertiaryContainer: Color(0xFF002200),
-          onSurface: Color(0xFF1B5E20),     // Dark green for text
-          onBackground: Color(0xFF2E7D32),   // Forest green for text
-          onError: Colors.white,
-
-          // Additional surface tints
-          surfaceTint: Color(0xFF81C784),
-        ),
-        // Custom elevated button theme
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 2,
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-        // Enhanced card theme
-        cardTheme: CardTheme(
-          elevation: 3,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-        ),
-        // Text theme with green accents
-        textTheme: TextTheme(
-          displayLarge: TextStyle(color: Color(0xFF1B5E20), fontWeight: FontWeight.bold),
-          displayMedium: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
-          displaySmall: TextStyle(color: Color(0xFF388E3C), fontWeight: FontWeight.bold),
-          headlineMedium: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w600),
-          headlineSmall: TextStyle(color: Color(0xFF388E3C), fontWeight: FontWeight.w600),
-          titleLarge: TextStyle(color: Color(0xFF1B5E20), fontWeight: FontWeight.w600),
-          bodyLarge: TextStyle(color: Color(0xFF2E7D32)),
-          bodyMedium: TextStyle(color: Color(0xFF388E3C)),
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        primarySwatch: customGreen,
-        colorScheme: ColorScheme.dark(
-          // Primary colors
-          primary: Color(0xFF81C784),      // Lighter green for dark theme
-          primaryContainer: Color(0xFF66BB6A),
-
-          // Secondary colors
-          secondary: Color(0xFFA5D6A7),    // Very light green for contrast
-          secondaryContainer: Color(0xFF81C784),
-
-          // Tertiary colors
-          tertiary: Color(0xFF4CAF50),
-          tertiaryContainer: Color(0xFF388E3C),
-
-          // Surface and background colors
-          surface: Color(0xFF1E1E1E),
-          background: Color(0xFF121212),
-          surfaceVariant: Color(0xFF1B5E20).withOpacity(0.1),
-
-          // Error colors
-          error: Color(0xFFE57373),
-          errorContainer: Color(0xFF442727),
-
-          // On colors
-          onPrimary: Color(0xFF002200),
-          onPrimaryContainer: Color(0xFFE8F5E9),
-          onSecondary: Color(0xFF002200),
-          onSecondaryContainer: Color(0xFFE8F5E9),
-          onTertiary: Colors.white,
-          onTertiaryContainer: Color(0xFFE8F5E9),
-          onSurface: Color(0xFFA5D6A7),    // Light green for text
-          onBackground: Color(0xFF81C784),  // Medium green for text
-          onError: Colors.white,
-
-          // Additional surface tints
-          surfaceTint: Color(0xFF43A047),
-        ),
-        // Dark theme button style
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 2,
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-        // Dark theme card style
-        cardTheme: CardTheme(
-          elevation: 3,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-        ),
-        // Dark theme text style
-        textTheme: TextTheme(
-          displayLarge: TextStyle(color: Color(0xFFA5D6A7), fontWeight: FontWeight.bold),
-          displayMedium: TextStyle(color: Color(0xFF81C784), fontWeight: FontWeight.bold),
-          displaySmall: TextStyle(color: Color(0xFF66BB6A), fontWeight: FontWeight.bold),
-          headlineMedium: TextStyle(color: Color(0xFF81C784), fontWeight: FontWeight.w600),
-          headlineSmall: TextStyle(color: Color(0xFF66BB6A), fontWeight: FontWeight.w600),
-          titleLarge: TextStyle(color: Color(0xFFA5D6A7), fontWeight: FontWeight.w600),
-          bodyLarge: TextStyle(color: Color(0xFF81C784)),
-          bodyMedium: TextStyle(color: Color(0xFF66BB6A)),
-        ),
-      ),
-      themeMode: ThemeMode.system,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => SplashScreen(),
-        '/home': (context) => isLoggedIn ? MyHomePage() : LoginPage(),
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'reTracker',
+          theme: themeNotifier.currentTheme,
+          darkTheme: themeNotifier.currentTheme,
+          themeMode: themeNotifier.currentThemeMode,
+          initialRoute: '/',
+          routes: {
+            '/': (context) => SplashScreen(),
+            '/home': (context) => isLoggedIn ? MyHomePage() : LoginPage(),
+          },
+        );
       },
-      // home: isLoggedIn ? MyHomePage() : LoginPage(),
     );
   }
 }
@@ -210,33 +73,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedIndex = index;
     });
   }
-
-  // void _addLecture() {
-  //   showDialog(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return AddLectureForm();
-  //     },
-  //   );
-  // }
-//   void _addLecture() {
-//   showModalBottomSheet(
-//     context: context,
-//     isScrollControlled: true,
-//     shape: RoundedRectangleBorder(
-//       borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
-//     ),
-//     builder: (BuildContext context) {
-//       return Container(
-//         height: MediaQuery.of(context).size.height * 0.75, // Adjust the height as needed
-//         padding: EdgeInsets.only(
-//           bottom: MediaQuery.of(context).viewInsets.bottom,
-//         ),
-//         child: AddLectureForm(),
-//       );
-//     },
-//   );
-// }
   void _addLecture() {
     showModalBottomSheet(
       context: context,
@@ -310,9 +146,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 label: 'Details',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_rounded),
-                activeIcon: Icon(Icons.person_rounded, color: theme.colorScheme.primary),
-                label: 'Profile',
+                icon: Icon(Icons.settings_rounded),
+                activeIcon: Icon(Icons.settings, color: theme.colorScheme.primary),
+                label: 'Settings',
               ),
             ],
             currentIndex: _selectedIndex,

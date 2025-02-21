@@ -1,13 +1,31 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../LoginSignupPage/LoginPage.dart';
+import '../LoginSignupPage/UrlLauncher.dart';
+import 'dart:typed_data';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:firebase_database/firebase_database.dart';
 
-class ProfilePage extends StatelessWidget {
+import '../ThemeNotifier.dart';
+import '../Utils/fetchFrequencies_utils.dart';
+import '../theme_data.dart';
+
+
+class ProfilePage extends StatefulWidget {
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  int _selectedTemeIndex = 0;
+
+
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn');
@@ -15,6 +33,17 @@ class ProfilePage extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
+
+  }
+
+  Future<void> _refreshProfile() async {
+    setState(() {
+      // Trigger a rebuild to refresh the profile data
+    });
+  }
+
+  String getCurrentUserUid() {
+    return FirebaseAuth.instance.currentUser!.uid;
   }
 
   Future<String> _getAppVersion() async {
@@ -34,10 +63,96 @@ class ProfilePage extends StatelessWidget {
     return user?.emailVerified ?? false;
   }
 
-  Future<String> _getPhotoUrl() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    return user?.photoURL ?? 'assets/icon/icon.png';
+  Future<String?> _getProfilePicture(String uid) async {
+    try {
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+      DataSnapshot snapshot = await databaseRef.child('profile_picture').get();
+      // print('snapshot value: ${snapshot.value}');
+      if (snapshot.exists) {
+        return snapshot.value as String?;
+      }
+    } catch (e) {
+      print('Error retrieving profile picture: $e');
+    }
+    return null;
   }
+
+  Future<Image?> _getProfileImage(String uid) async {
+    const String defaultImagePath = 'assets/icon/icon.png'; // Path to your default image
+
+    try {
+      String? base64String = await _getProfilePicture(uid);
+      if (base64String != null) {
+        Uint8List imageBytes = base64Decode(base64String);
+        return Image.memory(imageBytes);
+      }
+    } catch (e) {
+      print('Error decoding profile picture: $e');
+    }
+    return Image.asset(defaultImagePath);
+  }
+
+
+
+  Future<void> uploadProfilePicture(BuildContext context, XFile imageFile, String uid) async {
+    try {
+      // Convert image to byte array
+      Uint8List imageBytes = await imageFile.readAsBytes();
+
+      // Set initial quality and size threshold
+      int quality = 100;
+      const int maxSizeInBytes = 30 * 1024; // 100 KB
+      Uint8List? compressedImageBytes;
+
+      // Compress the image and adjust quality until the size is below the threshold
+      do {
+        compressedImageBytes = await FlutterImageCompress.compressWithList(
+          imageBytes,
+          minWidth: 120,
+          minHeight: 120,
+          quality: quality,
+        );
+
+        if (compressedImageBytes == null) {
+          throw Exception('Failed to compress image');
+        }
+
+        quality -= 10; // Decrease quality by 10 for each iteration
+      } while (compressedImageBytes.lengthInBytes > maxSizeInBytes && quality > 0);
+
+      // Encode byte array to Base64 string
+      String base64String = base64Encode(compressedImageBytes);
+
+      // Store Base64 string in Firebase Realtime Database at the specified location
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+      await databaseRef.update({'profile_picture': base64String});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Profile picture uploaded successfully'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+
+      setState(() {
+        // Update the profile picture in the UI
+      });
+    } catch (e) {
+      print('Failed to upload profile picture: $e');
+    }
+  }
+
 
   Future<void> _sendVerificationEmail(BuildContext context) async {
   try {
@@ -95,10 +210,17 @@ Future<String> _fetchReleaseNotes() async {
 }
 
 
-  void _showEditProfileBottomSheet(BuildContext context) {
+  void _showEditProfileBottomSheet(BuildContext context) async {
     final screenSize = MediaQuery.of(context).size;
     final _formKey = GlobalKey<FormState>();
     String? _fullName;
+    String? _displayName;
+
+    try {
+      _displayName = await _getDisplayName();
+    } catch (e) {
+      _displayName = 'User';
+    }
 
     showModalBottomSheet(
       context: context,
@@ -109,60 +231,86 @@ Future<String> _fetchReleaseNotes() async {
           height: screenSize.height * 0.7,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
                 spreadRadius: 5,
+                offset: Offset(0, -4),
               ),
             ],
           ),
           child: Stack(
             children: [
-              // Handle bar at top
-              Align(
-                alignment: Alignment.topCenter,
+              // Decorative background element
+              // Positioned(
+              //   top: -100,
+              //   right: -100,
+              //   child: Container(
+              //     width: 200,
+              //     height: 200,
+              //     decoration: BoxDecoration(
+              //       shape: BoxShape.circle,
+              //       color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              //     ),
+              //   ),
+              // ),
+              // Main content
+              SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                  padding: EdgeInsets.only(
+                    top: 12,
+                    left: 24,
+                    right: 24,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                   ),
-                ),
-              ),
-              // Content
-              Padding(
-                padding: EdgeInsets.only(
-                  top: 40,
-                  left: 24,
-                  right: 24,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-                ),
-                child: SingleChildScrollView(
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Handle bar
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        // Header
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Edit Profile',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Edit Profile',
+                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onBackground,
+                                  ),
+                                ),
+                                Text(
+                                  'Update your personal information',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
                             IconButton(
                               onPressed: () => Navigator.pop(context),
-                              icon: Icon(Icons.close),
+                              icon: Icon(Icons.close, size: 20),
                               style: IconButton.styleFrom(
-                                backgroundColor: Colors.grey.withOpacity(0.1),
+                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                padding: EdgeInsets.all(12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -170,149 +318,219 @@ Future<String> _fetchReleaseNotes() async {
                             ),
                           ],
                         ),
-                        SizedBox(height: 30),
+                        SizedBox(height: 40),
+                        // Profile Image Section
                         Center(
                           child: Stack(
                             children: [
-                              FutureBuilder<String>(
-                                future: _getPhotoUrl(),
+                              FutureBuilder<Image?>(
+                                future: _getProfileImage(getCurrentUserUid()),
                                 builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return CircularProgressIndicator();
-                                  } else if (snapshot.hasError) {
-                                    return Container(
-                                      width: 110,
-                                      height: 110,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Theme.of(context).colorScheme.onPrimary,
-                                          width: 4,
+                                  Widget profileWidget = Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                        width: 4,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 10,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                    child: snapshot.connectionState == ConnectionState.waiting
+                                        ? Center(child: CircularProgressIndicator(strokeWidth: 2))
+                                        : CircleAvatar(
+                                      radius: 55,
+                                      backgroundImage: snapshot.hasData
+                                          ? snapshot.data!.image
+                                          : AssetImage('assets/icon/icon.png'),
+                                      backgroundColor: Colors.transparent,
+                                    ),
+                                  );
+
+                                  return Stack(
+                                    children: [
+                                      profileWidget,
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: InkWell(
+                                          onTap: () async {
+                                            final ImagePicker _picker = ImagePicker();
+                                            final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                            if (image != null) {
+                                              await uploadProfilePicture(context, image, getCurrentUserUid());
+                                              Navigator.pop(context);
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.primary,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                                  blurRadius: 8,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ],
+                                            ),
+                                            child: Icon(
+                                              Icons.camera_alt,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                      child: CircleAvatar(
-                                        radius: 50,
-                                        backgroundImage: AssetImage('assets/icon/icon.png'),
-                                        backgroundColor: Colors.transparent,
-                                      ),
-                                    );
-                                  } else {
-                                    return Container(
-                                      width: 110,
-                                      height: 110,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Theme.of(context).colorScheme.onPrimary,
-                                          width: 4,
-                                        ),
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 50,
-                                        backgroundImage: AssetImage('assets/icon/icon.png'),
-                                        backgroundColor: Colors.transparent,
-                                      ),
-                                    );
-                                  }
+                                    ],
+                                  );
                                 },
-                              ),
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: Container(
-                                  padding: EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
                               ),
                             ],
                           ),
                         ),
-                        SizedBox(height: 30),
-                        _buildInputField(
-                          context: context,
-                          label: 'Full Name',
-                          hint: 'Enter your full name',
-                          icon: Icons.person_outline,
-                          onSaved: (value) => _fullName = value,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your full name';
-                            }
-                            return null;
-                          },
-                        ),
                         SizedBox(height: 40),
-                          Center(
-                            child: Container(
-                              width: 200, // Set the desired width
-                              child: FilledButton(
-                                onPressed: () async {
-                                  if (_formKey.currentState!.validate()) {
-                                    _formKey.currentState!.save();
-                                    try {
-                                      print('Updating name to: $_fullName');
-                                      User? user = FirebaseAuth.instance.currentUser;
-                                      await user?.updateDisplayName(_fullName);
-                                      Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.check_circle, color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Text('Profile updated successfully'),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.green,
-                                          duration: Duration(seconds: 2),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.error, color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Text('Failed to update profile: $e'),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          duration: Duration(seconds: 2),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                                style: FilledButton.styleFrom(
-                                  minimumSize: Size(double.infinity, 55),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Save Changes',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                ),
-                              ),
+                        // Name Input Field with animated label
+                        AnimatedContainer(
+                          duration: Duration(milliseconds: 200),
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                             ),
                           ),
+                          child: TextFormField(
+                            initialValue: _displayName,
+                            decoration: InputDecoration(
+                              labelText: 'Full Name',
+                              labelStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.person_outline,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            onSaved: (value) => _fullName = value,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your full name';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(height: 40),
+                        // Save Button
+                        FilledButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              _formKey.currentState!.save();
+                              try {
+                                User? user = FirebaseAuth.instance.currentUser;
+                                await user?.updateDisplayName(_fullName);
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Container(
+                                      padding: EdgeInsets.symmetric(vertical: 8),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                          ),
+                                          SizedBox(width: 12),
+                                          Text(
+                                            'Profile updated successfully',
+                                            style: TextStyle(fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    margin: EdgeInsets.all(16),
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Container(
+                                      padding: EdgeInsets.symmetric(vertical: 8),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(Icons.error, color: Colors.white, size: 20),
+                                          ),
+                                          SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Failed to update profile: $e',
+                                              style: TextStyle(fontWeight: FontWeight.w500),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: Duration(seconds: 3),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    margin: EdgeInsets.all(16),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            minimumSize: Size(double.infinity, 56),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Save Changes',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -322,6 +540,904 @@ Future<String> _fetchReleaseNotes() async {
           ),
         );
       },
+    );
+  }
+
+
+  void _showThemeBottomSheet(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
+    // Fetch the custom theme color from Firebase
+    themeNotifier.fetchCustomTheme();
+
+    // RGB values for custom theme
+    int _redValue = themeNotifier.customThemeColor?.red ?? 0;
+    int _greenValue = themeNotifier.customThemeColor?.green ?? 0;
+    int _blueValue = themeNotifier.customThemeColor?.blue ?? 0;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.background,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                    offset: Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Handle bar
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          // Header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Appearance',
+                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onBackground,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Customize your app theme',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: Icon(Icons.close, size: 20),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  padding: EdgeInsets.all(12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 32),
+                          // Predefined Themes Section
+                          Text(
+                            'Theme Selection',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Consumer<ThemeNotifier>(
+                            builder: (context, themeNotifier, child) {
+                              return Container(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<int>(
+                                    value: themeNotifier.selectedThemeIndex,
+                                    isExpanded: true,
+                                    icon: Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    items: [
+                                      ...List.generate(AppThemes.themeNames.length, (index) {
+                                        return DropdownMenuItem<int>(
+                                          value: index,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 24,
+                                                height: 24,
+                                                margin: EdgeInsets.only(right: 12),
+                                                decoration: BoxDecoration(
+                                                  color: AppThemes.themes[index * 2].colorScheme.primary,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: Colors.white.withOpacity(0.5),
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                AppThemes.themeNames[index],
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                      // Custom theme option
+                                      DropdownMenuItem<int>(
+                                        value: ThemeNotifier.customThemeIndex,
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 24,
+                                              height: 24,
+                                              margin: EdgeInsets.only(right: 12),
+                                              decoration: BoxDecoration(
+                                                color: themeNotifier.customThemeColor ?? Colors.grey,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white.withOpacity(0.5),
+                                                  width: 2,
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              'Custom',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    onChanged: (int? newIndex) {
+                                      if (newIndex != null) {
+                                        if (newIndex == ThemeNotifier.customThemeIndex) {
+                                          // If custom theme is selected but no color is set, initialize with a default
+                                          if (themeNotifier.customThemeColor == null) {
+                                            final defaultCustomColor = Color.fromRGBO(100, 100, 100, 1);
+                                            themeNotifier.setCustomTheme(defaultCustomColor);
+                                            setState(() {
+                                              _redValue = defaultCustomColor.red;
+                                              _greenValue = defaultCustomColor.green;
+                                              _blueValue = defaultCustomColor.blue;
+                                            });
+                                          }
+                                        }
+                                        themeNotifier.updateThemeBasedOnMode(newIndex);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: 32),
+
+                          // Custom Theme Section - Only show when Custom is selected
+                          Consumer<ThemeNotifier>(
+                            builder: (context, themeNotifier, child) {
+                              if (themeNotifier.selectedThemeIndex != ThemeNotifier.customThemeIndex) {
+                                return SizedBox.shrink();
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Custom Theme',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  SizedBox(height: 16),
+                                  // Color Preview
+                                  Center(
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.outline,
+                                          width: 2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 0.3),
+                                            blurRadius: 12,
+                                            spreadRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 24),
+                                  // RGB Sliders
+                                  _buildColorSlider(
+                                    context,
+                                    'Red',
+                                    _redValue,
+                                    Colors.red,
+                                        (value) => setState(() => _redValue = value.round()),
+                                  ),
+                                  SizedBox(height: 16),
+                                  _buildColorSlider(
+                                    context,
+                                    'Green',
+                                    _greenValue,
+                                    Colors.green,
+                                        (value) => setState(() => _greenValue = value.round()),
+                                  ),
+                                  SizedBox(height: 16),
+                                  _buildColorSlider(
+                                    context,
+                                    'Blue',
+                                    _blueValue,
+                                    Colors.blue,
+                                        (value) => setState(() => _blueValue = value.round()),
+                                  ),
+                                  SizedBox(height: 24),
+                                  // Apply Custom Theme Button
+                                  FilledButton(
+                                    onPressed: () {
+                                      final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
+                                      themeNotifier.setCustomTheme(customColor);
+                                      Navigator.pop(context);
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      minimumSize: Size(double.infinity, 56),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Apply Custom Theme',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+
+                          SizedBox(height: 32),
+                          // Theme Mode Selection (remains the same)
+                          Text(
+                            'Theme Mode',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Consumer<ThemeNotifier>(
+                            builder: (context, themeNotifier, child) {
+                              return Container(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<ThemeMode>(
+                                    value: themeNotifier.currentThemeMode,
+                                    isExpanded: true,
+                                    icon: Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    items: [
+                                      DropdownMenuItem(
+                                        value: ThemeMode.system,
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.settings_suggest_outlined, size: 24),
+                                            SizedBox(width: 12),
+                                            Text('System Default'),
+                                          ],
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: ThemeMode.light,
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.light_mode_outlined, size: 24),
+                                            SizedBox(width: 12),
+                                            Text('Light'),
+                                          ],
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: ThemeMode.dark,
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.dark_mode_outlined, size: 24),
+                                            SizedBox(width: 12),
+                                            Text('Dark'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    onChanged: (ThemeMode? newMode) {
+                                      if (newMode != null) {
+                                        themeNotifier.changeThemeMode(newMode);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showFrequencyBottomSheet(BuildContext context) {
+    List<Map<String, String>> frequencies = [];
+    final _formKey = GlobalKey<FormState>();
+    final TextEditingController _customFrequencyController = TextEditingController();
+    final TextEditingController _customTitleController = TextEditingController();
+
+    // Validation function remains the same
+    bool isValidFrequencyFormat(String frequency) {
+      if (frequency.isEmpty) return false;
+      try {
+        List<String> numbers = frequency.split(',').map((e) => e.trim()).toList();
+        List<int> numericalValues = numbers.map((e) => int.parse(e)).toList();
+        numericalValues.sort();
+        for (int i = 0; i < numericalValues.length - 1; i++) {
+          if (numericalValues[i] >= numericalValues[i + 1]) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Fetch data function remains the same
+    void fetchFrequencies(StateSetter setState) async {
+      try {
+        Map<String, dynamic> data = await FetchFrequenciesUtils.fetchFrequencies();
+        setState(() {
+          frequencies = data.entries.map((entry) {
+            String title = entry.key;
+            List<dynamic> frequencyList = entry.value;
+            String frequency = frequencyList.join(', ');
+
+            return {
+              'title': title,
+              'frequency': frequency,
+            };
+          }).toList();
+        });
+      } catch (e) {
+        //   print('Error fetching frequencies: $e');
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            fetchFrequencies(setState);
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.73,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    spreadRadius: 0,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Handle bar and header
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Frequency (Days)',
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Customize your tracking frequency',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IconButton.filledTonal(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close, size: 20),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                minimumSize: Size(40, 40),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1),
+                  // Frequencies list
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outlineVariant,
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Title',
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          'Frequency',
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Divider(height: 1),
+                                ...frequencies.map((frequency) => Column(
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              frequency['title']!,
+                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface,
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              frequency['frequency']!,
+                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (frequencies.indexOf(frequency) != frequencies.length - 1)
+                                      Divider(height: 1),
+                                  ],
+                                )).toList(),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          FilledButton.icon(
+                            onPressed: () => _showAddFrequencySheet(
+                              context,
+                              _formKey,
+                              _customTitleController,
+                              _customFrequencyController,
+                              frequencies,
+                              setState,
+                              isValidFrequencyFormat,
+                            ),
+                            icon: Icon(Icons.add),
+                            label: Text('Add Custom Frequency'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: Size(200, 48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+// Separate method for add frequency sheet
+  void _showAddFrequencySheet(
+      BuildContext context,
+      GlobalKey<FormState> formKey,
+      TextEditingController titleController,
+      TextEditingController frequencyController,
+      List<Map<String, String>> frequencies,
+      StateSetter setState,
+      bool Function(String) isValidFrequencyFormat,
+      ) {
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (BuildContext context) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.53,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+            children: [
+        // Header
+        Container(
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Add Custom Frequency',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                IconButton.filledTonal(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.close, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    minimumSize: Size(40, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    Divider(height: 1),
+    // Form
+    Expanded(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(24),
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Enter frequency title',
+                  prefixIcon: Icon(Icons.title),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a title';
+                  }
+                  if (frequencies.any((freq) => freq['title'] == value.trim())) {
+                    return 'Title already exists';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 24),
+              TextFormField(
+                controller: frequencyController,
+                decoration: InputDecoration(
+                  labelText: 'Frequency',
+                  hintText: 'Enter comma-separated numbers (e.g., 1,2,3)',
+                  prefixIcon: Icon(Icons.timeline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter frequency values';
+                  }
+                  if (!isValidFrequencyFormat(value)) {
+                    return 'Please enter valid comma-separated numbers in ascending order';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+    // Submit button
+              Container(
+                padding: EdgeInsets.all(24),
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      try {
+                        String title = titleController.text.trim();
+                        String frequency = frequencyController.text.trim();
+
+                        // Firebase update
+                        String uid = FirebaseAuth.instance.currentUser!.uid;
+                        DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
+                        List<int> frequencyList = frequency.split(',').map((e) => int.parse(e.trim())).toList();
+                        await databaseRef.update({
+                          title: frequencyList,
+                        });
+
+                        // Update local state
+                        setState(() {
+                          frequencies.add({
+                            'title': title,
+                            'frequency': frequency,
+                          });
+                        });
+
+                        titleController.clear();
+                        frequencyController.clear();
+                        Navigator.pop(context);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('Frequency added successfully'),
+                              ],
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.error, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('Failed to add frequency'),
+                              ],
+                            ),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: Icon(Icons.save),
+                  label: Text('Save Frequency'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: Size(200, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+        ),
+      );
+        },
+    );
+  }
+
+
+  // Helper method to build color sliders
+  Widget _buildColorSlider(
+      BuildContext context,
+      String label,
+      int value,
+      Color color,
+      ValueChanged<double> onChanged,
+      ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onBackground,
+              ),
+            ),
+            Text(
+              value.toString(),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 4,
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
+              activeTrackColor: color,
+              inactiveTrackColor: color.withOpacity(0.2),
+              thumbColor: color,
+              overlayColor: color.withOpacity(0.2),
+            ),
+            child: Slider(
+              value: value.toDouble(),
+              min: 0,
+              max: 255,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -665,7 +1781,7 @@ Future<String> _fetchReleaseNotes() async {
                                         children: [
                                           Icon(Icons.check_circle, color: Colors.white),
                                           SizedBox(width: 8),
-                                          Text('Verification email sent to $_newEmail. Please verify it to change your login Email.'),
+                                          Text('Verification email sent to $_newEmail. Please verify it and restart the app.'),
                                         ],
                                       ),
                                       backgroundColor: Colors.green,
@@ -726,12 +1842,13 @@ Future<String> _fetchReleaseNotes() async {
 
   void _showNotificationSettingsBottomSheet(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final _formKey = GlobalKey<FormState>();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          height: screenSize.height * 0.7,
+          height: screenSize.height * 0.8,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -759,9 +1876,18 @@ Future<String> _fetchReleaseNotes() async {
                   ),
                 ),
               ),
+
               Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
+                padding: EdgeInsets.only(
+                  top: 40,
+                  left: 24,
+                  right: 24,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                ),
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -812,6 +1938,8 @@ Future<String> _fetchReleaseNotes() async {
                   ],
                 ),
               ),
+                )
+              )
             ],
           ),
         );
@@ -861,165 +1989,179 @@ Future<String> _fetchReleaseNotes() async {
                   ),
                   Padding(
                     padding: EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.grey.withOpacity(0.1),
-                              child: ClipOval(
-                                child: Stack(
-                                  children: [
-                                    ColorFiltered(
-                                      colorFilter: ColorFilter.mode(
-                                        Colors.grey,
-                                        BlendMode.saturation,
-                                      ),
-                                      child: Image.asset(
-                                        'assets/icon/icon.png', // Path to your app icon
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    icon: Icon(Icons.close),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.grey.withOpacity(0.1),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.white.withOpacity(0.3),
-                                            Colors.transparent,
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
+                                  ),
+                                ],
+                              ),
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.grey.withOpacity(0.1),
+                                child: ClipOval(
+                                  child: Stack(
+                                    children: [
+                                      ColorFiltered(
+                                        colorFilter: ColorFilter.mode(
+                                          Colors.grey,
+                                          BlendMode.saturation,
+                                        ),
+                                        child: Image.asset(
+                                          'assets/icon/icon.png', // Path to your app icon
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.white.withOpacity(0.3),
+                                              Colors.transparent,
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                'reTracker',
+                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onBackground,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              FutureBuilder<String>(
+                                future: _getAppVersion(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return CircularProgressIndicator();
+                                  } else if (snapshot.hasError) {
+                                    return Text('Error loading version');
+                                  } else {
+                                    return Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              'v${snapshot.data}',
+                                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.secondary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            SizedBox(width: 8),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(color: Theme.of(context).colorScheme.secondary),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                'FOSS',
+                                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                                  color: Theme.of(context).colorScheme.secondary,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        IconButton(
+                                          icon: ImageIcon(
+                                            AssetImage('assets/github.png'), // Path to your GitHub icon
+                                          ),
+                                          onPressed: () {
+                                            UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                },
+                              )
+                            ],
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            padding: EdgeInsets.all(16),
+                            child: SingleChildScrollView(
+                              child: FutureBuilder<String>(
+                                future: _fetchReleaseNotes(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  } else if (snapshot.hasError) {
+                                    return Text(
+                                      'Error loading release notes',
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context).textTheme.bodyLarge,
+                                    );
+                                  } else {
+                                    return Text(
+                                      snapshot.data!,
+                                      style: Theme.of(context).textTheme.bodyLarge,
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          Container(
+                            width: 200, // Set the desired width
+                            child: FilledButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              style: FilledButton.styleFrom(
+                                minimumSize: Size(double.infinity, 55),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                              ),
+                              child: Text(
+                                'I Understand',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                            SizedBox(height: 10),
-                            Text(
-                              'reTracker',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onBackground,
-                              ),
-                            ),
-                            SizedBox(height: 5),
-                            FutureBuilder<String>(
-                              future: _getAppVersion(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                } else if (snapshot.hasError) {
-                                  return Text('Error loading version');
-                                } else {
-                                  return Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'v${snapshot.data}',
-                                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                              color: Theme.of(context).colorScheme.secondary,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          SizedBox(width: 8),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(color: Theme.of(context).colorScheme.secondary),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              'FOSS',
-                                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                                color: Theme.of(context).colorScheme.secondary,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.code),
-                                        onPressed: () async {
-                                          const url = 'https://github.com/imnexerio/retracker';
-                                          if (await canLaunch(url)) {
-                                            await launch(url);
-                                          } else {
-                                            throw 'Could not launch $url';
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                }
-                              },
-                            )
-                          ],
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          padding: EdgeInsets.all(16),
-                          child: SingleChildScrollView(
-                            child: FutureBuilder<String>(
-                              future: _fetchReleaseNotes(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return Center(
-                                    child: CircularProgressIndicator(),
-                                  );
-                                } else if (snapshot.hasError) {
-                                  return Text(
-                                    'Error loading release notes',
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                  );
-                                } else {
-                                  return Text(
-                                    snapshot.data!,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        Container(
-                          width: 200, // Set the desired width
-                          child: FilledButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            style: FilledButton.styleFrom(
-                              minimumSize: Size(double.infinity, 55),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                            ),
-                            child: Text(
-                              'I Understand',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        )
-                      ],
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -1028,8 +2170,7 @@ Future<String> _fetchReleaseNotes() async {
           },
         );
       },
-    );
-  }
+    );}
 
 
   Widget _buildInputField({
@@ -1129,8 +2270,11 @@ Future<String> _fetchReleaseNotes() async {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
 
+
     return Scaffold(
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: _refreshProfile,
+        child: SingleChildScrollView(
         child: Column(
           children: [
             Container(
@@ -1152,43 +2296,55 @@ Future<String> _fetchReleaseNotes() async {
                   children: [
                     Stack(
                       children: [
-                        FutureBuilder<String>(
-                          future: _getPhotoUrl(),
+                        FutureBuilder<Image?>(
+                          future: _getProfileImage(getCurrentUserUid()),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return CircularProgressIndicator();
                             } else if (snapshot.hasError) {
-                              return Container(
-                                width: 110,
-                                height: 110,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    width: 4,
+                              return InkWell(
+                                onTap: () async {
+                                  final ImagePicker _picker = ImagePicker();
+                                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                  if (image != null) {
+                                    await uploadProfilePicture(context, image, getCurrentUserUid());
+                                  }
+                                },
+                                child: Container(
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      width: 4,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: AssetImage('assets/icon/icon.png'),
+                                    backgroundColor: Colors.transparent,
                                   ),
                                 ),
-                                child: CircleAvatar(
-                                radius: 50,
-                                backgroundImage: AssetImage('assets/icon/icon.png'),
-                                backgroundColor: Colors.transparent,
-                              ),
                               );
                             } else {
-                              return Container(
-                                width: 110,
-                                height: 110,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    width: 4,
+                              return InkWell(
+                                onTap: () => _showEditProfileBottomSheet(context),
+                                child: Container(
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      width: 4,
+                                    ),
                                   ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: AssetImage('assets/icon/icon.png'),
-                                  backgroundColor: Colors.transparent,
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: snapshot.data!.image,
+                                    backgroundColor: Colors.transparent,
+                                  ),
                                 ),
                               );
                             }
@@ -1237,7 +2393,7 @@ Future<String> _fetchReleaseNotes() async {
                               ),
                               SizedBox(width: 8),
                               if (isVerified)
-                                Icon(Icons.check_circle, color: Colors.green)
+                                Icon(Icons.verified_outlined, color: Colors.green)
                               else
                                 TextButton(
                                   onPressed: () => _sendVerificationEmail(context),
@@ -1261,8 +2417,24 @@ Future<String> _fetchReleaseNotes() async {
                     context: context,
                     title: 'Edit Profile',
                     subtitle: 'Update your personal information',
-                    icon: Icons.edit_outlined,
+                    icon: Icons.person,
                     onTap: () => _showEditProfileBottomSheet(context),
+                  ),
+                  SizedBox(height: 16),
+                  _buildProfileOptionCard(
+                    context: context,
+                    title: 'Set Theme',
+                    subtitle: 'Choose your style',
+                    icon: Icons.color_lens_outlined,
+                    onTap: () => _showThemeBottomSheet(context),
+                  ),
+                  SizedBox(height: 16),
+                  _buildProfileOptionCard(
+                    context: context,
+                    title: 'Custom Frequency',
+                    subtitle: 'Modify your tracking intervals',
+                    icon: Icons.timelapse_sharp,
+                    onTap: () => _showFrequencyBottomSheet(context),
                   ),
                   SizedBox(height: 16),
                   _buildProfileOptionCard(
@@ -1277,7 +2449,7 @@ Future<String> _fetchReleaseNotes() async {
                     context: context,
                     title: 'Change Email',
                     subtitle: 'Update your Email credentials',
-                    icon: Icons.lock_outline,
+                    icon: Icons.email_outlined,
                     onTap: () => _showChangeEmailBottomSheet(context),
                   ),
                   SizedBox(height: 16),
@@ -1298,10 +2470,9 @@ Future<String> _fetchReleaseNotes() async {
                   ),
                   SizedBox(height: 32),
 
-                  FilledButton.tonal(
+                  FilledButton(
                     onPressed: () => _logout(context),
                     style: FilledButton.styleFrom(
-
                       minimumSize: Size(70, 55),
                       backgroundColor: Theme.of(context).colorScheme.errorContainer,
                       foregroundColor: Theme.of(context).colorScheme.error,
@@ -1309,9 +2480,16 @@ Future<String> _fetchReleaseNotes() async {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: Text(
-                      'Logout',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.logout, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Logout',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1319,7 +2497,7 @@ Future<String> _fetchReleaseNotes() async {
             ),
           ],
         ),
-      ),
+      ),)
     );
   }
 

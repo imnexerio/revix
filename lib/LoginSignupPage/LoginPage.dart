@@ -94,11 +94,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
-        String userEmail = user.email!;
-        String userName = user.displayName ?? 'User';
+        // String userEmail = user.email!;
+        // String userName = user.displayName ?? 'User';
         DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
-        print('userEmail $userEmail');
-        print('userName $userName');
+        // print('userEmail $userEmail');
+        // print('userName $userName');
 
         try {
           DataSnapshot snapshot = await ref.get();
@@ -412,24 +412,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
                       ),
                       SizedBox(height: 16),
-                      ElevatedButton.icon(
+                      IconButton(
+                        icon: ImageIcon(
+                          AssetImage('assets/github.png'), // Path to your GitHub icon
+                        ),
                         onPressed: () {
                           UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
                         },
-                        icon: ImageIcon(
-                          AssetImage('assets/github.png'),
-                          size: 24,
-                        ),
-                        label: const Text(''),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: colorScheme.onSurface,
-                          backgroundColor: colorScheme.surface,
-                          textStyle: textTheme.labelLarge,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
                       ),
                       SizedBox(height: 16),
                       FutureBuilder<String>(

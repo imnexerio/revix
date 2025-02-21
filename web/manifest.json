@@ -1,6 +1,6 @@
 {
-    "name": "retracker",
-    "short_name": "retracker",
+    "name": "reTracker",
+    "short_name": "reTracker",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",

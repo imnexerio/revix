@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 import '../DetailsPage/DetailRow.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/date_utils.dart';
-
 
 class LectureDetailsModal extends StatefulWidget {
   final String lectureNo;
@@ -26,6 +27,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late String revisionFrequency;
   late int noRevision;
   late bool isEnabled;
+  List<Map<String, String>> frequencies = [];
 
   @override
   void initState() {
@@ -33,6 +35,43 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     revisionFrequency = widget.details['revision_frequency'];
     noRevision = widget.details['no_revision'];
     isEnabled = widget.details['status'] == 'Enabled';
+    fetchFrequencies();
+  }
+
+  void fetchFrequencies() async {
+    try {
+      String uid = FirebaseAuth.instance.currentUser!.uid;
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
+      DataSnapshot snapshot = await databaseRef.get();
+      if (snapshot.exists) {
+        Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
+        setState(() {
+          frequencies = data.entries.map((entry) {
+            return {
+              'title': entry.key,
+              'frequency': (entry.value as List<dynamic>).join(', '),
+            };
+          }).toList();
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Error fetching frequencies: ${e.toString()}'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -90,17 +129,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           revisionFrequency = newValue!;
                         });
                       },
-                      items: [
-                        'Daily',
-                        '2 Day',
-                        '3 Day',
-                        'Weekly',
-                        'Priority',
-                        'Default',
-                      ].map<DropdownMenuItem<String>>((String value) {
+                      items: frequencies.map<DropdownMenuItem<String>>((Map<String, String> frequency) {
                         return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
+                          value: frequency['title'],
+                          child: Text(frequency['title']!),
                         );
                       }).toList(),
                       style: TextStyle(color: Theme.of(context).colorScheme.primary),
@@ -143,15 +175,22 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 String dateRevised = DateTime.now().toIso8601String().split('T')[0];
                                 int missedRevision = (widget.details['missed_revision'] as num).toInt();
                                 DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
-                                String dateScheduled = DateNextRevision.calculateNextRevisionDate(
+                                String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
                                   scheduledDate,
                                   revisionFrequency,
                                   noRevision + 1,
-                                ).toIso8601String().split('T')[0];
+                                )).toIso8601String().split('T')[0];
 
                                 if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                                   missedRevision += 1;
                                 }
+                                List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
+
+                                if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
+                                  datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
+                                }
+                                List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
+                                datesRevised.add(dateRevised);
 
                                 await UpdateRecords(
                                   widget.selectedSubject,
@@ -160,15 +199,15 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   dateRevised,
                                   noRevision + 1,
                                   dateScheduled,
+                                  datesRevised,
                                   missedRevision,
+                                  datesMissedRevisions,
                                   revisionFrequency,
                                   isEnabled ? 'Enabled' : 'Disabled',
                                 );
 
                                 Navigator.pop(context);
                                 Navigator.pop(context);
-
-                                // await refreshRecords();
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -223,7 +262,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           child: ElevatedButton.icon(
                             icon: Icon(Icons.add),
                             label: Text('Save Changes'),
-
                             onPressed: () async {
                               try {
                                 showDialog(
@@ -235,7 +273,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                     );
                                   },
                                 );
+                                List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
 
+                                // Retrieve the existing dates_revised list
+                                List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
 
                                 await UpdateRecords(
                                   widget.selectedSubject,
@@ -244,7 +285,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   widget.details['date_revised'],
                                   noRevision,
                                   widget.details['date_scheduled'],
+                                  datesRevised,
                                   widget.details['missed_revision'],
+                                  datesMissedRevisions,
                                   revisionFrequency,
                                   isEnabled ? 'Enabled' : 'Disabled',
                                 );

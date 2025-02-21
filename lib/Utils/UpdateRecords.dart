@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+
 Future<void> UpdateRecords(
     String selectedSubject,
     String selectedSubjectCode,
@@ -8,7 +9,9 @@ Future<void> UpdateRecords(
     String dateRevised,
     int noRevision,
     String dateScheduled,
+    List<String> datesRevised,
     int missedRevision,
+    List<String> datesMissedRevisions,
     String revisionFrequency,
     String status,
     ) async {
@@ -26,13 +29,16 @@ Future<void> UpdateRecords(
       .child(selectedSubjectCode)
       .child(lectureNo);
 
+
   // Perform the update operation
   await ref.update({
     'date_revised': dateRevised,
     'no_revision': noRevision,
     'date_scheduled': dateScheduled,
     'missed_revision': missedRevision,
+    'dates_missed_revisions': datesMissedRevisions,
     'revision_frequency': revisionFrequency,
     'status': status,
+    'dates_revised': datesRevised,
   });
 }

@@ -85,15 +85,22 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                       String dateRevised = DateTime.now().toIso8601String().split('T')[0];
                                       int missedRevision = (details['missed_revision'] as num).toInt();
                                       DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
-                                      String dateScheduled = DateNextRevision.calculateNextRevisionDate(
+                                      String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
                                         scheduledDate,
                                         revisionFrequency,
                                         noRevision + 1,
-                                      ).toIso8601String().split('T')[0];
+                                      )).toIso8601String().split('T')[0];
 
                                       if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                                         missedRevision += 1;
                                       }
+                                      List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
+
+                                      if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
+                                        datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
+                                      }
+                                      List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
+                                      datesRevised.add(dateRevised);
 
                                       await UpdateRecords(
                                         selectedSubject,
@@ -102,7 +109,9 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                         dateRevised,
                                         noRevision + 1,
                                         dateScheduled,
+                                        datesRevised,
                                         missedRevision,
+                                        datesMissedRevisions,
                                         revisionFrequency,
                                         isEnabled ? 'Enabled' : 'Disabled',
                                       );
