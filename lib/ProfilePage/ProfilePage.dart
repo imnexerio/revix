@@ -26,8 +26,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int _selectedTemeIndex = 0;
-
 
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1376,7 +1374,6 @@ Future<String> _fetchReleaseNotes() async {
   void _showtrackingTypeBottomSheet(BuildContext context) {
     List<Map<String, String>> trackingtype = [];
     final _formKey = GlobalKey<FormState>();
-    final TextEditingController _customFrequencyController = TextEditingController();
     final TextEditingController _customTitleController = TextEditingController();
 
     // Fetch data function remains the same

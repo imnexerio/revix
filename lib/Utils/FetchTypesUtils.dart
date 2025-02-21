@@ -14,7 +14,7 @@ class FetchtrackingTypeUtils {
       }
     } catch (e) {
       // Handle error
-      print('Error fetching tracking types: $e');
+      // print('Error fetching tracking types: $e');
     }
     return data;
   }

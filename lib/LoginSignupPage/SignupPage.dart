@@ -116,6 +116,13 @@ class _SignupPageState extends State<SignupPage>
           'email': user.email,
           'name': _nameController.text.trim(),
           'createdAt': DateTime.now().toIso8601String(),
+          "custom_trackingType": [
+            "Lectures",
+            "Handouts",
+            "O-NCERTs",
+            "N-NCERTs",
+            "Others"
+          ],
           'custom_frequencies': {
             '2 Day': [1,2],
             '3 Day': [1,3],
@@ -135,8 +142,6 @@ class _SignupPageState extends State<SignupPage>
           ),
         );
 
-        // SharedPreferences prefs = await SharedPreferences.getInstance();
-        // await prefs.setBool('isLoggedIn', true);
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {

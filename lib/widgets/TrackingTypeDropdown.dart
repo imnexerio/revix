@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:retracker/Utils/FetchTypesUtils.dart';
-import '../Utils/fetchFrequencies_utils.dart';
 
 class TrackingTypeDropdown extends StatefulWidget {
   final String trackingType;

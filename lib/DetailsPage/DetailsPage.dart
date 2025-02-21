@@ -8,7 +8,6 @@ class DetailsPage extends StatefulWidget {
 }
 
 class _DetailsPageState extends State<DetailsPage> {
-  Map<String, dynamic>? _data;
 
   @override
   void initState() {
