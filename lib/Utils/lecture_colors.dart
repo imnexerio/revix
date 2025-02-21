@@ -14,10 +14,18 @@ class LectureColors {
   }
 
   static Color _generateColorFromString(String input) {
-    final int hash = input.hashCode;
-    final int g = ((hash & 0xFF0000) >> 16) % 150 + 64; // Ensures g is between 64 and 191
-    final int b = ((hash & 0x00FF00) >> 8) % 150 + 64;  // Ensures b is between 64 and 191
-    final int r = (hash & 0x0000FF) % 150 + 64;         // Ensures r is between 64 and 191
+    final int hash = _customHash(input);
+    final int g = ((hash & 0xFF0000) >> 16) % 120 + 64;
+    final int b = ((hash & 0x00FF00) >> 8) % 120 + 64;
+    final int r = (hash & 0x0000FF) % 120 + 64;
     return Color.fromARGB(255, r, g, b);
+  }
+
+  static int _customHash(String input) {
+    int hash = 0;
+    for (int i = 0; i < input.length; i++) {
+      hash = 31 * hash + input.codeUnitAt(i);
+    }
+    return hash;
   }
 }
