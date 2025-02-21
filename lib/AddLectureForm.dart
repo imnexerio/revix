@@ -57,7 +57,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
         });
       }
     } catch (e) {
-      // print('Error loading subjects and codes: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Error loading subjects and codes: $e',
+        ),
+      );
     }
   }
 
@@ -68,7 +73,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
         _subjectCodes[newSubject] = [];
       });
     } catch (e) {
-      // print('Error adding new subject: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Error adding new subject: $e',
+        ),
+      );
     }
   }
 
@@ -78,7 +88,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
         _subjectCodes[subject]!.add(newCode);
       });
     } catch (e) {
-      // print('Error adding new subject code: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Error adding new subject code: $e',
+        ),
+      );
     }
   }
 

@@ -95,11 +95,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
-        // String userEmail = user.email!;
-        // String userName = user.displayName ?? 'User';
         DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
-        // print('userEmail $userEmail');
-        // print('userName $userName');
 
         try {
           DataSnapshot snapshot = await ref.get();
@@ -424,7 +420,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           AssetImage('assets/github.png'), // Path to your GitHub icon
                         ),
                         onPressed: () {
-                          UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
+                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
                         },
                       ),
                       SizedBox(height: 16),

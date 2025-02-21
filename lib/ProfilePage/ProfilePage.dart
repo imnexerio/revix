@@ -68,12 +68,16 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
       DataSnapshot snapshot = await databaseRef.child('profile_picture').get();
-      // print('snapshot value: ${snapshot.value}');
       if (snapshot.exists) {
         return snapshot.value as String?;
       }
     } catch (e) {
-      print('Error retrieving profile picture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Error retrieving profile picture: $e',
+        ),
+      );
     }
     return null;
   }
@@ -88,7 +92,12 @@ class _ProfilePageState extends State<ProfilePage> {
         return Image.memory(imageBytes);
       }
     } catch (e) {
-      print('Error decoding profile picture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Error decoding profile picture: $e',
+        ),
+      );
     }
     return Image.asset(defaultImagePath);
   }
@@ -899,7 +908,12 @@ Future<String> _fetchReleaseNotes() async {
           }).toList();
         });
       } catch (e) {
-        //   print('Error fetching frequencies: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          customSnackBar(
+            context: context,
+            message: 'Error fetching frequencies: $e',
+          ),
+        );
       }
     }
 
@@ -1496,8 +1510,6 @@ Future<String> _fetchReleaseNotes() async {
                           isPassword: true,
                           onSaved: (value) => _confirmPassword = value,
                           validator: (value) {
-                            print('Confirm Password: $value');
-                            print('New Password: ${_newPasswordController.text}');
                             if (value == null || value.isEmpty) {
                               return 'Please confirm your new password';
                             }
@@ -2039,7 +2051,7 @@ Future<String> _fetchReleaseNotes() async {
                                             AssetImage('assets/github.png'), // Path to your GitHub icon
                                           ),
                                           onPressed: () {
-                                            UrlLauncher.launchURL('https://github.com/imnexerio/retracker');
+                                            UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
                                           },
                                         ),
                                       ],
