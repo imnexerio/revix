@@ -48,10 +48,10 @@ class _LectureBarState extends State<LectureBar> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           int crossAxisCount = _calculateColumns(constraints.maxWidth);
-          double aspectRatio = (constraints.maxWidth / crossAxisCount) / 200;
+          double aspectRatio = (constraints.maxWidth / crossAxisCount) / 150;
 
           return GridView.builder(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(0),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
               childAspectRatio: aspectRatio,
