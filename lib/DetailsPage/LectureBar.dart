@@ -220,13 +220,15 @@ class _LectureBarState extends State<LectureBar> {
   }
 
   Color _getTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'theory':
+    switch (type) {
+      case 'Lectures':
         return Colors.blue;
-      case 'practical':
+      case 'Handouts':
         return Colors.green;
-      case 'tutorial':
+      case 'O-NCERTs':
         return Colors.purple;
+      case 'N-NCERTs':
+        return Colors.orange;
       default:
         return Colors.grey;
     }
