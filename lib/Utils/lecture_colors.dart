@@ -17,7 +17,7 @@ class LectureColors {
     final int hash = _customHash(input);
     final int g = ((hash & 0xFF0000) >> 16) % 120 + 64;
     final int b = ((hash & 0x00FF00) >> 8) % 120 + 64;
-    final int r = (hash & 0x0000FF) % 120 + 64;
+    final int r = (hash & 0x0000FF) % 110 + 64;
     return Color.fromARGB(255, r, g, b);
   }
 
