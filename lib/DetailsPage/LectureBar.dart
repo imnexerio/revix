@@ -42,101 +42,130 @@ class _LectureBarState extends State<LectureBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: widget.lectureData.length,
-        itemBuilder: (context, index) {
-          final lectureNo = widget.lectureData.keys.elementAt(index);
-          final details = widget.lectureData[lectureNo];
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate number of columns based on screen width
+          int crossAxisCount = _calculateColumns(constraints.maxWidth);
 
-          return Card(
-            elevation: 2,
-            margin: EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          // Calculate the aspect ratio based on the available width
+          double aspectRatio = (constraints.maxWidth / crossAxisCount) / 200; // Adjust 200 to your desired card height
+
+          return GridView.builder(
+            padding: EdgeInsets.all(16),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: aspectRatio, // Use the calculated aspect ratio
+              crossAxisSpacing: 6,
+              mainAxisSpacing: 6,
             ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _showLectureDetails(context, lectureNo, details),
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildInfoChip(
-                          details['lecture_type'],
-                          backgroundColor: _getTypeColor(details['lecture_type']),
-                        ),
-                        Text(
-                          'Lecture $lectureNo',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    _buildInfoRow(
-                      context,
-                      'Learned:',
-                      details['date_learnt'],
-                      'Revised:',
-                      details['date_revised'],
-                    ),
-                    SizedBox(height: 8),
-                    _buildInfoRow(
-                      context,
-                      'Revisions:',
-                      details['no_revision'].toString(),
-                      'Missed:',
-                      details['missed_revision'].toString(),
-                      isAlert: int.parse(details['missed_revision'].toString()) > 0,
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                        SizedBox(width: 8),
-                        Text(
-                          'Scheduled: ${details['date_scheduled']}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+            itemCount: widget.lectureData.length,
+            itemBuilder: (context, index) {
+              final lectureNo = widget.lectureData.keys.elementAt(index);
+              final details = widget.lectureData[lectureNo];
+
+              return Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-            ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _showLectureDetails(context, lectureNo, details),
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildInfoChip(
+                              details['lecture_type'],
+                              backgroundColor: _getTypeColor(details['lecture_type']),
+                            ),
+                            Text(
+                              'Lecture $lectureNo',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildCompactInfoRow(
+                                context,
+                                'Learned:',
+                                details['date_learnt'],
+                                'Revised:',
+                                details['date_revised'],
+                              ),
+                              _buildCompactInfoRow(
+                                context,
+                                'Revisions:',
+                                details['no_revision'].toString(),
+                                'Missed:',
+                                details['missed_revision'].toString(),
+                                isAlert: int.parse(details['missed_revision'].toString()) > 0,
+                              ),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                                  SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      'Scheduled: ${details['date_scheduled']}',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Colors.grey[600],
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
     );
   }
+  int _calculateColumns(double width) {
+    if (width < 600) return 1;         // Mobile
+    if (width < 900) return 2;         // Tablet
+    if (width < 1200) return 3;        // Small desktop
+    if (width < 1500) return 4;        // Medium desktop
+    return 5;                          // Large desktop
+  }
 
   Widget _buildInfoChip(String text, {required Color backgroundColor}) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         text,
         style: TextStyle(
           color: Colors.white,
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(
+  Widget _buildCompactInfoRow(
       BuildContext context,
       String label1,
       String value1,
@@ -144,42 +173,43 @@ class _LectureBarState extends State<LectureBar> {
       String value2, {
         bool isAlert = false,
       }) {
+    TextStyle? labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Colors.grey[600],
+    );
+    TextStyle? valueStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w500,
+    );
+
     return Row(
       children: [
         Expanded(
           child: Row(
             children: [
-              Text(
-                label1,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
+              Text(label1, style: labelStyle),
               SizedBox(width: 4),
-              Text(
-                value1,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  value1,
+                  style: valueStyle,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
         ),
+        SizedBox(width: 8),
         Expanded(
           child: Row(
             children: [
-              Text(
-                label2,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
+              Text(label2, style: labelStyle),
               SizedBox(width: 4),
-              Text(
-                value2,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: isAlert ? Colors.red : null,
+              Expanded(
+                child: Text(
+                  value2,
+                  style: valueStyle?.copyWith(
+                    color: isAlert ? Colors.red : null,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
