@@ -28,7 +28,20 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
     List<DropdownMenuItem<String>> items = frequencies.keys.map((key) {
       return DropdownMenuItem<String>(
         value: key,
-        child: Text(key),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              key,
+              style: TextStyle(fontWeight: FontWeight.bold,color: Theme.of(context).colorScheme.primary),
+            ),
+            SizedBox(width: 10),
+            Text(
+              frequencies[key].toString(),
+              style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.secondary),
+            ),
+          ],
+        ),
       );
     }).toList();
 

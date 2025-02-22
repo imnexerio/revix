@@ -6,6 +6,7 @@ import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
+import 'RevisionFrequencyDropdown.dart';
 
 class LectureDetailsModal extends StatefulWidget {
   final String lectureNo;
@@ -36,34 +37,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     revisionFrequency = widget.details['revision_frequency'];
     noRevision = widget.details['no_revision'];
     isEnabled = widget.details['status'] == 'Enabled';
-    fetchFrequencies();
   }
 
-  void fetchFrequencies() async {
-    try {
-      String uid = FirebaseAuth.instance.currentUser!.uid;
-      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
-      DataSnapshot snapshot = await databaseRef.get();
-      if (snapshot.exists) {
-        Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
-        setState(() {
-          frequencies = data.entries.map((entry) {
-            return {
-              'title': entry.key,
-              'frequency': (entry.value as List<dynamic>).join(', '),
-            };
-          }).toList();
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar_error(
-          context: context,
-          message: 'Error fetching frequencies: ${e.toString()}',
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,27 +83,17 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     DetailRow(label: 'Missed Revisions', value: widget.details['missed_revision'].toString()),
                     DetailRow(label: 'Description', value: widget.details['description']),
                     SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Revision Frequency',
-                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                        border: OutlineInputBorder(),
-                      ),
-                      value: revisionFrequency,
+
+                    RevisionFrequencyDropdown(
+                      revisionFrequency: revisionFrequency,
                       onChanged: (String? newValue) {
                         setState(() {
                           revisionFrequency = newValue!;
                         });
                       },
-                      items: frequencies.map<DropdownMenuItem<String>>((Map<String, String> frequency) {
-                        return DropdownMenuItem<String>(
-                          value: frequency['title'],
-                          child: Text(frequency['title']!),
-                        );
-                      }).toList(),
-                      style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                      dropdownColor: Theme.of(context).colorScheme.surface,
                     ),
+
+
                     SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
