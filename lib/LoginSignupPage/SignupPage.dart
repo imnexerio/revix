@@ -124,12 +124,12 @@ class _SignupPageState extends State<SignupPage>
             "Others"
           ],
           'custom_frequencies': {
-            '2 Day': [1,2],
-            '3 Day': [1,3],
+            '2 Day': [2],
+            '3 Day': [3],
             'Daily': [1],
             'Default': [1, 4, 7, 15, 30, 60],
             'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
-            'Weekly': [1,7],
+            'Weekly': [7],
           },
         });
 
