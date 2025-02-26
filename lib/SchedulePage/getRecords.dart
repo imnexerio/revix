@@ -54,6 +54,8 @@ Future<Map<String, List<Map<String, dynamic>>>> getRecords() async {
                     'no_revision': recordValue['no_revision'],
                     'revision_frequency': recordValue['revision_frequency'],
                     'status': recordValue['status'],
+                    'dates_revised': recordValue['dates_revised'],
+                    'dates_missed_revisions': recordValue['dates_missed_revisions'],
                   };
 
                   if (scheduledDate.toIso8601String().split('T')[0] == todayStr) {
