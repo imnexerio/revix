@@ -16,7 +16,7 @@ class AddLectureForm extends StatefulWidget {
 
 class _AddLectureFormState extends State<AddLectureForm> {
   final _formKey = GlobalKey<FormState>();
-  String _selectedSubject = '';
+  String _selectedSubject = 'DEFAULT_VALUE'; // Start with a non-empty default to prevent showing Add New Subject at start
   String _selectedSubjectCode = '';
   String _lectureType = 'Lectures';
   String _lectureNo = '';
@@ -26,11 +26,16 @@ class _AddLectureFormState extends State<AddLectureForm> {
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
 
+  bool _showAddNewSubject = false;
+  bool _showAddNewSubjectCode = false;
+  bool _showAddNewSubjectCode_ = false;
+
   @override
   void initState() {
     super.initState();
     _loadSubjectsAndCodes();
   }
+
 
   Future<void> _loadSubjectsAndCodes() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -54,6 +59,13 @@ class _AddLectureFormState extends State<AddLectureForm> {
                   value.keys.map((code) => code.toString()).toList();
             }
           });
+
+          // Set default selection if available
+          if (_subjects.isNotEmpty) {
+            _selectedSubject = _subjects[0];
+          } else {
+            _selectedSubject = 'DEFAULT_VALUE'; // Keep the default value
+          }
         });
       }
     } catch (e) {
@@ -66,36 +78,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     }
   }
 
-  Future<void> _addNewSubject(String newSubject) async {
-    try {
-      setState(() {
-        _subjects.add(newSubject);
-        _subjectCodes[newSubject] = [];
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar_error(
-          context: context,
-          message: 'Error adding new subject: $e',
-        ),
-      );
-    }
-  }
 
-  Future<void> _addNewSubjectCode(String subject, String newCode) async {
-    try {
-      setState(() {
-        _subjectCodes[subject]!.add(newCode);
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar_error(
-          context: context,
-          message: 'Error adding new subject code: $e',
-        ),
-      );
-    }
-  }
 
   Future<void> UpdateRecords(BuildContext context) async {
     try {
@@ -142,6 +125,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       throw Exception('Failed to save lecture: $e');
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -180,21 +164,50 @@ class _AddLectureFormState extends State<AddLectureForm> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    SubjectDropdown(
-                      subjects: _subjects,
-                      selectedSubject: _selectedSubject,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          if (newValue == 'Others') {
-                            _selectedSubject = '';
-                          } else {
-                            _selectedSubject = newValue!;
-                            _selectedSubjectCode = '';
-                          }
-                        });
-                      },
+                    // Subject dropdown with "Others" option
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedSubject == 'DEFAULT_VALUE' && _subjects.isNotEmpty ? _subjects[0] :
+                        (_subjects.contains(_selectedSubject) ? _selectedSubject : null),
+                        decoration: InputDecoration(
+                          labelText: 'Subject',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        isExpanded: true,
+                        items: [
+                          ..._subjects.map((subject) => DropdownMenuItem(
+                            value: subject,
+                            child: Text(subject),
+                          )).toList(),
+                          DropdownMenuItem(
+                            value: "Others",
+                            child: Text("Others"),
+                          ),
+                        ],
+                        onChanged: (newValue) {
+                          setState(() {
+                            if (newValue == "Others") {
+                              _showAddNewSubject = true;
+                              _showAddNewSubjectCode = true;
+                            } else {
+                              _selectedSubject = newValue!;
+                              _selectedSubjectCode = '';
+                              _showAddNewSubject = false;
+                            }
+                          });
+                        },
+                      ),
                     ),
-                    if (_selectedSubject.isEmpty)
+
+                    // Add New Subject field (only shown when "Others" is selected)
+                    if (_showAddNewSubject)
                       Container(
                         margin: EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -202,38 +215,53 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           color: Theme.of(context).cardColor,
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
-                        child: TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Or Add New Subject',
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          onFieldSubmitted: (value) {
-                            if (value.isNotEmpty && !_subjects.contains(value)) {
-                              _addNewSubject(value);
-                              setState(() {
-                                _selectedSubject = value;
-                                _selectedSubjectCode = '';
-                              });
-                            }
-                          },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                decoration: InputDecoration(
+                                  labelText: 'Add New Subject',
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                                onSaved: (value) {
+                                  _selectedSubject = value!;
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    SubjectCodeDropdown(
-                      subjectCodes: _subjectCodes,
-                      selectedSubject: _selectedSubject,
-                      selectedSubjectCode: _selectedSubjectCode,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          if (newValue == 'Others') {
-                            _selectedSubjectCode = '';
-                          } else {
-                            _selectedSubjectCode = newValue!;
-                          }
-                        });
-                      },
+                    if (_showAddNewSubject)
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              // controller: _newSubjectCodeController,
+                              decoration: InputDecoration(
+                                labelText: 'Add New Subject Code',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                              onSaved: (value) {
+                                _selectedSubjectCode = value!;
+                              },
+                              // onFieldSubmitted: (_) => _addNewSubjectCode(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    if (_selectedSubjectCode.isEmpty && _selectedSubject.isNotEmpty)
+
+                    // Subject Code dropdown with "Others" option
+                    if (_selectedSubject != 'DEFAULT_VALUE' && !_showAddNewSubject)
                       Container(
                         margin: EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -241,22 +269,66 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           color: Theme.of(context).cardColor,
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
-                        child: TextFormField(
+                        child: DropdownButtonFormField<String>(
+                          value: _subjectCodes[_selectedSubject]?.contains(_selectedSubjectCode) ?? false
+                              ? _selectedSubjectCode : null,
                           decoration: InputDecoration(
-                            labelText: 'Or Add New Subject Code',
+                            labelText: 'Subject Code',
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
-                          onSaved: (value) {
-                            if (value != null && value.isNotEmpty && !_subjectCodes[_selectedSubject]!.contains(value)) {
-                              _addNewSubjectCode(_selectedSubject, value);
-                              setState(() {
-                                _selectedSubjectCode = value;
-                              });
-                            }
+                          isExpanded: true,
+                          items: [
+                            ...(_subjectCodes[_selectedSubject] ?? []).map((code) => DropdownMenuItem(
+                              value: code,
+                              child: Text(code),
+                            )).toList(),
+                            DropdownMenuItem(
+                              value: "Others",
+                              child: Text("Others"),
+                            ),
+                          ],
+                          onChanged: (newValue) {
+                            setState(() {
+                              if (newValue == "Others") {
+                                _showAddNewSubjectCode_ = true;
+                              } else {
+                                _selectedSubjectCode = newValue!;
+                                _showAddNewSubjectCode = false;
+                              }
+                            });
                           },
                         ),
                       ),
+
+                    // Add New Subject Code field (only shown when "Others" is selected in Subject Code)
+                    if (_showAddNewSubjectCode_)
+                      Container(
+                        margin: EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(context).cardColor,
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                decoration: InputDecoration(
+                                  labelText: 'Add New Subject Code',
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                                onSaved: (value) {
+                                  _selectedSubjectCode = value!;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Rest of the form remains the same
                     LectureTypeDropdown(
                       lectureType: _lectureType,
                       onChanged: (String? newValue) {
