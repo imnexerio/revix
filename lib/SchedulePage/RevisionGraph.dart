@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 class CircularTimelineChart extends StatefulWidget {
+  final String dateLearnt;
   final List<String> datesMissedRevisions;
   final List<String> datesRevised;
   final double size;
@@ -11,6 +12,7 @@ class CircularTimelineChart extends StatefulWidget {
 
   const CircularTimelineChart({
     Key? key,
+    required this.dateLearnt,
     required this.datesMissedRevisions,
     required this.datesRevised,
     this.size = 220,
@@ -150,20 +152,8 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
                 ),
               ),
 
-              // Arrow indicating start point
-              Positioned(
-                left: widget.size / 2 - 5,
-                bottom: 5,
-                child: AnimatedOpacity(
-                  opacity: _animation.value,
-                  duration: widget.animationDuration,
-                  child: Icon(
-                    Icons.arrow_upward,
-                    size: 14,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ),
+              // Blue dot indicating starting date (dateLearnt)
+              _buildStartDateDot(3 * pi / 2, Colors.blue, widget.dateLearnt),
             ],
           ),
         );
@@ -195,6 +185,41 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
           child: Container(
             width: 10,
             height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.5),
+                  blurRadius: 3,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStartDateDot(double angle, Color color, String dateStr) {
+    final radius = (widget.size / 2 - 15);
+
+    // Convert polar to cartesian coordinates
+    final x = widget.size / 2 + radius * cos(angle) * _animation.value;
+    final y = widget.size / 2 + radius * sin(angle) * _animation.value;
+
+    return Positioned(
+      left: x - 6,
+      top: y - 6,
+      child: AnimatedOpacity(
+        opacity: _animation.value,
+        duration: widget.animationDuration,
+        child: Tooltip(
+          message: 'Date Learnt: $dateStr',
+          child: Container(
+            width: 12,
+            height: 12,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
