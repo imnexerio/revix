@@ -70,7 +70,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Lecture $lectureNo',
+                              '${details['lecture_type']} $lectureNo',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -169,7 +169,6 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                   'Description',
                                   details['description'] ?? 'No description',
                                   Icons.description,
-
                                 )
                               ],
                             ),
@@ -352,7 +351,6 @@ Widget _buildDateRow(BuildContext context, String label, String date, IconData i
   );
 }
 
-// Helper widget for detail items
 Widget _buildDetailItem(BuildContext context, String label, String value, IconData icon, {bool isNegative = false}) {
   return Row(
     children: [
@@ -373,27 +371,31 @@ Widget _buildDetailItem(BuildContext context, String label, String value, IconDa
         ),
       ),
       SizedBox(width: 12),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: isNegative
-                  ? Colors.red[700]
-                  : Theme.of(context).textTheme.bodyLarge?.color,
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.normal,
+                color: isNegative
+                    ? Colors.red[700]
+                    : Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 3,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ],
   );

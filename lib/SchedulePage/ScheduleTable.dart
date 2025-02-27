@@ -193,7 +193,7 @@
                          ),
                          const SizedBox(height: 4),
                          Text(
-                           'Lecture ${record['lecture_no']} · ${record['subject_code']}',
+                           '${record['lecture_type']} ${record['lecture_no']} · ${record['subject_code']}',
                            style: TextStyle(
                              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                              fontSize: 13,
