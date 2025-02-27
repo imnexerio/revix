@@ -212,6 +212,7 @@
                        dateLearnt:record['date_learnt'],
                        datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
                        datesRevised: List<String>.from(record['dates_revised'] ?? []),
+                         showLabels: false,
                      ),
                    ),
                  ],

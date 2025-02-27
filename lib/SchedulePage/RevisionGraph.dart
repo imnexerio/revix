@@ -10,6 +10,7 @@ class RevisionRadarChart extends StatefulWidget {
   final Color missedColor;
   final Color revisedColor;
   final Color learntColor;
+  final bool showLabels; // Add this property
 
   const RevisionRadarChart({
     Key? key,
@@ -21,6 +22,7 @@ class RevisionRadarChart extends StatefulWidget {
     this.missedColor = Colors.redAccent,
     this.revisedColor = Colors.greenAccent,
     this.learntColor = Colors.blueAccent,
+    this.showLabels = true, // Default to true
   }) : super(key: key);
 
   @override
@@ -204,60 +206,58 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                   ),
 
                   // Labels
-                  ...List.generate(
-                    allRevisions.length,
-                        (index) {
-                      final revision = allRevisions[index];
-                      final totalEvents = allRevisions.length;
+                  if (widget.showLabels)
+                    ...List.generate(
+                      allRevisions.length,
+                          (index) {
+                        final revision = allRevisions[index];
+                        final totalEvents = allRevisions.length;
 
+                        final angle = -pi / 2 + (index / totalEvents) * 2 * pi;
+                        final labelRadius = (widget.size / 2) * 0.9;
 
-                      final angle = -pi/2 + (index / totalEvents) * 2 * pi;
-                      final labelRadius = (widget.size / 2) * 0.9; // Reduced from 0.9 to position labels more inward
+                        final labelX = widget.size / 2 + labelRadius * cos(angle);
+                        final labelY = widget.size / 2 + labelRadius * sin(angle);
+                        final dateLabel = _formatDate(revision.date);
 
-                      final labelX = widget.size / 2 + labelRadius * cos(angle);
-                      final labelY = widget.size / 2 + labelRadius * sin(angle);
-                      final dateLabel = _formatDate(revision.date);
-
-                      return Positioned(
-                        left: labelX,
-                        top: labelY,
-                        child: AnimatedOpacity(
-                          opacity: _animation.value,
-                          duration: widget.animationDuration,
-                          child: Transform.translate(
-                            offset: Offset(
-                              // Center the label horizontally
-                              -20,
-                              // Center the label vertically
-                              -10,
-                            ),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                  color: revision.isLearned
-                                      ? widget.learntColor
-                                      : (revision.isMissed
-                                      ? widget.missedColor
-                                      : widget.revisedColor),
-                                  width: 1,
-                                ),
+                        return Positioned(
+                          left: labelX,
+                          top: labelY,
+                          child: AnimatedOpacity(
+                            opacity: _animation.value,
+                            duration: widget.animationDuration,
+                            child: Transform.translate(
+                              offset: Offset(
+                                -20,
+                                -10,
                               ),
-                              child: Text(
-                                dateLabel,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.black87,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: revision.isLearned
+                                        ? widget.learntColor
+                                        : (revision.isMissed
+                                        ? widget.missedColor
+                                        : widget.revisedColor),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  dateLabel,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
 
                   // Center dot
                   Center(
@@ -281,7 +281,6 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                 ],
               ),
             ),
-
           ],
         );
       },
