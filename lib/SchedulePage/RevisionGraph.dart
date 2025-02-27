@@ -155,7 +155,8 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
 
                   // Calculate position (starting from bottom, going clockwise)
                   // Map index from 0 to totalEvents to 0 to 2π
-                  final angle = 3 * pi / 2 + (index / totalEvents) * 2 * pi;
+                  // Changed from 3π/2 (top) to π/2 (bottom)
+                  final angle = pi / 2 + (index / totalEvents) * 2 * pi;
 
                   if (revision.isLearned) {
                     return _buildStartDateDot(angle, Colors.blue, widget.dateLearnt);
@@ -294,9 +295,10 @@ class CirclePainter extends CustomPainter {
     // Calculate sweep angle based on animation value (0 to 2π)
     final sweepAngle = 2 * pi * animationValue;
 
+    // Changed starting angle from 3π/2 to π/2 (90°) to start from bottom
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      3 * pi / 2, // Start from bottom (270° or 3π/2)
+      pi / 2, // Start from bottom (90° or π/2)
       sweepAngle,
       false,
       circlePaint,
