@@ -221,7 +221,10 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                             final revision = allRevisions[index];
                             final totalEvents = allRevisions.length;
 
-                            final angle = -pi / 2 + (index / totalEvents) * 2 * pi;
+                            // Changed from 3π/2 (top) to π/2 (bottom)
+                            final angle = pi / 2 + (index / totalEvents) * 2 * pi;
+
+                            // final angle = -pi / 2 + (index / totalEvents) * 2 * pi;
                             final labelRadius = (availableSize / 2) * 0.85;
 
                             final labelX = availableSize / 2 + labelRadius * cos(angle);
@@ -388,7 +391,7 @@ class RadarWebPainter extends CustomPainter {
 
     // Draw the spokes
     for (int i = 0; i < totalSpokes; i++) {
-      final angle = -pi/2 + (i / totalSpokes) * 2 * pi;
+      final angle = pi/2 + (i / totalSpokes) * 2 * pi;
       final x = center.dx + radius * cos(angle) * animationValue;
       final y = center.dy + radius * sin(angle) * animationValue;
 
@@ -443,7 +446,7 @@ class RadarChartPainter extends CustomPainter {
       final totalEvents = revisions.length;
 
       // Calculate angle and radiusRatio based on animation
-      final angle = -pi/2 + (i / totalEvents) * 2 * pi;
+      final angle = pi/2 + (i / totalEvents) * 2 * pi;
       double pointRadius = radius;
 
       // Calculate x, y of the point

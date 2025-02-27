@@ -1,17 +1,124 @@
 import 'package:flutter/material.dart';
 import 'RevisionGraph.dart'; // Import the RevisionGraph widget
 
-class ScheduleTable extends StatelessWidget {
-  final List<Map<String, dynamic>> records;
+class ScheduleTable extends StatefulWidget {
+  final List<Map<String, dynamic>> initialRecords;
   final String title;
   final Function(BuildContext, Map<String, dynamic>) onSelect;
 
   const ScheduleTable({
     Key? key,
-    required this.records,
+    required this.initialRecords,
     required this.title,
     required this.onSelect,
   }) : super(key: key);
+
+  @override
+  _ScheduleTableState createState() => _ScheduleTableState();
+}
+
+class _ScheduleTableState extends State<ScheduleTable> {
+  late List<Map<String, dynamic>> records;
+  String? currentSortField;
+  bool isAscending = true;
+  final GlobalKey _gridKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    records = List.from(widget.initialRecords);
+  }
+
+  @override
+  void didUpdateWidget(ScheduleTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialRecords != oldWidget.initialRecords) {
+      setState(() {
+        records = List.from(widget.initialRecords);
+        // Reapply sorting if we had a sort field
+        if (currentSortField != null) {
+          _applySorting(currentSortField!, isAscending);
+        }
+      });
+    }
+  }
+
+  void _applySorting(String field, bool ascending) {
+    setState(() {
+      currentSortField = field;
+      isAscending = ascending;
+
+      records.sort((a, b) {
+        switch (field) {
+          case 'date_learnt':
+            final String? aDate = a['date_learnt'] as String?;
+            final String? bDate = b['date_learnt'] as String?;
+
+            // Handle null dates (null comes first in ascending, last in descending)
+            if (aDate == null && bDate == null) return 0;
+            if (aDate == null) return ascending ? -1 : 1;
+            if (bDate == null) return ascending ? 1 : -1;
+
+            // Compare dates
+            return ascending
+                ? aDate.compareTo(bDate)
+                : bDate.compareTo(aDate);
+
+          case 'date_revised':
+            final List<String> aRevised = List<String>.from(a['dates_revised'] ?? []);
+            final List<String> bRevised = List<String>.from(b['dates_revised'] ?? []);
+
+            // Get the most recent revision date
+            String? aLatest = aRevised.isNotEmpty ? aRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next) : null;
+            String? bLatest = bRevised.isNotEmpty ? bRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next) : null;
+
+            // Handle null dates
+            if (aLatest == null && bLatest == null) return 0;
+            if (aLatest == null) return ascending ? -1 : 1;
+            if (bLatest == null) return ascending ? 1 : -1;
+
+            return ascending
+                ? aLatest.compareTo(bLatest)
+                : bLatest.compareTo(aLatest);
+
+          case 'missed_revision':
+            final int aMissed = a['missed_revision'] as int? ?? 0;
+            final int bMissed = b['missed_revision'] as int? ?? 0;
+
+            return ascending
+                ? aMissed.compareTo(bMissed)
+                : bMissed.compareTo(aMissed);
+
+          case 'no_revision':
+            final int aRevisions = a['no_revision'] as int? ?? 0;
+            final int bRevisions = b['no_revision'] as int? ?? 0;
+
+            return ascending
+                ? aRevisions.compareTo(bRevisions)
+                : bRevisions.compareTo(aRevisions);
+
+          case 'revision_frequency':
+          // Map priority levels to numeric values for sorting
+            final Map<String, int> priorityValues = {
+              'High Priority': 3,
+              'Medium Priority': 2,
+              'Low Priority': 1,
+              '': 0, // For empty values
+            };
+
+            final int aValue = priorityValues[a['revision_frequency'] ?? ''] ?? 0;
+            final int bValue = priorityValues[b['revision_frequency'] ?? ''] ?? 0;
+
+            return ascending
+                ? aValue.compareTo(bValue)
+                : bValue.compareTo(aValue);
+
+          default:
+            return 0;
+        }
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +131,7 @@ class ScheduleTable extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                title,
+                widget.title,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -61,101 +168,217 @@ class ScheduleTable extends StatelessWidget {
   }
 
   Widget _buildFilterButton(BuildContext context) {
-    return OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      ),
+    return IconButton(
       icon: const Icon(Icons.filter_list, size: 16),
-      label: const Text('Filter'),
       onPressed: () {
-        // Show filter options
         showModalBottomSheet(
           context: context,
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          builder: (context) => _buildFilterSheet(context),
+          builder: (context) => buildShortingSheet(context),
         );
       },
     );
   }
 
-  Widget _buildFilterSheet(BuildContext context) {
-    final List<String> subjects = records
-        .map((record) => record['subject'] as String)
-        .toSet()
-        .toList();
+  Widget buildShortingSheet(BuildContext context) {
+    // State for tracking the selected sort field
+    final ValueNotifier<String?> selectedField = ValueNotifier<String?>(currentSortField);
 
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Filter Classes',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Subject',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: subjects.map((subject) {
-              return FilterChip(
-                label: Text(subject),
-                selected: false, // You can implement state management here
-                onSelected: (selected) {
-                  // Filter functionality
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Status',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Reset'),
+              // Handle indicator
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                margin: const EdgeInsets.only(bottom: 16),
               ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Apply'),
+
+              // Title
+              Text(
+                'Sort by',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
+              const SizedBox(height: 16),
+
+              // Sort field selection boxes
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildSortFieldBox(
+                    context,
+                    'Date Learnt',
+                    'date_learnt',
+                    selectedField,
+                        () => setState(() {}),
+                  ),
+                  _buildSortFieldBox(
+                    context,
+                    'Date Revised',
+                    'date_revised',
+                    selectedField,
+                        () => setState(() {}),
+                  ),
+                  _buildSortFieldBox(
+                    context,
+                    'Missed Revisions',
+                    'missed_revision',
+                    selectedField,
+                        () => setState(() {}),
+                  ),
+                  _buildSortFieldBox(
+                    context,
+                    'Number of Revisions',
+                    'no_revision',
+                    selectedField,
+                        () => setState(() {}),
+                  ),
+                  _buildSortFieldBox(
+                    context,
+                    'Revision Frequency',
+                    'revision_frequency',
+                    selectedField,
+                        () => setState(() {}),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Order selection (only visible when a field is selected)
+              if (selectedField.value != null)
+                Column(
+                  children: [
+                    const Text('Order'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildOrderBox(
+                            context,
+                            'Ascending',
+                            Icons.arrow_upward,
+                            true,
+                            selectedField.value!,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildOrderBox(
+                            context,
+                            'Descending',
+                            Icons.arrow_downward,
+                            false,
+                            selectedField.value!,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+              const SizedBox(height: 16),
             ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSortFieldBox(
+      BuildContext context,
+      String label,
+      String field,
+      ValueNotifier<String?> selectedField,
+      VoidCallback onSelected,
+      ) {
+    final bool isSelected = selectedField.value == field;
+
+    return GestureDetector(
+      onTap: () {
+        selectedField.value = field;
+        onSelected();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+              : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade300,
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).textTheme.bodyMedium?.color,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderBox(
+      BuildContext context,
+      String label,
+      IconData icon,
+      bool ascending,
+      String field,
+      ) {
+    return GestureDetector(
+      onTap: () {
+        _applySorting(field, ascending);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.grey.shade300,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildClassCard(BuildContext context, Map<String, dynamic> record, bool isCompleted) {
-    final double cardWidth = MediaQuery.of(context).size.width > 600 ? 400 :
-    MediaQuery.of(context).size.width - 40;
-    final bool isWideScreen = MediaQuery.of(context).size.width > 600;
-
     return Card(
       elevation: 0,
       margin: const EdgeInsets.all(4),
@@ -168,7 +391,7 @@ class ScheduleTable extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => onSelect(context, record),
+        onTap: () => widget.onSelect(context, record),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(
@@ -229,7 +452,9 @@ class ScheduleTable extends StatelessWidget {
                 child: SizedBox(
                   height: 90,
                   child: Center(
+                    // Add a key to force rebuild of RevisionRadarChart when data changes
                     child: RevisionRadarChart(
+                      key: ValueKey('chart_${record['subject']}_${record['lecture_no']}'),
                       dateLearnt: record['date_learnt'],
                       datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
                       datesRevised: List<String>.from(record['dates_revised'] ?? []),
@@ -242,7 +467,7 @@ class ScheduleTable extends StatelessWidget {
           ),
         ),
       ),
-    );;
+    );
   }
 
   Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon) {
