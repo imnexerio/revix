@@ -4,6 +4,7 @@ import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
+import 'RevisionGraph.dart';
 
 void showLectureDetails(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {
   String revisionFrequency = details['revision_frequency'];
@@ -12,10 +13,6 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
   String lectureNo = details['lecture_no'];
   String selectedSubject = details['subject'];
   String selectedSubjectCode = details['subject_code'];
-
-  // Calculate progress percentage for revision completion
-  final maxRevisions = 10; // Adjust based on your app's logic
-  final progressPercentage = (noRevision / maxRevisions).clamp(0.0, 1.0);
 
   showModalBottomSheet(
     context: context,
@@ -97,69 +94,24 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                   ),
                 ),
 
-                // Status indicator
-                Container(
-                  margin: EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isEnabled
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    isEnabled ? 'Active' : 'Inactive',
-                    style: TextStyle(
-                      color: isEnabled ? Colors.green[700] : Colors.red[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-
                 Divider(height: 32),
 
                 // Revision progress
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: 25),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Revision Progress',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                      Center(
+                        child: RevisionGraph(
+                          datesMissedRevisions: List<String>.from(details['dates_missed_revisions'] ?? []),
+                          datesRevised: List<String>.from(details['dates_revised'] ?? []),
                         ),
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: LinearProgressIndicator(
-                                value: progressPercentage,
-                                backgroundColor: Colors.grey.withOpacity(0.2),
-                                minHeight: 10,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            '$noRevision/$maxRevisions',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
                 ),
 
-                SizedBox(height: 16),
 
                 // Details sections
                 Expanded(
@@ -169,7 +121,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Dates section
-                        _buildSectionHeader(context, 'Important Dates', Icons.calendar_today),
+                        // _buildSectionHeader(context, 'Important Dates', Icons.calendar_today),
                         Card(
                           elevation: 0,
                           color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
@@ -187,25 +139,9 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                   'Next Scheduled',
                                   details['date_scheduled'],
                                   Icons.event,
-                                  isHighlighted: true,
+                                  // isHighlighted: true,
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: 24),
-
-                        // Revision details section
-                        _buildSectionHeader(context, 'Revision Details', Icons.refresh),
-                        Card(
-                          elevation: 0,
-                          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Column(
-                              children: [
+                                Divider(height: 24),
                                 _buildDetailItem(
                                   context,
                                   'Frequency',
@@ -227,34 +163,18 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                   Icons.cancel_outlined,
                                   isNegative: int.parse(details['missed_revision'].toString()) > 0,
                                 ),
+                                Divider(height: 24),
+                                _buildDetailItem(
+                                  context,
+                                  'Description',
+                                  details['description'] ?? 'No description',
+                                  Icons.description,
+
+                                )
                               ],
                             ),
                           ),
                         ),
-
-                        SizedBox(height: 24),
-
-                        // Description section
-                        if (details['description'] != null && details['description'].toString().isNotEmpty)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSectionHeader(context, 'Description', Icons.description),
-                              Card(
-                                elevation: 0,
-                                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                child: Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Text(
-                                    details['description'],
-                                    style: TextStyle(fontSize: 15),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 24),
-                            ],
-                          ),
                       ],
                     ),
                   ),
