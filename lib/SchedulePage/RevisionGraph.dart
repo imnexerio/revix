@@ -210,42 +210,47 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                       final revision = allRevisions[index];
                       final totalEvents = allRevisions.length;
 
-                      // Calculate position
-                      final angle = -pi/2 + (index / totalEvents) * 2 * pi;
-                      final labelRadius = (widget.size / 2) * 0.9;
 
-                      // Convert to cartesian coordinates
+                      final angle = -pi/2 + (index / totalEvents) * 2 * pi;
+                      final labelRadius = (widget.size / 2) * 0.9; // Reduced from 0.9 to position labels more inward
+
                       final labelX = widget.size / 2 + labelRadius * cos(angle);
                       final labelY = widget.size / 2 + labelRadius * sin(angle);
-
-                      // Format the date for display using the original date string
                       final dateLabel = _formatDate(revision.date);
 
                       return Positioned(
-                        left: labelX - 30,
-                        top: labelY - 12,
+                        left: labelX,
+                        top: labelY,
                         child: AnimatedOpacity(
                           opacity: _animation.value,
                           duration: widget.animationDuration,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.8),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: revision.isLearned
-                                    ? widget.learntColor
-                                    : (revision.isMissed
-                                    ? widget.missedColor
-                                    : widget.revisedColor),
-                                width: 1,
-                              ),
+                          child: Transform.translate(
+                            offset: Offset(
+                              // Center the label horizontally
+                              -20,
+                              // Center the label vertically
+                              -10,
                             ),
-                            child: Text(
-                              dateLabel,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.black87,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: revision.isLearned
+                                      ? widget.learntColor
+                                      : (revision.isMissed
+                                      ? widget.missedColor
+                                      : widget.revisedColor),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                dateLabel,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
                           ),
@@ -347,7 +352,7 @@ class RadarWebPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 * 0.85; // Use 85% of the available space
+    final radius = size.width / 2 * 0.70; // Use 85% of the available space
 
     final webPaint = Paint()
       ..color = webColor
@@ -399,7 +404,7 @@ class RadarChartPainter extends CustomPainter {
     if (revisions.isEmpty) return;
 
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 * 0.85; // Use 85% of the available space
+    final radius = size.width / 2 * 0.70; // Use 85% of the available space
 
     // Create paths for different types of events
     final learnedPath = Path();
