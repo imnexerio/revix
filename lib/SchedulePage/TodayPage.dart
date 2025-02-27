@@ -31,7 +31,7 @@ class _TodayPageState extends State<TodayPage> {
       body: RefreshIndicator(
         onRefresh: _refreshRecords,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(0.0),
           child: LayoutBuilder(
             builder: (context, constraints) {
               return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
