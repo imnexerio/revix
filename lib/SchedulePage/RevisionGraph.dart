@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class RevisionRadarChart extends StatefulWidget {
   final String dateLearnt;
@@ -65,7 +64,12 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
     try {
       if (widget.dateLearnt.isNotEmpty) {
         final learnedDate = DateTime.parse(widget.dateLearnt);
-        allRevisions.add(RevisionEvent(date: learnedDate, isMissed: false, isLearned: true));
+        allRevisions.add(RevisionEvent(
+            date: learnedDate,
+            dateString: widget.dateLearnt,
+            isMissed: false,
+            isLearned: true
+        ));
       }
     } catch (e) {
       print('Error parsing date learned: $e');
@@ -76,7 +80,12 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
       if (dateStr.isNotEmpty) {
         try {
           final date = DateTime.parse(dateStr);
-          allRevisions.add(RevisionEvent(date: date, isMissed: true, isLearned: false));
+          allRevisions.add(RevisionEvent(
+              date: date,
+              dateString: dateStr,
+              isMissed: true,
+              isLearned: false
+          ));
         } catch (e) {
           print('Error parsing missed revision date: $e');
         }
@@ -88,7 +97,12 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
       if (dateStr.isNotEmpty) {
         try {
           final date = DateTime.parse(dateStr);
-          allRevisions.add(RevisionEvent(date: date, isMissed: false, isLearned: false));
+          allRevisions.add(RevisionEvent(
+              date: date,
+              dateString: dateStr,
+              isMissed: false,
+              isLearned: false
+          ));
         } catch (e) {
           print('Error parsing completed revision date: $e');
         }
@@ -121,6 +135,23 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Helper function to format date without intl
+  String _formatDate(DateTime date) {
+    // Extract day and month
+    int day = date.day;
+
+    // Month abbreviations
+    List<String> monthAbbr = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    String month = monthAbbr[date.month - 1];
+
+    // Format as "d MMM" (e.g., "1 Jan")
+    return '$day $month';
   }
 
   @override
@@ -187,9 +218,8 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                       final labelX = widget.size / 2 + labelRadius * cos(angle);
                       final labelY = widget.size / 2 + labelRadius * sin(angle);
 
-                      // Format the date for display
-                      final dateFormat = DateFormat('d MMM');
-                      final dateLabel = dateFormat.format(revision.date);
+                      // Format the date for display using the original date string
+                      final dateLabel = _formatDate(revision.date);
 
                       return Positioned(
                         left: labelX - 30,
@@ -290,11 +320,13 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
 // Data model for revision events
 class RevisionEvent {
   final DateTime date;
+  final String dateString;
   final bool isMissed;
   final bool isLearned;
 
   RevisionEvent({
     required this.date,
+    required this.dateString,
     required this.isMissed,
     this.isLearned = false,
   });
