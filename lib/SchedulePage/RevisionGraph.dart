@@ -28,6 +28,7 @@ class CircularTimelineChart extends StatefulWidget {
 class _CircularTimelineChartState extends State<CircularTimelineChart> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late List<RevisionEvent> allRevisions;
 
   @override
   void initState() {
@@ -41,7 +42,61 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
       curve: Curves.easeInOut,
     );
 
+    // Process the dates immediately in initState
+    _processRevisionData();
+
     _animationController.forward();
+
+    // Print the revision data for debugging
+    _printRevisionData();
+  }
+
+  void _processRevisionData() {
+    // Create a combined list of all revisions
+    allRevisions = <RevisionEvent>[];
+
+    // Add "date learned" as the first event
+    try {
+      if (widget.dateLearnt.isNotEmpty) {
+        final learnedDate = DateTime.parse(widget.dateLearnt);
+        allRevisions.add(RevisionEvent(date: learnedDate, isMissed: false, isLearned: true));
+      }
+    } catch (e) {
+      print('Error parsing date learned: $e');
+    }
+
+    // Add missed revisions
+    for (final dateStr in widget.datesMissedRevisions) {
+      if (dateStr.isNotEmpty) {
+        try {
+          final date = DateTime.parse(dateStr);
+          allRevisions.add(RevisionEvent(date: date, isMissed: true, isLearned: false));
+        } catch (e) {
+          print('Error parsing missed revision date: $e');
+        }
+      }
+    }
+
+    // Add completed revisions
+    for (final dateStr in widget.datesRevised) {
+      if (dateStr.isNotEmpty) {
+        try {
+          final date = DateTime.parse(dateStr);
+          allRevisions.add(RevisionEvent(date: date, isMissed: false, isLearned: false));
+        } catch (e) {
+          print('Error parsing completed revision date: $e');
+        }
+      }
+    }
+
+    // Sort all revisions by date
+    allRevisions.sort((a, b) => a.date.compareTo(b.date));
+
+    // Debug print the processed data
+    print('Processed ${allRevisions.length} total events:');
+    for (var i = 0; i < allRevisions.length; i++) {
+      print('Event $i: ${allRevisions[i].date} (missed: ${allRevisions[i].isMissed}, learned: ${allRevisions[i].isLearned})');
+    }
   }
 
   @override
@@ -50,38 +105,15 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
     super.dispose();
   }
 
+  void _printRevisionData() {
+    print('Date Learnt: ${widget.dateLearnt}');
+    print('Dates Missed Revisions: ${widget.datesMissedRevisions}');
+    print('Dates Revised: ${widget.datesRevised}');
+    print('Total events to display: ${allRevisions.length}');
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Create a combined list of all revisions (both missed and completed)
-    final allRevisions = <RevisionEvent>[];
-
-    // Add missed revisions
-    for (final dateStr in widget.datesMissedRevisions) {
-      if (dateStr != null && dateStr.isNotEmpty) {
-        try {
-          final date = DateTime.parse(dateStr);
-          allRevisions.add(RevisionEvent(date: date, isMissed: true));
-        } catch (e) {
-          // Skip invalid dates
-        }
-      }
-    }
-
-    // Add completed revisions
-    for (final dateStr in widget.datesRevised) {
-      if (dateStr != null && dateStr.isNotEmpty) {
-        try {
-          final date = DateTime.parse(dateStr);
-          allRevisions.add(RevisionEvent(date: date, isMissed: false));
-        } catch (e) {
-          // Skip invalid dates
-        }
-      }
-    }
-
-    // Sort all revisions by date
-    allRevisions.sort((a, b) => a.date.compareTo(b.date));
-
     if (allRevisions.isEmpty) {
       return SizedBox(
         width: widget.size,
@@ -125,16 +157,19 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
                   // Map index from 0 to totalEvents to 0 to 2π
                   final angle = 3 * pi / 2 + (index / totalEvents) * 2 * pi;
 
-                  return _buildDot(
-                    angle,
-                    revision.isMissed ? widget.missedColor : widget.revisedColor,
-                    revision.date,
-                    index + 1,
-                    totalEvents,
-                  );
+                  if (revision.isLearned) {
+                    return _buildStartDateDot(angle, Colors.blue, widget.dateLearnt);
+                  } else {
+                    return _buildDot(
+                      angle,
+                      revision.isMissed ? widget.missedColor : widget.revisedColor,
+                      revision.date,
+                      index,
+                      totalEvents,
+                    );
+                  }
                 },
               ),
-
 
               // Center indicator
               Center(
@@ -151,9 +186,6 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
                   ),
                 ),
               ),
-
-              // Blue dot indicating starting date (dateLearnt)
-              _buildStartDateDot(3 * pi / 2, Colors.blue, widget.dateLearnt),
             ],
           ),
         );
@@ -181,7 +213,7 @@ class _CircularTimelineChartState extends State<CircularTimelineChart> with Sing
         opacity: opacity,
         duration: const Duration(milliseconds: 200),
         child: Tooltip(
-          message: '${date.day}/${date.month}/${date.year} (${index}/${total})',
+          message: '${date.day}/${date.month}/${date.year} (${index+1}/${total})',
           child: Container(
             width: 10,
             height: 10,
@@ -279,9 +311,11 @@ class CirclePainter extends CustomPainter {
 class RevisionEvent {
   final DateTime date;
   final bool isMissed;
+  final bool isLearned;
 
   RevisionEvent({
     required this.date,
     required this.isMissed,
+    this.isLearned = false,
   });
 }

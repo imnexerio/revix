@@ -13,6 +13,8 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
   String selectedSubject = details['subject'];
   String selectedSubjectCode = details['subject_code'];
 
+  // print(details);
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
