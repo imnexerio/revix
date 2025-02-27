@@ -1,125 +1,262 @@
-import 'package:fl_chart/fl_chart.dart';
+import 'dart:math';
 import 'package:flutter/material.dart';
 
-class RevisionGraph extends StatelessWidget {
+class CircularTimelineChart extends StatefulWidget {
   final List<String> datesMissedRevisions;
   final List<String> datesRevised;
+  final double size;
+  final Duration animationDuration;
+  final Color missedColor;
+  final Color revisedColor;
 
-  const RevisionGraph({
+  const CircularTimelineChart({
     Key? key,
     required this.datesMissedRevisions,
     required this.datesRevised,
+    this.size = 220,
+    this.animationDuration = const Duration(milliseconds: 1500),
+    this.missedColor = Colors.red,
+    this.revisedColor = Colors.green,
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // Get all dates for reference
-    final allDates = [
-      ...datesMissedRevisions.where((d) => d != null).cast<String>(),
-      ...datesRevised.where((d) => d != null).cast<String>(),
-    ];
+  State<CircularTimelineChart> createState() => _CircularTimelineChartState();
+}
 
-    if (allDates.isEmpty) {
-      return const SizedBox.shrink(); // Empty widget when no data
+class _CircularTimelineChartState extends State<CircularTimelineChart> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: widget.animationDuration,
+    );
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a combined list of all revisions (both missed and completed)
+    final allRevisions = <RevisionEvent>[];
+
+    // Add missed revisions
+    for (final dateStr in widget.datesMissedRevisions) {
+      if (dateStr != null && dateStr.isNotEmpty) {
+        try {
+          final date = DateTime.parse(dateStr);
+          allRevisions.add(RevisionEvent(date: date, isMissed: true));
+        } catch (e) {
+          // Skip invalid dates
+        }
+      }
     }
 
-    // Find reference date (earliest date)
-    final referenceDate = _findEarliestDate(allDates);
-    final maxDays = _getMaxDaysDifference(allDates, referenceDate);
+    // Add completed revisions
+    for (final dateStr in widget.datesRevised) {
+      if (dateStr != null && dateStr.isNotEmpty) {
+        try {
+          final date = DateTime.parse(dateStr);
+          allRevisions.add(RevisionEvent(date: date, isMissed: false));
+        } catch (e) {
+          // Skip invalid dates
+        }
+      }
+    }
 
-    return SizedBox(
-      width: 100,
-      height: 50,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(show: false),
-          titlesData: FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          lineTouchData: LineTouchData(enabled: false),
-          minX: 0,
-          maxX: maxDays.toDouble(),
-          minY: 0,
-          maxY: 1.2, // Slightly above 1 to see the dots clearly
-          lineBarsData: [
-            // Missed revisions (if any)
-            if (datesMissedRevisions.isNotEmpty && datesMissedRevisions.first != null)
-              LineChartBarData(
-                spots: _getSpots(datesMissedRevisions, referenceDate),
-                isCurved: false,
-                color: Colors.red,
-                barWidth: 1.5,
-                isStrokeCapRound: true,
-                dotData: FlDotData(
-                    show: true,
-                    getDotPainter: (spot, percent, barData, index) {
-                      return FlDotCirclePainter(
-                        radius: 2,
-                        color: Colors.red,
-                        strokeWidth: 0,
-                      );
-                    }
+    // Sort all revisions by date
+    allRevisions.sort((a, b) => a.date.compareTo(b.date));
+
+    if (allRevisions.isEmpty) {
+      return SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Center(
+          child: Text(
+            'No revision data',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Stack(
+            children: [
+              // Base circle
+              CustomPaint(
+                size: Size(widget.size, widget.size),
+                painter: CirclePainter(
+                  animationValue: _animation.value,
+                  circleColor: Colors.grey.shade300,
                 ),
-                belowBarData: BarAreaData(show: false),
               ),
-            // Completed revisions
-            if (datesRevised.isNotEmpty && datesRevised.first != null)
-              LineChartBarData(
-                spots: _getSpots(datesRevised, referenceDate),
-                isCurved: false,
-                color: Colors.blue,
-                barWidth: 1.5,
-                isStrokeCapRound: true,
-                dotData: FlDotData(
-                    show: true,
-                    getDotPainter: (spot, percent, barData, index) {
-                      return FlDotCirclePainter(
-                        radius: 2,
-                        color: Colors.blue,
-                        strokeWidth: 0,
-                      );
-                    }
+
+              // Plot all revision dots
+              ...List.generate(
+                (allRevisions.length * _animation.value).ceil(),
+                    (index) {
+                  if (index >= allRevisions.length) return const SizedBox.shrink();
+
+                  final revision = allRevisions[index];
+                  final totalEvents = allRevisions.length;
+
+                  // Calculate position (starting from bottom, going clockwise)
+                  // Map index from 0 to totalEvents to 0 to 2π
+                  final angle = 3 * pi / 2 + (index / totalEvents) * 2 * pi;
+
+                  return _buildDot(
+                    angle,
+                    revision.isMissed ? widget.missedColor : widget.revisedColor,
+                    revision.date,
+                    index + 1,
+                    totalEvents,
+                  );
+                },
+              ),
+
+
+              // Center indicator
+              Center(
+                child: AnimatedOpacity(
+                  opacity: _animation.value,
+                  duration: widget.animationDuration,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                 ),
-                belowBarData: BarAreaData(show: false),
               ),
-          ],
+
+              // Arrow indicating start point
+              Positioned(
+                left: widget.size / 2 - 5,
+                bottom: 5,
+                child: AnimatedOpacity(
+                  opacity: _animation.value,
+                  duration: widget.animationDuration,
+                  child: Icon(
+                    Icons.arrow_upward,
+                    size: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDot(double angle, Color color, DateTime date, int index, int total) {
+    final radius = (widget.size / 2 - 15);
+
+    // Convert polar to cartesian coordinates
+    final x = widget.size / 2 + radius * cos(angle) * _animation.value;
+    final y = widget.size / 2 + radius * sin(angle) * _animation.value;
+
+    // Calculate time-based animation delay
+    final delayFactor = index / total;
+    final delayedAnimation = _animation.value > delayFactor ?
+    (_animation.value - delayFactor) * (1 / (1 - delayFactor)) : 0.0;
+    final opacity = delayedAnimation.clamp(0.0, 1.0);
+
+    return Positioned(
+      left: x - 5,
+      top: y - 5,
+      child: AnimatedOpacity(
+        opacity: opacity,
+        duration: const Duration(milliseconds: 200),
+        child: Tooltip(
+          message: '${date.day}/${date.month}/${date.year} (${index}/${total})',
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.5),
+                  blurRadius: 3,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
 
-  String _findEarliestDate(List<String> dates) {
-    if (dates.isEmpty) return DateTime.now().toString();
-    return dates.reduce((a, b) => DateTime.parse(a).isBefore(DateTime.parse(b)) ? a : b);
+class CirclePainter extends CustomPainter {
+  final double animationValue;
+  final Color circleColor;
+
+  CirclePainter({
+    required this.animationValue,
+    required this.circleColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 15;
+
+    // Paint for the circle
+    final circlePaint = Paint()
+      ..color = circleColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    // Draw the circle with animation
+    // Calculate sweep angle based on animation value (0 to 2π)
+    final sweepAngle = 2 * pi * animationValue;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      3 * pi / 2, // Start from bottom (270° or 3π/2)
+      sweepAngle,
+      false,
+      circlePaint,
+    );
   }
 
-  int _getMaxDaysDifference(List<String> dates, String referenceDate) {
-    if (dates.isEmpty) return 7; // Default to 7 days if no data
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
 
-    final refDate = DateTime.parse(referenceDate);
-    int maxDays = 0;
+// Data model for revision events
+class RevisionEvent {
+  final DateTime date;
+  final bool isMissed;
 
-    for (final date in dates) {
-      final days = DateTime.parse(date).difference(refDate).inDays;
-      if (days > maxDays) maxDays = days;
-    }
-
-    return maxDays + 1; // Add 1 for padding
-  }
-
-  List<FlSpot> _getSpots(List<String> dates, String referenceDate) {
-    if (dates.isEmpty || dates.first == null) return [];
-
-    final refDate = DateTime.parse(referenceDate);
-    final spots = <FlSpot>[];
-
-    for (final date in dates) {
-      if (date != null) {
-        final days = DateTime.parse(date).difference(refDate).inDays;
-        // Use y=1 to represent a revision happened on this day
-        spots.add(FlSpot(days.toDouble(), 1));
-      }
-    }
-
-    return spots;
-  }
+  RevisionEvent({
+    required this.date,
+    required this.isMissed,
+  });
 }

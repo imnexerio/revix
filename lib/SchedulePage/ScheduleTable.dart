@@ -208,7 +208,7 @@
                    SizedBox(
                      width: 100, // Set appropriate width
                      height: 50, // Set appropriate height
-                     child: RevisionGraph(
+                     child: CircularTimelineChart   (
                        datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
                        datesRevised: List<String>.from(record['dates_revised'] ?? []),
                      ),
