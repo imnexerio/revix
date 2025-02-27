@@ -126,7 +126,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(
-                          child: CircularTimelineChart(
+                          child: RevisionRadarChart(
                             dateLearnt: details['date_learnt'],
                             datesMissedRevisions: List<String>.from(details['dates_missed_revisions'] ?? []),
                             datesRevised: List<String>.from(details['dates_revised'] ?? []),
