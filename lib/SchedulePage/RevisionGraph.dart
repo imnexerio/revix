@@ -222,7 +222,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                             final totalEvents = allRevisions.length;
 
                             final angle = -pi / 2 + (index / totalEvents) * 2 * pi;
-                            final labelRadius = (availableSize / 2) * 0.9;
+                            final labelRadius = (availableSize / 2) * 0.85;
 
                             final labelX = availableSize / 2 + labelRadius * cos(angle);
                             final labelY = availableSize / 2 + labelRadius * sin(angle);
@@ -232,7 +232,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                             final fontSize = max(8.0, availableSize / 30);
 
                             // Calculate box size proportional to the available size
-                            final boxPadding = availableSize / 75;
+                            final boxPadding = availableSize / 100;
 
                             return Positioned(
                               left: labelX,
