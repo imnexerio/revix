@@ -95,7 +95,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                               '$selectedSubject ($selectedSubjectCode)',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ],
@@ -109,13 +109,12 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                         child: IconButton(
                           icon: Icon(Icons.close),
                           onPressed: () => Navigator.pop(context),
-                          color: Colors.grey[700],
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
                   ),
                 ),
-
 
                 // Details sections
                 Expanded(
@@ -142,7 +141,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         SizedBox(height: 12),
@@ -157,7 +156,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           SizedBox(height: 12),
@@ -188,7 +187,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                   child: Container(
                                     padding: EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.background,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Column(
@@ -267,7 +266,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           padding: EdgeInsets.symmetric(vertical: 16),
                           elevation: 2,
                           shape: RoundedRectangleBorder(
@@ -299,8 +298,8 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white,
-          Colors.grey[50]!,
+          Theme.of(context).colorScheme.background,
+          Theme.of(context).colorScheme.background.withOpacity(0.9),
         ],
       ),
       borderRadius: BorderRadius.circular(20),
@@ -332,7 +331,7 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
           "Completed",
           "${noRevision}",
           Icons.check_circle_outline,
-          Colors.green,
+          Theme.of(context).colorScheme.secondary,
         ),
         const SizedBox(width: 8),
         VerticalDivider(
@@ -345,7 +344,7 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
           "Missed",
           "${details['missed_revision']}",
           Icons.cancel_outlined,
-          int.parse(details['missed_revision'].toString()) > 0 ? Colors.red : Colors.grey,
+          int.parse(details['missed_revision'].toString()) > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
         ),
       ],
     ),
@@ -375,7 +374,7 @@ Widget _buildStatusItem(BuildContext context, String label, String value, IconDa
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -387,7 +386,7 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
   return Container(
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.background,
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
@@ -430,7 +429,7 @@ Widget _buildTimelineItem(
     {bool isFirst = false, bool isLast = false, bool isHighlighted = false}) {
   final color = isHighlighted
       ? Theme.of(context).colorScheme.primary
-      : Colors.grey[700]!;
+      : Theme.of(context).colorScheme.onSurface;
 
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,7 +470,7 @@ Widget _buildTimelineItem(
                 label,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               SizedBox(height: 4),
@@ -497,7 +496,7 @@ Widget _buildDescriptionCard(BuildContext context, Map<String, dynamic> details)
     width: double.infinity,
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.background,
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
@@ -511,7 +510,7 @@ Widget _buildDescriptionCard(BuildContext context, Map<String, dynamic> details)
       details['description'] ?? 'No description available',
       style: TextStyle(
         fontSize: 15,
-        color: Colors.grey[800],
+        color: Theme.of(context).colorScheme.onSurface,
         height: 1.5,
       ),
     ),
