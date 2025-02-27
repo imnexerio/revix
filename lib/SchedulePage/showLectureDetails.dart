@@ -126,10 +126,19 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(
-                          child: RevisionRadarChart(
-                            dateLearnt: details['date_learnt'],
-                            datesMissedRevisions: List<String>.from(details['dates_missed_revisions'] ?? []),
-                            datesRevised: List<String>.from(details['dates_revised'] ?? []),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: 300, // Maximum width to prevent the chart from becoming too large
+                              maxHeight: 300, // Maximum height to maintain aspect ratio
+                            ),
+                            child: AspectRatio(
+                              aspectRatio: 1.0, // Keep the chart perfectly circular
+                              child: RevisionRadarChart(
+                                dateLearnt: details['date_learnt'],
+                                datesMissedRevisions: List.from(details['dates_missed_revisions'] ?? []),
+                                datesRevised: List.from(details['dates_revised'] ?? []),
+                              ),
+                            ),
                           ),
                         ),
                         // Status card

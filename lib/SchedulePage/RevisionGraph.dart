@@ -5,24 +5,22 @@ class RevisionRadarChart extends StatefulWidget {
   final String dateLearnt;
   final List<String> datesMissedRevisions;
   final List<String> datesRevised;
-  final double size;
   final Duration animationDuration;
   final Color missedColor;
   final Color revisedColor;
   final Color learntColor;
-  final bool showLabels; // Add this property
+  final bool showLabels;
 
   const RevisionRadarChart({
     Key? key,
     required this.dateLearnt,
     required this.datesMissedRevisions,
     required this.datesRevised,
-    this.size = 300,
     this.animationDuration = const Duration(milliseconds: 1800),
     this.missedColor = Colors.redAccent,
     this.revisedColor = Colors.greenAccent,
     this.learntColor = Colors.blueAccent,
-    this.showLabels = true, // Default to true
+    this.showLabels = true,
   }) : super(key: key);
 
   @override
@@ -159,129 +157,150 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
   @override
   Widget build(BuildContext context) {
     if (allRevisions.isEmpty) {
-      return SizedBox(
-        width: widget.size,
-        height: widget.size,
-        child: Center(
-          child: Text(
-            'No revision data',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final availableSize = min(constraints.maxWidth, constraints.maxHeight);
+          return SizedBox(
+            width: availableSize,
+            height: availableSize,
+            child: Center(
+              child: Text(
+                'No revision data',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          );
+        },
       );
     }
 
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // The radar chart
-            Container(
-              width: widget.size,
-              height: widget.size,
-              child: Stack(
-                children: [
-                  // Background web
-                  CustomPaint(
-                    size: Size(widget.size, widget.size),
-                    painter: RadarWebPainter(
-                      animationValue: _animation.value,
-                      levels: 5,
-                      webColor: Colors.grey.withOpacity(0.3),
-                    ),
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use the minimum of available width and height to ensure the chart is always a circle
+        final availableSize = min(constraints.maxWidth, constraints.maxHeight);
 
-                  // The data paths
-                  CustomPaint(
-                    size: Size(widget.size, widget.size),
-                    painter: RadarChartPainter(
-                      animationValue: _animation.value,
-                      revisions: allRevisions,
-                      learntColor: widget.learntColor,
-                      revisedColor: widget.revisedColor,
-                      missedColor: widget.missedColor,
-                    ),
-                  ),
-
-                  // Labels
-                  if (widget.showLabels)
-                    ...List.generate(
-                      allRevisions.length,
-                          (index) {
-                        final revision = allRevisions[index];
-                        final totalEvents = allRevisions.length;
-
-                        final angle = -pi / 2 + (index / totalEvents) * 2 * pi;
-                        final labelRadius = (widget.size / 2) * 0.9;
-
-                        final labelX = widget.size / 2 + labelRadius * cos(angle);
-                        final labelY = widget.size / 2 + labelRadius * sin(angle);
-                        final dateLabel = _formatDate(revision.date);
-
-                        return Positioned(
-                          left: labelX,
-                          top: labelY,
-                          child: AnimatedOpacity(
-                            opacity: _animation.value,
-                            duration: widget.animationDuration,
-                            child: Transform.translate(
-                              offset: Offset(
-                                -20,
-                                -10,
-                              ),
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: revision.isLearned
-                                        ? widget.learntColor
-                                        : (revision.isMissed
-                                        ? widget.missedColor
-                                        : widget.revisedColor),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  dateLabel,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                  // Center dot
-                  Center(
-                    child: AnimatedContainer(
-                      duration: widget.animationDuration,
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.blueGrey.shade800,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 3,
-                            spreadRadius: 1,
-                          ),
-                        ],
+        return AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // The radar chart
+                Container(
+                  width: availableSize,
+                  height: availableSize,
+                  child: Stack(
+                    children: [
+                      // Background web
+                      CustomPaint(
+                        size: Size(availableSize, availableSize),
+                        painter: RadarWebPainter(
+                          animationValue: _animation.value,
+                          levels: 5,
+                          webColor: Colors.grey.withOpacity(0.3),
+                        ),
                       ),
-                    ),
+
+                      // The data paths
+                      CustomPaint(
+                        size: Size(availableSize, availableSize),
+                        painter: RadarChartPainter(
+                          animationValue: _animation.value,
+                          revisions: allRevisions,
+                          learntColor: widget.learntColor,
+                          revisedColor: widget.revisedColor,
+                          missedColor: widget.missedColor,
+                        ),
+                      ),
+
+                      // Labels
+                      if (widget.showLabels)
+                        ...List.generate(
+                          allRevisions.length,
+                              (index) {
+                            final revision = allRevisions[index];
+                            final totalEvents = allRevisions.length;
+
+                            final angle = -pi / 2 + (index / totalEvents) * 2 * pi;
+                            final labelRadius = (availableSize / 2) * 0.9;
+
+                            final labelX = availableSize / 2 + labelRadius * cos(angle);
+                            final labelY = availableSize / 2 + labelRadius * sin(angle);
+                            final dateLabel = _formatDate(revision.date);
+
+                            // Calculate a font size proportional to the available size
+                            final fontSize = max(8.0, availableSize / 30);
+
+                            // Calculate box size proportional to the available size
+                            final boxPadding = availableSize / 75;
+
+                            return Positioned(
+                              left: labelX,
+                              top: labelY,
+                              child: AnimatedOpacity(
+                                opacity: _animation.value,
+                                duration: widget.animationDuration,
+                                child: Transform.translate(
+                                  offset: Offset(
+                                    -20 * (availableSize / 300), // Scale offset based on available size
+                                    -10 * (availableSize / 300),
+                                  ),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: boxPadding,
+                                      vertical: boxPadding / 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.8),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: revision.isLearned
+                                            ? widget.learntColor
+                                            : (revision.isMissed
+                                            ? widget.missedColor
+                                            : widget.revisedColor),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      dateLabel,
+                                      style: TextStyle(
+                                        fontSize: fontSize,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                      // Center dot
+                      Center(
+                        child: AnimatedContainer(
+                          duration: widget.animationDuration,
+                          width: max(8.0, availableSize / 25), // Scale dot size based on available size
+                          height: max(8.0, availableSize / 25),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.blueGrey.shade800,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 3,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -351,12 +370,12 @@ class RadarWebPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 * 0.70; // Use 85% of the available space
+    final radius = size.width / 2 * 0.70; // Use 70% of the available space
 
     final webPaint = Paint()
       ..color = webColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = size.width / 300; // Scale stroke width based on size
 
     // Draw the circular levels
     for (int i = 1; i <= levels; i++) {
@@ -403,7 +422,7 @@ class RadarChartPainter extends CustomPainter {
     if (revisions.isEmpty) return;
 
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 * 0.70; // Use 85% of the available space
+    final radius = size.width / 2 * 0.70; // Use 70% of the available space
 
     // Create paths for different types of events
     final learnedPath = Path();
@@ -414,6 +433,9 @@ class RadarChartPainter extends CustomPainter {
     bool learnedMoved = false;
     bool revisedMoved = false;
     bool missedMoved = false;
+
+    // Calculate point size based on the widget size
+    final pointSize = max(3.0, size.width / 60);
 
     // Draw points for each revision
     for (int i = 0; i < revisions.length; i++) {
@@ -441,7 +463,7 @@ class RadarChartPainter extends CustomPainter {
         // Draw the learned point
         canvas.drawCircle(
           point,
-          6,
+          pointSize * 1.2, // Make learned points slightly larger
           Paint()..color = learntColor,
         );
       } else if (revision.isMissed) {
@@ -455,7 +477,7 @@ class RadarChartPainter extends CustomPainter {
         // Draw the missed point
         canvas.drawCircle(
           point,
-          5,
+          pointSize,
           Paint()..color = missedColor,
         );
       } else {
@@ -469,11 +491,14 @@ class RadarChartPainter extends CustomPainter {
         // Draw the revised point
         canvas.drawCircle(
           point,
-          5,
+          pointSize,
           Paint()..color = revisedColor,
         );
       }
     }
+
+    // Scale stroke width based on size
+    final strokeWidth = max(1.0, size.width / 150);
 
     // Close and fill the paths
     if (learnedMoved) {
@@ -490,7 +515,7 @@ class RadarChartPainter extends CustomPainter {
         Paint()
           ..color = learntColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
+          ..strokeWidth = strokeWidth,
       );
     }
 
@@ -508,7 +533,7 @@ class RadarChartPainter extends CustomPainter {
         Paint()
           ..color = revisedColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
+          ..strokeWidth = strokeWidth,
       );
     }
 
@@ -526,7 +551,7 @@ class RadarChartPainter extends CustomPainter {
         Paint()
           ..color = missedColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
+          ..strokeWidth = strokeWidth,
       );
     }
   }
