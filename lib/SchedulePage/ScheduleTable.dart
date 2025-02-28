@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'AnimatedCard.dart';
-import 'RevisionGraph.dart'; // Import the RevisionGraph widget
 
 class ScheduleTable extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;
