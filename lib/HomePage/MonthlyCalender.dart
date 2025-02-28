@@ -148,34 +148,34 @@ class _StudyCalendarState extends State<StudyCalendar> {
             _focusedDay = focusedDay;
           },
           calendarBuilders: CalendarBuilders(
-            markerBuilder: (context, date, events) {
-              if (events.isEmpty) return SizedBox.shrink();
+            // Custom day builder for the concentric circles effect
+            defaultBuilder: (context, day, focusedDay) {
+              final events = _getEventsForDay(day);
 
-              return Positioned(
-                bottom: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    // lib/HomePage/MonthlyCalender.dart
-
-                    // Fix the argument type mismatch by ensuring the correct type is passed
-                    color: _getMarkerColor(events.cast<Map<String, dynamic>>()),
-                  ),
-                  width: 8,
-                  height: 8,
-                ),
+              return Container(
+                margin: const EdgeInsets.all(4.0),
+                alignment: Alignment.center,
+                child: _buildConcentricDay(day, events, false, false),
               );
             },
-          ),
-          calendarStyle: CalendarStyle(
-            todayDecoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            selectedDecoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
+            todayBuilder: (context, day, focusedDay) {
+              final events = _getEventsForDay(day);
+
+              return Container(
+                margin: const EdgeInsets.all(4.0),
+                alignment: Alignment.center,
+                child: _buildConcentricDay(day, events, true, false),
+              );
+            },
+            selectedBuilder: (context, day, focusedDay) {
+              final events = _getEventsForDay(day);
+
+              return Container(
+                margin: const EdgeInsets.all(4.0),
+                alignment: Alignment.center,
+                child: _buildConcentricDay(day, events, false, true),
+              );
+            },
           ),
           headerStyle: HeaderStyle(
             formatButtonVisible: true,
@@ -184,21 +184,125 @@ class _StudyCalendarState extends State<StudyCalendar> {
           ),
         ),
         const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildLegendItem('Learned', Colors.blue),
+              _buildLegendItem('Revised', Colors.green),
+              _buildLegendItem('Scheduled', Colors.orange),
+              _buildLegendItem('Missed', Colors.red),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         _buildEventList(),
       ],
     );
   }
 
-  Color _getMarkerColor(List<Map<String, dynamic>> events) {
-    if (events.any((event) => event['type'] == 'missed')) {
-      return Colors.red;
-    } else if (events.any((event) => event['type'] == 'scheduled')) {
-      return Colors.orange;
-    } else if (events.any((event) => event['type'] == 'revised')) {
-      return Colors.green;
-    } else {
-      return Colors.blue;
+  Widget _buildConcentricDay(DateTime day, List<Map<String, dynamic>> events, bool isToday, bool isSelected) {
+    // Count events by type
+    int learnedCount = 0;
+    int revisedCount = 0;
+    int scheduledCount = 0;
+    int missedCount = 0;
+
+    for (var event in events) {
+      switch (event['type']) {
+        case 'learned':
+          learnedCount++;
+          break;
+        case 'revised':
+          revisedCount++;
+          break;
+        case 'scheduled':
+          scheduledCount++;
+          break;
+        case 'missed':
+          missedCount++;
+          break;
+      }
     }
+
+    // Create sorted list of event types by count
+    final eventCounts = [
+      {'type': 'learned', 'count': learnedCount, 'color': Colors.blue},
+      {'type': 'revised', 'count': revisedCount, 'color': Colors.green},
+      {'type': 'scheduled', 'count': scheduledCount, 'color': Colors.orange},
+      {'type': 'missed', 'count': missedCount, 'color': Colors.red},
+    ];
+
+    // Sort by count (descending)
+    eventCounts.sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+
+    // Remove zero count events
+    final activeEvents = eventCounts.where((e) => (e['count'] as int) > 0).toList();
+
+    // Determine if any events exist
+    final bool hasEvents = activeEvents.isNotEmpty;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Add concentric circles for each event type (large to small)
+        if (hasEvents) ...[
+          for (int i = 0; i < activeEvents.length; i++)
+            Container(
+              width: 40 - (i * 7.5),  // Decreasing size for inner circles
+              height: 40 - (i * 7.5),
+              decoration: BoxDecoration(
+                color: activeEvents[i]['color'] as Color,
+                shape: BoxShape.circle,
+              ),
+            ),
+        ],
+
+        // Base circle (white or border for today/selected)
+        Container(
+          width: hasEvents ? 25 : 40,  // Smaller white circle if there are events
+          height: hasEvents ? 25 : 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: (isToday || isSelected)
+                ? Border.all(
+              color: Theme.of(context).colorScheme.primary,
+              width: 2,
+            )
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              '${day.day}',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: hasEvents ? 12 : 14,
+                fontWeight: (isToday || isSelected) ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 12)),
+      ],
+    );
   }
 
   Widget _buildEventList() {
@@ -219,66 +323,92 @@ class _StudyCalendarState extends State<StudyCalendar> {
       );
     }
 
+    // Group events by type
+    final groupedEvents = {
+      'learned': <Map<String, dynamic>>[],
+      'revised': <Map<String, dynamic>>[],
+      'scheduled': <Map<String, dynamic>>[],
+      'missed': <Map<String, dynamic>>[],
+    };
+
+    for (var event in selectedEvents) {
+      final type = event['type'] as String;
+      if (groupedEvents.containsKey(type)) {
+        groupedEvents[type]!.add(event);
+      }
+    }
+
     return Expanded(
-      child: ListView.builder(
-        itemCount: selectedEvents.length,
-        itemBuilder: (context, index) {
-          final event = selectedEvents[index];
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: _getEventTypeColor(event['type']),
-                child: Icon(
-                  _getEventTypeIcon(event['type']),
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  size: 20,
-                ),
-              ),
-              title: Text(
-                '${event['subject']} (${event['subject_code']}) - ${event['lecture_no']}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(event['description'] ?? 'No description'),
-                  const SizedBox(height: 2),
-                  Text(
-                    _getEventTypeText(event['type']),
-                    style: TextStyle(
-                      color: _getEventTypeColor(event['type']),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              isThreeLine: true,
-            ),
-          );
-        },
+      child: ListView(
+        children: [
+          // Display events grouped by type with summary count
+          if (groupedEvents['learned']!.isNotEmpty)
+            _buildEventTypeSection('Learned', groupedEvents['learned']!, Colors.blue),
+          if (groupedEvents['revised']!.isNotEmpty)
+            _buildEventTypeSection('Revised', groupedEvents['revised']!, Colors.green),
+          if (groupedEvents['scheduled']!.isNotEmpty)
+            _buildEventTypeSection('Scheduled', groupedEvents['scheduled']!, Colors.orange),
+          if (groupedEvents['missed']!.isNotEmpty)
+            _buildEventTypeSection('Missed', groupedEvents['missed']!, Colors.red),
+        ],
       ),
     );
   }
 
-  Color _getEventTypeColor(String type) {
-    switch (type) {
-      case 'learned':
-        return Colors.blue;
-      case 'revised':
-        return Colors.green;
-      case 'missed':
-        return Colors.red;
-      case 'scheduled':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
+  Widget _buildEventTypeSection(String title, List<Map<String, dynamic>> events, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$title (${events.length})',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+        ...events.map((event) => Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: color,
+              child: Icon(
+                _getEventTypeIcon(event['type']),
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              '${event['subject']} (${event['subject_code']}) - ${event['lecture_no']}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(event['description'] ?? 'No description'),
+          ),
+        )).toList(),
+        const Divider(thickness: 1),
+      ],
+    );
   }
+
 
   IconData _getEventTypeIcon(String type) {
     switch (type) {
@@ -292,21 +422,6 @@ class _StudyCalendarState extends State<StudyCalendar> {
         return Icons.event;
       default:
         return Icons.event_note;
-    }
-  }
-
-  String _getEventTypeText(String type) {
-    switch (type) {
-      case 'learned':
-        return 'Learned';
-      case 'revised':
-        return 'Revised';
-      case 'missed':
-        return 'Missed Revision';
-      case 'scheduled':
-        return 'Scheduled Revision';
-      default:
-        return 'Event';
     }
   }
 }
