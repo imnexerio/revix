@@ -309,38 +309,6 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
     );
   }
 
-  Widget _buildStatItem(String label, int value, Color color) {
-    return Column(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withOpacity(0.2),
-          ),
-          child: Center(
-            child: Text(
-              value.toString(),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade700,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 // Data model for revision events
