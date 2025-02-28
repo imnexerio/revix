@@ -23,7 +23,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
   bool isAscending = true;
   final GlobalKey _gridKey = GlobalKey();
 
-  // Animation controller for the grid
+  // Add animation controller
   late AnimationController _animationController;
 
   @override
@@ -36,6 +36,8 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+    // Start the animation immediately to show cards properly
+    _animationController.value = 1.0;  // Add this line
   }
 
   @override
@@ -53,13 +55,16 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
         // Reapply sorting if we had a sort field
         if (currentSortField != null) {
           _applySorting(currentSortField!, isAscending);
+        } else {
+          // Ensure animation is completed if not sorting
+          _animationController.value = 1.0;  // Add this line
         }
       });
     }
   }
 
   void _applySorting(String field, bool ascending) {
-    // Reset the animation
+    // Reset animation controller
     _animationController.reset();
 
     setState(() {
@@ -137,7 +142,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       });
     });
 
-    // Start the animation after sorting
+    // Start animation after sorting
     _animationController.forward();
   }
 
@@ -163,12 +168,11 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
           ),
         ),
         const SizedBox(height: 8),
-        // Animated grid of cards
+        // Animated grid for the cards
         AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
             return GridView.builder(
-              key: _gridKey,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -177,7 +181,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                 childAspectRatio: MediaQuery.of(context).size.width > 600 ? 3 : 2,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
-                mainAxisExtent: 170, // Increased height slightly for better layout
+                mainAxisExtent: 135, // Increased height slightly for better layout
               ),
               itemCount: records.length,
               itemBuilder: (context, index) {
@@ -185,14 +189,26 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                 final bool isCompleted = record['date_learnt'] != null &&
                     record['date_learnt'].toString().isNotEmpty;
 
-                // Use AnimatedContainer for the cards
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: Hero(
-                    tag: 'card_${record['subject']}_${record['lecture_no']}',
-                    child: _buildClassCard(context, record, isCompleted),
+                // Animate each card with a staggered effect
+                final Animation<double> animation = Tween<double>(
+                  begin: 0.0,
+                  end: 1.0,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _animationController,
+                    curve: Interval(
+                      (index / records.length) * 0.5, // Stagger the animations
+                      (index / records.length) * 0.5 + 0.5,
+                      curve: Curves.easeInOut,
+                    ),
                   ),
+                );
+
+                return AnimatedCard(
+                  animation: animation,
+                  record: record,
+                  isCompleted: isCompleted,
+                  onSelect: widget.onSelect,
                 );
               },
             );
@@ -413,95 +429,167 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     );
   }
 
-  Widget _buildClassCard(BuildContext context, Map<String, dynamic> record, bool isCompleted) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.all(4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-          width: 1,
+  Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: Theme.of(context).colorScheme.primary,
         ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => widget.onSelect(context, record),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Left side with subject information
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      record['subject'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${record['lecture_type']} ${record['lecture_no']} · ${record['subject_code']}',
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                        fontSize: 13,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 8,
-                      children: [
-                        _buildDateInfo(
-                          context,
-                          'Scheduled',
-                          record['date_scheduled'] ?? '',
-                          Icons.calendar_today,
-                        ),
-                        if (isCompleted)
-                          _buildDateInfo(
-                            context,
-                            'Completed',
-                            record['date_learnt'] ?? '',
-                            Icons.check_circle_outline,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
               ),
-              // Right side with the revision graph
-              Expanded(
-                flex: 2,
-                child: SizedBox(
-                  height: 90,
-                  child: Center(
-                    // Add a key to force rebuild of RevisionRadarChart when data changes
-                    child: RevisionRadarChart(
-                      key: ValueKey('chart_${record['subject']}_${record['lecture_no']}'),
-                      dateLearnt: record['date_learnt'],
-                      datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
-                      datesRevised: List<String>.from(record['dates_revised'] ?? []),
-                      showLabels: false,
+            ),
+            Text(
+              date,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Custom animated card widget
+class AnimatedCard extends StatelessWidget {
+  final Animation<double> animation;
+  final Map<String, dynamic> record;
+  final bool isCompleted;
+  final Function(BuildContext, Map<String, dynamic>) onSelect;
+
+  const AnimatedCard({
+    Key? key,
+    required this.animation,
+    required this.record,
+    required this.isCompleted,
+    required this.onSelect,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Apply multiple animations
+    final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(animation);
+    final fadeAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(animation);
+    final slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(animation);
+
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: fadeAnimation,
+          child: ScaleTransition(
+            scale: scaleAnimation,
+            child: SlideTransition(
+              position: slideAnimation,
+              child: Card(
+                elevation: 0,
+                margin: const EdgeInsets.all(4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: Theme.of(context).dividerColor.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => onSelect(context, record),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Left side with subject information
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                record['subject'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${record['lecture_type']} ${record['lecture_no']} · ${record['subject_code']}',
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 16,
+                                runSpacing: 8,
+                                children: [
+                                  _buildDateInfo(
+                                    context,
+                                    'Scheduled',
+                                    record['date_scheduled'] ?? '',
+                                    Icons.calendar_today,
+                                  ),
+                                  if (isCompleted)
+                                    _buildDateInfo(
+                                      context,
+                                      'Completed',
+                                      record['date_learnt'] ?? '',
+                                      Icons.check_circle_outline,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Right side with the revision graph
+                        Expanded(
+                          flex: 2,
+                          child: SizedBox(
+                            height: 90,
+                            child: Center(
+                              // Add a key to force rebuild of RevisionRadarChart when data changes
+                              child: RevisionRadarChart(
+                                key: ValueKey('chart_${record['subject']}_${record['lecture_no']}'),
+                                dateLearnt: record['date_learnt'],
+                                datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
+                                datesRevised: List<String>.from(record['dates_revised'] ?? []),
+                                showLabels: false,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
