@@ -178,7 +178,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
               padding: const EdgeInsets.symmetric(horizontal: 12),
               // In the GridView.builder's gridDelegate
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 400, // Maximum width of each card
+                maxCrossAxisExtent: 700,
                 childAspectRatio: MediaQuery.of(context).size.width > 600 ? 3 : 2,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
@@ -513,7 +513,7 @@ class AnimatedCard extends StatelessWidget {
                   onTap: () => onSelect(context, record),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
-                    child: SingleChildScrollView(
+                    // child: SingleChildScrollView(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -585,7 +585,7 @@ class AnimatedCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
+                    // ),
                   ),
                 ),
               ),
