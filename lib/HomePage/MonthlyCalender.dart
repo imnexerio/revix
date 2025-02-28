@@ -1,5 +1,9 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+
+import '../SchedulePage/ProportionalRingPainter.dart';
 
 class StudyCalendar extends StatefulWidget {
   final List<Map<String, dynamic>> records;
@@ -235,6 +239,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
       }
     }
 
+    // Calculate the total count of events
+    int totalEvents = learnedCount + revisedCount + scheduledCount + missedCount;
+
     // Create sorted list of event types by count
     final eventCounts = [
       {'type': 'learned', 'count': learnedCount, 'color': Colors.blue},
@@ -242,9 +249,6 @@ class _StudyCalendarState extends State<StudyCalendar> {
       {'type': 'scheduled', 'count': scheduledCount, 'color': Colors.orange},
       {'type': 'missed', 'count': missedCount, 'color': Colors.red},
     ];
-
-    // Sort by count (descending)
-    eventCounts.sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
     // Remove zero count events
     final activeEvents = eventCounts.where((e) => (e['count'] as int) > 0).toList();
@@ -255,23 +259,23 @@ class _StudyCalendarState extends State<StudyCalendar> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Add concentric circles for each event type (large to small)
-        if (hasEvents) ...[
-          for (int i = 0; i < activeEvents.length; i++)
-            Container(
-              width: 40 - (i * 7.5),  // Decreasing size for inner circles
-              height: 40 - (i * 7.5),
-              decoration: BoxDecoration(
-                color: activeEvents[i]['color'] as Color,
-                shape: BoxShape.circle,
+        // Add proportional ring if there are events
+        if (hasEvents)
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CustomPaint(
+              painter: ProportionalRingPainter(
+                events: activeEvents,
+                totalEvents: totalEvents,
               ),
             ),
-        ],
+          ),
 
-        // Base circle (white or border for today/selected)
+        // Base circle for the day number
         Container(
-          width: hasEvents ? 25 : 40,  // Smaller white circle if there are events
-          height: hasEvents ? 25 : 40,
+          width: 30, // Fixed inner circle size
+          height: 30,
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
@@ -287,7 +291,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
               '${day.day}',
               style: TextStyle(
                 color: Colors.black,
-                fontSize: hasEvents ? 12 : 14,
+                fontSize: 14,
                 fontWeight: (isToday || isSelected) ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -296,6 +300,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
       ],
     );
   }
+
+
 
   Widget _buildLegendItem(String label, Color color) {
     return Row(
