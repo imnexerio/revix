@@ -333,7 +333,7 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                   SizedBox(height: 24),
                                   SizedBox(
-                                    height: 700, // You can adjust this height as needed
+                                    height: 650, // You can adjust this height as needed
                                     child: StudyCalendar(records: allRecords),
                                   ),
                                 ],
