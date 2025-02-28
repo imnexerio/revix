@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'DailyProgress.dart';
+import 'MonthlyCalender.dart';
 import 'SubjectDistributionPlot.dart';
 import 'WeeklyProgress.dart';
 import 'calculation_utils.dart';
@@ -256,9 +257,11 @@ class _HomePageState extends State<HomePage> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      _buildLegendItem('Lectures', Colors.blue),
+                                      _buildLegendItem('Lectures', Colors.blue, Icons.school),
+                                      // _buildLegendItem('Revisions', Colors.orange, Icons.check_circle),
                                       SizedBox(width: 24),
-                                      _buildLegendItem('Revisions', Colors.orange),
+                                      // _buildLegendItem('Lectures', Colors.blue, Icons.school),
+                                      _buildLegendItem('Revisions', Colors.orange, Icons.check_circle),
                                     ],
                                   ),
                                 ],
@@ -303,7 +306,41 @@ class _HomePageState extends State<HomePage> {
                             ),
                             SizedBox(height: 32),
 
-                            // Subject Distribution Section
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              padding: EdgeInsets.all(cardPadding),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Study Calendar',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).textTheme.titleLarge?.color,
+                                    ),
+                                  ),
+                                  SizedBox(height: 24),
+                                  SizedBox(
+                                    height: 500, // You can adjust this height as needed
+                                    child: StudyCalendar(records: allRecords),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 16),
+
                             Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
@@ -345,6 +382,9 @@ class _HomePageState extends State<HomePage> {
                                 ],
                               ),
                             ),
+
+                            // Add this after the Subject Distribution Container in your HomePage widget
+                            SizedBox(height: 32),// Add some bottom padding
                           ],
                         ),
                       ),
@@ -358,6 +398,8 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+
 
   Widget _buildStatCard(String title, String value, Color color, double width) {
     return Container(
@@ -392,23 +434,42 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+
+  Widget buildCalendarLegend() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0, bottom: 12.0),
+      child: Wrap(
+        spacing: 16.0,
+        runSpacing: 8.0,
+        alignment: WrapAlignment.center,
+        children: [
+          _buildLegendItem('Learned', Colors.blue, Icons.school),
+          _buildLegendItem('Revised', Colors.green, Icons.check_circle),
+          _buildLegendItem('Missed', Colors.red, Icons.cancel),
+          _buildLegendItem('Scheduled', Colors.orange, Icons.event),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color, IconData icon) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
+        CircleAvatar(
+          backgroundColor: color,
+          radius: 8,
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 10,
           ),
         ),
-        SizedBox(width: 8),
+        SizedBox(width: 6),
         Text(
           label,
           style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
         ),
