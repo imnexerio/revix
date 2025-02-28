@@ -259,7 +259,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                             ScaffoldMessenger.of(context).showSnackBar(
                               customSnackBar(
                                 context: context,
-                                message: '$selectedSubject $selectedSubjectCode $lectureNo done. Next scheduled is on $dateScheduled.',
+                                message: '$selectedSubject $selectedSubjectCode $lectureNo done. Next schedule is on $dateScheduled.',
                               ),
                             );
                           } catch (e) {

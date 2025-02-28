@@ -96,7 +96,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Status', style: Theme.of(context).textTheme.titleMedium),
+                        Text(
+                          'Status',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
                         Switch(
                           value: isEnabled,
                           onChanged: (bool newValue) {
@@ -113,7 +118,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         Expanded(
                           child: ElevatedButton.icon(
                             icon: Icon(Icons.add),
-                            label: Text('Add Revision'),
+                            label: Text('MARK AS DONE'),
                             onPressed: () async {
                               try {
                                 showDialog(
@@ -125,6 +130,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                     );
                                   },
                                 );
+
+                                if(!isEnabled) {
+                                  Navigator.pop(context);
+                                  throw 'Cannot mark as done when the status is disabled';
+                                }
 
                                 String dateRevised = DateTime.now().toIso8601String().split('T')[0];
                                 int missedRevision = (widget.details['missed_revision'] as num).toInt();
@@ -166,7 +176,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   customSnackBar(
                                     context: context,
-                                    message: 'Revision added successfully',
+                                    message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
                                   ),
                                 );
                               } catch (e) {
@@ -177,7 +187,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   customSnackBar_error(
                                     context: context,
-                                    message: 'Failed to add revision: ${e.toString()}',
+                                    message: 'Failed to mark as done: ${e.toString()}',
                                   ),
                                 );
                               }
@@ -210,13 +220,19 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 // Retrieve the existing dates_revised list
                                 List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
 
+                                String dateScheduled = widget.details['date_scheduled'];
+
+                                if (isEnabled && widget.details['status'] == 'Disabled' && DateTime.parse(widget.details['date_scheduled']).isBefore(DateTime.now())) {
+                                  dateScheduled = DateTime.now().toIso8601String().split('T')[0];;
+                                }
+
                                 await UpdateRecords(
                                   widget.selectedSubject,
                                   widget.selectedSubjectCode,
                                   widget.lectureNo,
                                   widget.details['date_revised'],
                                   noRevision,
-                                  widget.details['date_scheduled'],
+                                  dateScheduled,
                                   datesRevised,
                                   widget.details['missed_revision'],
                                   datesMissedRevisions,
@@ -232,7 +248,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   customSnackBar(
                                     context: context,
-                                    message: 'Updated successfully',
+                                    message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
                                   ),
                                 );
                               } catch (e) {
