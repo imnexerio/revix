@@ -71,7 +71,7 @@ class AnimatedCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${record['subject']} ${record['lecture_no']} · ${record['subject_code']}',
+                                '${record['subject']} · ${record['subject_code']} · ${record['lecture_no']}',
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                   fontSize: 13,

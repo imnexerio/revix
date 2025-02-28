@@ -86,7 +86,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '$lectureNo $selectedSubject ($selectedSubjectCode)',
+                              '$selectedSubject · $selectedSubjectCode · $lectureNo',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
