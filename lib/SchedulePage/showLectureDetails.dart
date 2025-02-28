@@ -86,7 +86,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${details['lecture_type']} $lectureNo',
+                              '$lectureNo $selectedSubject ($selectedSubjectCode)',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -94,7 +94,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                             ),
                             SizedBox(height: 2),
                             Text(
-                              '$selectedSubject ($selectedSubjectCode)',
+                              '${details['lecture_type']} ',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Theme.of(context).colorScheme.onSurface,
@@ -187,7 +187,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: Icon(Icons.check_circle_outline),
-                        label: Text('MARK AS REVISED'),
+                        label: Text('MARK AS DONE'),
                         onPressed: () async {
                           try {
                             showDialog(
@@ -300,7 +300,6 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
 Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
   String revisionFrequency = details['revision_frequency'];
   int noRevision = details['no_revision'];
-  bool isEnabled = details['status'] == 'Enabled';
 
   return Container(
     padding: EdgeInsets.all(16),
