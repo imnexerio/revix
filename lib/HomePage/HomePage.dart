@@ -121,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
-                  print(allRecords);
+                  // print(allRecords);
                   Map<String, int> subjectDistribution = calculateSubjectDistribution(allRecords);
 
                   return CustomScrollView(
