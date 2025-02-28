@@ -17,16 +17,31 @@ class ScheduleTable extends StatefulWidget {
   _ScheduleTableState createState() => _ScheduleTableState();
 }
 
-class _ScheduleTableState extends State<ScheduleTable> {
+class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProviderStateMixin {
   late List<Map<String, dynamic>> records;
   String? currentSortField;
   bool isAscending = true;
   final GlobalKey _gridKey = GlobalKey();
 
+  // Animation controller for the grid
+  late AnimationController _animationController;
+
   @override
   void initState() {
     super.initState();
     records = List.from(widget.initialRecords);
+
+    // Initialize animation controller
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -44,6 +59,9 @@ class _ScheduleTableState extends State<ScheduleTable> {
   }
 
   void _applySorting(String field, bool ascending) {
+    // Reset the animation
+    _animationController.reset();
+
     setState(() {
       currentSortField = field;
       isAscending = ascending;
@@ -118,6 +136,9 @@ class _ScheduleTableState extends State<ScheduleTable> {
         }
       });
     });
+
+    // Start the animation after sorting
+    _animationController.forward();
   }
 
   @override
@@ -142,25 +163,39 @@ class _ScheduleTableState extends State<ScheduleTable> {
           ),
         ),
         const SizedBox(height: 8),
-        // Responsive grid of cards
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 400, // Maximum width of each card
-            childAspectRatio: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            mainAxisExtent: 170, // Increased height slightly for better layout
-          ),
-          itemCount: records.length,
-          itemBuilder: (context, index) {
-            final record = records[index];
-            final bool isCompleted = record['date_learnt'] != null &&
-                record['date_learnt'].toString().isNotEmpty;
+        // Animated grid of cards
+        AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return GridView.builder(
+              key: _gridKey,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 400, // Maximum width of each card
+                childAspectRatio: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                mainAxisExtent: 170, // Increased height slightly for better layout
+              ),
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                final record = records[index];
+                final bool isCompleted = record['date_learnt'] != null &&
+                    record['date_learnt'].toString().isNotEmpty;
 
-            return _buildClassCard(context, record, isCompleted);
+                // Use AnimatedContainer for the cards
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: Hero(
+                    tag: 'card_${record['subject']}_${record['lecture_no']}',
+                    child: _buildClassCard(context, record, isCompleted),
+                  ),
+                );
+              },
+            );
           },
         ),
       ],
