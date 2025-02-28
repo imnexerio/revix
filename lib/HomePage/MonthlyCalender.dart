@@ -123,82 +123,91 @@ class _StudyCalendarState extends State<StudyCalendar> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: [
-        TableCalendar(
-          firstDay: DateTime.utc(2020, 1, 1),
-          lastDay: DateTime.utc(2030, 12, 31),
-          focusedDay: _focusedDay,
-          calendarFormat: _calendarFormat,
-          eventLoader: _getEventsForDay,
-          selectedDayPredicate: (day) {
-            return isSameDay(_selectedDay, day);
-          },
-          onDaySelected: (selectedDay, focusedDay) {
-            setState(() {
-              _selectedDay = selectedDay;
+        children: [
+          TableCalendar(
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: _focusedDay,
+            calendarFormat: _calendarFormat,
+            eventLoader: _getEventsForDay,
+            selectedDayPredicate: (day) {
+              return isSameDay(_selectedDay, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
+            },
+            onFormatChanged: (format) {
+              setState(() {
+                _calendarFormat = format;
+              });
+            },
+            onPageChanged: (focusedDay) {
               _focusedDay = focusedDay;
-            });
-          },
-          onFormatChanged: (format) {
-            setState(() {
-              _calendarFormat = format;
-            });
-          },
-          onPageChanged: (focusedDay) {
-            _focusedDay = focusedDay;
-          },
-          calendarBuilders: CalendarBuilders(
-            // Custom day builder for the concentric circles effect
-            defaultBuilder: (context, day, focusedDay) {
-              final events = _getEventsForDay(day);
-
-              return Container(
-                margin: const EdgeInsets.all(4.0),
-                alignment: Alignment.center,
-                child: _buildConcentricDay(day, events, false, false),
-              );
             },
-            todayBuilder: (context, day, focusedDay) {
-              final events = _getEventsForDay(day);
+            calendarBuilders: CalendarBuilders(
+              // Custom day builder for the concentric circles effect
+              defaultBuilder: (context, day, focusedDay) {
+                final events = _getEventsForDay(day);
 
-              return Container(
-                margin: const EdgeInsets.all(4.0),
-                alignment: Alignment.center,
-                child: _buildConcentricDay(day, events, true, false),
-              );
-            },
-            selectedBuilder: (context, day, focusedDay) {
-              final events = _getEventsForDay(day);
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  child: _buildConcentricDay(day, events, false, false),
+                );
+              },
+              todayBuilder: (context, day, focusedDay) {
+                final events = _getEventsForDay(day);
 
-              return Container(
-                margin: const EdgeInsets.all(4.0),
-                alignment: Alignment.center,
-                child: _buildConcentricDay(day, events, false, true),
-              );
-            },
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  child: _buildConcentricDay(day, events, true, false),
+                );
+              },
+              selectedBuilder: (context, day, focusedDay) {
+                final events = _getEventsForDay(day);
+
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  child: _buildConcentricDay(day, events, false, true),
+                );
+              },
+            ),
+            headerStyle: HeaderStyle(
+              formatButtonVisible: true,
+              titleCentered: true,
+              formatButtonShowsNext: false,
+            ),
+            // Add this to hide the default markers
+            calendarStyle: CalendarStyle(
+              markersMaxCount: 0,
+              // Make sure any marker-related properties are set to be invisible
+              markerDecoration: const BoxDecoration(
+                color: Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+            ),
           ),
-          headerStyle: HeaderStyle(
-            formatButtonVisible: true,
-            titleCentered: true,
-            formatButtonShowsNext: false,
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildLegendItem('Learned', Colors.blue),
+                _buildLegendItem('Revised', Colors.green),
+                _buildLegendItem('Scheduled', Colors.orange),
+                _buildLegendItem('Missed', Colors.red),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildLegendItem('Learned', Colors.blue),
-              _buildLegendItem('Revised', Colors.green),
-              _buildLegendItem('Scheduled', Colors.orange),
-              _buildLegendItem('Missed', Colors.red),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildEventList(),
-      ],
+          const SizedBox(height: 16),
+          _buildEventList(),
+        ]
     );
   }
 
