@@ -259,7 +259,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                             ScaffoldMessenger.of(context).showSnackBar(
                               customSnackBar(
                                 context: context,
-                                message: 'Revision added successfully',
+                                message: '$selectedSubject $selectedSubjectCode $lectureNo done. Next scheduled is on $dateScheduled.',
                               ),
                             );
                           } catch (e) {
@@ -270,7 +270,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                             ScaffoldMessenger.of(context).showSnackBar(
                               customSnackBar_error(
                                 context: context,
-                                message: 'Failed to add revision: ${e.toString()}',
+                                message: 'Failed : ${e.toString()}',
                               ),
                             );
                           }
