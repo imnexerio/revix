@@ -242,114 +242,119 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
     return StatefulBuilder(
       builder: (context, setState) {
+        // Set the initial value of selectedField to 'no_revision'
+        final ValueNotifier<String?> selectedField = ValueNotifier<String?>('no_revision');
+
         return Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle indicator
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                margin: const EdgeInsets.only(bottom: 16),
-              ),
-
-              // Title
-              Text(
-                'Sort by',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-
-              // Sort field selection boxes
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+          child: SizedBox(
+            height: 400, // Set height to 60% of screen height
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildSortFieldBox(
-                    context,
-                    'Date Learnt',
-                    'date_learnt',
-                    selectedField,
-                        () => setState(() {}),
+                  // Handle indicator
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    margin: const EdgeInsets.only(bottom: 16),
                   ),
-                  _buildSortFieldBox(
-                    context,
-                    'Date Revised',
-                    'date_revised',
-                    selectedField,
-                        () => setState(() {}),
+
+                  // Title
+                  Text(
+                    'Sort by',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  _buildSortFieldBox(
-                    context,
-                    'Missed Revisions',
-                    'missed_revision',
-                    selectedField,
-                        () => setState(() {}),
+                  const SizedBox(height: 16),
+
+                  // Sort field selection boxes
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildSortFieldBox(
+                        context,
+                        'Date Learnt',
+                        'date_learnt',
+                        selectedField,
+                            () => setState(() {}),
+                      ),
+                      _buildSortFieldBox(
+                        context,
+                        'Date Revised',
+                        'date_revised',
+                        selectedField,
+                            () => setState(() {}),
+                      ),
+                      _buildSortFieldBox(
+                        context,
+                        'Missed Revisions',
+                        'missed_revision',
+                        selectedField,
+                            () => setState(() {}),
+                      ),
+                      _buildSortFieldBox(
+                        context,
+                        'Number of Revisions',
+                        'no_revision',
+                        selectedField,
+                            () => setState(() {}),
+                      ),
+                      _buildSortFieldBox(
+                        context,
+                        'Revision Frequency',
+                        'revision_frequency',
+                        selectedField,
+                            () => setState(() {}),
+                      ),
+                    ],
                   ),
-                  _buildSortFieldBox(
-                    context,
-                    'Number of Revisions',
-                    'no_revision',
-                    selectedField,
-                        () => setState(() {}),
+
+                  const SizedBox(height: 20),
+
+                  // Order selection (always visible)
+                  Column(
+                    children: [
+                      const Text('Order'),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildOrderBox(
+                              context,
+                              'Ascending',
+                              Icons.arrow_upward,
+                              true,
+                              selectedField.value ?? 'no_revision', // Provide a default value
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: _buildOrderBox(
+                              context,
+                              'Descending',
+                              Icons.arrow_downward,
+                              false,
+                              selectedField.value ?? 'no_revision', // Provide a default value
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  _buildSortFieldBox(
-                    context,
-                    'Revision Frequency',
-                    'revision_frequency',
-                    selectedField,
-                        () => setState(() {}),
-                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
-
-              const SizedBox(height: 20),
-
-              // Order selection (only visible when a field is selected)
-              if (selectedField.value != null)
-                Column(
-                  children: [
-                    const Text('Order'),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildOrderBox(
-                            context,
-                            'Ascending',
-                            Icons.arrow_upward,
-                            true,
-                            selectedField.value!,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: _buildOrderBox(
-                            context,
-                            'Descending',
-                            Icons.arrow_downward,
-                            false,
-                            selectedField.value!,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
         );
       },
     );
   }
-
   Widget _buildSortFieldBox(
       BuildContext context,
       String label,
