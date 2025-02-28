@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:retracker/Utils/date_utils.dart';
 import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
-import 'package:retracker/widgets/SubjectCodeDropdown.dart';
-import 'package:retracker/widgets/SubjectDropdown.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/customSnackBar_error.dart';
 

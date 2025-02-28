@@ -105,7 +105,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
@@ -198,7 +198,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                                   child: Container(
                                     padding: EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.background,
+                                      color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Column(
@@ -308,8 +308,8 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Theme.of(context).colorScheme.background,
-          Theme.of(context).colorScheme.background.withOpacity(0.9),
+          Theme.of(context).colorScheme.surface,
+          Theme.of(context).colorScheme.surface.withOpacity(0.9),
         ],
       ),
       borderRadius: BorderRadius.circular(20),
@@ -396,7 +396,7 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
   return Container(
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.background,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
@@ -506,7 +506,7 @@ Widget _buildDescriptionCard(BuildContext context, Map<String, dynamic> details)
     width: double.infinity,
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.background,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(

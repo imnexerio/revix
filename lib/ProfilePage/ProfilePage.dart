@@ -541,7 +541,7 @@ Future<String> _fetchReleaseNotes() async {
                                     'Appearance',
                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.onBackground,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                   Text(
@@ -556,7 +556,7 @@ Future<String> _fetchReleaseNotes() async {
                                 onPressed: () => Navigator.pop(context),
                                 icon: Icon(Icons.close, size: 20),
                                 style: IconButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                                   padding: EdgeInsets.all(12),
                                   shape: RoundedRectangleBorder(
@@ -582,7 +582,7 @@ Future<String> _fetchReleaseNotes() async {
                               return Container(
                                 padding: EdgeInsets.symmetric(horizontal: 16),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
@@ -788,7 +788,7 @@ Future<String> _fetchReleaseNotes() async {
                               return Container(
                                 padding: EdgeInsets.symmetric(horizontal: 16),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
@@ -1466,7 +1466,7 @@ Future<String> _fetchReleaseNotes() async {
                               onPressed: () => Navigator.pop(context),
                               icon: Icon(Icons.close, size: 20),
                               style: IconButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                 foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                                 minimumSize: Size(40, 40),
                                 shape: RoundedRectangleBorder(
