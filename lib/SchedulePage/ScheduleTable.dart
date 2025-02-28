@@ -176,12 +176,14 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 12),
+              // In the GridView.builder's gridDelegate
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 400, // Maximum width of each card
                 childAspectRatio: MediaQuery.of(context).size.width > 600 ? 3 : 2,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
-                mainAxisExtent: 135, // Increased height slightly for better layout
+                // Dynamic height based on card width and whether "Completed" is visible
+                mainAxisExtent: (MediaQuery.of(context).size.width < 1350) ? 170 : 135,
               ),
               itemCount: records.length,
               itemBuilder: (context, index) {
