@@ -1352,7 +1352,7 @@ Future<String> _fetchReleaseNotes() async {
     void fetchtrackingType(StateSetter setState) async {
       try {
         List<String> data = await FetchtrackingTypeUtils.fetchtrackingType();
-        print('data: $data');
+        // print('data: $data');
         setState(() {
           trackingtype = data.map((trackingTitle) {
             return {
