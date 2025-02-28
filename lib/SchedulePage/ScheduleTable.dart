@@ -172,44 +172,46 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
         AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              // In the GridView.builder's gridDelegate
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 700,
-                childAspectRatio: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                mainAxisExtent: 135,
-              ),
-              itemCount: records.length,
-              itemBuilder: (context, index) {
-                final record = records[index];
-                final bool isCompleted = record['date_learnt'] != null &&
-                    record['date_learnt'].toString().isNotEmpty;
-
-                // Animate each card with a staggered effect
-                final Animation<double> animation = Tween<double>(
-                  begin: 0.0,
-                  end: 1.0,
-                ).animate(
-                  CurvedAnimation(
-                    parent: _animationController,
-                    curve: Interval(
-                      (index / records.length) * 0.5, // Stagger the animations
-                      (index / records.length) * 0.5 + 0.5,
-                      curve: Curves.easeInOut,
-                    ),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _calculateColumns(constraints.maxWidth),
+                    childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    mainAxisExtent: 160,
                   ),
-                );
+                  itemCount: records.length,
+                  itemBuilder: (context, index) {
+                    final record = records[index];
+                    final bool isCompleted = record['date_learnt'] != null &&
+                        record['date_learnt'].toString().isNotEmpty;
 
-                return AnimatedCard(
-                  animation: animation,
-                  record: record,
-                  isCompleted: isCompleted,
-                  onSelect: widget.onSelect,
+                    final Animation<double> animation = Tween<double>(
+                      begin: 0.0,
+                      end: 1.0,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: _animationController,
+                        curve: Interval(
+                          (index / records.length) * 0.5,
+                          (index / records.length) * 0.5 + 0.5,
+                          curve: Curves.easeInOut,
+                        ),
+                      ),
+                    );
+
+                    return AnimatedCard(
+                      animation: animation,
+                      record: record,
+                      isCompleted: isCompleted,
+                      onSelect: widget.onSelect,
+                    );
+                  },
                 );
               },
             );
@@ -428,6 +430,13 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
         ),
       ),
     );
+  }
+  int _calculateColumns(double width) {
+    if (width < 500) return 1;         // Mobile
+    if (width < 900) return 2;         // Tablet
+    if (width < 1200) return 3;        // Small desktop
+    if (width < 1500) return 4;        // Medium desktop
+    return 5;                          // Large desktop
   }
 
 }

@@ -80,10 +80,10 @@ class AnimatedCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 16,
-                                runSpacing: 8,
-                                children: [
+                              // Wrap(
+                              //   spacing: 16,
+                              //   runSpacing: 8,
+                              //   children: [
                                   _buildDateInfo(
                                     context,
                                     'Scheduled',
@@ -97,8 +97,8 @@ class AnimatedCard extends StatelessWidget {
                                       record['date_learnt'] ?? '',
                                       Icons.check_circle_outline,
                                     ),
-                                ],
-                              ),
+                                // ],
+                              // ),
                             ],
                           ),
                         ),
@@ -106,7 +106,7 @@ class AnimatedCard extends StatelessWidget {
                         Expanded(
                           flex: 2,
                           child: SizedBox(
-                            height: 90,
+                            // height: 200,
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(

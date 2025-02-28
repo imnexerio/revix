@@ -285,16 +285,9 @@ Future<String> _fetchReleaseNotes() async {
                               ],
                             ),
                             IconButton(
+                              icon: Icon(Icons.close),
                               onPressed: () => Navigator.pop(context),
-                              icon: Icon(Icons.close, size: 20),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                                padding: EdgeInsets.all(12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ],
                         ),
@@ -553,16 +546,9 @@ Future<String> _fetchReleaseNotes() async {
                                 ],
                               ),
                               IconButton(
+                                icon: Icon(Icons.close),
                                 onPressed: () => Navigator.pop(context),
-                                icon: Icon(Icons.close, size: 20),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  padding: EdgeInsets.all(12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ],
                           ),
@@ -970,17 +956,10 @@ Future<String> _fetchReleaseNotes() async {
                                 ),
                               ],
                             ),
-                            IconButton.filledTonal(
+                            IconButton(
+                              icon: Icon(Icons.close),
                               onPressed: () => Navigator.pop(context),
-                              icon: Icon(Icons.close, size: 20),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                                minimumSize: Size(40, 40),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ],
                         ),
@@ -1157,17 +1136,10 @@ Future<String> _fetchReleaseNotes() async {
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                IconButton.filledTonal(
+                IconButton(
+                  icon: Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                    minimumSize: Size(40, 40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ],
             ),
@@ -1462,17 +1434,10 @@ Future<String> _fetchReleaseNotes() async {
                                 ),
                               ],
                             ),
-                            IconButton.filledTonal(
+                            IconButton(
+                              icon: Icon(Icons.close),
                               onPressed: () => Navigator.pop(context),
-                              icon: Icon(Icons.close, size: 20),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                                minimumSize: Size(40, 40),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ],
                         ),
@@ -1625,17 +1590,10 @@ Future<String> _fetchReleaseNotes() async {
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        IconButton.filledTonal(
+                        IconButton(
+                          icon: Icon(Icons.close),
                           onPressed: () => Navigator.pop(context),
-                          icon: Icon(Icons.close, size: 20),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                            minimumSize: Size(40, 40),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ],
                     ),
@@ -1811,14 +1769,9 @@ Future<String> _fetchReleaseNotes() async {
                               ),
                             ),
                             IconButton(
-                              onPressed: () => Navigator.pop(context),
                               icon: Icon(Icons.close),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.grey.withOpacity(0.1),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              onPressed: () => Navigator.pop(context),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ],
                         ),
@@ -2005,14 +1958,9 @@ Future<String> _fetchReleaseNotes() async {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => Navigator.pop(context),
                             icon: Icon(Icons.close),
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.grey.withOpacity(0.1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                            onPressed: () => Navigator.pop(context),
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ],
                       ),
@@ -2183,14 +2131,9 @@ Future<String> _fetchReleaseNotes() async {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => Navigator.pop(context),
                           icon: Icon(Icons.close),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.grey.withOpacity(0.1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                          onPressed: () => Navigator.pop(context),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ],
                     ),
@@ -2282,14 +2225,9 @@ Future<String> _fetchReleaseNotes() async {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   IconButton(
-                                    onPressed: () => Navigator.pop(context),
                                     icon: Icon(Icons.close),
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: Colors.grey.withOpacity(0.1),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ],
                               ),
