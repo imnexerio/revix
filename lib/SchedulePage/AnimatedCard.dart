@@ -61,7 +61,7 @@ class AnimatedCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                record['lecture_type'],
+                                '${record['subject']} · ${record['subject_code']} · ${record['lecture_no']}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -71,7 +71,7 @@ class AnimatedCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${record['subject']} · ${record['subject_code']} · ${record['lecture_no']}',
+                                record['lecture_type'],
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                   fontSize: 13,
