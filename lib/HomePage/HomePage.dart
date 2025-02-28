@@ -324,7 +324,7 @@ class _HomePageState extends State<HomePage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Study Calendar',
+                                    'Progress Calendar',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
@@ -333,7 +333,7 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                   SizedBox(height: 24),
                                   SizedBox(
-                                    height: 500, // You can adjust this height as needed
+                                    height: 700, // You can adjust this height as needed
                                     child: StudyCalendar(records: allRecords),
                                   ),
                                 ],
