@@ -27,9 +27,16 @@ class RevisionRadarChart extends StatefulWidget {
   State<RevisionRadarChart> createState() => _RevisionRadarChartState();
 }
 
-class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTickerProviderStateMixin {
+
+class _RevisionRadarChartState extends State<RevisionRadarChart> with TickerProviderStateMixin {
+
   late AnimationController _animationController;
   late Animation<double> _animation;
+
+  // New animation controller for the light effect
+  late AnimationController _lightAnimationController;
+  late Animation<double> _lightAnimation;
+
   late List<RevisionEvent> allRevisions;
 
   // Track statistics
@@ -51,10 +58,24 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
       curve: Curves.easeOutQuart,
     );
 
+    // Initialize the light animation controller (continuous animation)
+    _lightAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000), // Light travels in 2 seconds
+    );
+
+    _lightAnimation = CurvedAnimation(
+      parent: _lightAnimationController,
+      curve: Curves.linear,
+    );
+
     _processRevisionData();
     _calculateStatistics();
 
     _animationController.forward();
+
+    // Start the light animation and make it repeat
+    _lightAnimationController.repeat();
   }
 
   void _processRevisionData() {
@@ -134,6 +155,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
   @override
   void dispose() {
     _animationController.dispose();
+    _lightAnimationController.dispose(); // Dispose the light animation controller
     super.dispose();
   }
 
@@ -186,7 +208,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
               mainAxisSize: MainAxisSize.min,
               children: [
                 // The radar chart
-                Container(
+                SizedBox(
                   width: availableSize,
                   height: availableSize,
                   child: Stack(
@@ -202,15 +224,21 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                       ),
 
                       // The data paths
-                      CustomPaint(
-                        size: Size(availableSize, availableSize),
-                        painter: RadarChartPainter(
-                          animationValue: _animation.value,
-                          revisions: allRevisions,
-                          learntColor: widget.learntColor,
-                          revisedColor: widget.revisedColor,
-                          missedColor: widget.missedColor,
-                        ),
+                      AnimatedBuilder(
+                          animation: _lightAnimation,
+                          builder: (context, _) {
+                            return CustomPaint(
+                              size: Size(availableSize, availableSize),
+                              painter: RadarChartPainter(
+                                animationValue: _animation.value,
+                                lightAnimationValue: _lightAnimation.value,
+                                revisions: allRevisions,
+                                learntColor: widget.learntColor,
+                                revisedColor: widget.revisedColor,
+                                missedColor: widget.missedColor,
+                              ),
+                            );
+                          }
                       ),
 
                       // Labels
@@ -308,7 +336,6 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
       },
     );
   }
-
 }
 
 // Data model for revision events
@@ -375,6 +402,7 @@ class RadarWebPainter extends CustomPainter {
 // Painter for the radar chart data
 class RadarChartPainter extends CustomPainter {
   final double animationValue;
+  final double lightAnimationValue; // Value for the moving light effect
   final List<RevisionEvent> revisions;
   final Color learntColor;
   final Color revisedColor;
@@ -382,6 +410,7 @@ class RadarChartPainter extends CustomPainter {
 
   RadarChartPainter({
     required this.animationValue,
+    required this.lightAnimationValue,
     required this.revisions,
     required this.learntColor,
     required this.revisedColor,
@@ -399,6 +428,11 @@ class RadarChartPainter extends CustomPainter {
     final learnedPath = Path();
     final revisedPath = Path();
     final missedPath = Path();
+
+    // Store points for light effect
+    final learnedPoints = <Offset>[];
+    final revisedPoints = <Offset>[];
+    final missedPoints = <Offset>[];
 
     // Variables to track if we've moved to first points
     bool learnedMoved = false;
@@ -422,7 +456,7 @@ class RadarChartPainter extends CustomPainter {
       final y = center.dy + pointRadius * sin(angle) * animationValue;
       final point = Offset(x, y);
 
-      // Add point to appropriate path
+      // Add point to appropriate path and point list
       if (revision.isLearned) {
         if (!learnedMoved) {
           learnedPath.moveTo(point.dx, point.dy);
@@ -430,6 +464,7 @@ class RadarChartPainter extends CustomPainter {
         } else {
           learnedPath.lineTo(point.dx, point.dy);
         }
+        learnedPoints.add(point);
 
         // Draw the learned point
         canvas.drawCircle(
@@ -444,6 +479,7 @@ class RadarChartPainter extends CustomPainter {
         } else {
           missedPath.lineTo(point.dx, point.dy);
         }
+        missedPoints.add(point);
 
         // Draw the missed point
         canvas.drawCircle(
@@ -458,6 +494,7 @@ class RadarChartPainter extends CustomPainter {
         } else {
           revisedPath.lineTo(point.dx, point.dy);
         }
+        revisedPoints.add(point);
 
         // Draw the revised point
         canvas.drawCircle(
@@ -471,8 +508,9 @@ class RadarChartPainter extends CustomPainter {
     // Scale stroke width based on size
     final strokeWidth = max(1.0, size.width / 150);
 
-    // Close and fill the paths
+    // Close and fill the paths with light effect
     if (learnedMoved) {
+      // Draw the fill
       canvas.drawPath(
         learnedPath,
         Paint()
@@ -480,7 +518,7 @@ class RadarChartPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
 
-      // Also draw the stroke
+      // Draw the path stroke
       canvas.drawPath(
         learnedPath,
         Paint()
@@ -488,9 +526,15 @@ class RadarChartPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth,
       );
+
+      // Draw the light effect if we have more than 1 point
+      if (learnedPoints.length > 1) {
+        _drawLightEffect(canvas, learnedPoints, learntColor, size, strokeWidth);
+      }
     }
 
     if (revisedMoved) {
+      // Draw the fill
       canvas.drawPath(
         revisedPath,
         Paint()
@@ -498,7 +542,7 @@ class RadarChartPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
 
-      // Also draw the stroke
+      // Draw the path stroke
       canvas.drawPath(
         revisedPath,
         Paint()
@@ -506,9 +550,15 @@ class RadarChartPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth,
       );
+
+      // Draw the light effect if we have more than 1 point
+      if (revisedPoints.length > 1) {
+        _drawLightEffect(canvas, revisedPoints, revisedColor, size, strokeWidth);
+      }
     }
 
     if (missedMoved) {
+      // Draw the fill
       canvas.drawPath(
         missedPath,
         Paint()
@@ -516,7 +566,7 @@ class RadarChartPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
 
-      // Also draw the stroke
+      // Draw the path stroke
       canvas.drawPath(
         missedPath,
         Paint()
@@ -524,11 +574,80 @@ class RadarChartPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth,
       );
+
+      // Draw the light effect if we have more than 1 point
+      if (missedPoints.length > 1) {
+        _drawLightEffect(canvas, missedPoints, missedColor, size, strokeWidth);
+      }
     }
+  }
+
+  // Method to draw light moving along the path
+  void _drawLightEffect(Canvas canvas, List<Offset> points, Color color, Size size, double strokeWidth) {
+    if (points.length < 2) return;
+
+    // Calculate total path length to determine light position
+    double totalLength = 0;
+    List<double> segmentLengths = [];
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final distance = (points[i] - points[i + 1]).distance;
+      segmentLengths.add(distance);
+      totalLength += distance;
+    }
+
+    // Add the last segment that connects back to the first point (close the path)
+    final lastDistance = (points.last - points.first).distance;
+    segmentLengths.add(lastDistance);
+    totalLength += lastDistance;
+
+    // Calculate where the light should be based on animation value
+    double targetDistance = totalLength * lightAnimationValue;
+
+    // Find which segment the light is in
+    int segmentIndex = 0;
+    double distanceCovered = 0;
+
+    while (segmentIndex < segmentLengths.length && distanceCovered + segmentLengths[segmentIndex] < targetDistance) {
+      distanceCovered += segmentLengths[segmentIndex];
+      segmentIndex++;
+    }
+
+    // The segment is between points[segmentIndex] and points[(segmentIndex + 1) % points.length]
+    final startPoint = points[segmentIndex];
+    final endPoint = points[(segmentIndex + 1) % points.length];
+
+    // Calculate how far along this segment the light should be
+    final segmentProgress = (targetDistance - distanceCovered) / segmentLengths[segmentIndex];
+
+    // Interpolate the position
+    final lightPosition = Offset(
+      startPoint.dx + (endPoint.dx - startPoint.dx) * segmentProgress,
+      startPoint.dy + (endPoint.dy - startPoint.dy) * segmentProgress,
+    );
+
+    // Size of light is proportional to chart size
+    final lightSize = max(strokeWidth * 3, size.width / 50);
+
+    // Draw a glowing light effect
+    final glowPaint = Paint()
+      ..color = color.withOpacity(0.8)
+      ..style = PaintingStyle.fill
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, lightSize / 2);
+
+    canvas.drawCircle(lightPosition, lightSize, glowPaint);
+
+    // Draw a brighter center
+    final centerPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(lightPosition, lightSize / 3, centerPaint);
   }
 
   @override
   bool shouldRepaint(covariant RadarChartPainter oldDelegate) =>
       oldDelegate.animationValue != animationValue ||
+          oldDelegate.lightAnimationValue != lightAnimationValue ||
           oldDelegate.revisions.length != revisions.length;
 }
