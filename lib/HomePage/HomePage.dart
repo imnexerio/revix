@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../SchedulePage/LegendItem.dart';
 import 'DailyProgress.dart';
 import 'FetchRecord.dart';
 import 'MonthlyCalender.dart';
@@ -32,10 +33,7 @@ class _HomePageState extends State<HomePage> {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
           child: FutureBuilder<Map<String, dynamic>>(
-            future: _recordService.getAllRecords().then((result) {
-              print(result);
-              return result;
-            }),
+              future: _recordService.getAllRecords(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
@@ -328,9 +326,10 @@ class _HomePageState extends State<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem('Lectures', Colors.blue, Icons.school),
+
+              LegendItem(label: 'Lectures', color: Colors.blue, icon: Icons.school,),
               SizedBox(width: 24),
-              _buildLegendItem('Revisions', Colors.orange, Icons.check_circle),
+              LegendItem(label: 'Revisions', color: Colors.green, icon: Icons.check_circle),
             ],
           ),
         ],
@@ -382,13 +381,13 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _legendItem('Lectures', Colors.blue, context),
+        LegendItem(label: 'Lectures', color: Colors.blue, icon: Icons.school),
         SizedBox(width: 16),
-        _legendItem('Revisions', Colors.green, context),
+        LegendItem(label: 'Revisions', color: Colors.green, icon: Icons.check_circle),
         SizedBox(width: 16),
-        _legendItem('Missed', Colors.red, context),
+        LegendItem(label: 'Missed', color: Colors.red, icon: Icons.cancel),
         SizedBox(width: 16),
-        _legendItem('Scheduled', Colors.orange, context),
+        LegendItem(label: 'Scheduled', color: Colors.orange, icon: Icons.schedule),
       ],
     );
   }
@@ -443,18 +442,26 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           SizedBox(height: 24),
+
           SizedBox(
-            height: 500, // Adjusted height
+            height: 700, // Adjusted height
             child: StudyCalendar(records: allRecords),
           ),
           SizedBox(height: 16),
-          buildCalendarLegend(),
         ],
       ),
     );
   }
 
   Widget _buildSubjectDistributionCard(Map<String, int> subjectDistribution, double cardPadding, BuildContext context) {
+    // Get the screen width to calculate responsive sizes
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calculate dynamic radius based on screen width
+    final bool isSmallScreen = screenWidth < 600;
+    final double chartRadius = isSmallScreen ? 80 : 100;
+    final double centerRadius = isSmallScreen ? 60 : 80;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -481,15 +488,32 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           SizedBox(height: 24),
-          AspectRatio(
-            aspectRatio: 1.3,
-            child: PieChart(
-              PieChartData(
-                sections: createPieChartSections(subjectDistribution),
-                sectionsSpace: 2,
-                centerSpaceRadius: 40,
-              ),
-            ),
+          // Use LayoutBuilder to make pie chart responsive to its container
+          LayoutBuilder(
+              builder: (context, constraints) {
+                // // Calculate the available width
+                // final availableWidth = constraints.maxWidth;
+                // // Define a responsive aspect ratio
+                // final aspectRatio = screenWidth > 900 ? 1.5 : 1.0;
+
+                return Container(
+                  height: 700,
+                  // height: availableWidth / aspectRatio,
+                  child: PieChart(
+                    PieChartData(
+                      sections: createPieChartSections(
+                        subjectDistribution,
+                        chartRadius,
+                        Theme.of(context),
+                      ),
+                      sectionsSpace: 2,
+                      centerSpaceRadius: centerRadius,
+                      // Add this to ensure the chart is drawn within bounds
+                      borderData: FlBorderData(show: false),
+                    ),
+                  ),
+                );
+              }
           ),
           SizedBox(height: 24),
           buildPieChartLegend(subjectDistribution, context),
@@ -497,6 +521,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 
   Widget _buildStatCard(String title, String value, Color color) {
     return Container(
@@ -530,45 +555,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget buildCalendarLegend() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0, bottom: 12.0),
-      child: Wrap(
-        spacing: 16.0,
-        runSpacing: 8.0,
-        alignment: WrapAlignment.center,
-        children: [
-          _buildLegendItem('Learned', Colors.blue, Icons.school),
-          _buildLegendItem('Revised', Colors.green, Icons.check_circle),
-          _buildLegendItem('Missed', Colors.red, Icons.cancel),
-          _buildLegendItem('Scheduled', Colors.orange, Icons.event),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color, IconData icon) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CircleAvatar(
-          backgroundColor: color,
-          radius: 8,
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 10,
-          ),
-        ),
-        SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
 }

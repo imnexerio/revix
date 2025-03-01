@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../SchedulePage/LegendItem.dart';
 import '../SchedulePage/ProportionalRingPainter.dart';
 
 class StudyCalendar extends StatefulWidget {
@@ -200,10 +201,13 @@ class _StudyCalendarState extends State<StudyCalendar> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildLegendItem('Learned', Colors.blue),
-                _buildLegendItem('Revised', Colors.green),
-                _buildLegendItem('Scheduled', Colors.orange),
-                _buildLegendItem('Missed', Colors.red),
+                LegendItem( label: 'Learned', color: Colors.blue, icon: Icons.school,),
+                LegendItem( label: 'Revised', color: Colors.green, icon: Icons.check_circle,),
+                LegendItem( label: 'Scheduled', color: Colors.orange, icon: Icons.event,),
+                LegendItem( label: 'Missed', color: Colors.red, icon: Icons.cancel,),
+                // _buildLegendItem('Revised', Colors.green, Icons.check_circle),
+                // _buildLegendItem('Scheduled', Colors.orange, Icons.event),
+                // _buildLegendItem('Missed', Colors.red, Icons.cancel),
               ],
             ),
           ),
@@ -298,24 +302,6 @@ class _StudyCalendarState extends State<StudyCalendar> {
   }
 
 
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-
   Widget _buildEventList() {
     List<Map<String, dynamic>> selectedEvents = _getEventsForDay(_selectedDay);
 
@@ -365,6 +351,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
       ),
     );
   }
+
+
 
   Widget _buildEventTypeSection(String title, List<Map<String, dynamic>> events, Color color) {
     return Column(
