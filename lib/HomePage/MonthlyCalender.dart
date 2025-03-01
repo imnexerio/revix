@@ -189,10 +189,10 @@ class _StudyCalendarState extends State<StudyCalendar> {
             calendarStyle: CalendarStyle(
               markersMaxCount: 0,
               // Make sure any marker-related properties are set to be invisible
-              markerDecoration: const BoxDecoration(
-                color: Colors.transparent,
-                shape: BoxShape.circle,
-              ),
+              // markerDecoration: const BoxDecoration(
+              //   color: Colors.transparent,
+              //   shape: BoxShape.circle,
+              // ),
             ),
           ),
           const SizedBox(height: 16),
@@ -273,14 +273,14 @@ class _StudyCalendarState extends State<StudyCalendar> {
 
         // Base circle for the day number
         Container(
-          width: 25, // Fixed inner circle size
-          height: 25,
+          width: 35, // Fixed inner circle size
+          height: 35,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: (isToday || isSelected)
                 ? Border.all(
-              color: Theme.of(context).colorScheme.primary,
-              width: 2,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.9),
+              width: 6,
             )
                 : null,
           ),
