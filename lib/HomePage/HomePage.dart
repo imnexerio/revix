@@ -32,7 +32,10 @@ class _HomePageState extends State<HomePage> {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
           child: FutureBuilder<Map<String, dynamic>>(
-            future: _recordService.getAllRecords(),
+            future: _recordService.getAllRecords().then((result) {
+              print(result);
+              return result;
+            }),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
@@ -367,9 +370,49 @@ class _HomePageState extends State<HomePage> {
             width: double.infinity,
             child: BarChart(createBarChartWeeklyData(allRecords)),
           ),
-          SizedBox(height: 24),
+          SizedBox(height: 16),
+          _buildLegend(context),
+          SizedBox(height: 8),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegend(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _legendItem('Lectures', Colors.blue, context),
+        SizedBox(width: 16),
+        _legendItem('Revisions', Colors.green, context),
+        SizedBox(width: 16),
+        _legendItem('Missed', Colors.red, context),
+        SizedBox(width: 16),
+        _legendItem('Scheduled', Colors.orange, context),
+      ],
+    );
+  }
+
+  Widget _legendItem(String label, Color color, BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+        ),
+      ],
     );
   }
 

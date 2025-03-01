@@ -1,20 +1,29 @@
-// lib/chart_utils.dart
 import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'WeeklyProgressData.dart';
 
+class WeeklyProgressData {
+  final int weekIndex;
+  final int lectures;
+  final int revisions;
+  final int missed;
+  final int scheduled;
+
+  WeeklyProgressData(this.weekIndex, this.lectures, this.revisions, this.missed, this.scheduled);
+}
+
+// Updated chart creation function
 BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
   Map<int, WeeklyProgressData> weeklyData = {};
   DateTime now = DateTime.now();
 
-  // Find the next Sunday instead of the last Sunday
+  // Find the next Sunday
   DateTime nextSunday = now.add(Duration(days: 7 - (now.weekday % 7)));
   nextSunday = DateTime(nextSunday.year, nextSunday.month, nextSunday.day, 23, 59, 59);
 
   // Initialize the last 4 complete weeks of data
   for (int i = 0; i < 4; i++) {
-    weeklyData[i] = WeeklyProgressData(i, 0);
+    weeklyData[i] = WeeklyProgressData(i, 0, 0, 0, 0);
   }
 
   // Calculate the start date (Monday) of the earliest week we want to track
@@ -22,11 +31,22 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
   startDate = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
 
   for (var record in records) {
+    // Extract dates for different actions
     String? dateLearnt;
-    if (record['details']['lecture_type'] == 'Lectures') {
-      dateLearnt = record['details']['date_learnt'];
+    List<dynamic>? datesRevised;
+    List<dynamic>? datesMissedRevisions;
+    String? dateScheduled;
+
+    if (record['details'] != null) {
+      if (record['details']['lecture_type'] == 'Lectures') {
+        dateLearnt = record['details']['date_learnt'];
+        datesRevised = record['details']['dates_revised'];
+        datesMissedRevisions = record['details']['dates_missed_revisions'];
+        dateScheduled = record['details']['date_scheduled'];
+      }
     }
 
+    // Process lecture date
     if (dateLearnt != null) {
       DateTime lectureDate = DateTime.parse(dateLearnt);
       if (lectureDate.isAfter(startDate) && lectureDate.isBefore(nextSunday.add(Duration(days: 1)))) {
@@ -34,25 +54,105 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
         int daysFromNextSunday = nextSunday.difference(lectureDate).inDays;
         int weekIndex = 3 - (daysFromNextSunday ~/ 7); // Reverse the index so newest week is at index 3
 
-        if (weekIndex >= 0) {
+        if (weekIndex >= 0 && weekIndex < 4) {
           var currentData = weeklyData[weekIndex]!;
           weeklyData[weekIndex] = WeeklyProgressData(
             weekIndex,
             currentData.lectures + 1,
+            currentData.revisions,
+            currentData.missed,
+            currentData.scheduled,
+          );
+        }
+      }
+    }
+
+    // Process revision dates
+    if (datesRevised != null) {
+      for (var revisionDateStr in datesRevised) {
+        if (revisionDateStr is String) {
+          DateTime revisionDate = DateTime.parse(revisionDateStr);
+          if (revisionDate.isAfter(startDate) && revisionDate.isBefore(nextSunday.add(Duration(days: 1)))) {
+            int daysFromNextSunday = nextSunday.difference(revisionDate).inDays;
+            int weekIndex = 3 - (daysFromNextSunday ~/ 7);
+
+            if (weekIndex >= 0 && weekIndex < 4) {
+              var currentData = weeklyData[weekIndex]!;
+              weeklyData[weekIndex] = WeeklyProgressData(
+                weekIndex,
+                currentData.lectures,
+                currentData.revisions + 1,
+                currentData.missed,
+                currentData.scheduled,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Process missed revisions using dates_missed_revisions array
+    if (datesMissedRevisions != null) {
+      for (var missedDateStr in datesMissedRevisions) {
+        if (missedDateStr is String) {
+          DateTime missedDate = DateTime.parse(missedDateStr);
+          if (missedDate.isAfter(startDate) && missedDate.isBefore(nextSunday.add(Duration(days: 1)))) {
+            int daysFromNextSunday = nextSunday.difference(missedDate).inDays;
+            int weekIndex = 3 - (daysFromNextSunday ~/ 7);
+
+            if (weekIndex >= 0 && weekIndex < 4) {
+              var currentData = weeklyData[weekIndex]!;
+              weeklyData[weekIndex] = WeeklyProgressData(
+                weekIndex,
+                currentData.lectures,
+                currentData.revisions,
+                currentData.missed + 1,
+                currentData.scheduled,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Process scheduled date
+    if (dateScheduled != null) {
+      DateTime scheduledDate = DateTime.parse(dateScheduled);
+      if (scheduledDate.isAfter(startDate) && scheduledDate.isBefore(nextSunday.add(Duration(days: 7)))) {
+        int daysFromNextSunday = nextSunday.difference(scheduledDate).inDays;
+        int weekIndex = 3 - (daysFromNextSunday ~/ 7);
+
+        // Scheduled dates might be in the future week
+        if (daysFromNextSunday < 0) {
+          weekIndex = 3; // Current week (if in the future)
+        }
+
+        if (weekIndex >= 0 && weekIndex < 4) {
+          var currentData = weeklyData[weekIndex]!;
+          weeklyData[weekIndex] = WeeklyProgressData(
+            weekIndex,
+            currentData.lectures,
+            currentData.revisions,
+            currentData.missed,
+            currentData.scheduled + 1,
           );
         }
       }
     }
   }
 
-  // Calculate maxY from the data
+  // Calculate maxY from the data for all categories
   double maxY = 0;
   weeklyData.values.forEach((data) {
     maxY = max(maxY, data.lectures.toDouble());
+    maxY = max(maxY, data.revisions.toDouble());
+    maxY = max(maxY, data.missed.toDouble());
+    maxY = max(maxY, data.scheduled.toDouble());
   });
 
   // Add padding to maxY to prevent bars from touching the top
   maxY = maxY + (maxY * 0.2);
+  if (maxY == 0) maxY = 5; // Default if no data
 
   return BarChartData(
     alignment: BarChartAlignment.spaceAround,
@@ -61,7 +161,23 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
       enabled: true,
       touchTooltipData: BarTouchTooltipData(
         getTooltipItem: (group, groupIndex, rod, rodIndex) {
-          String label = rodIndex == 0 ? 'Lectures' : 'Revisions';
+          String label;
+          switch (rodIndex) {
+            case 0:
+              label = 'Lectures';
+              break;
+            case 1:
+              label = 'Revisions';
+              break;
+            case 2:
+              label = 'Missed';
+              break;
+            case 3:
+              label = 'Scheduled';
+              break;
+            default:
+              label = 'Unknown';
+          }
           return BarTooltipItem(
             '${label}: ${rod.toY.toInt()}',
             const TextStyle(color: Colors.white),
@@ -120,7 +236,34 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
           BarChartRodData(
             toY: data.lectures.toDouble(),
             color: Colors.blue,
-            width: 16,
+            width: 12,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(4),
+              topRight: Radius.circular(4),
+            ),
+          ),
+          BarChartRodData(
+            toY: data.revisions.toDouble(),
+            color: Colors.green,
+            width: 12,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(4),
+              topRight: Radius.circular(4),
+            ),
+          ),
+          BarChartRodData(
+            toY: data.missed.toDouble(),
+            color: Colors.red,
+            width: 12,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(4),
+              topRight: Radius.circular(4),
+            ),
+          ),
+          BarChartRodData(
+            toY: data.scheduled.toDouble(),
+            color: Colors.orange,
+            width: 12,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
