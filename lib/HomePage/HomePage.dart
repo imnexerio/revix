@@ -279,13 +279,12 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: [
         _buildDailyProgressCard(allRecords, cardPadding, context),
-        SizedBox(height: 32),
+        SizedBox(height: 24),
         _buildWeeklyProgressCard(allRecords, cardPadding, context),
-        SizedBox(height: 32),
+        SizedBox(height: 24),
         _buildProgressCalendarCard(allRecords, cardPadding, context),
-        SizedBox(height: 32),
+        SizedBox(height: 24),
         _buildSubjectDistributionCard(subjectDistribution, cardPadding, context),
-        SizedBox(height: 32),
       ],
     );
   }
@@ -324,11 +323,11 @@ class _HomePageState extends State<HomePage> {
           ),
           SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
 
               LegendItem(label: 'Lectures', color: Colors.blue, icon: Icons.school,),
-              SizedBox(width: 24),
+              // SizedBox(width: 24),
               LegendItem(label: 'Revisions', color: Colors.green, icon: Icons.check_circle),
             ],
           ),
@@ -379,14 +378,11 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildLegend(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         LegendItem(label: 'Lectures', color: Colors.blue, icon: Icons.school),
-        SizedBox(width: 16),
         LegendItem(label: 'Revisions', color: Colors.green, icon: Icons.check_circle),
-        SizedBox(width: 16),
         LegendItem(label: 'Missed', color: Colors.red, icon: Icons.cancel),
-        SizedBox(width: 16),
         LegendItem(label: 'Scheduled', color: Colors.orange, icon: Icons.schedule),
       ],
     );
@@ -497,7 +493,7 @@ class _HomePageState extends State<HomePage> {
                 // final aspectRatio = screenWidth > 900 ? 1.5 : 1.0;
 
                 return Container(
-                  height: 700,
+                  height: 600,
                   // height: availableWidth / aspectRatio,
                   child: PieChart(
                     PieChartData(
