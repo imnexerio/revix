@@ -122,9 +122,9 @@ class _HomePageState extends State<HomePage> {
                               SizedBox(height: 16),
 
                               // Responsive grid layout for stats
-                              screenWidth > 500
-                                  ? _buildTwoByTwoStatsGrid(allRecords)
-                                  : _buildSingleColumnStatsGrid(allRecords),
+                              screenWidth > 900
+                                ? _buildSingleRowStatsGrid(allRecords)
+                                : _buildTwoByTwoStatsGrid(allRecords),
                             ],
                           ),
                         ),
@@ -195,37 +195,44 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Single column layout for smaller screens
-  Widget _buildSingleColumnStatsGrid(List<Map<String, dynamic>> allRecords) {
-    return Column(
+  // Single row layout for smaller screens
+  Widget _buildSingleRowStatsGrid(List<Map<String, dynamic>> allRecords) {
+    return Row(
       children: [
-        _buildStatCard(
-          'Total Lectures',
-          calculateTotalLectures(allRecords).toString(),
-          Color(0xFF6C63FF),
+        Expanded(
+          child: _buildStatCard(
+            'Total Lectures',
+            calculateTotalLectures(allRecords).toString(),
+            Color(0xFF6C63FF),
+          ),
         ),
-        SizedBox(height: 16),
-        _buildStatCard(
-          'Total Revisions',
-          calculateTotalRevisions(allRecords).toString(),
-          Color(0xFFDA5656),
+        SizedBox(width: 16), // Add space between cards
+        Expanded(
+          child: _buildStatCard(
+            'Total Revisions',
+            calculateTotalRevisions(allRecords).toString(),
+            Color(0xFFDA5656),
+          ),
         ),
-        SizedBox(height: 16),
-        _buildStatCard(
-          "Percentage Completion",
-          "${calculatePercentageCompletion(allRecords).toStringAsFixed(1)}%",
-          getCompletionColor(calculatePercentageCompletion(allRecords)),
+        SizedBox(width: 16), // Add space between cards
+        Expanded(
+          child: _buildStatCard(
+            "Percentage Completion",
+            "${calculatePercentageCompletion(allRecords).toStringAsFixed(1)}%",
+            getCompletionColor(calculatePercentageCompletion(allRecords)),
+          ),
         ),
-        SizedBox(height: 16),
-        _buildStatCard(
-          "Missed Revision",
-          calculateMissedRevisions(allRecords).toString(),
-          Color(0xFF008CC4),
+        SizedBox(width: 16), // Add space between cards
+        Expanded(
+          child: _buildStatCard(
+            "Missed Revision",
+            calculateMissedRevisions(allRecords).toString(),
+            Color(0xFF008CC4),
+          ),
         ),
       ],
     );
   }
-
   // Two column layout for larger screens
   Widget _buildTwoColumnLayout(
       List<Map<String, dynamic>> allRecords,
@@ -450,7 +457,6 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildStatCard(String title, String value, Color color) {
     return Container(
-      width: double.infinity,
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
