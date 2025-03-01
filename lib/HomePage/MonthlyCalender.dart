@@ -279,7 +279,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             shape: BoxShape.circle,
             border: (isToday || isSelected)
                 ? Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.9),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
               width: 6,
             )
                 : null,
