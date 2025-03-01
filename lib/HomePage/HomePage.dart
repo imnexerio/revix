@@ -1,8 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'DailyProgress.dart';
+import 'FetchRecord.dart';
 import 'MonthlyCalender.dart';
 import 'SubjectDistributionPlot.dart';
 import 'WeeklyProgress.dart';
@@ -14,49 +13,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Future<Map<String, dynamic>> _getAllRecords() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
-
-    try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-      DataSnapshot snapshot = await ref.get();
-
-      if (!snapshot.exists) {
-        return {'allRecords': []};
-      }
-
-      Map<Object?, Object?> rawData = snapshot.value as Map<Object?, Object?>;
-
-      List<Map<String, dynamic>> allRecords = [];
-
-      rawData.forEach((subjectKey, subjectValue) {
-        if (subjectValue is Map) {
-          subjectValue.forEach((codeKey, codeValue) {
-            if (codeValue is Map) {
-              codeValue.forEach((recordKey, recordValue) {
-                if (recordValue is Map) {
-                  var record = {
-                    'subject': subjectKey.toString(),
-                    'subject_code': codeKey.toString(),
-                    'lecture_no': recordKey.toString(),
-                    'details': Map<String, dynamic>.from(recordValue),
-                  };
-                  allRecords.add(record);
-                }
-              });
-            }
-          });
-        }
-      });
-      return {'allRecords': allRecords};
-    } catch (e) {
-      throw Exception('Failed to fetch records');
-    }
-  }
+  final FetchRecord _recordService = FetchRecord();
 
 
   @override
@@ -78,7 +35,7 @@ class _HomePageState extends State<HomePage> {
             builder: (context, constraints) {
               final cardWidth = (constraints.maxWidth - 40) / 2;
               return FutureBuilder<Map<String, dynamic>>(
-                future: _getAllRecords(),
+                future: _recordService.getAllRecords(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
