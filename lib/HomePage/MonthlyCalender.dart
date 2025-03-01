@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -264,7 +263,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             width: 40,
             height: 40,
             child: CustomPaint(
-              painter: ProportionalRingPainter(
+              painter: EnhancedRingPainter(
                 events: activeEvents,
                 totalEvents: totalEvents,
               ),
@@ -273,10 +272,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
 
         // Base circle for the day number
         Container(
-          width: 30, // Fixed inner circle size
-          height: 30,
+          width: 25, // Fixed inner circle size
+          height: 25,
           decoration: BoxDecoration(
-            color: Colors.white,
             shape: BoxShape.circle,
             border: (isToday || isSelected)
                 ? Border.all(
@@ -289,7 +287,6 @@ class _StudyCalendarState extends State<StudyCalendar> {
             child: Text(
               '${day.day}',
               style: TextStyle(
-                color: Colors.black,
                 fontSize: 14,
                 fontWeight: (isToday || isSelected) ? FontWeight.bold : FontWeight.normal,
               ),
