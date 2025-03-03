@@ -89,9 +89,19 @@ class _SettingsPageState extends State<SettingsPage> {
     return fetchReleaseNotes();
   }
 
-  // Use the function from the new file
-  void _showEditProfileBottomSheet(BuildContext context) {
-    showEditProfileBottomSheet(context, _getDisplayName, _decodeProfileImage, uploadProfilePicture, getCurrentUserUid);
+  // In SettingsPage.dart
+  void _showEditProfilePage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfilePage(
+          getDisplayName: _getDisplayName,
+          decodeProfileImage: _decodeProfileImage,
+          uploadProfilePicture: uploadProfilePicture,
+          getCurrentUserUid: getCurrentUserUid,
+        ),
+      ),
+    );
   }
 
 
@@ -100,8 +110,14 @@ class _SettingsPageState extends State<SettingsPage> {
     showThemeBottomSheet(context);
   }
 
-  void _showFrequencyBottomSheet(BuildContext context) {
-    showFrequencyBottomSheet(context);
+  // In SettingsPage.dart
+  void _showFrequencyPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FrequencyPage(),
+      ),
+    );
   }
 
 
@@ -221,7 +237,8 @@ class _SettingsPageState extends State<SettingsPage> {
                               );
                             } else {
                               return InkWell(
-                                onTap: () => _showEditProfileBottomSheet(context),
+                                // In SettingsPage.dart
+                                onTap: () => _showEditProfilePage(context),
                                 child: Container(
                                   width: 110,
                                   height: 110,
@@ -310,7 +327,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Edit Profile',
                     subtitle: 'Update your personal information',
                     icon: Icons.person,
-                    onTap: () => _showEditProfileBottomSheet(context),
+                    // In SettingsPage.dart
+                    onTap: () => _showEditProfilePage(context),
                   ),
                   SizedBox(height: 16),
                   buildProfileOptionCard(
@@ -326,7 +344,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Custom Frequency',
                     subtitle: 'Modify your tracking intervals',
                     icon: Icons.timelapse_sharp,
-                    onTap: () => _showFrequencyBottomSheet(context),
+                    // In SettingsPage.dart
+                    onTap: () => _showFrequencyPage(context),
                   ),
                   SizedBox(height: 16),
                   buildProfileOptionCard(
