@@ -23,6 +23,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   bool isEnabled = true;
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
+  DateTime? _selectedDate;
 
   bool _showAddNewSubject = false;
   bool _showAddNewSubjectCode = false;
@@ -359,6 +360,49 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         },
                       ),
                     ),
+                    RevisionFrequencyDropdown(
+                      revisionFrequency: _revisionFrequency,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _revisionFrequency = newValue!;
+                        });
+                      },
+                    ),
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: TextFormField(
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Select Date',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onTap: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2101),
+                          );
+                          if (pickedDate != null) {
+                            setState(() {
+                              _selectedDate = pickedDate;
+                            });
+                          }
+                        },
+                        validator: (value) {
+                          if (_selectedDate == null) {
+                            return 'Date Scheduled';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
@@ -383,14 +427,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           return null;
                         },
                       ),
-                    ),
-                    RevisionFrequencyDropdown(
-                      revisionFrequency: _revisionFrequency,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _revisionFrequency = newValue!;
-                        });
-                      },
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
