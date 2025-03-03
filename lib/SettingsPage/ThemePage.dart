@@ -29,9 +29,6 @@ class _ThemePageState extends State<ThemePage> {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Appearance'),
-      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24),
         child: Column(

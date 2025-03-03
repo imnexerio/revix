@@ -19,9 +19,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     final screenSize = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Change Password'),
-      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24),
         child: Form(

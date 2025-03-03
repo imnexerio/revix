@@ -18,6 +18,7 @@ import 'ProfilePage.dart';
 import 'SendVerificationMail.dart';
 import 'ThemePage.dart';
 import 'TrackingTypePage.dart';
+import 'buildDetailPageAppBar.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -136,10 +137,16 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     final isSmallScreen = screenSize.width < 800;
 
     if (isSmallScreen) {
-      // For small screens, navigate to a new screen
+      // For small screens, navigate to a new screen with app bar
+      // Don't update _currentTitle for small screens to avoid selection UI issues
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => page),
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: buildDetailPageAppBar(context, title),
+            body: page,
+          ),
+        ),
       ).then((_) {
         // Optional: refresh data when returning from detail page
         _refreshProfile();
@@ -424,6 +431,14 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     );
   }
 
+  // Check if we're on a large screen to determine whether to show selection
+  bool _shouldShowSelectionHighlight(String title) {
+    final screenSize = MediaQuery.of(context).size;
+    final isLargeScreen = screenSize.width >= 800;
+    // Only show selection highlight on large screens
+    return isLargeScreen && _currentTitle == title;
+  }
+
   // Build settings options list with improved selection state handling
   Widget _buildSettingsOptions(bool isSmallScreen) {
     return Padding(
@@ -436,7 +451,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Update your personal information',
             icon: Icons.person,
             onTap: () => _showEditProfilePage(context),
-            isSelected: _currentTitle == 'Edit Profile',
+            isSelected: _shouldShowSelectionHighlight('Edit Profile'),
           ),
           SizedBox(height: 16),
           buildProfileOptionCard(
@@ -445,7 +460,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Choose your style',
             icon: Icons.color_lens_outlined,
             onTap: () => _showThemePage(context),
-            isSelected: _currentTitle == 'Set Theme',
+            isSelected: _shouldShowSelectionHighlight('Set Theme'),
           ),
           SizedBox(height: 16),
           buildProfileOptionCard(
@@ -454,7 +469,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Modify your tracking intervals',
             icon: Icons.timelapse_sharp,
             onTap: () => _showFrequencyPage(context),
-            isSelected: _currentTitle == 'Custom Frequency',
+            isSelected: _shouldShowSelectionHighlight('Custom Frequency'),
           ),
           SizedBox(height: 16),
           buildProfileOptionCard(
@@ -463,7 +478,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Modify your tracking intervals',
             icon: Icons.track_changes_rounded,
             onTap: () => _showTrackingTypePage(context),
-            isSelected: _currentTitle == 'Custom Tracking Type',
+            isSelected: _shouldShowSelectionHighlight('Custom Tracking Type'),
           ),
           SizedBox(height: 16),
           buildProfileOptionCard(
@@ -472,7 +487,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Update your security credentials',
             icon: Icons.lock_outline,
             onTap: () => _showChangePasswordPage(context),
-            isSelected: _currentTitle == 'Change Password',
+            isSelected: _shouldShowSelectionHighlight('Change Password'),
           ),
           SizedBox(height: 16),
           buildProfileOptionCard(
@@ -481,7 +496,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Update your Email credentials',
             icon: Icons.email_outlined,
             onTap: () => _showChangeEmailPage(context),
-            isSelected: _currentTitle == 'Change Email',
+            isSelected: _shouldShowSelectionHighlight('Change Email'),
           ),
           SizedBox(height: 16),
           buildProfileOptionCard(
@@ -490,7 +505,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Manage your notification preferences',
             icon: Icons.notifications_outlined,
             onTap: () => _showNotificationSettingsPage(context),
-            isSelected: _currentTitle == 'Notification Settings',
+            isSelected: _shouldShowSelectionHighlight('Notification Settings'),
           ),
           SizedBox(height: 16),
           buildProfileOptionCard(
@@ -499,7 +514,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             subtitle: 'Read about this project',
             icon: Icons.privacy_tip_outlined,
             onTap: () => _showAboutPage(context),
-            isSelected: _currentTitle == 'About',
+            isSelected: _shouldShowSelectionHighlight('About'),
           ),
           SizedBox(height: 32),
 

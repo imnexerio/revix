@@ -36,9 +36,6 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Tracking Type'),
-      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24),
         child: Column(

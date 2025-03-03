@@ -58,9 +58,6 @@ class _FrequencyPageState extends State<FrequencyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Frequency Settings'),
-      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24),
         child: Column(

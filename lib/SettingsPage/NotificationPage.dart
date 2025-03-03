@@ -13,9 +13,6 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     final screenSize = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Notifications'),
-      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24),
         child: Form(
