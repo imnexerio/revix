@@ -587,7 +587,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
           children: [
             // Left side - Settings options
             Container(
-              width: 350, // Fixed width for the sidebar
+              width: MediaQuery.of(context).size.width * 0.33, // 25% of the screen width
               child: SingleChildScrollView(
                 child: Column(
                   children: [
