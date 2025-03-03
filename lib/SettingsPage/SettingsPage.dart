@@ -5,7 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../LoginSignupPage/LoginPage.dart';
 import 'AboutPage.dart';
-import 'CHangePassPage.dart';
+import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
 import 'DecodeProfilePic.dart';
 import 'FetchProfilePic.dart';
