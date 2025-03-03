@@ -16,9 +16,6 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Change Email'),
-      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24),
         child: Form(
