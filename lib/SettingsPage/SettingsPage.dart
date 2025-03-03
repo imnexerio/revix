@@ -218,6 +218,20 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     );
   }
 
+  PreferredSizeWidget _buildLargeScreenAppBar() {
+    return AppBar(
+      title: Text(
+        _currentTitle,
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+      centerTitle: true,
+      elevation: 2, // Add shadow
+      // backgroundColor: Theme.of(context).colorScheme.surface,
+      // foregroundColor: Theme.of(context).colorScheme.onSurface,
+      automaticallyImplyLeading: false, // This removes the back button
+    );
+  }
+
   // Build profile header with optimized rebuilds
   Widget _buildProfileHeader(bool isSmallScreen) {
     return Container(
@@ -585,26 +599,35 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             ),
             // Divider between sections
             VerticalDivider(width: 1, thickness: 1),
-            // Right side - Detail view
+            // Right side - Detail view with app bar
             Expanded(
-              child: _currentDetailPage ?? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.touch_app,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Select an option from the left menu',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+              child: Column(
+                children: [
+                  // App bar for large screens
+                  _buildLargeScreenAppBar(),
+                  // Detail content
+                  Expanded(
+                    child: _currentDetailPage ?? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.touch_app,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Select an option from the left menu',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
