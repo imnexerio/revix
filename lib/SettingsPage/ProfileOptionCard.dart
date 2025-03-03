@@ -6,14 +6,18 @@ Widget buildProfileOptionCard({
   required String subtitle,
   required IconData icon,
   required VoidCallback onTap,
+  bool isSelected = false, // New parameter to indicate selection
 }) {
   return Card(
-    elevation: 0,
+    elevation: isSelected ? 4 : 1,
+    color: isSelected
+        ? Theme.of(context).colorScheme.primaryContainer
+        : Theme.of(context).colorScheme.surface,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      side: BorderSide(
-        color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-      ),
+      side: isSelected
+          ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+          : BorderSide.none,
     ),
     child: InkWell(
       onTap: onTap,
@@ -25,12 +29,13 @@ Widget buildProfileOptionCard({
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 color: Theme.of(context).colorScheme.primary,
+                size: 24,
               ),
             ),
             SizedBox(width: 16),
@@ -48,16 +53,22 @@ Widget buildProfileOptionCard({
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            if (isSelected)
+              Icon(
+                Icons.chevron_right_outlined,
+                color: Theme.of(context).colorScheme.primary,
+              )
+            else
+              Icon(
+                Icons.chevron_right_sharp,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              ),
           ],
         ),
       ),
