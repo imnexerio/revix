@@ -133,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
   // This method handles navigating to different pages based on screen size
   void _navigateToPage(BuildContext context, Widget page, String title) {
     final screenSize = MediaQuery.of(context).size;
-    final isSmallScreen = screenSize.width < 900;
+    final isSmallScreen = screenSize.width < 800;
 
     if (isSmallScreen) {
       // For small screens, navigate to a new screen
@@ -538,7 +538,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     _initializeDefaultPageIfNeeded(context);
 
     final screenSize = MediaQuery.of(context).size;
-    final isSmallScreen = screenSize.width < 900;
+    final isSmallScreen = screenSize.width < 800;
 
     return Scaffold(
       body: RefreshIndicator(
