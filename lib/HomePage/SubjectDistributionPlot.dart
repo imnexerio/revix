@@ -6,15 +6,16 @@ List<PieChartSectionData> createPieChartSections(
     double radius,
     ThemeData theme
     ) {
+  // Modern color palette
   final colors = [
-    Colors.purple,
-    Colors.green,
-    Colors.red,
-    Colors.yellow,
-    Colors.blue,
-    Colors.orange,
-    Colors.teal,
-    Colors.pink,
+    const Color(0xFF5038BC),  // Deep purple
+    const Color(0xFF4ECDC4),  // Teal
+    const Color(0xFFFF6B6B),  // Coral
+    const Color(0xFFFFD166),  // Yellow
+    const Color(0xFF118AB2),  // Blue
+    const Color(0xFFEF8354),  // Orange
+    const Color(0xFF06D6A0),  // Mint
+    const Color(0xFFDA627D),  // Pink
   ];
 
   List<PieChartSectionData> sections = [];
@@ -38,79 +39,28 @@ List<PieChartSectionData> createPieChartSections(
     ];
   }
 
-  subjectCounts.forEach((subject, count) {
-    double percentage = (count / totalLectures) * 100;
+  // Sort entries by count for better visualization
+  var sortedEntries = subjectCounts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
 
-    // Determine if this section is large enough to fit text
-    bool showTitle = percentage > 5;
+  for (var entry in sortedEntries) {
+    String subject = entry.key;
+    int count = entry.value;
+    double percentage = (count / totalLectures) * 100;
+    Color sectionColor = colors[colorIndex % colors.length];
 
     sections.add(
       PieChartSectionData(
-        color: colors[colorIndex % colors.length],
+        color: sectionColor,
         value: percentage,
-        title: showTitle ? '${percentage.toStringAsFixed(1)}%' : '',
+        title: '',  // No title on the chart sections
         radius: radius,
-        titleStyle: TextStyle(
-          fontSize: radius > 90 ? 12 : 10,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        badgeWidget: !showTitle && percentage < 5 ? null : null,
-        badgePositionPercentageOffset: 1.1,
+        titleStyle: const TextStyle(fontSize: 0),
+        badgeWidget: null,  // No badge widgets
       ),
     );
     colorIndex++;
-  });
+  }
 
   return sections;
-}
-
-
-Widget buildPieChartLegend(Map<String, int> subjectCounts, BuildContext context) {
-  final colors = [
-    Colors.purple,
-    Colors.green,
-    Colors.red,
-    Colors.yellow,
-    Colors.blue,
-    Colors.orange,
-    Colors.teal,
-    Colors.pink,
-  ];
-
-  // Calculate total count for percentage calculation
-  int totalCount = subjectCounts.values.fold(0, (sum, count) => sum + count);
-
-  return Wrap(
-    spacing: 16,
-    runSpacing: 12,
-    alignment: WrapAlignment.center,
-    children: subjectCounts.entries.map((entry) {
-      int index = subjectCounts.keys.toList().indexOf(entry.key);
-      double percentage = totalCount > 0 ? (entry.value / totalCount * 100) : 0;
-
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: colors[index % colors.length],
-              borderRadius: BorderRadius.circular(3),
-            ),
-          ),
-          SizedBox(width: 8),
-          Text(
-            '${entry.key} (${entry.value}, ${percentage.toStringAsFixed(1)}%)',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      );
-    }).toList(),
-  );
 }
