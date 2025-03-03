@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../LoginSignupPage/LoginPage.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'AboutPage.dart';
 import 'CHangePassPage.dart';
 import 'ChangeMailPage.dart';
@@ -25,18 +24,41 @@ class SettingsPage extends StatefulWidget {
   _SettingsPageState createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClientMixin {
   // Track currently selected page for large screens
   Widget? _currentDetailPage;
-  String _currentTitle = '';
+  String _currentTitle = 'Edit Profile'; // Set default title
+  bool _isInitialized = false;
+
+  // Cache for frequently accessed data to prevent unnecessary rebuilds
+  String? _cachedDisplayName;
+  Image? _cachedProfileImage;
+  bool? _cachedEmailVerified;
+
+  // Keep widget alive when switching tabs or resizing
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    // Set Edit Profile as the default page
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showEditProfilePage(context);
-    });
+    // Prefetch data to improve UX
+    _prefetchUserData();
+  }
+
+  // Prefetch user data to avoid multiple fetches
+  Future<void> _prefetchUserData() async {
+    try {
+      _cachedDisplayName = await _getDisplayName();
+      _cachedEmailVerified = await _isEmailVerified();
+      _cachedProfileImage = await _decodeProfileImage(getCurrentUserUid());
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error prefetching user data: $e');
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -49,9 +71,19 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _refreshProfile() async {
-    setState(() {
-      // Trigger a rebuild to refresh the profile data
-    });
+    // Clear cache
+    _cachedDisplayName = null;
+    _cachedProfileImage = null;
+    _cachedEmailVerified = null;
+
+    // Reload data
+    await _prefetchUserData();
+
+    if (mounted) {
+      setState(() {
+        // This will only rebuild the necessary widgets thanks to the cache
+      });
+    }
   }
 
   String getCurrentUserUid() {
@@ -64,31 +96,36 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<String> _getDisplayName() async {
+    if (_cachedDisplayName != null) return _cachedDisplayName!;
+
     User? user = FirebaseAuth.instance.currentUser;
     return user?.displayName ?? 'User';
   }
 
   Future<bool> _isEmailVerified() async {
+    if (_cachedEmailVerified != null) return _cachedEmailVerified!;
+
     User? user = FirebaseAuth.instance.currentUser;
     await user?.reload();
     return user?.emailVerified ?? false;
   }
 
-  // Use the function from the new file
   Future<String?> _getProfilePicture(String uid) {
     return getProfilePicture(uid);
   }
 
-  Future<Image?> _decodeProfileImage(String uid) {
+  Future<Image?> _decodeProfileImage(String uid) async {
+    if (_cachedProfileImage != null) return _cachedProfileImage;
+
     return decodeProfileImage(context, uid, _getProfilePicture);
   }
 
-  // Use the function from the new file
-  Future<void> _sendVerificationEmail(BuildContext context) {
-    return sendVerificationEmail(context);
+  Future<void> _sendVerificationEmail(BuildContext context) async {
+    await sendVerificationEmail(context);
+    _cachedEmailVerified = null; // Clear cache to force refresh
+    await _refreshProfile();
   }
 
-  // Use the function from the new file
   Future<String> _fetchReleaseNotes() {
     return fetchReleaseNotes();
   }
@@ -96,35 +133,50 @@ class _SettingsPageState extends State<SettingsPage> {
   // This method handles navigating to different pages based on screen size
   void _navigateToPage(BuildContext context, Widget page, String title) {
     final screenSize = MediaQuery.of(context).size;
-    final isSmallScreen = screenSize.width < 900; // Adjusting breakpoint for better experience
+    final isSmallScreen = screenSize.width < 900;
 
     if (isSmallScreen) {
       // For small screens, navigate to a new screen
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => page),
-      );
-    } else {
-      // For large screens, update the detail view
-      setState(() {
-        _currentDetailPage = page;
-        _currentTitle = title;
+      ).then((_) {
+        // Optional: refresh data when returning from detail page
+        _refreshProfile();
       });
+    } else {
+      // For large screens, update the detail view without full state rebuild
+      if (_currentTitle != title || _currentDetailPage == null) {
+        setState(() {
+          _currentDetailPage = page;
+          _currentTitle = title;
+        });
+      }
     }
   }
 
-  // Updated navigation methods to use the responsive handler
-  void _showEditProfilePage(BuildContext context) {
-    _navigateToPage(
-      context,
-      EditProfilePage(
-        getDisplayName: _getDisplayName,
-        decodeProfileImage: _decodeProfileImage,
-        uploadProfilePicture: uploadProfilePicture,
-        getCurrentUserUid: getCurrentUserUid,
-      ),
-      'Edit Profile',
+  // Create pages once and store them in variables to avoid recreation
+  Widget _createEditProfilePage() {
+    return EditProfilePage(
+      getDisplayName: _getDisplayName,
+      decodeProfileImage: _decodeProfileImage,
+      uploadProfilePicture: uploadProfilePicture,
+      getCurrentUserUid: getCurrentUserUid,
     );
+  }
+
+  // Only initialize default page once to avoid resets
+  void _initializeDefaultPageIfNeeded(BuildContext context) {
+    if (!_isInitialized) {
+      _currentDetailPage = _createEditProfilePage();
+      _currentTitle = 'Edit Profile';
+      _isInitialized = true;
+    }
+  }
+
+  // Updated navigation methods
+  void _showEditProfilePage(BuildContext context) {
+    _navigateToPage(context, _createEditProfilePage(), 'Edit Profile');
   }
 
   void _showThemePage(BuildContext context) {
@@ -159,7 +211,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // Build profile header
+  // Build profile header with optimized rebuilds
   Widget _buildProfileHeader(bool isSmallScreen) {
     return Container(
       width: double.infinity,
@@ -180,18 +232,51 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Stack(
               children: [
-                FutureBuilder<Image?>(
+                // Profile image - use cached value when available
+                _cachedProfileImage != null
+                    ? InkWell(
+                  onTap: () => _showEditProfilePage(context),
+                  child: Container(
+                    width: 110,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        width: 4,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundImage: _cachedProfileImage!.image,
+                      backgroundColor: Colors.transparent,
+                    ),
+                  ),
+                )
+                    : FutureBuilder<Image?>(
                   future: _decodeProfileImage(getCurrentUserUid()),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
+                      return Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            width: 4,
+                          ),
+                        ),
+                        child: CircularProgressIndicator(),
+                      );
+                    } else if (snapshot.hasError || snapshot.data == null) {
                       return InkWell(
                         onTap: () async {
                           final ImagePicker _picker = ImagePicker();
                           final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                           if (image != null) {
                             await uploadProfilePicture(context, image, getCurrentUserUid());
+                            _refreshProfile();
                           }
                         },
                         child: Container(
@@ -212,6 +297,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       );
                     } else {
+                      // Cache the image for future use
+                      _cachedProfileImage = snapshot.data;
                       return InkWell(
                         onTap: () => _showEditProfilePage(context),
                         child: Container(
@@ -237,14 +324,28 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
             SizedBox(height: 16),
-            FutureBuilder<String>(
+            // Display name - use cached value when available
+            _cachedDisplayName != null
+                ? Text(
+              _cachedDisplayName!,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+                : FutureBuilder<String>(
               future: _getDisplayName(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
+                  return SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
                 } else if (snapshot.hasError) {
                   return Text('Error loading name');
                 } else {
+                  _cachedDisplayName = snapshot.data;
                   return Text(
                     snapshot.data!,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -256,15 +357,43 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             SizedBox(height: 4),
-            FutureBuilder<bool>(
+            // Email verification status - use cached value when available
+            _cachedEmailVerified != null
+                ? Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  if (_cachedEmailVerified!)
+                    Icon(Icons.verified_outlined, color: Colors.green)
+                  else
+                    TextButton(
+                      onPressed: () => _sendVerificationEmail(context),
+                      child: Icon(Icons.error, color: Colors.red),
+                    )
+                ],
+              ),
+            )
+                : FutureBuilder<bool>(
               future: _isEmailVerified(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
+                  return SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
                 } else if (snapshot.hasError) {
                   return Text('Error loading verification status');
                 } else {
                   bool isVerified = snapshot.data!;
+                  _cachedEmailVerified = isVerified;
                   return Center(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -295,7 +424,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // Build settings options list
+  // Build settings options list with improved selection state handling
   Widget _buildSettingsOptions(bool isSmallScreen) {
     return Padding(
       padding: EdgeInsets.all(isSmallScreen ? 16 : 16),
@@ -403,8 +532,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    // Initialize default page if needed (only once)
+    _initializeDefaultPageIfNeeded(context);
+
     final screenSize = MediaQuery.of(context).size;
-    final isSmallScreen = screenSize.width < 900; // Adjusting breakpoint for better experience
+    final isSmallScreen = screenSize.width < 900;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -436,13 +570,9 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             // Divider between sections
             VerticalDivider(width: 1, thickness: 1),
-            // Right side - Detail view (removed title bar)
+            // Right side - Detail view
             Expanded(
-
-
-              child: _currentDetailPage != null
-                  ? _currentDetailPage!
-                  : Center(
+              child: _currentDetailPage ?? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
