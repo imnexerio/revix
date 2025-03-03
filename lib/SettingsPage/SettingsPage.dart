@@ -12,6 +12,7 @@ import 'FetchProfilePic.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
 import 'NotificationPage.dart';
+import 'ProfileHeader.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileOptionCard.dart';
 import 'ProfilePage.dart';
@@ -319,248 +320,6 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     );
   }
 
-  // Build profile header with optimized rebuilds and animations
-  Widget _buildProfileHeader(bool isSmallScreen) {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 500),
-      curve: Curves.easeOutQuart,
-      width: double.infinity,
-      height: isSmallScreen ? 250 : 300,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-          begin: AlignmentDirectional(0.94, -1),
-          end: AlignmentDirectional(-0.94, 1),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Animated profile image
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 800),
-              curve: Curves.elasticOut,
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: 0.5 + (0.5 * value),
-                  child: child,
-                );
-              },
-              child: Stack(
-                children: [
-                  // Profile image - use cached value when available
-                  _cachedProfileImage != null
-                      ? Hero(
-                    tag: 'profile-image',
-                    child: InkWell(
-                      onTap: () => _showEditProfilePage(context),
-                      child: Container(
-                        width: 110,
-                        height: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            width: 4,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundImage: _cachedProfileImage!.image,
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  )
-                      : FutureBuilder<Image?>(
-                    future: _decodeProfileImage(getCurrentUserUid()),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Container(
-                          width: 110,
-                          height: 110,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              width: 4,
-                            ),
-                          ),
-                          child: CircularProgressIndicator(),
-                        );
-                      } else if (snapshot.hasError || snapshot.data == null) {
-                        return InkWell(
-                          onTap: () async {
-                            final ImagePicker _picker = ImagePicker();
-                            final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                            if (image != null) {
-                              await uploadProfilePicture(context, image, getCurrentUserUid());
-                              _refreshProfile();
-                            }
-                          },
-                          child: Container(
-                            width: 110,
-                            height: 110,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                width: 4,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundImage: AssetImage('assets/icon/icon.png'),
-                              backgroundColor: Colors.transparent,
-                            ),
-                          ),
-                        );
-                      } else {
-                        // Cache the image for future use
-                        _cachedProfileImage = snapshot.data;
-                        return Hero(
-                          tag: 'profile-image',
-                          child: InkWell(
-                            onTap: () => _showEditProfilePage(context),
-                            child: Container(
-                              width: 110,
-                              height: 110,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  width: 4,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundImage: snapshot.data!.image,
-                                backgroundColor: Colors.transparent,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            // Animated display name
-            AnimatedSwitcher(
-              duration: Duration(milliseconds: 400),
-              child: _cachedDisplayName != null
-                  ? Text(
-                _cachedDisplayName!,
-                key: ValueKey(_cachedDisplayName),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-                  : FutureBuilder<String>(
-                future: _getDisplayName(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Text('Error loading name');
-                  } else {
-                    _cachedDisplayName = snapshot.data;
-                    return Text(
-                      snapshot.data!,
-                      key: ValueKey(snapshot.data),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  }
-                },
-              ),
-            ),
-            SizedBox(height: 4),
-            // Animated email verification status
-            AnimatedSwitcher(
-              duration: Duration(milliseconds: 400),
-              child: _cachedEmailVerified != null
-                  ? Center(
-                key: ValueKey('email-${_cachedEmailVerified}'),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    if (_cachedEmailVerified!)
-                      Icon(Icons.verified_outlined, color: Colors.green)
-                    else
-                      TextButton(
-                        onPressed: () => _sendVerificationEmail(context),
-                        child: Icon(Icons.error, color: Colors.red),
-                      )
-                  ],
-                ),
-              )
-                  : FutureBuilder<bool>(
-                future: _isEmailVerified(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Text('Error loading verification status');
-                  } else {
-                    bool isVerified = snapshot.data!;
-                    _cachedEmailVerified = isVerified;
-                    return Center(
-                      key: ValueKey('email-${isVerified}'),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          if (isVerified)
-                            Icon(Icons.verified_outlined, color: Colors.green)
-                          else
-                            TextButton(
-                              onPressed: () => _sendVerificationEmail(context),
-                              child: Icon(Icons.error, color: Colors.red),
-                            )
-                        ],
-                      ),
-                    );
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // Check if we're on a large screen to determine whether to show selection
   bool _shouldShowSelectionHighlight(String title) {
@@ -747,7 +506,20 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
           physics: AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              _buildProfileHeader(isSmallScreen),
+              ProfileHeader(
+                isSmallScreen: isSmallScreen,
+                cachedProfileImage: _cachedProfileImage,
+                cachedDisplayName: _cachedDisplayName,
+                cachedEmailVerified: _cachedEmailVerified,
+                decodeProfileImage: _decodeProfileImage,
+                getDisplayName: _getDisplayName,
+                isEmailVerified: _isEmailVerified,
+                sendVerificationEmail: _sendVerificationEmail,
+                uploadProfilePicture: uploadProfilePicture,
+                refreshProfile: _refreshProfile,
+                showEditProfilePage: _showEditProfilePage,
+                getCurrentUserUid: getCurrentUserUid,
+              ),
               _buildSettingsOptions(isSmallScreen),
             ],
           ),
@@ -762,7 +534,20 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
                 physics: AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    _buildProfileHeader(isSmallScreen),
+                    ProfileHeader(
+                      isSmallScreen: isSmallScreen,
+                      cachedProfileImage: _cachedProfileImage,
+                      cachedDisplayName: _cachedDisplayName,
+                      cachedEmailVerified: _cachedEmailVerified,
+                      decodeProfileImage: _decodeProfileImage,
+                      getDisplayName: _getDisplayName,
+                      isEmailVerified: _isEmailVerified,
+                      sendVerificationEmail: _sendVerificationEmail,
+                      uploadProfilePicture: uploadProfilePicture,
+                      refreshProfile: _refreshProfile,
+                      showEditProfilePage: _showEditProfilePage,
+                      getCurrentUserUid: getCurrentUserUid,
+                    ),
                     _buildSettingsOptions(isSmallScreen),
                   ],
                 ),
