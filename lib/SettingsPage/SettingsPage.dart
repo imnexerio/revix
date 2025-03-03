@@ -105,9 +105,13 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
 
-  // Use the function from the new file
-  void _showThemeBottomSheet(BuildContext context) {
-    showThemeBottomSheet(context);
+  void _showThemePage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ThemePage(),
+      ),
+    );
   }
 
   // In SettingsPage.dart
@@ -121,54 +125,55 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
 
-  void _showAddFrequencySheet(
-    BuildContext context,
-    GlobalKey<FormState> formKey,
-    TextEditingController titleController,
-    TextEditingController frequencyController,
-    List<Map<String, String>> frequencies,
-    StateSetter setState,
-    bool Function(String) isValidFrequencyFormat,
-  ) {
-    showAddFrequencySheet(
+  void _showTrackingTypePage(BuildContext context) {
+    Navigator.push(
       context,
-      formKey,
-      titleController,
-      frequencyController,
-      frequencies,
-      setState,
-      isValidFrequencyFormat,
+      MaterialPageRoute(
+        builder: (context) => TrackingTypePage(),
+      ),
+    );
+  }
+
+  void _showChangePasswordPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangePasswordPage(),
+      ),
     );
   }
 
 
-  // Use the function from the new file
-  void _showtrackingTypeBottomSheet(BuildContext context) {
-    showTrackingTypeBottomSheet(context);
+  void _showChangeEmailPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeEmailPage(),
+      ),
+    );
   }
 
 
-  // Use the function from the new file
-  void _showChangePasswordBottomSheet(BuildContext context) {
-    showChangePasswordBottomSheet(context);
+  void _showNotificationSettingsPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationSettingsPage(),
+      ),
+    );
   }
 
 
-  // Use the function from the new file
-  void _showChangeEmailBottomSheet(BuildContext context) {
-    showChangeEmailBottomSheet(context);
-  }
-
-
-  // Use the function from the new file
-  void _showNotificationSettingsBottomSheet(BuildContext context) {
-    showNotificationSettingsBottomSheet(context);
-  }
-
-
-  // Use the function from the new file
-  void _showAboutBottomSheet(BuildContext context) {
-    showAboutBottomSheet(context, _getAppVersion, _fetchReleaseNotes);
+  void _showAboutPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AboutPage(
+          getAppVersion: _getAppVersion,
+          fetchReleaseNotes: _fetchReleaseNotes,
+        ),
+      ),
+    );
   }
 
 
@@ -336,7 +341,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Set Theme',
                     subtitle: 'Choose your style',
                     icon: Icons.color_lens_outlined,
-                    onTap: () => _showThemeBottomSheet(context),
+                    onTap: () => _showThemePage(context),
                   ),
                   SizedBox(height: 16),
                   buildProfileOptionCard(
@@ -353,7 +358,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Custom Tracking Type',
                     subtitle: 'Modify your tracking intervals',
                     icon: Icons.track_changes_rounded,
-                    onTap: () => _showtrackingTypeBottomSheet(context),
+                    onTap: () => _showTrackingTypePage(context),
                   ),
                   SizedBox(height: 16),
                   buildProfileOptionCard(
@@ -361,7 +366,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Change Password',
                     subtitle: 'Update your security credentials',
                     icon: Icons.lock_outline,
-                    onTap: () => _showChangePasswordBottomSheet(context),
+                    // In SettingsPage.dart
+                    onTap: () => _showChangePasswordPage(context),
                   ),
                   SizedBox(height: 16),
                   buildProfileOptionCard(
@@ -369,7 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Change Email',
                     subtitle: 'Update your Email credentials',
                     icon: Icons.email_outlined,
-                    onTap: () => _showChangeEmailBottomSheet(context),
+                    onTap: () => _showChangeEmailPage(context),
                   ),
                   SizedBox(height: 16),
                   buildProfileOptionCard(
@@ -377,7 +383,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Notification Settings',
                     subtitle: 'Manage your notification preferences',
                     icon: Icons.notifications_outlined,
-                    onTap: () => _showNotificationSettingsBottomSheet(context),
+                    onTap: () => _showNotificationSettingsPage(context),
                   ),
                   SizedBox(height: 16),
                   buildProfileOptionCard(
@@ -385,7 +391,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'About',
                     subtitle: 'Read about this project',
                     icon: Icons.privacy_tip_outlined,
-                    onTap: () => _showAboutBottomSheet(context),
+                    onTap: () => _showAboutPage(context),
                   ),
                   SizedBox(height: 32),
 
