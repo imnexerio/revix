@@ -164,14 +164,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
 
-  void _showAboutPage(BuildContext context) {
+  void showAboutPage(BuildContext context, Future<String> Function() getAppVersion, Future<String> Function() fetchReleaseNotes) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AboutPage(
-          getAppVersion: _getAppVersion,
-          fetchReleaseNotes: _fetchReleaseNotes,
-        ),
+        builder: (context) => AboutPage(getAppVersion: getAppVersion, fetchReleaseNotes: fetchReleaseNotes),
       ),
     );
   }
@@ -391,7 +388,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'About',
                     subtitle: 'Read about this project',
                     icon: Icons.privacy_tip_outlined,
-                    onTap: () => _showAboutPage(context),
+                    onTap: () => showAboutPage(context, _getAppVersion, _fetchReleaseNotes),
                   ),
                   SizedBox(height: 32),
 
