@@ -213,7 +213,6 @@ class _ThemePageState extends State<ThemePage> {
                     onPressed: () {
                       final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
                       themeNotifier.setCustomTheme(customColor);
-                      Navigator.pop(context);
                     },
                     style: FilledButton.styleFrom(
                       minimumSize: Size(double.infinity, 56),

@@ -74,7 +74,6 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
                           );
                           await user.reauthenticateWithCredential(credential);
                           await user.verifyBeforeUpdateEmail(_newEmail!);
-                          Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             customSnackBar(
                               context: context,

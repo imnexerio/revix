@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../LoginSignupPage/UrlLauncher.dart';
+import '../Utils/CustomSnackBar.dart';
 
 class AboutPage extends StatelessWidget {
   final Future<String> Function() getAppVersion;
@@ -150,7 +150,13 @@ class AboutPage extends StatelessWidget {
                     width: 200, // Set the desired width
                     child: FilledButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          customSnackBar(
+                            context: context,
+                            message: 'Thank you for using reTracker!',
+                          ),
+                        );
+
                       },
                       style: FilledButton.styleFrom(
                         minimumSize: Size(double.infinity, 55),
