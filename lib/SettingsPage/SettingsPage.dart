@@ -2,19 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:provider/provider.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../LoginSignupPage/LoginPage.dart';
-import '../LoginSignupPage/UrlLauncher.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:firebase_database/firebase_database.dart';
-
-import '../ThemeNotifier.dart';
-import '../Utils/CustomSnackBar.dart';
-import '../Utils/FetchTypesUtils.dart';
-import '../Utils/fetchFrequencies_utils.dart';
-import '../theme_data.dart';
 import 'AboutPage.dart';
 import 'CHangePassPage.dart';
 import 'ChangeMailPage.dart';
@@ -22,8 +12,10 @@ import 'DecodeProfilePic.dart';
 import 'FetchProfilePic.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
+import 'FrequencyPageSheet.dart';
 import 'NotificationPage.dart';
 import 'ProfileImageUpload.dart';
+import 'ProfileOptionCard.dart';
 import 'ProfilePage.dart';
 import 'SendVerificationMail.dart';
 import 'ThemePage.dart';
@@ -109,238 +101,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showFrequencyBottomSheet(BuildContext context) {
-    List<Map<String, String>> frequencies = [];
-    final _formKey = GlobalKey<FormState>();
-    final TextEditingController _customFrequencyController = TextEditingController();
-    final TextEditingController _customTitleController = TextEditingController();
-
-    // Validation function remains the same
-    bool isValidFrequencyFormat(String frequency) {
-      if (frequency.isEmpty) return false;
-      try {
-        List<String> numbers = frequency.split(',').map((e) => e.trim()).toList();
-        List<int> numericalValues = numbers.map((e) => int.parse(e)).toList();
-        numericalValues.sort();
-        for (int i = 0; i < numericalValues.length - 1; i++) {
-          if (numericalValues[i] >= numericalValues[i + 1]) return false;
-        }
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    // Fetch data function remains the same
-    void fetchFrequencies(StateSetter setState) async {
-      try {
-        Map<String, dynamic> data = await FetchFrequenciesUtils.fetchFrequencies();
-        setState(() {
-          frequencies = data.entries.map((entry) {
-            String title = entry.key;
-            List<dynamic> frequencyList = entry.value;
-            String frequency = frequencyList.join(', ');
-
-            return {
-              'title': title,
-              'frequency': frequency,
-            };
-          }).toList();
-        });
-      } catch (e) {
-
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   customSnackBar_error(
-        //     context: context,
-        //     message: 'Error fetching frequencies: $e',
-        //   ),
-        // );
-      }
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            fetchFrequencies(setState);
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.73,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    spreadRadius: 0,
-                    offset: Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Handle bar and header
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Frequency (Days)',
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Customize your tracking frequency',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.close),
-                              onPressed: () => Navigator.pop(context),
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(height: 1),
-                  // Frequencies list
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.outlineVariant,
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Title',
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: Theme.of(context).colorScheme.primary,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          'Frequency',
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: Theme.of(context).colorScheme.primary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Divider(height: 1),
-                                ...frequencies.map((frequency) => Column(
-                                  children: [
-                                    Padding(
-                                      padding: EdgeInsets.all(16),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              frequency['title']!,
-                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                color: Theme.of(context).colorScheme.onSurface,
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              frequency['frequency']!,
-                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                color: Theme.of(context).colorScheme.onSurface,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (frequencies.indexOf(frequency) != frequencies.length - 1)
-                                      Divider(height: 1),
-                                  ],
-                                )).toList(),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 24),
-                          FilledButton.icon(
-                            onPressed: () => _showAddFrequencySheet(
-                              context,
-                              _formKey,
-                              _customTitleController,
-                              _customFrequencyController,
-                              frequencies,
-                              setState,
-                              isValidFrequencyFormat,
-                            ),
-                            icon: Icon(Icons.add),
-                            label: Text('Add Custom Frequency'),
-                            style: FilledButton.styleFrom(
-                              minimumSize: Size(200, 48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+    showFrequencyBottomSheet(context);
   }
 
 
-  // Use the function from the new file
   void _showAddFrequencySheet(
     BuildContext context,
     GlobalKey<FormState> formKey,
@@ -392,97 +156,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
 
-  Widget _buildInputField({
-  required BuildContext context,
-  required String label,
-  required String hint,
-  required IconData icon,
-  required FormFieldSetter<String> onSaved,
-  required FormFieldValidator<String> validator,
-  bool isPassword = false,
-  TextEditingController? controller,
-
-}) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      SizedBox(height: 8),
-      Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: TextFormField(
-          obscureText: isPassword,
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: Icon(icon),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Colors.transparent,
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          ),
-          controller: controller,
-          onSaved: onSaved,
-          validator: validator,
-        ),
-      ),
-    ],
-  );
-}
-  Widget _buildNotificationOption(
-      BuildContext context,
-      String title,
-      String subtitle,
-      IconData icon,
-      bool initialValue,
-      ) {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon),
-        ),
-        SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Switch.adaptive(
-          value: initialValue,
-          onChanged: (value) {},
-        ),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -632,7 +305,7 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
               child: Column(
                 children: [
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'Edit Profile',
                     subtitle: 'Update your personal information',
@@ -640,7 +313,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _showEditProfileBottomSheet(context),
                   ),
                   SizedBox(height: 16),
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'Set Theme',
                     subtitle: 'Choose your style',
@@ -648,7 +321,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _showThemeBottomSheet(context),
                   ),
                   SizedBox(height: 16),
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'Custom Frequency',
                     subtitle: 'Modify your tracking intervals',
@@ -656,7 +329,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _showFrequencyBottomSheet(context),
                   ),
                   SizedBox(height: 16),
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'Custom Tracking Type',
                     subtitle: 'Modify your tracking intervals',
@@ -664,7 +337,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _showtrackingTypeBottomSheet(context),
                   ),
                   SizedBox(height: 16),
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'Change Password',
                     subtitle: 'Update your security credentials',
@@ -672,7 +345,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _showChangePasswordBottomSheet(context),
                   ),
                   SizedBox(height: 16),
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'Change Email',
                     subtitle: 'Update your Email credentials',
@@ -680,7 +353,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _showChangeEmailBottomSheet(context),
                   ),
                   SizedBox(height: 16),
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'Notification Settings',
                     subtitle: 'Manage your notification preferences',
@@ -688,7 +361,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _showNotificationSettingsBottomSheet(context),
                   ),
                   SizedBox(height: 16),
-                  _buildProfileOptionCard(
+                  buildProfileOptionCard(
                     context: context,
                     title: 'About',
                     subtitle: 'Read about this project',
@@ -725,71 +398,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
       ),)
-    );
-  }
-
-  Widget _buildProfileOptionCard({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
