@@ -20,12 +20,12 @@ import '../Utils/fetchFrequencies_utils.dart';
 import '../theme_data.dart';
 
 
-class ProfilePage extends StatefulWidget {
+class SettingsPage extends StatefulWidget {
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  _SettingsPageState createState() => _SettingsPageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
