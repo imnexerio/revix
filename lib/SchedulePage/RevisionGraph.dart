@@ -10,6 +10,7 @@ class RevisionRadarChart extends StatefulWidget {
   final Color revisedColor;
   final Color learntColor;
   final bool showLabels;
+  final int maxPoints; // New parameter to control the number of points
 
   const RevisionRadarChart({
     Key? key,
@@ -21,6 +22,7 @@ class RevisionRadarChart extends StatefulWidget {
     this.revisedColor = Colors.greenAccent,
     this.learntColor = Colors.blueAccent,
     this.showLabels = true,
+    this.maxPoints = 18, // Default to showing 15 points
   }) : super(key: key);
 
   @override
@@ -31,6 +33,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
   late AnimationController _animationController;
   late Animation<double> _animation;
   late List<RevisionEvent> allRevisions;
+  late List<RevisionEvent> displayRevisions; // The filtered list to display
 
   // Track statistics
   late int totalRevisions;
@@ -59,17 +62,19 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
 
   void _processRevisionData() {
     allRevisions = <RevisionEvent>[];
+    RevisionEvent? learnedEvent;
 
     // Add "date learned" as the first event
     try {
       if (widget.dateLearnt.isNotEmpty) {
         final learnedDate = DateTime.parse(widget.dateLearnt);
-        allRevisions.add(RevisionEvent(
+        learnedEvent = RevisionEvent(
             date: learnedDate,
             dateString: widget.dateLearnt,
             isMissed: false,
             isLearned: true
-        ));
+        );
+        allRevisions.add(learnedEvent);
       }
     } catch (e) {
       print('Error parsing date learned: $e');
@@ -111,6 +116,27 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
 
     // Sort all revisions by date
     allRevisions.sort((a, b) => a.date.compareTo(b.date));
+
+    // Filter to keep only the learned event and the last maxPoints events
+    displayRevisions = <RevisionEvent>[];
+
+    // Always include the learned event if it exists
+    if (learnedEvent != null) {
+      displayRevisions.add(learnedEvent);
+    }
+
+    // Get non-learned events
+    final nonLearnedEvents = allRevisions.where((event) => !event.isLearned).toList();
+
+    // Take the last maxPoints non-learned events
+    if (nonLearnedEvents.length > widget.maxPoints) {
+      displayRevisions.addAll(nonLearnedEvents.sublist(nonLearnedEvents.length - widget.maxPoints));
+    } else {
+      displayRevisions.addAll(nonLearnedEvents);
+    }
+
+    // Re-sort the display revisions by date
+    displayRevisions.sort((a, b) => a.date.compareTo(b.date));
   }
 
   void _calculateStatistics() {
@@ -156,7 +182,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    if (allRevisions.isEmpty) {
+    if (displayRevisions.isEmpty) {
       return LayoutBuilder(
         builder: (context, constraints) {
           final availableSize = min(constraints.maxWidth, constraints.maxHeight);
@@ -206,7 +232,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                         size: Size(availableSize, availableSize),
                         painter: RadarChartPainter(
                           animationValue: _animation.value,
-                          revisions: allRevisions,
+                          revisions: displayRevisions, // Use filtered revisions here
                           learntColor: widget.learntColor,
                           revisedColor: widget.revisedColor,
                           missedColor: widget.missedColor,
@@ -216,10 +242,10 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                       // Labels
                       if (widget.showLabels)
                         ...List.generate(
-                          allRevisions.length,
+                          displayRevisions.length, // Use filtered revisions for labels too
                               (index) {
-                            final revision = allRevisions[index];
-                            final totalEvents = allRevisions.length;
+                            final revision = displayRevisions[index];
+                            final totalEvents = displayRevisions.length;
 
                             // Changed from 3π/2 (top) to π/2 (bottom)
                             final angle = pi / 2 + (index / totalEvents) * 2 * pi;
