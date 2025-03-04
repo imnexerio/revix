@@ -14,6 +14,8 @@ class AddLectureForm extends StatefulWidget {
 
 class _AddLectureFormState extends State<AddLectureForm> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _initiationdateController = TextEditingController();
+  final TextEditingController _scheduleddateController = TextEditingController();
   String _selectedSubject = 'DEFAULT_VALUE'; // Start with a non-empty default to prevent showing Add New Subject at start
   String _selectedSubjectCode = '';
   String _lectureType = 'Lectures';
@@ -23,7 +25,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
   bool isEnabled = true;
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
-  DateTime? _selectedDate;
+  String dateScheduled = '';
+  String todayDate = '';
 
   bool _showAddNewSubject = false;
   bool _showAddNewSubjectCode = false;
@@ -33,6 +36,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
   void initState() {
     super.initState();
     _loadSubjectsAndCodes();
+    _setInitialDate();
+    _setScheduledDate();
   }
 
 
@@ -87,14 +92,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
       }
       String uid = user.uid;
 
-      String todayDate = DateTime.now().toIso8601String().split('T')[0];
-
-      String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-        DateTime.now(),
-        _revisionFrequency,
-        0,
-      )).toIso8601String().split('T')[0];
-
       DatabaseReference ref = FirebaseDatabase.instance
           .ref('users/$uid/user_data')
           .child(_selectedSubject)
@@ -124,6 +121,27 @@ class _AddLectureFormState extends State<AddLectureForm> {
       throw Exception('Failed to save lecture: $e');
     }
   }
+
+  Future<void> _setInitialDate() async {
+    DateTime initialDate = DateTime.now();
+    setState(() {
+      todayDate = initialDate.toIso8601String().split('T')[0];
+      _initiationdateController.text = todayDate;
+    });
+  }
+
+  Future<void> _setScheduledDate() async {
+    DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
+      DateTime.parse(todayDate), // Convert todayDate to DateTime
+      _revisionFrequency,
+      0,
+    );
+    setState(() {
+      dateScheduled = initialDate.toIso8601String().split('T')[0];
+      _scheduleddateController.text = dateScheduled;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -360,12 +378,52 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         },
                       ),
                     ),
+
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: TextFormField(
+                        controller: _initiationdateController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Select Initial Date',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onTap: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                          );
+                          if (pickedDate != null) {
+                            setState(() {
+                              todayDate = pickedDate.toIso8601String().split('T')[0];
+                              _initiationdateController.text = todayDate; // Update the controller
+                              _setScheduledDate(); // Update the scheduled date
+                            });
+                          }
+                        },
+                        validator: (value) {
+                          if (todayDate.isEmpty) {
+                            return 'Please select a date';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
                     RevisionFrequencyDropdown(
                       revisionFrequency: _revisionFrequency,
                       onChanged: (String? newValue) {
                         setState(() {
                           _revisionFrequency = newValue!;
                         });
+                        _setScheduledDate();
                       },
                     ),
                     Container(
@@ -376,27 +434,33 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: TextFormField(
+                        controller: _scheduleddateController,
                         readOnly: true,
                         decoration: InputDecoration(
-                          labelText: 'Select Date',
+                          labelText: 'Select Reminder Date',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
                         onTap: () async {
                           DateTime? pickedDate = await showDatePicker(
                             context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(2000),
+                            initialDate: await DateNextRevision.calculateNextRevisionDate(
+                              DateTime.parse(todayDate), // Convert todayDate to DateTime
+                              _revisionFrequency,
+                              0,
+                            ),
+                            firstDate: DateTime.now(),
                             lastDate: DateTime(2101),
                           );
                           if (pickedDate != null) {
                             setState(() {
-                              _selectedDate = pickedDate;
+                              dateScheduled = pickedDate.toIso8601String().split('T')[0];
+                              _initiationdateController.text = dateScheduled;
                             });
                           }
                         },
                         validator: (value) {
-                          if (_selectedDate == null) {
+                          if (dateScheduled == null) {
                             return 'Date Scheduled';
                           }
                           return null;
