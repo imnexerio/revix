@@ -17,7 +17,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   final TextEditingController _initiationdateController = TextEditingController();
   final TextEditingController _scheduleddateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
-  String _selectedSubject = 'DEFAULT_VALUE'; // Start with a non-empty default to prevent showing Add New Subject at start
+  String _selectedSubject = 'DEFAULT_VALUE';
   String _selectedSubjectCode = '';
   String _lectureType = 'Lectures';
   String _lectureNo = '';
@@ -435,7 +435,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         controller: _initiationdateController,
                         readOnly: true,
                         decoration: InputDecoration(
-                          labelText: 'Select Initial Date',
+                          labelText: 'Select Starting Date',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
@@ -482,7 +482,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         controller: _scheduleddateController,
                         readOnly: true,
                         decoration: InputDecoration(
-                          labelText: 'Select Reminder Date',
+                          labelText: 'Select First Reminder Date',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
