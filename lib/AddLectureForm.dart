@@ -16,6 +16,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _initiationdateController = TextEditingController();
   final TextEditingController _scheduleddateController = TextEditingController();
+  final TextEditingController _timeController = TextEditingController();
   String _selectedSubject = 'DEFAULT_VALUE'; // Start with a non-empty default to prevent showing Add New Subject at start
   String _selectedSubjectCode = '';
   String _lectureType = 'Lectures';
@@ -23,6 +24,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   String _description = '';
   String _revisionFrequency = 'Default';
   bool isEnabled = true;
+  bool onlyOnce = false;
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
   String dateScheduled = '';
@@ -38,6 +40,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _loadSubjectsAndCodes();
     _setInitialDate();
     _setScheduledDate();
+    _timeController.text = '23:59:59';
   }
 
 
@@ -99,14 +102,17 @@ class _AddLectureFormState extends State<AddLectureForm> {
           .child(_lectureNo);
 
       await ref.set({
+        'initiated_on': DateTime.now().toIso8601String(),
+        'reminder_time': _timeController.text,
         'lecture_type': _lectureType,
         'date_learnt': todayDate,
-        'date_revised': todayDate,
+        'date_revised': dateScheduled,
         'date_scheduled': dateScheduled,
         'description': _description,
         'missed_revision': 0,
         'no_revision': 0,
         'revision_frequency': _revisionFrequency,
+        'only_once': onlyOnce? 1 : 0,
         'status': isEnabled ? 'Enabled' : 'Disabled',
       });
 
@@ -387,6 +393,45 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: TextFormField(
+                        controller: _timeController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Select Reminder Time',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onTap: () async {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay(hour: 23, minute: 59),
+                            builder: (BuildContext context, Widget? child) {
+                              return MediaQuery(
+                                data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                child: child!,
+                              );
+                            },
+                          );
+                          if (pickedTime != null) {
+                            setState(() {
+                              _timeController.text = pickedTime.format(context);
+                            });
+                          }
+                        },
+                        validator: (value) {
+                          // Add your validation logic if needed
+                          return null;
+                        },
+                      ),
+                    ),
+
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: TextFormField(
                         controller: _initiationdateController,
                         readOnly: true,
                         decoration: InputDecoration(
@@ -501,6 +546,15 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           onChanged: (bool newValue) {
                             setState(() {
                               isEnabled = newValue;
+                            });
+                          },
+                        ),
+                        Text('No Repetition', style: Theme.of(context).textTheme.titleMedium),
+                        Switch(
+                          value: onlyOnce,
+                          onChanged: (bool newValue) {
+                            setState(() {
+                              onlyOnce = newValue;
                             });
                           },
                         ),
