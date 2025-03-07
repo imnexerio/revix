@@ -1,18 +1,11 @@
-// lib/record_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:retracker/Utils/FetchAllDataUtils.dart';
 
 class FetchRecord {
   Future<Map<String, dynamic>> getAllRecords() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
-
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-      DataSnapshot snapshot = await ref.get();
+      DataSnapshot snapshot = await Fetchalldatautils.getUserDataSnapshot();
 
       if (!snapshot.exists) {
         return {'allRecords': []};

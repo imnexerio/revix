@@ -2,7 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../SchedulePage/LegendItem.dart';
 import 'DailyProgress.dart';
-import 'FetchRecord.dart';
+import '../Utils/FetchRecord.dart';
 import 'MonthlyCalender.dart';
 import 'SubjectDistributionPlot.dart';
 import 'WeeklyProgress.dart';
