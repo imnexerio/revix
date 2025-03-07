@@ -16,7 +16,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
   final FetchRecord _recordService = FetchRecord();
   Stream<Map<String, dynamic>>? _recordsStream;
-  Future<Map<String, dynamic>>? _recordsFuture;
 
   // Add MediaQuery size caching
   Size? _previousSize;
@@ -27,9 +26,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   @override
   void initState() {
     super.initState();
-    // Initialize with regular fetch for faster initial load
-    _recordsFuture = _recordService.getAllRecords();
-    // Start listening to real-time updates
     _recordService.startRealTimeUpdates();
     _recordsStream = _recordService.recordsStream;
   }
@@ -53,11 +49,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     super.dispose();
   }
 
-  Future<void> _refreshData() async {
-    // For manual refresh, we can still use the future-based approach
-    final freshData = await _recordService.getAllRecords();
-    // No need to setState if we're using StreamBuilder
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,9 +71,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: Padding(
+      body: Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
           child: StreamBuilder(
             stream: _recordsStream,
@@ -176,7 +165,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             },
           ),
         ),
-      ),
     );
   }
 
