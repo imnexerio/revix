@@ -257,7 +257,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                             Navigator.pop(context);
                             Navigator.pop(context);
 
-                            await refreshRecords();
+                            // await refreshRecords();
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               customSnackBar(
