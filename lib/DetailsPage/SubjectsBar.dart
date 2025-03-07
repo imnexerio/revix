@@ -1,6 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import '../Utils/subject_utils.dart';
 import 'CodeBar.dart';
 
 class SubjectsBar extends StatefulWidget {
@@ -35,10 +34,10 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
 
   Future<void> _initializeSelectedSubject() async {
     try {
-      final data = await _fetchDataFromServer();
-      if (data.isNotEmpty) {
+      final data = await fetchSubjectsAndCodes();
+      if (data['subjects'].isNotEmpty) {
         setState(() {
-          _selectedSubject = data.keys.first;
+          _selectedSubject = data['subjects'].first;
         });
       }
     } catch (e) {
@@ -46,26 +45,11 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
     }
   }
 
-  Future<Map<String, dynamic>> _fetchDataFromServer() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
-    DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-    DataSnapshot snapshot = await ref.get();
-    if (snapshot.exists) {
-      return Map<String, dynamic>.from(snapshot.value as Map);
-    } else {
-      throw Exception('No data found on server');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder<Map<String, dynamic>>(
-        future: _fetchDataFromServer(),
+        future: fetchSubjectsAndCodes(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -92,7 +76,7 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
                 ],
               ),
             );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          } else if (!snapshot.hasData || snapshot.data!['subjects'].isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -112,8 +96,7 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
             );
           }
 
-          final data = snapshot.data!;
-          final subjects = data.keys.toList();
+          final subjects = snapshot.data!['subjects'];
 
           return Column(
             children: [
@@ -147,77 +130,77 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
                       final isSelected = _selectedSubject == subject;
 
                       return AnimatedContainer(
-                        duration: Duration(milliseconds: 200),
-                        margin: EdgeInsets.symmetric(horizontal: 6.0),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedSubject = subject;
-                              });
-                              _controller.reset();
-                              _controller.forward();
-                            },
-                            borderRadius: BorderRadius.circular(15.0),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20.0,
-                                vertical: 12.0,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(15.0),
-                                border: Border.all(
+                          duration: Duration(milliseconds: 200),
+                          margin: EdgeInsets.symmetric(horizontal: 6.0),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedSubject = subject;
+                                });
+                                _controller.reset();
+                                _controller.forward();
+                              },
+                              borderRadius: BorderRadius.circular(15.0),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20.0,
+                                  vertical: 12.0,
+                                ),
+                                decoration: BoxDecoration(
                                   color: isSelected
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                                  width: 1.5,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                  BoxShadow(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ]
-                                    : null,
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                  Icon(
-                                  Icons.book,
-                                  size: 18,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurface,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  subject,
-                                  style: TextStyle(
+                                      : Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(15.0),
+                                  border: Border.all(
                                     color: isSelected
-                                        ? Theme.of(context).colorScheme.onPrimary
-                                        : Theme.of(context).colorScheme.onSurface,
-                                    fontSize: 16,
-                                    fontWeight:
-                                    isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    letterSpacing: 0.3,
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                    width: 1.5,
                                   ),
+                                  boxShadow: isSelected
+                                      ? [
+                                    BoxShadow(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ]
+                                      : null,
                                 ),
-                              ]),
+                                child: Center(
+                                  child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.book,
+                                          size: 18,
+                                          color: isSelected
+                                              ? Theme.of(context).colorScheme.onPrimary
+                                              : Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          subject,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Theme.of(context).colorScheme.onPrimary
+                                                : Theme.of(context).colorScheme.onSurface,
+                                            fontSize: 16,
+                                            fontWeight:
+                                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ]),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ));
+                          ));
                     },
                   ),
                 ),

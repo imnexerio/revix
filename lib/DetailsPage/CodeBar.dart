@@ -1,6 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import '../Utils/Code_data_fetch.dart';
 import 'LectureBar.dart';
 
 class CodeBar extends StatefulWidget {
@@ -39,12 +38,12 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
 
   Future<void> _initializeSelectedCode() async {
     try {
-      final data = await _getStoredData();
-      final codes = data[widget.selectedSubject]?.keys.toList() ?? [];
+      final data = await getStoredCodeData(widget.selectedSubject);
+      final codes = data.keys.toList();
       if (codes.isNotEmpty) {
         setState(() {
           _selectedSubjectCode = codes.first;
-          _selectedLectureData = Map<String, dynamic>.from(data[widget.selectedSubject]?[codes.first]);
+          _selectedLectureData = Map<String, dynamic>.from(data[codes.first]);
         });
         _controller.forward();
       }
@@ -53,26 +52,11 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     }
   }
 
-  Future<Map<String, dynamic>> _getStoredData() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
-    DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-    DataSnapshot snapshot = await ref.get();
-    if (snapshot.exists) {
-      return Map<String, dynamic>.from(snapshot.value as Map);
-    } else {
-      throw Exception('No data found in Firebase');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder<Map<String, dynamic>>(
-        future: _getStoredData(),
+        future: getStoredCodeData(widget.selectedSubject),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -120,7 +104,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
           }
 
           final data = snapshot.data!;
-          final codes = data[widget.selectedSubject]?.keys.toList() ?? [];
+          final codes = data.keys.toList();
 
           return Stack(
             children: [
@@ -128,8 +112,8 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                 Positioned.fill(
                   child: Padding(
                     padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).size.height * 0.1, // Adjust the factor as needed
-                      ),
+                      bottom: MediaQuery.of(context).size.height * 0.1, // Adjust the factor as needed
+                    ),
                     child: ScaleTransition(
                       scale: _slideAnimation,
                       child: FadeTransition(
@@ -175,7 +159,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: () {
-                                final lectureData = data[widget.selectedSubject]?[code];
+                                final lectureData = data[code];
                                 if (lectureData != null) {
                                   setState(() {
                                     _selectedLectureData = Map<String, dynamic>.from(lectureData);
