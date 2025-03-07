@@ -16,7 +16,7 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
   for (var record in records) {
     String? dateLearnt = record['details']['date_learnt'];
     List<dynamic>? datesRevised = record['details']['dates_revised'];
-    print('record: $record');
+    // print('record: $record');
 
     if (dateLearnt != null && lectureCounts.containsKey(dateLearnt)) {
       lectureCounts[dateLearnt] = lectureCounts[dateLearnt]! + 1;

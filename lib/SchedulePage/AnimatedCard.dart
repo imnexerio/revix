@@ -1,7 +1,6 @@
 import 'package:flutter/animation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import 'RevisionGraph.dart';
 
 class AnimatedCard extends StatelessWidget {
@@ -110,7 +109,7 @@ class AnimatedCard extends StatelessWidget {
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(
-                                key: ValueKey('chart_${record['subject']}_${record['lecture_no']}'),
+                                key: ValueKey('chart_${record['subject']}_${record['lecture_no']}_${record['dates_revised']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}'),
                                 dateLearnt: record['date_learnt'],
                                 datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
                                 datesRevised: List<String>.from(record['dates_revised'] ?? []),

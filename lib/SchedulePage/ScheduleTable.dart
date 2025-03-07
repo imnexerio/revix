@@ -21,15 +21,22 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
   late List<Map<String, dynamic>> records;
   String? currentSortField;
   bool isAscending = true;
-  final GlobalKey _gridKey = GlobalKey();
+
+  // Cache for sorted records to avoid unnecessary re-sorts
+  final Map<String, List<Map<String, dynamic>>> _sortedRecordsCache = {};
 
   // Add animation controller
   late AnimationController _animationController;
+
+  // Memoized column count
+  int? _cachedColumnCount;
+  double? _previousWidth;
 
   @override
   void initState() {
     super.initState();
     records = List.from(widget.initialRecords);
+    print(records);
 
     // Initialize animation controller
     _animationController = AnimationController(
@@ -37,12 +44,13 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       duration: const Duration(milliseconds: 300),
     );
     // Start the animation immediately to show cards properly
-    _animationController.value = 1.0;  // Add this line
+    _animationController.value = 1.0;
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _sortedRecordsCache.clear();
     super.dispose();
   }
 
@@ -52,102 +60,153 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     if (widget.initialRecords != oldWidget.initialRecords) {
       setState(() {
         records = List.from(widget.initialRecords);
+        // Clear the cache when records change
+        _sortedRecordsCache.clear();
+
         // Reapply sorting if we had a sort field
         if (currentSortField != null) {
           _applySorting(currentSortField!, isAscending);
         } else {
           // Ensure animation is completed if not sorting
-          _animationController.value = 1.0;  // Add this line
+          _animationController.value = 1.0;
         }
       });
     }
   }
 
   void _applySorting(String field, bool ascending) {
+    // Check if we already have sorted records in cache
+    final String cacheKey = '${field}_${ascending ? 'asc' : 'desc'}';
+    if (_sortedRecordsCache.containsKey(cacheKey)) {
+      setState(() {
+        currentSortField = field;
+        isAscending = ascending;
+        records = _sortedRecordsCache[cacheKey]!;
+      });
+
+      // Animate cards
+      _animationController.reset();
+      _animationController.forward();
+      return;
+    }
+
     // Reset animation controller
     _animationController.reset();
+
+    // Create a copy of records to sort
+    final List<Map<String, dynamic>> sortedRecords = List.from(records);
+
+    // Sort the copy
+    sortedRecords.sort((a, b) {
+      switch (field) {
+        case 'date_learnt':
+          final String? aDate = a['date_learnt'] as String?;
+          final String? bDate = b['date_learnt'] as String?;
+
+          // Handle null dates (null comes first in ascending, last in descending)
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return ascending ? -1 : 1;
+          if (bDate == null) return ascending ? 1 : -1;
+
+          // Compare dates
+          return ascending
+              ? aDate.compareTo(bDate)
+              : bDate.compareTo(aDate);
+
+        case 'date_revised':
+          final List<String> aRevised = List<String>.from(a['dates_revised'] ?? []);
+          final List<String> bRevised = List<String>.from(b['dates_revised'] ?? []);
+
+          // Get the most recent revision date - optimize with null-aware operator
+          String? aLatest = aRevised.isNotEmpty
+              ? aRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next)
+              : null;
+          String? bLatest = bRevised.isNotEmpty
+              ? bRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next)
+              : null;
+
+          // Handle null dates
+          if (aLatest == null && bLatest == null) return 0;
+          if (aLatest == null) return ascending ? -1 : 1;
+          if (bLatest == null) return ascending ? 1 : -1;
+
+          return ascending
+              ? aLatest.compareTo(bLatest)
+              : bLatest.compareTo(aLatest);
+
+        case 'missed_revision':
+          final int aMissed = a['missed_revision'] as int? ?? 0;
+          final int bMissed = b['missed_revision'] as int? ?? 0;
+
+          return ascending
+              ? aMissed.compareTo(bMissed)
+              : bMissed.compareTo(aMissed);
+
+        case 'no_revision':
+          final int aRevisions = a['no_revision'] as int? ?? 0;
+          final int bRevisions = b['no_revision'] as int? ?? 0;
+
+          return ascending
+              ? aRevisions.compareTo(bRevisions)
+              : bRevisions.compareTo(aRevisions);
+
+        case 'revision_frequency':
+        // Map priority levels to numeric values for sorting
+        // Use const map as static to avoid recreation
+          const Map<String, int> priorityValues = {
+            'High Priority': 3,
+            'Medium Priority': 2,
+            'Low Priority': 1,
+            '': 0, // For empty values
+          };
+
+          final int aValue = priorityValues[a['revision_frequency'] ?? ''] ?? 0;
+          final int bValue = priorityValues[b['revision_frequency'] ?? ''] ?? 0;
+
+          return ascending
+              ? aValue.compareTo(bValue)
+              : bValue.compareTo(aValue);
+
+        default:
+          return 0;
+      }
+    });
+
+    // Store sorted list in cache
+    _sortedRecordsCache[cacheKey] = sortedRecords;
 
     setState(() {
       currentSortField = field;
       isAscending = ascending;
-
-      records.sort((a, b) {
-        switch (field) {
-          case 'date_learnt':
-            final String? aDate = a['date_learnt'] as String?;
-            final String? bDate = b['date_learnt'] as String?;
-
-            // Handle null dates (null comes first in ascending, last in descending)
-            if (aDate == null && bDate == null) return 0;
-            if (aDate == null) return ascending ? -1 : 1;
-            if (bDate == null) return ascending ? 1 : -1;
-
-            // Compare dates
-            return ascending
-                ? aDate.compareTo(bDate)
-                : bDate.compareTo(aDate);
-
-          case 'date_revised':
-            final List<String> aRevised = List<String>.from(a['dates_revised'] ?? []);
-            final List<String> bRevised = List<String>.from(b['dates_revised'] ?? []);
-
-            // Get the most recent revision date
-            String? aLatest = aRevised.isNotEmpty ? aRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next) : null;
-            String? bLatest = bRevised.isNotEmpty ? bRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next) : null;
-
-            // Handle null dates
-            if (aLatest == null && bLatest == null) return 0;
-            if (aLatest == null) return ascending ? -1 : 1;
-            if (bLatest == null) return ascending ? 1 : -1;
-
-            return ascending
-                ? aLatest.compareTo(bLatest)
-                : bLatest.compareTo(aLatest);
-
-          case 'missed_revision':
-            final int aMissed = a['missed_revision'] as int? ?? 0;
-            final int bMissed = b['missed_revision'] as int? ?? 0;
-
-            return ascending
-                ? aMissed.compareTo(bMissed)
-                : bMissed.compareTo(aMissed);
-
-          case 'no_revision':
-            final int aRevisions = a['no_revision'] as int? ?? 0;
-            final int bRevisions = b['no_revision'] as int? ?? 0;
-
-            return ascending
-                ? aRevisions.compareTo(bRevisions)
-                : bRevisions.compareTo(aRevisions);
-
-          case 'revision_frequency':
-          // Map priority levels to numeric values for sorting
-            final Map<String, int> priorityValues = {
-              'High Priority': 3,
-              'Medium Priority': 2,
-              'Low Priority': 1,
-              '': 0, // For empty values
-            };
-
-            final int aValue = priorityValues[a['revision_frequency'] ?? ''] ?? 0;
-            final int bValue = priorityValues[b['revision_frequency'] ?? ''] ?? 0;
-
-            return ascending
-                ? aValue.compareTo(bValue)
-                : bValue.compareTo(aValue);
-
-          default:
-            return 0;
-        }
-      });
+      records = sortedRecords;
     });
 
     // Start animation after sorting
     _animationController.forward();
   }
 
+  int _calculateColumns(double width) {
+    // Use cached value if width hasn't changed
+    if (_previousWidth == width && _cachedColumnCount != null) {
+      return _cachedColumnCount!;
+    }
+
+    _previousWidth = width;
+
+    int columns;
+    if (width < 500) columns = 1;         // Mobile
+    else if (width < 900) columns = 2;    // Tablet
+    else if (width < 1200) columns = 3;   // Small desktop
+    else if (width < 1500) columns = 4;   // Medium desktop
+    else columns = 5;                     // Large desktop
+
+    _cachedColumnCount = columns;
+    return columns;
+  }
+
   @override
   Widget build(BuildContext context) {
+    print('ScheduleTable received ${records.length} records for $records');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -163,7 +222,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              _buildFilterButton(context),
+              _buildFilterButton(),
             ],
           ),
         ),
@@ -174,12 +233,14 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
           builder: (context, child) {
             return LayoutBuilder(
               builder: (context, constraints) {
+                final crossAxisCount = _calculateColumns(constraints.maxWidth);
+
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _calculateColumns(constraints.maxWidth),
+                    crossAxisCount: crossAxisCount,
                     childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
@@ -205,6 +266,8 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                       ),
                     );
 
+                    // print(record);
+
                     return AnimatedCard(
                       animation: animation,
                       record: record,
@@ -221,7 +284,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     );
   }
 
-  Widget _buildFilterButton(BuildContext context) {
+  Widget _buildFilterButton() {
     return IconButton(
       icon: const Icon(Icons.filter_list, size: 16),
       onPressed: () {
@@ -230,20 +293,18 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          builder: (context) => buildShortingSheet(context),
+          builder: (context) => _buildSortingSheet(),
         );
       },
     );
   }
 
-  Widget buildShortingSheet(BuildContext context) {
-    // State for tracking the selected sort field
-    final ValueNotifier<String?> selectedField = ValueNotifier<String?>(currentSortField);
-
+  Widget _buildSortingSheet() {
+    // Create a single source of truth for the selected field
     return StatefulBuilder(
       builder: (context, setState) {
-        // Set the initial value of selectedField to 'no_revision'
-        final ValueNotifier<String?> selectedField = ValueNotifier<String?>('no_revision');
+        // Properly initialize with the current sort field
+        String selectedField = currentSortField ?? 'no_revision';
 
         return Padding(
           padding: const EdgeInsets.all(16.0),
@@ -276,40 +337,36 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildSortFieldBox(
-                        context,
-                        'Date Learnt',
-                        'date_learnt',
-                        selectedField,
-                            () => setState(() {}),
+                      // Use local function to create sort field boxes
+                      _SortFieldBox(
+                        label: 'Date Learnt',
+                        field: 'date_learnt',
+                        isSelected: selectedField == 'date_learnt',
+                        onTap: () => setState(() => selectedField = 'date_learnt'),
                       ),
-                      _buildSortFieldBox(
-                        context,
-                        'Date Revised',
-                        'date_revised',
-                        selectedField,
-                            () => setState(() {}),
+                      _SortFieldBox(
+                        label: 'Date Revised',
+                        field: 'date_revised',
+                        isSelected: selectedField == 'date_revised',
+                        onTap: () => setState(() => selectedField = 'date_revised'),
                       ),
-                      _buildSortFieldBox(
-                        context,
-                        'Missed Revisions',
-                        'missed_revision',
-                        selectedField,
-                            () => setState(() {}),
+                      _SortFieldBox(
+                        label: 'Missed Revisions',
+                        field: 'missed_revision',
+                        isSelected: selectedField == 'missed_revision',
+                        onTap: () => setState(() => selectedField = 'missed_revision'),
                       ),
-                      _buildSortFieldBox(
-                        context,
-                        'Number of Revisions',
-                        'no_revision',
-                        selectedField,
-                            () => setState(() {}),
+                      _SortFieldBox(
+                        label: 'Number of Revisions',
+                        field: 'no_revision',
+                        isSelected: selectedField == 'no_revision',
+                        onTap: () => setState(() => selectedField = 'no_revision'),
                       ),
-                      _buildSortFieldBox(
-                        context,
-                        'Revision Frequency',
-                        'revision_frequency',
-                        selectedField,
-                            () => setState(() {}),
+                      _SortFieldBox(
+                        label: 'Revision Frequency',
+                        field: 'revision_frequency',
+                        isSelected: selectedField == 'revision_frequency',
+                        onTap: () => setState(() => selectedField = 'revision_frequency'),
                       ),
                     ],
                   ),
@@ -324,22 +381,24 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                       Row(
                         children: [
                           Expanded(
-                            child: _buildOrderBox(
-                              context,
-                              'Ascending',
-                              Icons.arrow_upward,
-                              true,
-                              selectedField.value ?? 'no_revision', // Provide a default value
+                            child: _OrderBox(
+                              label: 'Ascending',
+                              icon: Icons.arrow_upward,
+                              onTap: () {
+                                _applySorting(selectedField, true);
+                                Navigator.pop(context);
+                              },
                             ),
                           ),
                           const SizedBox(width: 5),
                           Expanded(
-                            child: _buildOrderBox(
-                              context,
-                              'Descending',
-                              Icons.arrow_downward,
-                              false,
-                              selectedField.value ?? 'no_revision', // Provide a default value
+                            child: _OrderBox(
+                              label: 'Descending',
+                              icon: Icons.arrow_downward,
+                              onTap: () {
+                                _applySorting(selectedField, false);
+                                Navigator.pop(context);
+                              },
                             ),
                           ),
                         ],
@@ -355,20 +414,25 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       },
     );
   }
-  Widget _buildSortFieldBox(
-      BuildContext context,
-      String label,
-      String field,
-      ValueNotifier<String?> selectedField,
-      VoidCallback onSelected,
-      ) {
-    final bool isSelected = selectedField.value == field;
+}
 
+class _SortFieldBox extends StatelessWidget {
+  final String label;
+  final String field;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SortFieldBox({
+    required this.label,
+    required this.field,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        selectedField.value = field;
-        onSelected();
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -395,19 +459,23 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       ),
     );
   }
+}
 
-  Widget _buildOrderBox(
-      BuildContext context,
-      String label,
-      IconData icon,
-      bool ascending,
-      String field,
-      ) {
+class _OrderBox extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _OrderBox({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        _applySorting(field, ascending);
-        Navigator.pop(context);
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
@@ -436,13 +504,4 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       ),
     );
   }
-  int _calculateColumns(double width) {
-    if (width < 500) return 1;         // Mobile
-    if (width < 900) return 2;         // Tablet
-    if (width < 1200) return 3;        // Small desktop
-    if (width < 1500) return 4;        // Medium desktop
-    return 5;                          // Large desktop
-  }
-
 }
-
