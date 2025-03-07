@@ -7,6 +7,7 @@ import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/customSnackBar_error.dart';
+import 'Utils/subject_utils.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -45,37 +46,21 @@ class _AddLectureFormState extends State<AddLectureForm> {
   }
 
 
+
   Future<void> _loadSubjectsAndCodes() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-      DataSnapshot snapshot = await ref.get();
+      final data = await fetchSubjectsAndCodes();
+      setState(() {
+        _subjects = data['subjects'];
+        _subjectCodes = data['subjectCodes'];
 
-      if (snapshot.exists) {
-        Map<Object?, Object?> data = snapshot.value as Map<Object?, Object?>;
-        setState(() {
-          _subjects = data.keys.map((key) => key.toString()).toList();
-          _subjectCodes = {};
-
-          data.forEach((subject, value) {
-            if (value is Map) {
-              _subjectCodes[subject.toString()] =
-                  value.keys.map((code) => code.toString()).toList();
-            }
-          });
-
-          // Set default selection if available
-          if (_subjects.isNotEmpty) {
-            _selectedSubject = _subjects[0];
-          } else {
-            _selectedSubject = 'DEFAULT_VALUE'; // Keep the default value
-          }
-        });
-      }
+        // Set default selection if available
+        if (_subjects.isNotEmpty) {
+          _selectedSubject = _subjects[0];
+        } else {
+          _selectedSubject = 'DEFAULT_VALUE'; // Keep the default value
+        }
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         customSnackBar_error(
@@ -85,7 +70,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
       );
     }
   }
-
 
 
   Future<void> UpdateRecords(BuildContext context) async {
