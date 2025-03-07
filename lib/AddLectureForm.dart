@@ -41,7 +41,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _loadSubjectsAndCodes();
     _setInitialDate();
     _setScheduledDate();
-    _timeController.text = '23:59';
+    _timeController.text = 'All Day';
   }
 
 
@@ -395,39 +395,82 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         color: Theme.of(context).cardColor,
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
-                      child: TextFormField(
-                        controller: _timeController,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: 'Select Reminder Time',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                        onTap: () async {
-                          TimeOfDay? pickedTime = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay(hour: 23, minute: 59),
-                            builder: (BuildContext context, Widget? child) {
-                              return MediaQuery(
-                                data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (pickedTime != null) {
-                            final now = DateTime.now();
-                            final formattedTime = DateFormat('HH:mm').format(
-                              DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
-                            );
-                            setState(() {
-                              _timeController.text = formattedTime;
-                            });
-                          }
-                        },
-                        validator: (value) {
-                          // Add your validation logic if needed
-                          return null;
-                        },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _timeController,
+                              readOnly: true,
+                              decoration: InputDecoration(
+                                labelText: 'Reminder Time',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                hintText: 'Tap to select time',
+                              ),
+                              onTap: () async {
+                                TimeOfDay? pickedTime = await showTimePicker(
+                                  context: context,
+                                  initialTime: _timeController.text != 'All Day' && _timeController.text.isNotEmpty
+                                      ? TimeOfDay(
+                                      hour: int.parse(_timeController.text.split(':')[0]),
+                                      minute: int.parse(_timeController.text.split(':')[1]))
+                                      : TimeOfDay.now(),
+                                  builder: (BuildContext context, Widget? child) {
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+
+                                if (pickedTime != null) {
+                                  final now = DateTime.now();
+                                  final formattedTime = DateFormat('HH:mm').format(
+                                    DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
+                                  );
+                                  setState(() {
+                                    _timeController.text = formattedTime;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          // Add "All Day" option as a toggle button
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                setState(() {
+                                  if (_timeController.text == 'All Day') {
+                                    // If already "All Day", set to current time
+                                    final now = DateTime.now();
+                                    _timeController.text = DateFormat('HH:mm').format(now);
+                                  } else {
+                                    // Set to "All Day" (all day)
+                                    _timeController.text = 'All Day';
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _timeController.text == 'All Day'
+                                          ? Icons.check_box
+                                          : Icons.check_box_outline_blank,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text('All Day'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
