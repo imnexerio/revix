@@ -49,10 +49,10 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
   Future<void> _loadSubjectsAndCodes() async {
     try {
-      final data = await fetchSubjectsAndCodes();
+      final last_revised = await fetchSubjectsAndCodes();
       setState(() {
-        _subjects = data['subjects'];
-        _subjectCodes = data['subjectCodes'];
+        _subjects = last_revised['subjects'];
+        _subjectCodes = last_revised['subjectCodes'];
 
         // Set default selection if available
         if (_subjects.isNotEmpty) {

@@ -11,11 +11,11 @@ Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
   DataSnapshot snapshot = await ref.get();
 
   if (snapshot.exists) {
-    Map<Object?, Object?> data = snapshot.value as Map<Object?, Object?>;
-    List<String> subjects = data.keys.map((key) => key.toString()).toList();
+    Map<Object?, Object?> subject_data_util = snapshot.value as Map<Object?, Object?>;
+    List<String> subjects = subject_data_util.keys.map((key) => key.toString()).toList();
     Map<String, List<String>> subjectCodes = {};
 
-    data.forEach((subject, value) {
+    subject_data_util.forEach((subject, value) {
       if (value is Map) {
         subjectCodes[subject.toString()] =
             value.keys.map((code) => code.toString()).toList();
@@ -27,6 +27,6 @@ Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
       'subjectCodes': subjectCodes,
     };
   } else {
-    throw Exception('No data found on server');
+    throw Exception('No subject_data_util found on server');
   }
 }
