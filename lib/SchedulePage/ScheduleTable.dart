@@ -36,7 +36,10 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
   void initState() {
     super.initState();
     records = List.from(widget.initialRecords);
-    // print(records);
+
+    // Set default sort field to reminder_time and ascending order
+    currentSortField = 'reminder_time';
+    isAscending = true;
 
     // Initialize animation controller
     _animationController = AnimationController(
@@ -45,6 +48,11 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     );
     // Start the animation immediately to show cards properly
     _animationController.value = 1.0;
+
+    // Apply default sorting after initialization
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applySorting(currentSortField!, isAscending);
+    });
   }
 
   @override
@@ -150,6 +158,19 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
               ? aRevisions.compareTo(bRevisions)
               : bRevisions.compareTo(aRevisions);
 
+        case 'reminder_time':
+          final String aTime = a['reminder_time'] as String? ?? '';
+          final String bTime = b['reminder_time'] as String? ?? '';
+
+          // Special handling for "All Day" - treat it as highest time in ascending order
+          if (aTime == 'All Day' && bTime == 'All Day') return 0;
+          if (aTime == 'All Day') return ascending ? 1 : -1;
+          if (bTime == 'All Day') return ascending ? -1 : 1;
+
+          return ascending
+              ? aTime.compareTo(bTime)
+              : bTime.compareTo(aTime);
+
         case 'revision_frequency':
         // Map priority levels to numeric values for sorting
         // Use const map as static to avoid recreation
@@ -157,6 +178,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
             'High Priority': 3,
             'Medium Priority': 2,
             'Low Priority': 1,
+            'Default': 0,
             '': 0, // For empty values
           };
 
@@ -206,7 +228,9 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    // print('ScheduleTable received ${records.length} records for $records');
+    // Print statement for debugging
+    // print('ScheduleTable received ${records.length} records');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -266,8 +290,6 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                       ),
                     );
 
-                    // print(record);
-
                     return AnimatedCard(
                       animation: animation,
                       record: record,
@@ -303,8 +325,8 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     // Create a single source of truth for the selected field
     return StatefulBuilder(
       builder: (context, setState) {
-        // Properly initialize with the current sort field
-        String selectedField = currentSortField ?? 'no_revision';
+        // Initialize with the current sort field
+        String selectedField = currentSortField ?? 'reminder_time';
 
         return Padding(
           padding: const EdgeInsets.all(16.0),
@@ -337,36 +359,66 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      // Use local function to create sort field boxes
+                      // Added reminder_time option
+                      _SortFieldBox(
+                        label: 'Reminder Time',
+                        field: 'reminder_time',
+                        isSelected: selectedField == 'reminder_time',
+                        onTap: () {
+                          setState(() => selectedField = 'reminder_time');
+                          // Update the state of the parent widget to recognize the sort field change
+                          this.setState(() => currentSortField = 'reminder_time');
+                        },
+                      ),
                       _SortFieldBox(
                         label: 'Date Learnt',
                         field: 'date_learnt',
                         isSelected: selectedField == 'date_learnt',
-                        onTap: () => setState(() => selectedField = 'date_learnt'),
+                        onTap: () {
+                          setState(() => selectedField = 'date_learnt');
+                          // Update the state of the parent widget to recognize the sort field change
+                          this.setState(() => currentSortField = 'date_learnt');
+                        },
                       ),
                       _SortFieldBox(
                         label: 'Date Revised',
                         field: 'date_revised',
                         isSelected: selectedField == 'date_revised',
-                        onTap: () => setState(() => selectedField = 'date_revised'),
+                        onTap: () {
+                          setState(() => selectedField = 'date_revised');
+                          // Update the state of the parent widget to recognize the sort field change
+                          this.setState(() => currentSortField = 'date_revised');
+                        },
                       ),
                       _SortFieldBox(
                         label: 'Missed Revisions',
                         field: 'missed_revision',
                         isSelected: selectedField == 'missed_revision',
-                        onTap: () => setState(() => selectedField = 'missed_revision'),
+                        onTap: () {
+                          setState(() => selectedField = 'missed_revision');
+                          // Update the state of the parent widget to recognize the sort field change
+                          this.setState(() => currentSortField = 'missed_revision');
+                        },
                       ),
                       _SortFieldBox(
                         label: 'Number of Revisions',
                         field: 'no_revision',
                         isSelected: selectedField == 'no_revision',
-                        onTap: () => setState(() => selectedField = 'no_revision'),
+                        onTap: () {
+                          setState(() => selectedField = 'no_revision');
+                          // Update the state of the parent widget to recognize the sort field change
+                          this.setState(() => currentSortField = 'no_revision');
+                        },
                       ),
                       _SortFieldBox(
                         label: 'Revision Frequency',
                         field: 'revision_frequency',
                         isSelected: selectedField == 'revision_frequency',
-                        onTap: () => setState(() => selectedField = 'revision_frequency'),
+                        onTap: () {
+                          setState(() => selectedField = 'revision_frequency');
+                          // Update the state of the parent widget to recognize the sort field change
+                          this.setState(() => currentSortField = 'revision_frequency');
+                        },
                       ),
                     ],
                   ),
@@ -414,6 +466,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       },
     );
   }
+
 }
 
 class _SortFieldBox extends StatelessWidget {

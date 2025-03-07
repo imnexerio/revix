@@ -75,6 +75,7 @@ class RealtimeDatabaseListener {
             'subject_code': codeKey.toString(),
             'lecture_no': recordKey.toString(),
             'date_scheduled': dateScheduled.toString(),
+            'reminder_time': recordValue['reminder_time'],
             'lecture_type': recordValue['lecture_type'],
             'date_learnt': recordValue['date_learnt'],
             'date_revised': recordValue['date_revised'],
