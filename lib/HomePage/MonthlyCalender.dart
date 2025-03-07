@@ -14,6 +14,7 @@ class StudyCalendar extends StatefulWidget {
 
   @override
   _StudyCalendarState createState() => _StudyCalendarState();
+
 }
 
 class _StudyCalendarState extends State<StudyCalendar> {
@@ -30,6 +31,13 @@ class _StudyCalendarState extends State<StudyCalendar> {
     _selectedDay = DateTime.now();
     _events = {};
     _initializeEvents();
+  }
+  @override
+  void didUpdateWidget(StudyCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.records != oldWidget.records) {
+      _initializeEvents(); // Re-initialize events when records change
+    }
   }
 
   void _initializeEvents() {

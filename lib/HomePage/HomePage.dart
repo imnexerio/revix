@@ -494,7 +494,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           SizedBox(
             height: 750,
             child: StudyCalendar(
-              key: const PageStorageKey('monthlyCalendar'),
               records: allRecords,
             ),
           ),
