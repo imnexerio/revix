@@ -15,7 +15,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
   final FetchRecord _recordService = FetchRecord();
-  // Cache the fetched data
+  Stream<Map<String, dynamic>>? _recordsStream;
   Future<Map<String, dynamic>>? _recordsFuture;
 
   // Add MediaQuery size caching
@@ -27,14 +27,36 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   @override
   void initState() {
     super.initState();
-    // Initialize the future in initState
+    // Initialize with regular fetch for faster initial load
     _recordsFuture = _recordService.getAllRecords();
+    // Start listening to real-time updates
+    _recordService.startRealTimeUpdates();
+    _recordsStream = _recordService.recordsStream;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // App is in background, pause real-time updates
+      _recordService.stopRealTimeUpdates();
+    } else if (state == AppLifecycleState.resumed) {
+      // App is in foreground again, resume real-time updates
+      _recordService.startRealTimeUpdates();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Stop listening when the widget is disposed
+    _recordService.stopRealTimeUpdates();
+    _recordService.dispose();
+    super.dispose();
   }
 
   Future<void> _refreshData() async {
-    setState(() {
-      _recordsFuture = _recordService.getAllRecords();
-    });
+    // For manual refresh, we can still use the future-based approach
+    final freshData = await _recordService.getAllRecords();
+    // No need to setState if we're using StreamBuilder
   }
 
   @override
@@ -62,8 +84,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         onRefresh: _refreshData,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
-          child: FutureBuilder<Map<String, dynamic>>(
-            future: _recordsFuture,
+          child: StreamBuilder(
+            stream: _recordsStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
