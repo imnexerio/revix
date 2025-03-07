@@ -77,7 +77,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
         allRevisions.add(learnedEvent);
       }
     } catch (e) {
-      print('Error parsing date learned: $e');
+      // print('Error parsing date learned: $e');
     }
 
     // Add missed revisions

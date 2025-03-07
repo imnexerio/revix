@@ -77,7 +77,7 @@ class ThemeNotifier extends ChangeNotifier {
         updateThemeBasedOnMode(_selectedThemeIndex);
       }
     } catch (e) {
-      print('Error retrieving theme data: $e');
+      // print('Error retrieving theme data: $e');
       // Use default theme if an error occurs
       _currentThemeMode = ThemeMode.system;
       _selectedThemeIndex = 0;

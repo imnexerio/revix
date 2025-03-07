@@ -36,7 +36,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
   void initState() {
     super.initState();
     records = List.from(widget.initialRecords);
-    print(records);
+    // print(records);
 
     // Initialize animation controller
     _animationController = AnimationController(
@@ -206,7 +206,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    print('ScheduleTable received ${records.length} records for $records');
+    // print('ScheduleTable received ${records.length} records for $records');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
