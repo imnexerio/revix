@@ -106,7 +106,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'reminder_time': _timeController.text,
         'lecture_type': _lectureType,
         'date_learnt': todayDate,
-        'date_revised': dateScheduled,
         'date_scheduled': dateScheduled,
         'description': _description,
         'missed_revision': 0,

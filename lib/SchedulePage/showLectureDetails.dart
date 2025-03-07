@@ -217,7 +217,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                               },
                             );
 
-                            String dateRevised = DateTime.now().toIso8601String().split('T')[0];
+                            String dateRevised = DateTime.now().toIso8601String().split('.')[0];
                             int missedRevision = (details['missed_revision'] as num).toInt();
                             DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
                             String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
@@ -226,9 +226,10 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                               noRevision + 1,
                             )).toIso8601String().split('T')[0];
 
-                            if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
+                            if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
                               missedRevision += 1;
                             }
+
                             List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
 
                             if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
@@ -418,7 +419,7 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
         _buildTimelineItem(
           context,
           "Last Revised",
-          details['date_revised'],
+          details['date_revised'] ?? 'NA',
           Icons.history,
         ),
         _buildTimelineItem(
