@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
@@ -217,7 +218,8 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                               },
                             );
 
-                            String dateRevised = DateTime.now().toIso8601String().split('.')[0];
+
+                            String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
                             int missedRevision = (details['missed_revision'] as num).toInt();
                             DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
                             String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(

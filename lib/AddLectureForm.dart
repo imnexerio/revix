@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:retracker/Utils/date_utils.dart';
 import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
@@ -40,7 +41,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _loadSubjectsAndCodes();
     _setInitialDate();
     _setScheduledDate();
-    _timeController.text = '23:59:59';
+    _timeController.text = '23:59';
   }
 
 
@@ -101,11 +102,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
           .child(_selectedSubjectCode)
           .child(_lectureNo);
 
+      String initiated_on = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+
       await ref.set({
-        'initiated_on': DateTime.now().toIso8601String(),
+        'initiated_on': initiated_on,
         'reminder_time': _timeController.text,
         'lecture_type': _lectureType,
         'date_learnt': todayDate,
+        'date_revised': initiated_on,
         'date_scheduled': dateScheduled,
         'description': _description,
         'missed_revision': 0,
@@ -411,8 +415,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             },
                           );
                           if (pickedTime != null) {
+                            final now = DateTime.now();
+                            final formattedTime = DateFormat('HH:mm').format(
+                              DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
+                            );
                             setState(() {
-                              _timeController.text = pickedTime.format(context);
+                              _timeController.text = formattedTime;
                             });
                           }
                         },
