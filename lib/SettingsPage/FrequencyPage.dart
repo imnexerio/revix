@@ -1,4 +1,3 @@
-// FrequencyPage.dart
 import 'package:flutter/material.dart';
 import '../Utils/fetchFrequencies_utils.dart';
 import 'FrequencyPageSheet.dart';
@@ -140,6 +139,7 @@ class _FrequencyPageState extends State<FrequencyPage> {
                 frequencies,
                 setState,
                 isValidFrequencyFormat,
+                fetchFrequencies,
               ),
               icon: Icon(Icons.add),
               label: Text('Add Custom Frequency'),

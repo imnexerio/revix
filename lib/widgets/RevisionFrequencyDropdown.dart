@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Utils/fetchFrequencies_utils.dart';
+import '../SettingsPage/FrequencyPageSheet.dart';
 
 class RevisionFrequencyDropdown extends StatefulWidget {
   final String revisionFrequency;
@@ -16,6 +17,9 @@ class RevisionFrequencyDropdown extends StatefulWidget {
 
 class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
   List<DropdownMenuItem<String>> _dropdownItems = [];
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _frequencyController = TextEditingController();
 
   @override
   void initState() {
@@ -31,9 +35,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
         value: key,
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            // Get the available width from LayoutBuilder
             double availableWidth = constraints.maxWidth;
-
             return Container(
               width: availableWidth,
               child: Row(
@@ -71,6 +73,19 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
       );
     }).toList();
 
+    items.add(
+      DropdownMenuItem<String>(
+        value: 'Add New',
+        child: Text(
+          'Add New',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+
     setState(() {
       _dropdownItems = items;
     });
@@ -97,9 +112,24 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               value: widget.revisionFrequency,
-              onChanged: widget.onChanged,
+              onChanged: (String? newValue) {
+                if (newValue == 'Add New') {
+                  showAddFrequencySheet(
+                    context,
+                    _formKey,
+                    _titleController,
+                    _frequencyController,
+                    [],
+                    setState,
+                        (value) => true, // Replace with actual validation logic
+                    _fetchFrequencies, // Pass the callback to refresh the dropdown
+                  );
+                } else {
+                  widget.onChanged(newValue);
+                }
+              },
               items: _dropdownItems,
-              menuMaxHeight: MediaQuery.of(context).size.height * 0.5, // Limit menu height to half the screen
+              menuMaxHeight: MediaQuery.of(context).size.height * 0.5,
               validator: (value) => value == null ? 'Please select a revision frequency' : null,
             ),
           ),

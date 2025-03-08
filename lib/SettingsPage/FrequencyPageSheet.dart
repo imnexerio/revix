@@ -4,14 +4,15 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
 
 void showAddFrequencySheet(
-  BuildContext context,
-  GlobalKey<FormState> formKey,
-  TextEditingController titleController,
-  TextEditingController frequencyController,
-  List<Map<String, String>> frequencies,
-  StateSetter setState,
-  bool Function(String) isValidFrequencyFormat,
-) {
+    BuildContext context,
+    GlobalKey<FormState> formKey,
+    TextEditingController titleController,
+    TextEditingController frequencyController,
+    List<Map<String, String>> frequencies,
+    StateSetter setState,
+    bool Function(String) isValidFrequencyFormat,
+    VoidCallback onFrequencyAdded, // Add this callback
+    ) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -170,6 +171,8 @@ void showAddFrequencySheet(
                           message: 'New frequency added successfully',
                         ),
                       );
+
+                      onFrequencyAdded(); // Call the callback to refresh the dropdown
 
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
