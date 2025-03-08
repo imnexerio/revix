@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../SchedulePage/AnimatedCard.dart';
 import '../SchedulePage/ScheduleTable.dart';
-import '../SchedulePage/showLectureDetails.dart';
 import '../Utils/Code_data_fetch.dart';
-import '../Utils/lecture_colors.dart';
 import '../widgets/LectureDetailsModal.dart';
 
 class LectureBar extends StatefulWidget {
@@ -55,9 +52,6 @@ class _LectureBarState extends State<LectureBar> {
           _filteredLectureData = filteredLectureData;
         });
 
-        // Process data and add to stream
-        Map<String, List<Map<String, dynamic>>> processedData = _processSnapshot(data, filteredLectureData);
-        _recordsController.add(processedData);
       }, onError: (error) {
         _recordsController.addError('Failed to fetch records: $error');
       });
@@ -65,47 +59,6 @@ class _LectureBarState extends State<LectureBar> {
       // Handle errors
       print('Failed to set up listener: $e');
     }
-  }
-
-  Map<String, List<Map<String, dynamic>>> _processSnapshot(
-      Map<String, dynamic> snapshot,
-      List<MapEntry<String, dynamic>> filteredLectureData) {
-
-    List<Map<String, dynamic>> processedData_all = [];
-
-    for (var entry in filteredLectureData) {
-      final recordKey = entry.key;
-      final recordValue = entry.value;
-
-      if (recordValue['date_scheduled'] == null) continue;
-
-      final Map<String, dynamic> record = {
-        'subject': widget.selectedSubject,
-        'subject_code': widget.selectedSubjectCode,
-        'lecture_no': recordKey.toString(),
-        'date_scheduled': recordValue['date_scheduled'],
-        'initiated_on': recordValue['initiated_on'],
-        'reminder_time': recordValue['reminder_time'] ?? 'All Day',
-        'lecture_type': recordValue['lecture_type'],
-        'date_learnt': recordValue['date_learnt'],
-        'date_revised': recordValue['date_revised'],
-        'description': recordValue['description'],
-        'missed_revision': recordValue['missed_revision'],
-        'dates_missed_revisions': recordValue['dates_missed_revisions'] ?? [],
-        'dates_revised': recordValue['dates_revised'] ?? [],
-        'no_revision': recordValue['no_revision'],
-        'revision_frequency': recordValue['revision_frequency'],
-        'status': recordValue['status'],
-        'only_once': recordValue['only_once'],
-      };
-
-      processedData_all.add(record);
-
-    }
-    // print('Processed data : $processedData_all');
-    return {
-      'records': processedData_all
-    };
   }
 
 
