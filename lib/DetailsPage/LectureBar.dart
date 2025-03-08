@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../SchedulePage/AnimatedCard.dart';
+import '../SchedulePage/ScheduleTable.dart';
+import '../SchedulePage/showLectureDetails.dart';
 import '../Utils/Code_data_fetch.dart';
 import '../Utils/lecture_colors.dart';
 import '../widgets/LectureDetailsModal.dart';
@@ -20,6 +23,7 @@ class LectureBar extends StatefulWidget {
 class _LectureBarState extends State<LectureBar> {
   List<MapEntry<String, dynamic>> _filteredLectureData = [];
   StreamSubscription? _subscription;
+  final _recordsController = StreamController<Map<String, List<Map<String, dynamic>>>>();
 
   @override
   void initState() {
@@ -30,7 +34,6 @@ class _LectureBarState extends State<LectureBar> {
   @override
   void didUpdateWidget(LectureBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the subject or subject code changed, update the listener
     if (oldWidget.selectedSubject != widget.selectedSubject ||
         oldWidget.selectedSubjectCode != widget.selectedSubjectCode) {
       _cancelSubscription();
@@ -41,8 +44,8 @@ class _LectureBarState extends State<LectureBar> {
   void _setupDataListener() {
     try {
       _subscription = listenToCodeData(
-          widget.selectedSubject,
-          widget.selectedSubjectCode
+        widget.selectedSubject,
+        widget.selectedSubjectCode,
       ).listen((data) {
         final filteredLectureData = data.entries
             .where((entry) => !(entry.value['only_once'] == 1 && entry.value['status'] == 'Disabled'))
@@ -51,24 +54,70 @@ class _LectureBarState extends State<LectureBar> {
         setState(() {
           _filteredLectureData = filteredLectureData;
         });
+
+        // Process data and add to stream
+        Map<String, List<Map<String, dynamic>>> processedData = _processSnapshot(data, filteredLectureData);
+        _recordsController.add(processedData);
       }, onError: (error) {
-        // Handle errors
-        // print('Error in Firebase listener: $error');
+        _recordsController.addError('Failed to fetch records: $error');
       });
     } catch (e) {
-      // print('Failed to set up listener: $e');
+      // Handle errors
+      print('Failed to set up listener: $e');
     }
   }
+
+  Map<String, List<Map<String, dynamic>>> _processSnapshot(
+      Map<String, dynamic> snapshot,
+      List<MapEntry<String, dynamic>> filteredLectureData) {
+
+    List<Map<String, dynamic>> processedData_all = [];
+
+    for (var entry in filteredLectureData) {
+      final recordKey = entry.key;
+      final recordValue = entry.value;
+
+      if (recordValue['date_scheduled'] == null) continue;
+
+      final Map<String, dynamic> record = {
+        'subject': widget.selectedSubject,
+        'subject_code': widget.selectedSubjectCode,
+        'lecture_no': recordKey.toString(),
+        'date_scheduled': recordValue['date_scheduled'],
+        'initiated_on': recordValue['initiated_on'],
+        'reminder_time': recordValue['reminder_time'] ?? 'All Day',
+        'lecture_type': recordValue['lecture_type'],
+        'date_learnt': recordValue['date_learnt'],
+        'date_revised': recordValue['date_revised'],
+        'description': recordValue['description'],
+        'missed_revision': recordValue['missed_revision'],
+        'dates_missed_revisions': recordValue['dates_missed_revisions'] ?? [],
+        'dates_revised': recordValue['dates_revised'] ?? [],
+        'no_revision': recordValue['no_revision'],
+        'revision_frequency': recordValue['revision_frequency'],
+        'status': recordValue['status'],
+        'only_once': recordValue['only_once'],
+      };
+
+      processedData_all.add(record);
+
+    }
+    // print('Processed data : $processedData_all');
+    return {
+      'records': processedData_all
+    };
+  }
+
 
   void _cancelSubscription() {
     _subscription?.cancel();
     _subscription = null;
   }
 
-
   @override
   void dispose() {
     _cancelSubscription();
+    _recordsController.close();
     super.dispose();
   }
 
@@ -98,206 +147,28 @@ class _LectureBarState extends State<LectureBar> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
+    // Convert _filteredLectureData to List<Map<String, dynamic>> as expected by ScheduleTable
+    List<Map<String, dynamic>> formattedRecords = _filteredLectureData.map((entry) {
+      Map<String, dynamic> record = Map<String, dynamic>.from(entry.value);
+      // Add lecture_no to each record so it can be identified
+      record['lecture_no'] = entry.key;
+      return record;
+    }).toList();
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          int crossAxisCount = _calculateColumns(constraints.maxWidth);
-          double aspectRatio = (constraints.maxWidth / crossAxisCount) / 150;
-
-          return GridView.builder(
-            padding: EdgeInsets.all(0),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              childAspectRatio: aspectRatio,
-              crossAxisSpacing: 6,
-              mainAxisSpacing: 6,
-            ),
-            itemCount: _filteredLectureData.length,
-            itemBuilder: (context, index) {
-              final lectureNo = _filteredLectureData[index].key;
-              final details = _filteredLectureData[index].value;
-
-              return Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _showLectureDetails(context, lectureNo, details),
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildInfoChip(context, details['lecture_type']),
-                            Text(
-                              lectureNo,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildCompactInfoRow(
-                                context,
-                                'Learned:',
-                                details['date_learnt'],
-                                'Revised:',
-                                details['date_revised'],
-                              ),
-                              _buildCompactInfoRow(
-                                context,
-                                'Revisions:',
-                                details['no_revision'].toString(),
-                                'Missed:',
-                                details['missed_revision'].toString(),
-                                isAlert: int.parse(details['missed_revision'].toString()) > 0,
-                              ),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today,
-                                    size: 14,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      'Scheduled: ${details['date_scheduled']}',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
+          // Use a single ScheduleTable for all lectures
+          return ScheduleTable(
+            initialRecords: formattedRecords,
+            title: '${widget.selectedSubject ?? ''} - ${widget.selectedSubjectCode ?? ''} Details',
+            onSelect: (context, record) {
+              String lectureNo = record['lecture_no'];
+              _showLectureDetails(context, lectureNo, record);
             },
           );
         },
       ),
-    );
-  }
-
-  Widget _buildInfoChip(BuildContext context, String text) {
-    return FutureBuilder<Color>(
-      future: LectureColors.getLectureTypeColor(context, text),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey, // Placeholder color while loading
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          );
-        } else if (snapshot.hasError) {
-          return Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.red, // Error color
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          );
-        } else {
-          return Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: snapshot.data,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          );
-        }
-      },
-    );
-  }
-
-  Widget _buildCompactInfoRow(
-      BuildContext context,
-      String label1,
-      String value1,
-      String label2,
-      String value2, {
-        bool isAlert = false,
-      }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    TextStyle? labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-    );
-    TextStyle? valueStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w500,
-    );
-
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Text(label1, style: labelStyle),
-              SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  value1,
-                  style: valueStyle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(width: 8),
-        Expanded(
-          child: Row(
-            children: [
-              Text(label2, style: labelStyle),
-              SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  value2,
-                  style: valueStyle?.copyWith(
-                    color: isAlert ? colorScheme.error : null,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

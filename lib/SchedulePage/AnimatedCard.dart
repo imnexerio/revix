@@ -19,6 +19,7 @@ class AnimatedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // print('record : $record');
     // Apply multiple animations
     final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(animation);
     final fadeAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(animation);

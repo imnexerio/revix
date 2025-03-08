@@ -290,6 +290,8 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                       ),
                     );
 
+                    print('record : $record');
+
                     return AnimatedCard(
                       animation: animation,
                       record: record,
