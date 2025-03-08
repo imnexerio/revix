@@ -496,15 +496,17 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         },
                       ),
                     ),
-                    RevisionFrequencyDropdown(
-                      revisionFrequency: _revisionFrequency,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _revisionFrequency = newValue!;
-                        });
-                        _setScheduledDate();
-                      },
-                    ),
+                    if (!onlyOnce)
+                      RevisionFrequencyDropdown(
+                        revisionFrequency: _revisionFrequency,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _revisionFrequency = newValue!;
+                          });
+                          _setScheduledDate();
+                        },
+                      ),
+                    if (!onlyOnce)
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
