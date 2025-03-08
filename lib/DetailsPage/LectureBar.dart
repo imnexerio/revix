@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../Utils/Code_data_fetch.dart';
 import '../Utils/lecture_colors.dart';
 import '../widgets/LectureDetailsModal.dart';
@@ -18,22 +19,57 @@ class LectureBar extends StatefulWidget {
 
 class _LectureBarState extends State<LectureBar> {
   List<MapEntry<String, dynamic>> _filteredLectureData = [];
+  StreamSubscription? _subscription;
 
   @override
   void initState() {
     super.initState();
-    _loadLectureData();
+    _setupDataListener();
   }
 
-  Future<void> _loadLectureData() async {
-    final lectureData = await getStoredCodeData(widget.selectedSubject,widget.selectedSubjectCode);
-    final filteredLectureData = lectureData.entries
-        .where((entry) => !(entry.value['only_once'] == 1 && entry.value['status'] == 'Disabled'))
-        .toList();
+  @override
+  void didUpdateWidget(LectureBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the subject or subject code changed, update the listener
+    if (oldWidget.selectedSubject != widget.selectedSubject ||
+        oldWidget.selectedSubjectCode != widget.selectedSubjectCode) {
+      _cancelSubscription();
+      _setupDataListener();
+    }
+  }
 
-    setState(() {
-      _filteredLectureData = filteredLectureData;
-    });
+  void _setupDataListener() {
+    try {
+      _subscription = listenToCodeData(
+          widget.selectedSubject,
+          widget.selectedSubjectCode
+      ).listen((data) {
+        final filteredLectureData = data.entries
+            .where((entry) => !(entry.value['only_once'] == 1 && entry.value['status'] == 'Disabled'))
+            .toList();
+
+        setState(() {
+          _filteredLectureData = filteredLectureData;
+        });
+      }, onError: (error) {
+        // Handle errors
+        // print('Error in Firebase listener: $error');
+      });
+    } catch (e) {
+      // print('Failed to set up listener: $e');
+    }
+  }
+
+  void _cancelSubscription() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+
+
+  @override
+  void dispose() {
+    _cancelSubscription();
+    super.dispose();
   }
 
   void _showLectureDetails(BuildContext context, String lectureNo, dynamic details) {
