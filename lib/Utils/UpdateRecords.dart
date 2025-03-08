@@ -7,6 +7,7 @@ Future<void> UpdateRecords(
     String selectedSubjectCode,
     String lectureNo,
     String dateRevised,
+    String description,
     int noRevision,
     String dateScheduled,
     List<String> datesRevised,
@@ -40,5 +41,6 @@ Future<void> UpdateRecords(
     'revision_frequency': revisionFrequency,
     'status': status,
     'dates_revised': datesRevised,
+    'description': description,
   });
 }
