@@ -132,6 +132,32 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   }
 
   @override
+  void didUpdateWidget(CodeBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // If the subject has changed, we need to update the selected code
+    if (oldWidget.selectedSubject != widget.selectedSubject) {
+      // Reset the selected code
+      _selectedSubjectCode = null;
+
+      // Check if we already have data loaded
+      if (_subjectData != null &&
+          _subjectData!['subjectCodes'] != null &&
+          _subjectData!['subjectCodes'][widget.selectedSubject] != null) {
+
+        final codes = _subjectData!['subjectCodes'][widget.selectedSubject] as List<String>;
+        if (codes.isNotEmpty) {
+          setState(() {
+            _selectedSubjectCode = codes.first;
+          });
+          _controller.reset();
+          _controller.forward();
+        }
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _buildContent(),
