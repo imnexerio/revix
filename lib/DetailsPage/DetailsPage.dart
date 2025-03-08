@@ -18,7 +18,7 @@ class _DetailsPageState extends State<DetailsPage> {
 Widget build(BuildContext context) {
   return Scaffold(
     body: Padding(
-      padding: const EdgeInsets.all(16.0), // Add padding here
+      padding: const EdgeInsets.all(4.0), // Add padding here
       child: Center(
         child: SubjectsBar(),
       ),

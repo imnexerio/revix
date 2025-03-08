@@ -92,7 +92,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
               isLearned: false
           ));
         } catch (e) {
-          print('Error parsing missed revision date: $e');
+          // print('Error parsing missed revision date: $e');
         }
       }
     }

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'AnimatedCard.dart';
 
-class ScheduleTable extends StatefulWidget {
+import 'AnimatedCardDetailP.dart';
+
+class ScheduleTableDetailP extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;
   final String title;
   final Function(BuildContext, Map<String, dynamic>) onSelect;
 
-  const ScheduleTable({
+  const ScheduleTableDetailP({
     Key? key,
     required this.initialRecords,
     required this.title,
@@ -17,7 +18,7 @@ class ScheduleTable extends StatefulWidget {
   _ScheduleTableState createState() => _ScheduleTableState();
 }
 
-class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProviderStateMixin {
+class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerProviderStateMixin {
   late List<Map<String, dynamic>> records;
   String? currentSortField;
   bool isAscending = true;
@@ -63,7 +64,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
   }
 
   @override
-  void didUpdateWidget(ScheduleTable oldWidget) {
+  void didUpdateWidget(ScheduleTableDetailP oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialRecords != oldWidget.initialRecords) {
       setState(() {
@@ -228,83 +229,80 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    // Print statement for debugging
-    // print('ScheduleTable received ${records.length} records');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              _buildFilterButton(),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Animated grid for the cards
-        AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = _calculateColumns(constraints.maxWidth);
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    mainAxisExtent: 160,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  itemCount: records.length,
-                  itemBuilder: (context, index) {
-                    final record = records[index];
-                    final bool isCompleted = record['date_learnt'] != null &&
-                        record['date_learnt'].toString().isNotEmpty;
+                ),
+                _buildFilterButton(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Animated grid for the cards
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount = _calculateColumns(constraints.maxWidth);
 
-                    final Animation<double> animation = Tween<double>(
-                      begin: 0.0,
-                      end: 1.0,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: Interval(
-                          (index / records.length) * 0.5,
-                          (index / records.length) * 0.5 + 0.5,
-                          curve: Curves.easeInOut,
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      mainAxisExtent: 160,
+                    ),
+                    itemCount: records.length,
+                    itemBuilder: (context, index) {
+                      final record = records[index];
+                      final bool isCompleted = record['date_learnt'] != null &&
+                          record['date_learnt'].toString().isNotEmpty;
+
+                      final Animation<double> animation = Tween<double>(
+                        begin: 0.0,
+                        end: 1.0,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: Interval(
+                            (index / records.length) * 0.5,
+                            (index / records.length) * 0.5 + 0.5,
+                            curve: Curves.easeInOut,
+                          ),
                         ),
-                      ),
-                    );
+                      );
 
-                    // print('record : $record');
-
-                    return AnimatedCard(
-                      animation: animation,
-                      record: record,
-                      isCompleted: isCompleted,
-                      onSelect: widget.onSelect,
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
-      ],
+                      return AnimatedCardDetailP(
+                        animation: animation,
+                        record: record,
+                        isCompleted: isCompleted,
+                        onSelect: widget.onSelect,
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

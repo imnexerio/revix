@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../SchedulePage/ScheduleTable.dart';
 import '../Utils/Code_data_fetch.dart';
 import '../widgets/LectureDetailsModal.dart';
+import 'ScheduleTableDetailP.dart';
 
 class LectureBar extends StatefulWidget {
   final String selectedSubject;
@@ -57,7 +57,7 @@ class _LectureBarState extends State<LectureBar> {
       });
     } catch (e) {
       // Handle errors
-      print('Failed to set up listener: $e');
+      // print('Failed to set up listener: $e');
     }
   }
 
@@ -112,7 +112,7 @@ class _LectureBarState extends State<LectureBar> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           // Use a single ScheduleTable for all lectures
-          return ScheduleTable(
+          return ScheduleTableDetailP(
             initialRecords: formattedRecords,
             title: '${widget.selectedSubject ?? ''} - ${widget.selectedSubjectCode ?? ''} Details',
             onSelect: (context, record) {
