@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../DetailsPage/DetailRow.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
@@ -136,7 +137,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   throw 'Cannot mark as done when the status is disabled';
                                 }
 
-                                String dateRevised = DateTime.now().toIso8601String().split('T')[0];
+                                String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
                                 int missedRevision = (widget.details['missed_revision'] as num).toInt();
                                 DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
                                 String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
