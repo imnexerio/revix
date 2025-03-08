@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../Utils/FetchTypesUtils.dart'; // Adjust the import path as necessary
+import '../SettingsPage/AddTrackingTypeSheet.dart'; // Adjust the import path as necessary
 
 class LectureTypeDropdown extends StatefulWidget {
   final String lectureType;
@@ -29,6 +29,7 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
     List<String> types = await FetchtrackingTypeUtils.fetchtrackingType();
     setState(() {
       _lectureTypes = types;
+      _lectureTypes.add('Add new'); // Add the 'Add new' option
       _isLoading = false;
     });
   }
@@ -56,7 +57,23 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
             child: Text(type),
           );
         }).toList(),
-        onChanged: widget.onChanged,
+        onChanged: (String? newValue) {
+          if (newValue == 'Add new') {
+            showAddtrackingTypeSheet(
+              context,
+              GlobalKey<FormState>(),
+              TextEditingController(),
+                  (newState) {
+                setState(() {
+                  _fetchLectureTypes(); // Refresh the list after adding a new type
+                });
+              },
+              _fetchLectureTypes, // Pass the callback to refresh the dropdown
+            );
+          } else {
+            widget.onChanged(newValue);
+          }
+        },
       ),
     );
   }

@@ -98,6 +98,7 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
                 _formKey,
                 _customTitleController,
                 setState,
+                fetchtrackingType, // Pass the callback to refresh the list
               ),
               icon: Icon(Icons.add),
               label: Text('Add Custom Type'),

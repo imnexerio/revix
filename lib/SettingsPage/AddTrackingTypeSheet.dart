@@ -3,12 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
 
+// lib/SettingsPage/AddTrackingTypeSheet.dart
 void showAddtrackingTypeSheet(
-  BuildContext context,
-  GlobalKey<FormState> formKey,
-  TextEditingController titleController,
-  StateSetter setState,
-) {
+    BuildContext context,
+    GlobalKey<FormState> formKey,
+    TextEditingController titleController,
+    StateSetter setState,
+    VoidCallback onTypeAdded, // Add this callback
+    ) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -137,6 +139,8 @@ void showAddtrackingTypeSheet(
                           message: 'New tracking type added successfully',
                         ),
                       );
+
+                      onTypeAdded(); // Call the callback to refresh the dropdown
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
