@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
-import 'RevisionGraph.dart';
 
-// To fix the issue, we need to modify the part of showLectureDetails that decides
-// whether to show the description section.
-
-void showLectureDetails(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {
-  // Ensure description is never null
+void showLectureDetailsP(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {
   String description = details['description'] ?? '';
 
   showModalBottomSheet(

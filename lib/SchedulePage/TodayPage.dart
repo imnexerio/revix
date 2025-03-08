@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'RealtimeDatabaseListener.dart';
 import 'ScheduleTable.dart';
-import 'showLectureDetails.dart';
+import 'showLectureScheduleP.dart';
 
 class TodayPage extends StatefulWidget {
   @override
@@ -120,31 +120,31 @@ class _TodayPageState extends State<TodayPage> {
             ScheduleTable(
               initialRecords: data['missed']!,
               title: 'Missed Schedule (${data['missed']!.length})',
-              onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
+              onSelect: (context, record) => showLectureScheduleP(context, record, _refreshRecords),
             ),
           if (data['today']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['today']!,
               title: 'Today\'s Schedule (${data['today']!.length})',
-              onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
+              onSelect: (context, record) => showLectureScheduleP(context, record, _refreshRecords),
             ),
           if (data['todayAdded']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['todayAdded']!,
               title: 'Today\'s Added Records (${data['todayAdded']!.length})',
-              onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
+              onSelect: (context, record) => showLectureScheduleP(context, record, _refreshRecords),
             ),
           if (data['nextDay']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['nextDay']!,
               title: 'Next Day Schedule (${data['nextDay']!.length})',
-              onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
+              onSelect: (context, record) => showLectureScheduleP(context, record, _refreshRecords),
             ),
           if (data['next7Days']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['next7Days']!,
               title: 'Next 7 Days Schedule (${data['next7Days']!.length})',
-              onSelect: (context, record) => showLectureDetails(context, record, _refreshRecords),
+              onSelect: (context, record) => showLectureScheduleP(context, record, _refreshRecords),
             ),
         ],
       ),
