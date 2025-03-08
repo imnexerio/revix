@@ -33,7 +33,7 @@ class AnimatedCardDetailP extends StatelessWidget {
             child: SlideTransition(
               position: slideAnimation,
               child: Card(
-                elevation: 0,
+                elevation: 5,
                 margin: const EdgeInsets.all(4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -67,7 +67,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(
                                 '${record['date_learnt']} · ${record['no_revision'] } · ${record['missed_revision']}',
                                 style: TextStyle(
@@ -77,7 +77,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               // Wrap(
                               //   spacing: 16,
                               //   runSpacing: 8,
@@ -104,7 +104,6 @@ class AnimatedCardDetailP extends StatelessWidget {
                         Expanded(
                           flex: 2,
                           child: SizedBox(
-                            // height: 200,
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(

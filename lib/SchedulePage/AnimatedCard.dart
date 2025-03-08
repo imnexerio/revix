@@ -35,7 +35,7 @@ class AnimatedCard extends StatelessWidget {
             child: SlideTransition(
               position: slideAnimation,
               child: Card(
-                elevation: 0,
+                elevation: 5,
                 margin: const EdgeInsets.all(4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -69,9 +69,9 @@ class AnimatedCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(
-                                record['lecture_type'],
+                                '${record['lecture_type']} · ${record['reminder_time']}',
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                   fontSize: 13,
@@ -79,7 +79,7 @@ class AnimatedCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               // Wrap(
                               //   spacing: 16,
                               //   runSpacing: 8,

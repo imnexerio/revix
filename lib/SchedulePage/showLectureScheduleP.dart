@@ -89,7 +89,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              '${details['lecture_type']} ',
+                              '${details['lecture_type']} · ${details['reminder_time']}',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Theme.of(context).colorScheme.onSurface,
