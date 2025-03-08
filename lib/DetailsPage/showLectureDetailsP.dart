@@ -6,7 +6,7 @@ import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
 
-void showLectureDetailsP(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {
+void showLectureDetailsP(BuildContext context, Map<String, dynamic> details) {
   String description = details['description'] ?? '';
 
   showModalBottomSheet(

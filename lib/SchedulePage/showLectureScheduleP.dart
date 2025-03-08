@@ -7,7 +7,7 @@ import '../Utils/date_utils.dart';
 import 'RevisionGraph.dart';
 
 
-void showLectureScheduleP(BuildContext context, Map<String, dynamic> details, Function() refreshRecords) {
+void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
   String description = details['description'] ?? '';
 
   showModalBottomSheet(
