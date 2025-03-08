@@ -8,6 +8,7 @@ import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/customSnackBar_error.dart';
 import 'Utils/subject_utils.dart';
+import 'Utils/subject_utils_static.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -49,7 +50,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
   Future<void> _loadSubjectsAndCodes() async {
     try {
-      final last_revised = await fetchSubjectsAndCodes();
+      final last_revised = await fetchSubjectsAndCodesStatic();
       setState(() {
         _subjects = last_revised['subjects'];
         _subjectCodes = last_revised['subjectCodes'];
