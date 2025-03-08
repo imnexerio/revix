@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../DetailsPage/DetailRow.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
@@ -30,7 +29,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late bool isEnabled;
   late int noRevision;
   late TextEditingController _descriptionController;
-  // Add this line to store reminder time
   late String formattedTime;
 
   @override
@@ -39,31 +37,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     revisionFrequency = widget.details['revision_frequency'];
     isEnabled = widget.details['status'] == 'Enabled';
     noRevision = widget.details['no_revision'];
-    // Initialize formattedTime with the current reminder_time
     formattedTime = widget.details['reminder_time'];
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
   }
-
-
-
-// class _LectureDetailsModalState extends State<LectureDetailsModal> {
-//   late String revisionFrequency;
-//   late bool isEnabled;
-//   late int noRevision;
-//   late TextEditingController _descriptionController;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     revisionFrequency = widget.details['revision_frequency'];
-//     isEnabled = widget.details['status'] == 'Enabled';
-//     noRevision = widget.details['no_revision'];
-//     _descriptionController = TextEditingController(
-//       text: widget.details['description'] ?? 'No description available',
-//     );
-//   }
 
   @override
   void dispose() {
@@ -791,12 +769,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           // Revision Frequency dropdown
           Row(
             children: [
-              Icon(
-                Icons.update,
-                color: Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
-              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -829,14 +801,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           // Status toggle
           Row(
             children: [
-              Icon(
-                Icons.toggle_on,
-                color: isEnabled
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                size: 24,
-              ),
-              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
