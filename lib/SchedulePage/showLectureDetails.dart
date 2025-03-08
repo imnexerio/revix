@@ -13,6 +13,7 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
   String lectureNo = details['lecture_no'];
   String selectedSubject = details['subject'];
   String selectedSubjectCode = details['subject_code'];
+  int onlyOnce=details['only_once'];
 
   // print(details);
 
@@ -240,6 +241,10 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
                             List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
                             datesRevised.add(dateRevised);
 
+                            if (onlyOnce != 0) {
+                              isEnabled = false;
+                            }
+
                             await UpdateRecords(
                               selectedSubject,
                               selectedSubjectCode,
@@ -259,12 +264,21 @@ void showLectureDetails(BuildContext context, Map<String, dynamic> details, Func
 
                             // await refreshRecords();
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              customSnackBar(
-                                context: context,
-                                message: '$selectedSubject $selectedSubjectCode $lectureNo done. Next schedule is on $dateScheduled.',
-                              ),
-                            );
+                            if (onlyOnce != 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                customSnackBar(
+                                  context: context,
+                                  message: '$selectedSubject $selectedSubjectCode $lectureNo done. Next schedule is on $dateScheduled.',
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                customSnackBar(
+                                  context: context,
+                                  message: '$selectedSubject $selectedSubjectCode $lectureNo done.',
+                                ),
+                              );
+                            }
                           } catch (e) {
                             if (Navigator.canPop(context)) {
                               Navigator.pop(context);
