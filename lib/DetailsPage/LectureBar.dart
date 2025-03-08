@@ -44,6 +44,11 @@ class _LectureBarState extends State<LectureBar> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
+    // Filter lectureData to include only records where only_once != 0
+    final filteredLectureData = widget.lectureData.entries
+        .where((entry) => entry.value['only_once'] == 1 && entry.value['status'] == 'Enabled')
+        .toList();
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -58,10 +63,10 @@ class _LectureBarState extends State<LectureBar> {
               crossAxisSpacing: 6,
               mainAxisSpacing: 6,
             ),
-            itemCount: widget.lectureData.length,
+            itemCount: filteredLectureData.length,
             itemBuilder: (context, index) {
-              final lectureNo = widget.lectureData.keys.elementAt(index);
-              final details = widget.lectureData[lectureNo];
+              final lectureNo = filteredLectureData[index].key;
+              final details = filteredLectureData[index].value;
 
               return Card(
                 child: InkWell(
