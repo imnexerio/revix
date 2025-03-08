@@ -44,9 +44,8 @@ class _LectureBarState extends State<LectureBar> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    // Filter lectureData to include only records where only_once != 0
     final filteredLectureData = widget.lectureData.entries
-        .where((entry) => entry.value['only_once'] == 1 && entry.value['status'] == 'Enabled')
+        .where((entry) => !(entry.value['only_once'] == 1 && entry.value['status'] == 'Disabled'))
         .toList();
 
     return Scaffold(

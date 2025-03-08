@@ -156,6 +156,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
                                 datesRevised.add(dateRevised);
 
+                                if (widget.details['only_once'] != 0) {
+                                  isEnabled = false;
+                                }
+
                                 await UpdateRecords(
                                   widget.selectedSubject,
                                   widget.selectedSubjectCode,
@@ -174,12 +178,21 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 Navigator.pop(context);
                                 Navigator.pop(context);
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  customSnackBar(
-                                    context: context,
-                                    message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
-                                  ),
-                                );
+                                if (widget.details['only_once'] != 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    customSnackBar(
+                                      context: context,
+                                      message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. This lecture is marked as done and will not be revised again.',
+                                    ),
+                                  );
+                                }else{
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    customSnackBar(
+                                      context: context,
+                                      message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
+                                    ),
+                                  );
+                                }
                               } catch (e) {
                                 if (Navigator.canPop(context)) {
                                   Navigator.pop(context);
