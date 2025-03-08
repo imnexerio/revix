@@ -25,13 +25,13 @@ class LectureDetailsModal extends StatefulWidget {
   _LectureDetailsModalState createState() => _LectureDetailsModalState();
 }
 
-
-
 class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late String revisionFrequency;
   late bool isEnabled;
   late int noRevision;
   late TextEditingController _descriptionController;
+  // Add this line to store reminder time
+  late String formattedTime;
 
   @override
   void initState() {
@@ -39,10 +39,31 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     revisionFrequency = widget.details['revision_frequency'];
     isEnabled = widget.details['status'] == 'Enabled';
     noRevision = widget.details['no_revision'];
+    // Initialize formattedTime with the current reminder_time
+    formattedTime = widget.details['reminder_time'];
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
   }
+
+
+
+// class _LectureDetailsModalState extends State<LectureDetailsModal> {
+//   late String revisionFrequency;
+//   late bool isEnabled;
+//   late int noRevision;
+//   late TextEditingController _descriptionController;
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     revisionFrequency = widget.details['revision_frequency'];
+//     isEnabled = widget.details['status'] == 'Enabled';
+//     noRevision = widget.details['no_revision'];
+//     _descriptionController = TextEditingController(
+//       text: widget.details['description'] ?? 'No description available',
+//     );
+//   }
 
   @override
   void dispose() {
@@ -297,6 +318,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             widget.lectureNo,
                             dateRevised,
                             widget.details['description'],
+                            widget.details['reminder_time'],
                             noRevision + 1,
                             dateScheduled,
                             datesRevised,
@@ -397,6 +419,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             widget.lectureNo,
                             widget.details['date_revised'],
                             widget.details['description'],
+                            formattedTime,
                             noRevision,
                             dateScheduled,
                             datesRevised,
@@ -471,12 +494,33 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       ),
       child: Row(
         children: [
-          _buildStatusItem(
+          _buildClickableStatusItem(
             context,
-            "Frequency",
-            revisionFrequency,
+            "Timing",
+            formattedTime, // Changed from widget.details['reminder_time'] to formattedTime
             Icons.refresh,
             Theme.of(context).colorScheme.primary,
+                () async {
+              TimeOfDay? pickedTime = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.now(),
+                builder: (BuildContext context, Widget? child) {
+                  return MediaQuery(
+                    data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                    child: child!,
+                  );
+                },
+              );
+
+              if (pickedTime != null) {
+                final now = DateTime.now();
+                setState(() {
+                  formattedTime = DateFormat('HH:mm').format(
+                    DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
+                  );
+                });
+              }
+            },
           ),
           const SizedBox(width: 8),
           VerticalDivider(
@@ -538,6 +582,40 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildClickableStatusItem(BuildContext context, String label, String value, IconData icon, Color color, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: color,
+              size: 22,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

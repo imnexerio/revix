@@ -246,6 +246,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               details['lecture_no'],
                               dateRevised,
                               description,
+                              details['reminder_time'],
                               details['no_revision'] + 1,
                               dateScheduled,
                               datesRevised,
