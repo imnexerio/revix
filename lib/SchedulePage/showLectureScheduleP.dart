@@ -259,7 +259,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             Navigator.pop(context);
                             Navigator.pop(context);
 
-                            if (details['only_once'] != 0) {
+                            if (details['only_once'] != 1) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 customSnackBar(
                                   context: context,

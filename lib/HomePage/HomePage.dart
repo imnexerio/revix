@@ -530,7 +530,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           LayoutBuilder(
               builder: (context, constraints) {
                 return SizedBox(
-                  height: 600,
+                  height: 500,
                   child: PieChart(
                     PieChartData(
                       sections: createPieChartSections(
