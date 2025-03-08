@@ -52,295 +52,403 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 15,
+            offset: Offset(0, -2),
+            spreadRadius: 2,
+          )
+        ],
       ),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: Offset(0, -2),
-              spreadRadius: 2,
-            )
-          ],
-        ),
-        child: Column(
-          children: [
-            // Handle bar for dragging
-            Container(
-              margin: EdgeInsets.only(top: 12),
-              height: 4,
-              width: 40,
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(4),
+      child: Column(
+        children: [
+          // Handle bar for dragging
+          Container(
+            margin: EdgeInsets.only(top: 12),
+            height: 4,
+            width: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+
+          // Header with subject and lecture info
+          Container(
+            padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.menu_book,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${widget.selectedSubject} · ${widget.selectedSubjectCode} · ${widget.lectureNo}',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '${widget.details['lecture_type']}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Details sections
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 300,
+                        maxHeight: 300,
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: 1.0,
+                        child: RevisionRadarChart(
+                          dateLearnt: widget.details['date_learnt'],
+                          datesMissedRevisions: List.from(widget.details['dates_missed_revisions'] ?? []),
+                          datesRevised: List.from(widget.details['dates_revised'] ?? []),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Status card
+                  _buildStatusCard(context),
+
+                  SizedBox(height: 20),
+
+                  // Timeline section
+                  Text(
+                    "Timeline",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  _buildTimelineCard(context),
+
+                  SizedBox(height: 24),
+
+                  // Description section
+                  Text(
+                    "Description",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  _buildDescriptionCard(context),
+
+                  SizedBox(height: 24),
+
+                  // Revision frequency section
+                  Text(
+                    "Revision Settings",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  _buildRevisionSettingsCard(context),
+
+                  SizedBox(height: 24),
+                ],
               ),
             ),
+          ),
 
-            // Header with subject and lecture info
-            Container(
-              padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
+          // Action buttons
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Row(
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.menu_book,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                  SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${widget.selectedSubject} · ${widget.selectedSubjectCode} · ${widget.lectureNo}',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    child: ElevatedButton.icon(
+                      icon: Icon(Icons.check_circle_outline),
+                      label: Text('MARK AS DONE'),
+                      onPressed: () async {
+                        try {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return Center(
+                                child: Container(
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircularProgressIndicator(),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        "Updating...",
+                                        style: TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+
+                          if(!isEnabled) {
+                            Navigator.pop(context);
+                            throw 'Cannot mark as done when the status is disabled';
+                          }
+
+                          String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+                          int missedRevision = (widget.details['missed_revision'] as num).toInt();
+                          DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
+                          String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                            scheduledDate,
+                            revisionFrequency,
+                            noRevision + 1,
+                          )).toIso8601String().split('T')[0];
+
+                          if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
+                            missedRevision += 1;
+                          }
+                          List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
+
+                          if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
+                            datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
+                          }
+                          List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
+                          datesRevised.add(dateRevised);
+
+                          if (widget.details['only_once'] != 0) {
+                            isEnabled = false;
+                          }
+
+                          await UpdateRecords(
+                            widget.selectedSubject,
+                            widget.selectedSubjectCode,
+                            widget.lectureNo,
+                            dateRevised,
+                            widget.details['description'],
+                            noRevision + 1,
+                            dateScheduled,
+                            datesRevised,
+                            missedRevision,
+                            datesMissedRevisions,
+                            revisionFrequency,
+                            isEnabled ? 'Enabled' : 'Disabled',
+                          );
+
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+
+                          if (widget.details['only_once'] != 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              customSnackBar(
+                                context: context,
+                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. This lecture is marked as done and will not be revised again.',
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              customSnackBar(
+                                context: context,
+                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          }
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            customSnackBar_error(
+                              context: context,
+                              message: 'Failed to mark as done: ${e.toString()}',
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        SizedBox(height: 2),
-                        Text(
-                          '${widget.details['lecture_type']} ',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest?.withOpacity(0.5) ??
-                          Colors.grey.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                      color: Theme.of(context).colorScheme.onSurface,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: Icon(Icons.save),
+                      label: Text('SAVE CHANGES'),
+                      onPressed: () async {
+                        try {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return Center(
+                                child: Container(
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircularProgressIndicator(),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        "Saving...",
+                                        style: TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+
+                          List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
+                          List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
+                          String dateScheduled = widget.details['date_scheduled'];
+
+                          if (isEnabled && widget.details['status'] == 'Disabled' &&
+                              DateTime.parse(widget.details['date_scheduled']).isBefore(DateTime.now())) {
+                            dateScheduled = DateTime.now().toIso8601String().split('T')[0];
+                          }
+
+                          await UpdateRecords(
+                            widget.selectedSubject,
+                            widget.selectedSubjectCode,
+                            widget.lectureNo,
+                            widget.details['date_revised'],
+                            widget.details['description'],
+                            noRevision,
+                            dateScheduled,
+                            datesRevised,
+                            widget.details['missed_revision'],
+                            datesMissedRevisions,
+                            revisionFrequency,
+                            isEnabled ? 'Enabled' : 'Disabled',
+                          );
+
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            customSnackBar(
+                              context: context,
+                              message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
+                            ),
+                          );
+                        } catch (e) {
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          }
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            customSnackBar_error(
+                              context: context,
+                              message: 'Update Failed: ${e.toString()}',
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.secondary,
+                        foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Details sections
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Optional: Radar chart visualization if you have this component
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: 300,
-                          maxHeight: 300,
-                        ),
-                        child: AspectRatio(
-                          aspectRatio: 1.0,
-                          child: RevisionRadarChart(
-                            dateLearnt: widget.details['date_learnt'],
-                            datesMissedRevisions: List.from(widget.details['dates_missed_revisions'] ?? []),
-                            datesRevised: List.from(widget.details['dates_revised'] ?? []),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Status card
-                    _buildStatusCard(context),
-
-                    SizedBox(height: 20),
-
-                    // Timeline section
-                    Text(
-                      "Timeline",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    _buildTimelineCard(context),
-
-                    SizedBox(height: 24),
-
-                    // Revision Frequency section
-                    Text(
-                      "Revision Settings",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          RevisionFrequencyDropdown(
-                            revisionFrequency: revisionFrequency,
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                revisionFrequency = newValue!;
-                              });
-                            },
-                          ),
-                          SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Status',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    isEnabled ? 'Enabled' : 'Disabled',
-                                    style: TextStyle(
-                                      color: isEnabled
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(context).colorScheme.error,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Switch(
-                                    value: isEnabled,
-                                    onChanged: (bool newValue) {
-                                      setState(() {
-                                        isEnabled = newValue;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 24),
-
-                    // Description section
-                    Text(
-                      "Description",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    _buildDescriptionCard(context),
-                    SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            ),
-
-            // Action buttons
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: Icon(Icons.save),
-                        label: Text('SAVE CHANGES'),
-                        onPressed: () => _saveChanges(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.secondary,
-                          foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: Icon(Icons.check_circle_outline),
-                        label: Text('MARK AS DONE'),
-                        onPressed: () => _markAsDone(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStatusCard(BuildContext context) {
-    String revisionFrequency = widget.details['revision_frequency'];
-    int noRevision = widget.details['no_revision'];
-
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -544,6 +652,14 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   }
 
   Widget _buildDescriptionCard(BuildContext context) {
+    TextEditingController _descriptionController = TextEditingController(
+      text: widget.details['description'] ?? 'No description available',
+    );
+
+    _descriptionController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _descriptionController.text.length),
+    );
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16),
@@ -564,227 +680,124 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         decoration: InputDecoration(
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
-              width: 1.0,
-            ),
+            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
           ),
           hintText: 'Enter description',
           contentPadding: EdgeInsets.all(16),
         ),
-        style: TextStyle(
-          fontSize: 16,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
+        onChanged: (text) {
+          setState(() {
+            widget.details['description'] = text;
+          });
+        },
       ),
     );
   }
 
-  Future<void> _markAsDone(BuildContext context) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Center(
-            child: Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    "Updating...",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
-      if(!isEnabled) {
-        Navigator.pop(context);
-        throw 'Cannot mark as done when the status is disabled';
-      }
-
-      String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
-      int missedRevision = (widget.details['missed_revision'] as num).toInt();
-      DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
-      String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-        scheduledDate,
-        revisionFrequency,
-        noRevision + 1,
-      )).toIso8601String().split('T')[0];
-
-      if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
-        missedRevision += 1;
-      }
-
-      List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
-
-      if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
-        datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
-      }
-
-      List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
-      datesRevised.add(dateRevised);
-
-      if (widget.details['only_once'] != 0) {
-        isEnabled = false;
-      }
-
-      String updatedStatus = isEnabled ? 'Enabled' : 'Disabled';
-
-      await UpdateRecords(
-        widget.selectedSubject,
-        widget.selectedSubjectCode,
-        widget.lectureNo,
-        dateRevised,
-        _descriptionController.text,
-        noRevision + 1,
-        dateScheduled,
-        datesRevised,
-        missedRevision,
-        datesMissedRevisions,
-        revisionFrequency,
-        updatedStatus,
-      );
-
-      Navigator.pop(context); // Close loading dialog
-      Navigator.pop(context); // Close modal
-
-      if (widget.details['only_once'] != 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          customSnackBar(
-            context: context,
-            message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} done. This lecture is marked as done and will not be revised again.',
+  Widget _buildRevisionSettingsCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          customSnackBar(
-            context: context,
-            message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} done. Next schedule is on $dateScheduled.',
+        ],
+      ),
+      child: Column(
+        children: [
+          // Revision Frequency dropdown
+          Row(
+            children: [
+              Icon(
+                Icons.update,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Revision Frequency",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    RevisionFrequencyDropdown(
+                      revisionFrequency: revisionFrequency,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          revisionFrequency = newValue!;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        );
-      }
-    } catch (e) {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar_error(
-          context: context,
-          message: 'Failed to mark as done: ${e.toString()}',
-        ),
-      );
-    }
+          SizedBox(height: 20),
+
+          // Status toggle
+          Row(
+            children: [
+              Icon(
+                Icons.toggle_on,
+                color: isEnabled
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                size: 24,
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Status",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      isEnabled
+                          ? "This lecture is enabled for future revisions"
+                          : "This lecture is disabled and won't appear in revisions",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: isEnabled,
+                onChanged: (bool newValue) {
+                  setState(() {
+                    isEnabled = newValue;
+                  });
+                },
+                activeColor: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
-  Future<void> _saveChanges(BuildContext context) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Center(
-            child: Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    "Saving changes...",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
-      List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
-      List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
-      String dateScheduled = widget.details['date_scheduled'];
-
-      // If enabling a disabled lecture, update the schedule date if it's in the past
-      if (isEnabled && widget.details['status'] == 'Disabled' && DateTime.parse(widget.details['date_scheduled']).isBefore(DateTime.now())) {
-        dateScheduled = DateTime.now().toIso8601String().split('T')[0];
-      }
-
-      await UpdateRecords(
-        widget.selectedSubject,
-        widget.selectedSubjectCode,
-        widget.lectureNo,
-        widget.details['date_revised'],
-        _descriptionController.text,
-        noRevision,
-        dateScheduled,
-        datesRevised,
-        widget.details['missed_revision'],
-        datesMissedRevisions,
-        revisionFrequency,
-        isEnabled ? 'Enabled' : 'Disabled',
-      );
-
-      Navigator.pop(context); // Close loading dialog
-      Navigator.pop(context); // Close modal
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar(
-          context: context,
-          message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} updated. Next schedule is on $dateScheduled.',
-        ),
-      );
-    } catch (e) {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar_error(
-          context: context,
-          message: 'Failed to save changes: ${e.toString()}',
-        ),
-      );
-    }
-  }
-}
-
-// Custom function to show the modal
-void showLectureDetailsModal(
-    BuildContext context,
-    String selectedSubject,
-    String selectedSubjectCode,
-    String lectureNo,
-    Map<String, dynamic> details,
-    ) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (BuildContext context) {
-      return LectureDetailsModal(
-        selectedSubject: selectedSubject,
-        selectedSubjectCode: selectedSubjectCode,
-        lectureNo: lectureNo,
-        details: details,
-      );
-    },
-  );
 }
