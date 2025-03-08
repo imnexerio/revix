@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import '../Utils/Code_data_fetch.dart';
 import '../Utils/lecture_colors.dart';
 import '../widgets/LectureDetailsModal.dart';
 
 class LectureBar extends StatefulWidget {
-  final Map<String, dynamic> lectureData;
   final String selectedSubject;
   final String selectedSubjectCode;
 
   LectureBar({
-    required this.lectureData,
     required this.selectedSubject,
     required this.selectedSubjectCode,
   });
@@ -18,6 +17,25 @@ class LectureBar extends StatefulWidget {
 }
 
 class _LectureBarState extends State<LectureBar> {
+  List<MapEntry<String, dynamic>> _filteredLectureData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLectureData();
+  }
+
+  Future<void> _loadLectureData() async {
+    final lectureData = await getStoredCodeData(widget.selectedSubject,widget.selectedSubjectCode);
+    final filteredLectureData = lectureData.entries
+        .where((entry) => !(entry.value['only_once'] == 1 && entry.value['status'] == 'Disabled'))
+        .toList();
+
+    setState(() {
+      _filteredLectureData = filteredLectureData;
+    });
+  }
+
   void _showLectureDetails(BuildContext context, String lectureNo, dynamic details) {
     if (details is! Map<String, dynamic>) {
       details = Map<String, dynamic>.from(details);
@@ -44,10 +62,6 @@ class _LectureBarState extends State<LectureBar> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    final filteredLectureData = widget.lectureData.entries
-        .where((entry) => !(entry.value['only_once'] == 1 && entry.value['status'] == 'Disabled'))
-        .toList();
-
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -62,10 +76,10 @@ class _LectureBarState extends State<LectureBar> {
               crossAxisSpacing: 6,
               mainAxisSpacing: 6,
             ),
-            itemCount: filteredLectureData.length,
+            itemCount: _filteredLectureData.length,
             itemBuilder: (context, index) {
-              final lectureNo = filteredLectureData[index].key;
-              final details = filteredLectureData[index].value;
+              final lectureNo = _filteredLectureData[index].key;
+              final details = _filteredLectureData[index].value;
 
               return Card(
                 child: InkWell(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Utils/Code_data_fetch.dart';
+import '../Utils/subject_utils.dart';
 import 'LectureBar.dart';
 
 class CodeBar extends StatefulWidget {
@@ -12,7 +12,6 @@ class CodeBar extends StatefulWidget {
 }
 
 class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
-  Map<String, dynamic>? _selectedLectureData;
   String? _selectedSubjectCode;
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
@@ -38,12 +37,11 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
 
   Future<void> _initializeSelectedCode() async {
     try {
-      final data = await getStoredCodeData(widget.selectedSubject);
-      final codes = data.keys.toList();
-      if (codes.isNotEmpty) {
+      final data = await fetchSubjectsAndCodes();
+      final subjectCodes = data['subjectCodes'][widget.selectedSubject] ?? [];
+      if (subjectCodes.isNotEmpty) {
         setState(() {
-          _selectedSubjectCode = codes.first;
-          _selectedLectureData = Map<String, dynamic>.from(data[codes.first]);
+          _selectedSubjectCode = subjectCodes.first;
         });
         _controller.forward();
       }
@@ -56,7 +54,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder<Map<String, dynamic>>(
-        future: getStoredCodeData(widget.selectedSubject),
+        future: fetchSubjectsAndCodes(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -83,7 +81,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                 ],
               ),
             );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          } else if (!snapshot.hasData || snapshot.data!['subjectCodes'][widget.selectedSubject] == null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -104,11 +102,11 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
           }
 
           final data = snapshot.data!;
-          final codes = data.keys.toList();
+          final codes = data['subjectCodes'][widget.selectedSubject];
 
           return Stack(
             children: [
-              if (_selectedLectureData != null && _selectedSubjectCode != null)
+              if (_selectedSubjectCode != null)
                 Positioned.fill(
                   child: Padding(
                     padding: EdgeInsets.only(
@@ -119,7 +117,6 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                       child: FadeTransition(
                         opacity: _slideAnimation,
                         child: LectureBar(
-                          lectureData: _selectedLectureData!,
                           selectedSubject: widget.selectedSubject,
                           selectedSubjectCode: _selectedSubjectCode!,
                         ),
@@ -159,15 +156,11 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: () {
-                                final lectureData = data[code];
-                                if (lectureData != null) {
-                                  setState(() {
-                                    _selectedLectureData = Map<String, dynamic>.from(lectureData);
-                                    _selectedSubjectCode = code;
-                                  });
-                                  _controller.reset();
-                                  _controller.forward();
-                                }
+                                setState(() {
+                                  _selectedSubjectCode = code;
+                                });
+                                _controller.reset();
+                                _controller.forward();
                               },
                               borderRadius: BorderRadius.circular(15.0),
                               child: Container(
