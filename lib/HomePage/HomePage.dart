@@ -140,13 +140,52 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Overview',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).textTheme.titleLarge?.color,
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Overview',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).textTheme.titleLarge?.color,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.edit),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          TextEditingController _textFieldController = TextEditingController();
+                                          return AlertDialog(
+                                            title: Text('Target'),
+                                            content: TextField(
+                                              controller: _textFieldController,
+                                              decoration: InputDecoration(hintText: "Enter Your Total Target"),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                child: Text('Cancel'),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                              TextButton(
+                                                child: Text('OK'),
+                                                onPressed: () {
+                                                  // Handle the text input
+                                                  print(_textFieldController.text);
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 16),
 

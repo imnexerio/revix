@@ -5,13 +5,17 @@ int calculateMonthlyRevisions(List<Map<String, dynamic>> records, Map<String, Se
   int count = 0;
 
   for (var record in records) {
-    // Access the correct field - dates_revised instead of revision_dates
     if (record['details']['dates_revised'] == null ||
         !selectedRevisionTypes.contains(record['details']['lecture_type'])) continue;
 
     List<dynamic> revisionDates = record['details']['dates_revised'];
     for (var dateStr in revisionDates) {
-      final date = DateTime.parse(dateStr);
+      DateTime date;
+      try {
+        date = DateTime.parse(dateStr);
+      } catch (e) {
+        date = DateTime.parse(dateStr.split('T')[0]);
+      }
       if (date.isAfter(startOfMonth) || date.isAtSameMomentAs(startOfMonth)) {
         count++;
       }
@@ -33,7 +37,12 @@ int calculateWeeklyRevisions(List<Map<String, dynamic>> records, Map<String, Set
 
     List<dynamic> revisionDates = record['details']['dates_revised'];
     for (var dateStr in revisionDates) {
-      final date = DateTime.parse(dateStr);
+      DateTime date;
+      try {
+        date = DateTime.parse(dateStr);
+      } catch (e) {
+        date = DateTime.parse(dateStr.split('T')[0]);
+      }
       if (date.isAfter(startOfDay) || date.isAtSameMomentAs(startOfDay)) {
         count++;
       }
@@ -54,7 +63,12 @@ int calculateDailyRevisions(List<Map<String, dynamic>> records, Map<String, Set<
 
     List<dynamic> revisionDates = record['details']['dates_revised'];
     for (var dateStr in revisionDates) {
-      final date = DateTime.parse(dateStr);
+      DateTime date;
+      try {
+        date = DateTime.parse(dateStr);
+      } catch (e) {
+        date = DateTime.parse(dateStr.split('T')[0]);
+      }
       if (date.isAfter(startOfDay) || date.isAtSameMomentAs(startOfDay)) {
         count++;
       }
