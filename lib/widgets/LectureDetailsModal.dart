@@ -192,7 +192,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                   // Description section
                   Text(
-                    "Description",
+                    "Description is che",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

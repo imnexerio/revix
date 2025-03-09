@@ -228,8 +228,6 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    // Print statement for debugging
-    // print('ScheduleTable received ${records.length} records');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -4,6 +4,7 @@ import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
+import '../widgets/DescriptionCard.dart';
 import 'RevisionGraph.dart';
 
 
@@ -155,7 +156,6 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
                         SizedBox(height: 24),
 
-                        // Description section - ALWAYS SHOWN regardless of content
                         Text(
                           "Description",
                           style: TextStyle(
@@ -165,12 +165,15 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                           ),
                         ),
                         SizedBox(height: 12),
-                        _buildDescriptionCard(context, details, (text) {
-                          setState(() {
-                            description = text;
-                            details['description'] = text;
-                          });
-                        }),
+                        DescriptionCard(
+                          details: details,
+                          onDescriptionChanged: (text) {
+                            setState(() {
+                              description = text;
+                              details['description'] = text;
+                            });
+                          },
+                        ),
                         SizedBox(height: 24),
                       ],
                     ),
@@ -510,65 +513,5 @@ Widget _buildTimelineItem(
         ),
       ),
     ],
-  );
-}
-
-Widget _buildDescriptionCard(BuildContext context, Map<String, dynamic> details, Function(String) onDescriptionChanged) {
-  // Move the controller to a stateful widget or use a static controller to persist cursor position
-  // Here we're using StatefulBuilder to maintain state within the function
-  return StatefulBuilder(
-    builder: (BuildContext context, StateSetter setCardState) {
-      // Create the controller only once when the builder is first called
-      TextEditingController _descriptionController = TextEditingController(
-        text: details['description'] ?? 'No description available',
-      );
-
-      // Set the cursor position at the end of text
-      _descriptionController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _descriptionController.text.length),
-      );
-
-      return Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Description",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            SizedBox(height: 12),
-            TextField(
-              controller: _descriptionController,
-              maxLines: null,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Enter description',
-              ),
-              onChanged: (text) {
-                onDescriptionChanged(text);
-                // No need to setState here as we're not rebuilding this widget
-              },
-            ),
-          ],
-        ),
-      );
-    },
   );
 }
