@@ -2,13 +2,14 @@ int calculateMonthlyRevisions(List<Map<String, dynamic>> records, Map<String, Se
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
   Set<String> selectedRevisionTypes = selectedTrackingTypesMap['revision'] ?? {};
-
   int count = 0;
+
   for (var record in records) {
-    if (record['details']['revision_dates'] == null ||
+    // Access the correct field - dates_revised instead of revision_dates
+    if (record['details']['dates_revised'] == null ||
         !selectedRevisionTypes.contains(record['details']['lecture_type'])) continue;
 
-    List<dynamic> revisionDates = record['details']['revision_dates'];
+    List<dynamic> revisionDates = record['details']['dates_revised'];
     for (var dateStr in revisionDates) {
       final date = DateTime.parse(dateStr);
       if (date.isAfter(startOfMonth) || date.isAtSameMomentAs(startOfMonth)) {
@@ -27,10 +28,10 @@ int calculateWeeklyRevisions(List<Map<String, dynamic>> records, Map<String, Set
 
   int count = 0;
   for (var record in records) {
-    if (record['details']['revision_dates'] == null ||
+    if (record['details']['dates_revised'] == null ||
         !selectedRevisionTypes.contains(record['details']['lecture_type'])) continue;
 
-    List<dynamic> revisionDates = record['details']['revision_dates'];
+    List<dynamic> revisionDates = record['details']['dates_revised'];
     for (var dateStr in revisionDates) {
       final date = DateTime.parse(dateStr);
       if (date.isAfter(startOfDay) || date.isAtSameMomentAs(startOfDay)) {
@@ -48,10 +49,10 @@ int calculateDailyRevisions(List<Map<String, dynamic>> records, Map<String, Set<
 
   int count = 0;
   for (var record in records) {
-    if (record['details']['revision_dates'] == null ||
+    if (record['details']['dates_revised'] == null ||
         !selectedRevisionTypes.contains(record['details']['lecture_type'])) continue;
 
-    List<dynamic> revisionDates = record['details']['revision_dates'];
+    List<dynamic> revisionDates = record['details']['dates_revised'];
     for (var dateStr in revisionDates) {
       final date = DateTime.parse(dateStr);
       if (date.isAfter(startOfDay) || date.isAtSameMomentAs(startOfDay)) {
