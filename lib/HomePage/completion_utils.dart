@@ -43,7 +43,5 @@ double calculateDailyCompletion(List<Map<String, dynamic>> records, Map<String, 
     return dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay);
   }).length;
 
-  print(completedLectures);
-
   return (completedLectures / customCompletionTarget) *100;
 }
