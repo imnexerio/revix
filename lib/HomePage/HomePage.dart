@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
 import '../Utils/FetchRecord.dart';
 import '../Utils/FetchTypesUtils.dart';
@@ -46,11 +47,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     super.initState();
     _recordService.startRealTimeUpdates();
     _recordsStream = _recordService.recordsStream;
-    _fetchTrackingTypesFromFirebase();
+    _fetchTrackingTypesAndTargetFromFirebase();
   }
 
-// Method to fetch tracking types from Firebase
-  Future<void> _fetchTrackingTypesFromFirebase() async {
+  // Method to fetch tracking types and target from Firebase
+  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -60,19 +61,21 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         DatabaseReference typesRef = FirebaseDatabase.instance
             .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
 
-        // Get a snapshot of the data
-        DatabaseEvent event = await typesRef.once();
+        // Create a reference to the custom completion target node
+        DatabaseReference targetRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/customCompletionTarget');
 
-        // If data exists, update the _selectedTrackingTypesMap
-        if (event.snapshot.exists) {
-          // Cast the data to Map
-          Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
+        // Get snapshots of the data
+        DatabaseEvent typesEvent = await typesRef.once();
+        DatabaseEvent targetEvent = await targetRef.once();
+
+        // If data exists, update the _selectedTrackingTypesMap and _customCompletionTarget
+        if (typesEvent.snapshot.exists) {
+          Map<dynamic, dynamic> data = typesEvent.snapshot.value as Map<dynamic, dynamic>;
 
           setState(() {
-            // Update each tracking type if it exists in the fetched data
             data.forEach((key, value) {
               if (_selectedTrackingTypesMap.containsKey(key)) {
-                // Convert the list from Firebase to a Set<String>
                 List<dynamic> valueList = value as List<dynamic>;
                 _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
               }
@@ -83,10 +86,19 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         } else {
           print('No tracking types found in Firebase');
         }
+
+        if (targetEvent.snapshot.exists) {
+          setState(() {
+            _customCompletionTarget = int.parse(targetEvent.snapshot.value.toString());
+          });
+
+          print('Successfully loaded custom completion target from Firebase');
+        } else {
+          print('No custom completion target found in Firebase');
+        }
       }
     } catch (e) {
-      print('Error fetching tracking types from Firebase: $e');
-      // Handle any errors here
+      print('Error fetching data from Firebase: $e');
     }
   }
 
@@ -166,7 +178,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                         ),
                         const SizedBox(height: 32),
 
-                        // Overview Section with responsive grid
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
@@ -195,40 +206,59 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                       color: Theme.of(context).textTheme.titleLarge?.color,
                                     ),
                                   ),
-                                  IconButton(
-                                    icon: Icon(Icons.edit),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          TextEditingController _textFieldController = TextEditingController();
-                                          return AlertDialog(
-                                            title: Text('Target'),
-                                            content: TextField(
-                                              controller: _textFieldController,
-                                              decoration: InputDecoration(hintText: "Enter Your Total Target"),
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                child: Text('Cancel'),
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-                                                },
-                                              ),
-                                              TextButton(
-                                                child: Text('OK'),
-                                                onPressed: () {
-                                                  // Handle the text input
-                                                  print(_textFieldController.text);
-                                                  Navigator.of(context).pop();
-                                                },
-                                              ),
-                                            ],
+                                    IconButton(
+                                      icon: Icon(Icons.edit),
+                                      onPressed: () async {
+                                        // Get the current user
+                                        User? user = FirebaseAuth.instance.currentUser;
+                                        if (user != null) {
+                                          // Create a reference to the target node in the database
+                                          DatabaseReference ref = FirebaseDatabase.instance.ref('users/${user.uid}/profile_data/home_page/customCompletionTarget');
+                                          DataSnapshot snapshot = await ref.get();
+
+                                          // Initialize the text field controller with the fetched value
+                                          TextEditingController _textFieldController = TextEditingController(
+                                            text: snapshot.exists ? snapshot.value.toString() : '',
                                           );
-                                        },
-                                      );
-                                    },
-                                  ),
+
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: Text('Target'),
+                                                content: TextField(
+                                                  controller: _textFieldController,
+                                                  keyboardType: TextInputType.number,
+                                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                                  decoration: InputDecoration(hintText: "Enter Your Total Target"),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    child: Text('Cancel'),
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop();
+                                                    },
+                                                  ),
+                                                  TextButton(
+                                                    child: Text('OK'),
+                                                    onPressed: () async {
+                                                      // Handle the text input
+                                                      String targetValue = _textFieldController.text;
+
+                                                      // Save the new target value to Firebase
+                                                      await ref.set(targetValue);
+
+                                                      // Close the dialog
+                                                      Navigator.of(context).pop();
+                                                    },
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        }
+                                      },
+                                    ),
                                 ],
                               ),
                               const SizedBox(height: 16),
