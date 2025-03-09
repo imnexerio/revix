@@ -42,7 +42,7 @@ Widget buildSubjectDistributionCard(Map<String, int> subjectDistribution, double
         LayoutBuilder(
             builder: (context, constraints) {
               return SizedBox(
-                height: 500,
+                height: 550,
                 child: PieChart(
                   PieChartData(
                     sections: createPieChartSections(
