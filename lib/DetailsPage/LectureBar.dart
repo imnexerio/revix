@@ -120,12 +120,4 @@ class _LectureBarState extends State<LectureBar> {
       ),
     );
   }
-
-  int _calculateColumns(double width) {
-    if (width < 600) return 1;         // Mobile
-    if (width < 900) return 2;         // Tablet
-    if (width < 1200) return 3;        // Small desktop
-    if (width < 1500) return 4;        // Medium desktop
-    return 5;                          // Large desktop
-  }
 }
