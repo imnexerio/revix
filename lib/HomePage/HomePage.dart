@@ -145,8 +145,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               Map<String, int> subjectDistribution = calculateSubjectDistribution(allRecords);
 
               return CustomScrollView(
-                // Use a unique key for CustomScrollView that doesn't depend on data
-                // but still preserves scroll position
                 key: const PageStorageKey('homeScrollView'),
                 slivers: [
                   SliverToBoxAdapter(
@@ -192,9 +190,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                   ),
                                 ),
                                 IconButton(
-                                  icon: Icon(Icons.edit),
+                                  icon: const Icon(Icons.edit_outlined), // Using outlined version for modern look
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.blue.withOpacity(0.1),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
                                   onPressed: () {
-                                    TextEditingController _textFieldController = TextEditingController(
+                                    final TextEditingController textFieldController = TextEditingController(
                                       text: _customCompletionTarget.toString(),
                                     );
 
@@ -202,40 +204,75 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                       context: context,
                                       builder: (BuildContext context) {
                                         return AlertDialog(
-                                          title: Text('Target'),
-                                          content: TextField(
-                                            controller: _textFieldController,
-                                            keyboardType: TextInputType.number,
-                                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                            decoration: InputDecoration(hintText: "Enter Your Total Target"),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          title: const Text(
+                                            'Set Target',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'Enter your completion target:',
+                                                style: TextStyle(color: Colors.black54),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              TextField(
+                                                controller: textFieldController,
+                                                keyboardType: TextInputType.number,
+                                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                                decoration: InputDecoration(
+                                                  prefixIcon: const Icon(Icons.flag_outlined),
+                                                  hintText: "Enter your target",
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    borderSide: BorderSide.none,
+                                                  ),
+                                                  filled: true,
+                                                  fillColor: Colors.grey.withOpacity(0.1),
+                                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                           actions: [
                                             TextButton(
-                                              child: Text('Cancel'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: Colors.grey[700],
+                                              ),
+                                              child: const Text('Cancel'),
                                               onPressed: () {
                                                 Navigator.of(context).pop();
                                               },
                                             ),
-                                            TextButton(
-                                              child: Text('OK'),
+                                            FilledButton(
+                                              style: FilledButton.styleFrom(
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text('Save'),
                                               onPressed: () async {
-                                                String targetValue = _textFieldController.text;
-                                                int newTarget = int.parse(targetValue);
+                                                final String targetValue = textFieldController.text;
+                                                if (targetValue.isNotEmpty) {
+                                                  final int newTarget = int.parse(targetValue);
 
-                                                final profileService = ProfileDataService();
-                                                await profileService.saveCompletionTarget(targetValue);
-                                                setState(() {
-                                                  _customCompletionTarget = newTarget;
-                                                });
-
+                                                  final profileService = ProfileDataService();
+                                                  await profileService.saveCompletionTarget(targetValue);
+                                                  setState(() {
+                                                    _customCompletionTarget = newTarget;
+                                                  });
+                                                }
                                                 Navigator.of(context).pop();
                                               },
                                             ),
                                           ],
+                                          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                         );
                                       },
                                     );
-                                  }
+                                  },
                                 ),
                               ],
                             ),

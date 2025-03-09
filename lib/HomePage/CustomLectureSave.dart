@@ -15,11 +15,6 @@ class ProfileDataService {
     return getUserProfileRef('home_page/customCompletionTarget');
   }
 
-  Future<String> getCompletionTarget() async {
-    DataSnapshot snapshot = await getCompletionTargetRef().get();
-    return snapshot.exists ? snapshot.value.toString() : '';
-  }
-
   Future<void> saveCompletionTarget(String targetValue) async {
     await getCompletionTargetRef().set(targetValue);
   }
