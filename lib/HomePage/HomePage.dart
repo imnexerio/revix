@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
 import '../Utils/FetchRecord.dart';
 import '../Utils/FetchTypesUtils.dart';
+import 'CustomLectureSave.dart';
 import 'CustomizationBottomSheet.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
@@ -192,87 +193,93 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                             ],
                           ),
                           padding: EdgeInsets.all(cardPadding),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Overview',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).textTheme.titleLarge?.color,
-                                    ),
+                        child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Overview',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).textTheme.titleLarge?.color,
                                   ),
-                                    IconButton(
-                                      icon: Icon(Icons.edit),
-                                      onPressed: () async {
-                                        // Get the current user
-                                        User? user = FirebaseAuth.instance.currentUser;
-                                        if (user != null) {
-                                          // Create a reference to the target node in the database
-                                          DatabaseReference ref = FirebaseDatabase.instance.ref('users/${user.uid}/profile_data/home_page/customCompletionTarget');
-                                          DataSnapshot snapshot = await ref.get();
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.edit),
+                                  onPressed: () async {
+                                    // Create instance of the service
+                                    final profileService = ProfileDataService();
 
-                                          // Initialize the text field controller with the fetched value
-                                          TextEditingController _textFieldController = TextEditingController(
-                                            text: snapshot.exists ? snapshot.value.toString() : '',
+                                    try {
+                                      // Get the current target value
+                                      String currentTarget = await profileService.getCompletionTarget();
+
+                                      // Initialize the text field controller with the fetched value
+                                      TextEditingController _textFieldController = TextEditingController(
+                                        text: currentTarget,
+                                      );
+
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: Text('Target'),
+                                            content: TextField(
+                                              controller: _textFieldController,
+                                              keyboardType: TextInputType.number,
+                                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                              decoration: InputDecoration(hintText: "Enter Your Total Target"),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                child: Text('Cancel'),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                              TextButton(
+                                                child: Text('OK'),
+                                                onPressed: () async {
+                                                  String targetValue = _textFieldController.text;
+                                                  int newTarget = int.parse(targetValue);
+
+                                                  await profileService.saveCompletionTarget(targetValue);
+                                                  setState(() {
+                                                    _customCompletionTarget = newTarget;
+                                                  });
+
+                                                  // Close the dialog
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ],
                                           );
+                                        },
+                                      );
+                                    } catch (e) {
+                                      // Handle any errors
+                                      print('Error accessing profile data: $e');
+                                      // Optionally show error dialog or snackbar
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
 
-                                          showDialog(
-                                            context: context,
-                                            builder: (BuildContext context) {
-                                              return AlertDialog(
-                                                title: Text('Target'),
-                                                content: TextField(
-                                                  controller: _textFieldController,
-                                                  keyboardType: TextInputType.number,
-                                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                                  decoration: InputDecoration(hintText: "Enter Your Total Target"),
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    child: Text('Cancel'),
-                                                    onPressed: () {
-                                                      Navigator.of(context).pop();
-                                                    },
-                                                  ),
-                                                  TextButton(
-                                                    child: Text('OK'),
-                                                    onPressed: () async {
-                                                      // Handle the text input
-                                                      String targetValue = _textFieldController.text;
-
-                                                      // Save the new target value to Firebase
-                                                      await ref.set(targetValue);
-
-                                                      // Close the dialog
-                                                      Navigator.of(context).pop();
-                                                    },
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        }
-                                      },
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Responsive grid layout for stats - only rebuild if needed
-                              rebuildLayout
-                                  ? screenWidth > 900
-                                  ? _buildSingleRowStatsGrid(allRecords)
-                                  : _buildTwoByTwoStatsGrid(allRecords)
-                                  : screenWidth > 900
-                                  ? _buildSingleRowStatsGrid(allRecords)
-                                  : _buildTwoByTwoStatsGrid(allRecords),
-                            ],
-                          ),
+                            // Responsive grid layout for stats - only rebuild if needed
+                            rebuildLayout
+                                ? screenWidth > 900
+                                ? _buildSingleRowStatsGrid(allRecords)
+                                : _buildTwoByTwoStatsGrid(allRecords)
+                                : screenWidth > 900
+                                ? _buildSingleRowStatsGrid(allRecords)
+                                : _buildTwoByTwoStatsGrid(allRecords),
+                          ],
+                        ),
                         ),
                         const SizedBox(height: 32),
                       ],
@@ -353,7 +360,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           children: [
             Expanded(
               child: _buildStatCard(
-                'Lectures',
+                'Initiatives',
                 _getLectureValue(allRecords, _lectureViewType),
                 const Color(0xFF6C63FF),
                 _lectureViewType,
@@ -364,7 +371,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
-                'Revisions',
+                'Completed',
                 _getRevisionValue(allRecords, _revisionViewType),
                 const Color(0xFFDA5656),
                 _revisionViewType,
@@ -379,7 +386,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           children: [
             Expanded(
               child: _buildStatCard(
-                "Completion",
+                "Completion Percentage",
                 _getCompletionValue(allRecords, _completionViewType),
                 getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
                 _completionViewType,
@@ -506,7 +513,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       children: [
         Expanded(
           child: _buildStatCard(
-            'Lectures',
+            'Initiatives',
             _getLectureValue(allRecords, _lectureViewType),
             const Color(0xFF6C63FF),
             _lectureViewType,
@@ -517,7 +524,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            'Revisions',
+            'Completed',
             _getRevisionValue(allRecords, _revisionViewType),
             const Color(0xFFDA5656),
             _revisionViewType,
@@ -528,7 +535,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            "Completion",
+            "Completion Percentage",
             _getCompletionValue(allRecords, _completionViewType),
             getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
             _completionViewType,
