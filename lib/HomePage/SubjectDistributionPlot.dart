@@ -39,12 +39,10 @@ List<PieChartSectionData> createPieChartSections(
     ];
   }
 
-  // Sort entries by count for better visualization
   var sortedEntries = subjectCounts.entries.toList()
     ..sort((a, b) => b.value.compareTo(a.value));
 
   for (var entry in sortedEntries) {
-    String subject = entry.key;
     int count = entry.value;
     double percentage = (count / totalLectures) * 100;
     Color sectionColor = colors[colorIndex % colors.length];

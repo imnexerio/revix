@@ -7,7 +7,6 @@ import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/customSnackBar_error.dart';
-import 'Utils/subject_utils.dart';
 import 'Utils/subject_utils_static.dart';
 
 class AddLectureForm extends StatefulWidget {
@@ -34,7 +33,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
   String todayDate = '';
 
   bool _showAddNewSubject = false;
-  bool _showAddNewSubjectCode = false;
   bool _showAddNewSubjectCode_ = false;
 
   @override
@@ -175,7 +173,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    // Subject dropdown with "Others" option
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
@@ -187,7 +184,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         value: _selectedSubject == 'DEFAULT_VALUE' && _subjects.isNotEmpty ? _subjects[0] :
                         (_subjects.contains(_selectedSubject) ? _selectedSubject : null),
                         decoration: InputDecoration(
-                          labelText: 'Subject',
+                          labelText: 'Category',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
@@ -198,15 +195,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             child: Text(subject),
                           )).toList(),
                           DropdownMenuItem(
-                            value: "Others",
-                            child: Text("Others"),
+                            value: "Add New Category",
+                            child: Text("Add New Category"),
                           ),
                         ],
                         onChanged: (newValue) {
                           setState(() {
-                            if (newValue == "Others") {
+                            if (newValue == "Add New Category") {
                               _showAddNewSubject = true;
-                              _showAddNewSubjectCode = true;
                             } else {
                               _selectedSubject = newValue!;
                               _selectedSubjectCode = '';
@@ -217,7 +213,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
                     ),
 
-                    // Add New Subject field (only shown when "Others" is selected)
                     if (_showAddNewSubject)
                       Container(
                         margin: EdgeInsets.symmetric(vertical: 8),
@@ -231,7 +226,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             Expanded(
                               child: TextFormField(
                                 decoration: InputDecoration(
-                                  labelText: 'Add New Subject',
+                                  labelText: 'Add New Category',
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 ),
@@ -257,7 +252,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             child: TextFormField(
                               // controller: _newSubjectCodeController,
                               decoration: InputDecoration(
-                                labelText: 'Add New Subject Code',
+                                labelText: 'Add New Sub Category',
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               ),
@@ -271,7 +266,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
                     ),
 
-                    // Subject Code dropdown with "Others" option
                     if (_selectedSubject != 'DEFAULT_VALUE' && !_showAddNewSubject)
                       Container(
                         margin: EdgeInsets.symmetric(vertical: 8),
@@ -284,7 +278,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           value: _subjectCodes[_selectedSubject]?.contains(_selectedSubjectCode) ?? false
                               ? _selectedSubjectCode : null,
                           decoration: InputDecoration(
-                            labelText: 'Subject Code',
+                            labelText: 'Sub Category',
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
@@ -295,24 +289,22 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               child: Text(code),
                             )).toList(),
                             DropdownMenuItem(
-                              value: "Others",
-                              child: Text("Others"),
+                              value: "Add New Sub Category",
+                              child: Text("Add New Sub Category"),
                             ),
                           ],
                           onChanged: (newValue) {
                             setState(() {
-                              if (newValue == "Others") {
+                              if (newValue == "Add New Sub Category") {
                                 _showAddNewSubjectCode_ = true;
                               } else {
                                 _selectedSubjectCode = newValue!;
-                                _showAddNewSubjectCode = false;
                               }
                             });
                           },
                         ),
                       ),
 
-                    // Add New Subject Code field (only shown when "Others" is selected in Subject Code)
                     if (_showAddNewSubjectCode_)
                       Container(
                         margin: EdgeInsets.symmetric(vertical: 8),
@@ -326,7 +318,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             Expanded(
                               child: TextFormField(
                                 decoration: InputDecoration(
-                                  labelText: 'Add New Subject Code',
+                                  labelText: 'Add New Sub Category',
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 ),
@@ -542,9 +534,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           }
                         },
                         validator: (value) {
-                          if (dateScheduled == null) {
-                            return 'Date Scheduled';
-                          }
                           return null;
                         },
                       ),

@@ -98,12 +98,8 @@ class _LectureBarState extends State<LectureBar> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    // Convert _filteredLectureData to List<Map<String, dynamic>> as expected by ScheduleTable
     List<Map<String, dynamic>> formattedRecords = _filteredLectureData.map((entry) {
       Map<String, dynamic> record = Map<String, dynamic>.from(entry.value);
-      // Add lecture_no to each record so it can be identified
       record['lecture_no'] = entry.key;
       return record;
     }).toList();
@@ -114,7 +110,7 @@ class _LectureBarState extends State<LectureBar> {
           // Use a single ScheduleTable for all lectures
           return ScheduleTableDetailP(
             initialRecords: formattedRecords,
-            title: '${widget.selectedSubject ?? ''} - ${widget.selectedSubjectCode ?? ''} Details',
+            title: '${widget.selectedSubject} - ${widget.selectedSubjectCode} Details',
             onSelect: (context, record) {
               String lectureNo = record['lecture_no'];
               _showLectureDetails(context, lectureNo, record);
