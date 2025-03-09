@@ -233,7 +233,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
                             List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
 
-                            if (scheduledDate.isBefore(DateTime.parse(dateRevised))) {
+                            if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
                               datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
                             }
                             List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
