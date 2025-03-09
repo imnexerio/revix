@@ -1,27 +1,34 @@
-// lib/calculation_utils.dart
-import 'package:flutter/material.dart';
+import 'dart:ui';
 
-int calculateTotalLectures(List<Map<String, dynamic>> records) {
-  return records.where((record) => record['details']['date_learnt'] != null).length;
+int calculateTotalLectures(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap) {
+  Set<String> selectedLectureTypes = selectedTrackingTypesMap['lecture'] ?? {};
+  return records.where((record) =>
+  record['details']['date_learnt'] != null &&
+      selectedLectureTypes.contains(record['details']['lecture_type'])
+  ).length;
 }
 
-int calculateTotalRevisions(List<Map<String, dynamic>> records) {
+int calculateTotalRevisions(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap) {
+  Set<String> selectedRevisionTypes = selectedTrackingTypesMap['revision'] ?? {};
   int totalRevisions = 0;
   for (var record in records) {
-    if (record['details']['no_revision'] != null) {
+    if (record['details']['no_revision'] != null &&
+        selectedRevisionTypes.contains(record['details']['lecture_type'])) {
       totalRevisions += (record['details']['no_revision'] as int);
     }
   }
   return totalRevisions;
 }
 
-int calculateMissedRevisions(List<Map<String, dynamic>> records) {
+int calculateMissedRevisions(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap) {
+  Set<String> selectedMissedTypes = selectedTrackingTypesMap['missed'] ?? {};
   int missedRevisionsCount = 0;
 
   for (var record in records) {
     if (record.containsKey('details') && record['details'] is Map) {
       var details = record['details'] as Map;
-      if (details.containsKey('missed_revision') && details['missed_revision'] > 0) {
+      if (details.containsKey('missed_revision') && details['missed_revision'] > 0 &&
+          selectedMissedTypes.contains(record['details']['lecture_type'])) {
         missedRevisionsCount++;
       }
     }
@@ -38,10 +45,16 @@ Color getCompletionColor(double percentage) {
   }
 }
 
-double calculatePercentageCompletion(List<Map<String, dynamic>> records) {
-  int completedLectures = records.where((record) => record['details']['date_learnt'] != null && record['details']['lecture_type'] == 'Lectures').length;
+double calculatePercentageCompletion(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap) {
+  Set<String> selectedCompletionTypes = selectedTrackingTypesMap['completion'] ?? {};
+  int completedLectures = records.where((record) =>
+  record['details']['date_learnt'] != null &&
+      selectedCompletionTypes.contains(record['details']['lecture_type'])
+  ).length;
   int totalLectures = 322;
-  double percentageCompletion = (completedLectures / totalLectures) * 100;
+  double percentageCompletion = totalLectures > 0
+      ? (completedLectures / totalLectures) * 100
+      : 0;
   return percentageCompletion;
 }
 
