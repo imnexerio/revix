@@ -5,6 +5,7 @@ import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
+import 'DescriptionCard.dart';
 import 'RevisionFrequencyDropdown.dart';
 
 class LectureDetailsModal extends StatefulWidget {
@@ -200,7 +201,14 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     ),
                   ),
                   SizedBox(height: 12),
-                  _buildDescriptionCard(context),
+                  DescriptionCard(
+                    details: widget.details,
+                    onDescriptionChanged: (text) {
+                      setState(() {
+                        widget.details['description'] = text;
+                      });
+                    },
+                  ),
 
                   SizedBox(height: 24),
                   Text(
@@ -705,48 +713,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     );
   }
 
-  Widget _buildDescriptionCard(BuildContext context) {
-    TextEditingController _descriptionController = TextEditingController(
-      text: widget.details['description'] ?? 'No description available',
-    );
-
-    _descriptionController.selection = TextSelection.fromPosition(
-      TextPosition(offset: _descriptionController.text.length),
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: _descriptionController,
-        maxLines: null,
-        decoration: InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
-          ),
-          hintText: 'Enter description',
-          contentPadding: EdgeInsets.all(16),
-        ),
-        onChanged: (text) {
-          setState(() {
-            widget.details['description'] = text;
-          });
-        },
-      ),
-    );
-  }
 
   Widget _buildRevisionSettingsCard(BuildContext context) {
     return Container(
