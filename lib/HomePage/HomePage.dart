@@ -193,62 +193,49 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                 ),
                                 IconButton(
                                   icon: Icon(Icons.edit),
-                                  onPressed: () async {
-                                    // Create instance of the service
-                                    final profileService = ProfileDataService();
+                                  onPressed: () {
+                                    TextEditingController _textFieldController = TextEditingController(
+                                      text: _customCompletionTarget.toString(),
+                                    );
 
-                                    try {
-                                      // Get the current target value
-                                      String currentTarget = await profileService.getCompletionTarget();
-
-                                      // Initialize the text field controller with the fetched value
-                                      TextEditingController _textFieldController = TextEditingController(
-                                        text: currentTarget,
-                                      );
-
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return AlertDialog(
-                                            title: Text('Target'),
-                                            content: TextField(
-                                              controller: _textFieldController,
-                                              keyboardType: TextInputType.number,
-                                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                              decoration: InputDecoration(hintText: "Enter Your Total Target"),
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: Text('Target'),
+                                          content: TextField(
+                                            controller: _textFieldController,
+                                            keyboardType: TextInputType.number,
+                                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                            decoration: InputDecoration(hintText: "Enter Your Total Target"),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              child: Text('Cancel'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
                                             ),
-                                            actions: [
-                                              TextButton(
-                                                child: Text('Cancel'),
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-                                                },
-                                              ),
-                                              TextButton(
-                                                child: Text('OK'),
-                                                onPressed: () async {
-                                                  String targetValue = _textFieldController.text;
-                                                  int newTarget = int.parse(targetValue);
+                                            TextButton(
+                                              child: Text('OK'),
+                                              onPressed: () async {
+                                                String targetValue = _textFieldController.text;
+                                                int newTarget = int.parse(targetValue);
 
-                                                  await profileService.saveCompletionTarget(targetValue);
-                                                  setState(() {
-                                                    _customCompletionTarget = newTarget;
-                                                  });
+                                                final profileService = ProfileDataService();
+                                                await profileService.saveCompletionTarget(targetValue);
+                                                setState(() {
+                                                  _customCompletionTarget = newTarget;
+                                                });
 
-                                                  // Close the dialog
-                                                  Navigator.of(context).pop();
-                                                },
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    } catch (e) {
-                                      // Handle any errors
-                                      print('Error accessing profile data: $e');
-                                      // Optionally show error dialog or snackbar
-                                    }
-                                  },
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  }
                                 ),
                               ],
                             ),
@@ -269,8 +256,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                       ],
                     ),
                   ),
-
-                  // Dynamic layout for main sections - only rebuild if needed
                   SliverToBoxAdapter(
                     child: rebuildLayout
                         ? screenWidth > 900
