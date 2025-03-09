@@ -215,7 +215,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                             children: [
                                               const Text(
                                                 'Enter your completion target:',
-                                                style: TextStyle(color: Colors.black54),
                                               ),
                                               const SizedBox(height: 16),
                                               TextField(
@@ -239,7 +238,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                           actions: [
                                             TextButton(
                                               style: TextButton.styleFrom(
-                                                foregroundColor: Colors.grey[700],
                                               ),
                                               child: const Text('Cancel'),
                                               onPressed: () {
