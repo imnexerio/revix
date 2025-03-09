@@ -51,26 +51,19 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     _fetchTrackingTypesAndTargetFromFirebase();
   }
 
-  // Method to fetch tracking types and target from Firebase
   Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final String uid = user.uid;
 
-        // Create a reference to the tracking types node
         DatabaseReference typesRef = FirebaseDatabase.instance
             .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
-
-        // Create a reference to the custom completion target node
         DatabaseReference targetRef = FirebaseDatabase.instance
             .ref('users/$uid/profile_data/home_page/customCompletionTarget');
 
-        // Get snapshots of the data
         DatabaseEvent typesEvent = await typesRef.once();
         DatabaseEvent targetEvent = await targetRef.once();
-
-        // If data exists, update the _selectedTrackingTypesMap and _customCompletionTarget
         if (typesEvent.snapshot.exists) {
           Map<dynamic, dynamic> data = typesEvent.snapshot.value as Map<dynamic, dynamic>;
 
@@ -82,34 +75,25 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               }
             });
           });
-
-          // print('Successfully loaded tracking types from Firebase');
         } else {
-          // print('No tracking types found in Firebase');
         }
 
         if (targetEvent.snapshot.exists) {
           setState(() {
             _customCompletionTarget = int.parse(targetEvent.snapshot.value.toString());
           });
-
-          // print('Successfully loaded custom completion target from Firebase');
         } else {
-          // print('No custom completion target found in Firebase');
         }
       }
     } catch (e) {
-      // print('Error fetching data from Firebase: $e');
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      // App is in background, pause real-time updates
       _recordService.stopRealTimeUpdates();
     } else if (state == AppLifecycleState.resumed) {
-      // App is in foreground again, resume real-time updates
       _recordService.startRealTimeUpdates();
     }
   }
@@ -125,7 +109,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    super.build(context);
 
     final currentSize = MediaQuery.of(context).size;
     final screenWidth = currentSize.width;
@@ -595,38 +579,25 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         );
       },
     );
-
-    // Update the state with the result from the bottom sheet if not null
     if (result != null) {
       setState(() {
         _selectedTrackingTypesMap[type] = result.toSet();
       });
-      // print('Updated for $type: ${_selectedTrackingTypesMap[type]}');
-
-      // Save only the updated tracking type to Firebase
       await _saveTrackingTypeToFirebase(type, result.toList());
     }
   }
-
-// Add this new method to save just the specific tracking type
   Future<void> _saveTrackingTypeToFirebase(String type, List<String> selectedTypes) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final String uid = user.uid;
-
-        // Create a reference specifically to the tracking type we want to update
         DatabaseReference typeRef = FirebaseDatabase.instance
             .ref('users/$uid/profile_data/home_page/selectedTrackingTypes/$type');
 
         // Update just this specific type
         await typeRef.set(selectedTypes);
-
-        // print('Successfully saved $type preferences to Firebase');
       }
     } catch (e) {
-      // print('Error saving to Firebase: $e');
-      // Optionally show an error message to the user
     }
   }
 
@@ -657,7 +628,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     return percentageCompletion;
   }
 
-  // Two column layout for larger screens
   Widget _buildTwoColumnLayout(
       List<Map<String, dynamic>> allRecords,
       Map<String, int> subjectDistribution,
@@ -692,7 +662,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  // Single column layout for smaller screens
   Widget _buildSingleColumnLayout(
       List<Map<String, dynamic>> allRecords,
       Map<String, int> subjectDistribution,
