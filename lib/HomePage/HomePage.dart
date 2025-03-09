@@ -82,9 +82,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             });
           });
 
-          print('Successfully loaded tracking types from Firebase');
+          // print('Successfully loaded tracking types from Firebase');
         } else {
-          print('No tracking types found in Firebase');
+          // print('No tracking types found in Firebase');
         }
 
         if (targetEvent.snapshot.exists) {
@@ -92,13 +92,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             _customCompletionTarget = int.parse(targetEvent.snapshot.value.toString());
           });
 
-          print('Successfully loaded custom completion target from Firebase');
+          // print('Successfully loaded custom completion target from Firebase');
         } else {
-          print('No custom completion target found in Firebase');
+          // print('No custom completion target found in Firebase');
         }
       }
     } catch (e) {
-      print('Error fetching data from Firebase: $e');
+      // print('Error fetching data from Firebase: $e');
     }
   }
 
@@ -594,7 +594,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       setState(() {
         _selectedTrackingTypesMap[type] = result.toSet();
       });
-      print('Updated for $type: ${_selectedTrackingTypesMap[type]}');
+      // print('Updated for $type: ${_selectedTrackingTypesMap[type]}');
 
       // Save only the updated tracking type to Firebase
       await _saveTrackingTypeToFirebase(type, result.toList());
@@ -615,10 +615,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         // Update just this specific type
         await typeRef.set(selectedTypes);
 
-        print('Successfully saved $type preferences to Firebase');
+        // print('Successfully saved $type preferences to Firebase');
       }
     } catch (e) {
-      print('Error saving to Firebase: $e');
+      // print('Error saving to Firebase: $e');
       // Optionally show an error message to the user
     }
   }
