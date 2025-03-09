@@ -140,14 +140,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Handle bar
           Container(
-            margin: EdgeInsets.only(top: 12, bottom: 8),
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
             width: 40,
             height: 4,
             decoration: BoxDecoration(
@@ -157,7 +157,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
           ),
           // Title
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
               'Add New Record',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -169,12 +169,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
             child: Form(
               key: _formKey,
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
@@ -183,7 +183,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       child: DropdownButtonFormField<String>(
                         value: _selectedSubject == 'DEFAULT_VALUE' && _subjects.isNotEmpty ? _subjects[0] :
                         (_subjects.contains(_selectedSubject) ? _selectedSubject : null),
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Category',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -194,7 +194,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             value: subject,
                             child: Text(subject),
                           )).toList(),
-                          DropdownMenuItem(
+                          const DropdownMenuItem(
                             value: "Add New Category",
                             child: Text("Add New Category"),
                           ),
@@ -215,7 +215,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
                     if (_showAddNewSubject)
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(context).cardColor,
@@ -225,7 +225,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           children: [
                             Expanded(
                               child: TextFormField(
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   labelText: 'Add New Category',
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -240,7 +240,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
                     if (_showAddNewSubject)
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
@@ -251,7 +251,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           Expanded(
                             child: TextFormField(
                               // controller: _newSubjectCodeController,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Add New Sub Category',
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -268,7 +268,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
                     if (_selectedSubject != 'DEFAULT_VALUE' && !_showAddNewSubject)
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(context).cardColor,
@@ -277,7 +277,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         child: DropdownButtonFormField<String>(
                           value: _subjectCodes[_selectedSubject]?.contains(_selectedSubjectCode) ?? false
                               ? _selectedSubjectCode : null,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Sub Category',
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -288,7 +288,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               value: code,
                               child: Text(code),
                             )).toList(),
-                            DropdownMenuItem(
+                            const DropdownMenuItem(
                               value: "Add New Sub Category",
                               child: Text("Add New Sub Category"),
                             ),
@@ -307,7 +307,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
                     if (_showAddNewSubjectCode_)
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(context).cardColor,
@@ -510,7 +510,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       child: TextFormField(
                         controller: _scheduleddateController,
                         readOnly: true,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Select First Reminder Date',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),

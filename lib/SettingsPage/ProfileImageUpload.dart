@@ -26,10 +26,6 @@ Future<void> uploadProfilePicture(BuildContext context, XFile imageFile, String 
         quality: quality,
       );
 
-      if (compressedImageBytes == null) {
-        throw Exception('Failed to compress image');
-      }
-
       quality -= 10; // Decrease quality by 10 for each iteration
     } while (compressedImageBytes.lengthInBytes > maxSizeInBytes && quality > 0);
 
