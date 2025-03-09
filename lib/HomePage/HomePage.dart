@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
 import '../Utils/FetchRecord.dart';
 import '../Utils/FetchTypesUtils.dart';
+import 'CustomizationBottomSheet.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
 import 'SubjectDistributionCard.dart';
@@ -458,76 +459,30 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         break;
     }
 
-    showModalBottomSheet(
+    final result = await showModalBottomSheet<List<String>>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Customize ${_getTypeTitle(type)}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Show tracking types
-              if (trackingTypes.isNotEmpty) ...[
-                Text(
-                  'Select Tracking Type:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: trackingTypes.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(trackingTypes[index]),
-                          selected: _selectedTrackingTypesMap[type]!.contains(trackingTypes[index]),
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedTrackingTypesMap[type]!.add(trackingTypes[index]);
-                              } else {
-                                _selectedTrackingTypesMap[type]!.remove(trackingTypes[index]);
-                              }
-                            });
-                            print('Selected for $type: ${_selectedTrackingTypesMap[type]}');
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ],
-          ),
+        return CustomizationBottomSheet(
+          type: type,
+          typeTitle: _getTypeTitle(type),
+          trackingTypes: trackingTypes,
+          initialSelected: _selectedTrackingTypesMap[type]!,
+          controller: controller,
         );
       },
     );
+
+    // Update the state with the result from the bottom sheet if not null
+    if (result != null) {
+      setState(() {
+        _selectedTrackingTypesMap[type] = result.toSet();
+      });
+      print('Updated for $type: ${_selectedTrackingTypesMap[type]}');
+    }
   }
 
   String _getTypeTitle(String type) {
