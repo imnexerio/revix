@@ -13,8 +13,6 @@ class FetchtrackingTypeUtils {
         data = List<String>.from(snapshot.value as List);
       }
     } catch (e) {
-      // Handle error
-      // print('Error fetching tracking types: $e');
     }
     return data;
   }
