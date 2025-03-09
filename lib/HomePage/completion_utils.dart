@@ -11,10 +11,7 @@ double calculateMonthlyCompletion(List<Map<String, dynamic>> records, Map<String
     return dateLearnt.isAfter(startOfMonth) || dateLearnt.isAtSameMomentAs(startOfMonth);
   }).length;
 
-  int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-  int expectedLectures = (customCompletionTarget / 365 * daysInMonth).round();
-
-  return expectedLectures > 0 ? (completedLectures / expectedLectures) * 100 : 0;
+  return (completedLectures / customCompletionTarget) * 100;
 }
 
 double calculateWeeklyCompletion(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap, int customCompletionTarget) {
@@ -30,9 +27,8 @@ double calculateWeeklyCompletion(List<Map<String, dynamic>> records, Map<String,
     return dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay);
   }).length;
 
-  int expectedLectures = (customCompletionTarget / 52).round();
 
-  return expectedLectures > 0 ? (completedLectures / expectedLectures) * 100 : 0;
+  return (completedLectures / customCompletionTarget) * 100;
 }
 
 double calculateDailyCompletion(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap, int customCompletionTarget) {
@@ -47,7 +43,7 @@ double calculateDailyCompletion(List<Map<String, dynamic>> records, Map<String, 
     return dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay);
   }).length;
 
-  int expectedLectures = (customCompletionTarget / 365).round();
+  print(completedLectures);
 
-  return expectedLectures > 0 ? (completedLectures / expectedLectures) * 100 : 0;
+  return (completedLectures / customCompletionTarget) *100;
 }
