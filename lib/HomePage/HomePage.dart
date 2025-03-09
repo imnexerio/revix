@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     'missed': {},
   };
 
-  int _customCompletionTarget = 322;
+  int _customCompletionTarget = 200;
 
   Size? _previousSize;
 
