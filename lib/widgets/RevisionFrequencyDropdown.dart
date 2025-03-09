@@ -107,7 +107,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
             child: DropdownButtonFormField<String>(
               isExpanded: true,
               decoration: InputDecoration(
-                labelText: 'Revision Frequency',
+                labelText: 'Review Frequency',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),

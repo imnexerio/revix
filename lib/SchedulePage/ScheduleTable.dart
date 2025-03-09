@@ -373,7 +373,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                         },
                       ),
                       _SortFieldBox(
-                        label: 'Date Learnt',
+                        label: 'Date Initiated',
                         field: 'date_learnt',
                         isSelected: selectedField == 'date_learnt',
                         onTap: () {
@@ -383,7 +383,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                         },
                       ),
                       _SortFieldBox(
-                        label: 'Date Revised',
+                        label: 'Date Reviewed',
                         field: 'date_revised',
                         isSelected: selectedField == 'date_revised',
                         onTap: () {
@@ -393,7 +393,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                         },
                       ),
                       _SortFieldBox(
-                        label: 'Missed Revisions',
+                        label: 'Overdue Reviews',
                         field: 'missed_revision',
                         isSelected: selectedField == 'missed_revision',
                         onTap: () {
@@ -403,7 +403,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                         },
                       ),
                       _SortFieldBox(
-                        label: 'Number of Revisions',
+                        label: 'Number of Reviews',
                         field: 'no_revision',
                         isSelected: selectedField == 'no_revision',
                         onTap: () {
@@ -413,7 +413,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
                         },
                       ),
                       _SortFieldBox(
-                        label: 'Revision Frequency',
+                        label: 'Review Frequency',
                         field: 'revision_frequency',
                         isSelected: selectedField == 'revision_frequency',
                         onTap: () {
@@ -489,6 +489,7 @@ class _SortFieldBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? Theme.of(context).colorScheme.primary.withOpacity(0.1)

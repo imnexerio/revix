@@ -203,10 +203,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   _buildDescriptionCard(context),
 
                   SizedBox(height: 24),
-
-                  // Revision frequency section
                   Text(
-                    "Revision Settings",
+                    "Review Settings",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -616,20 +614,20 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         children: [
           _buildTimelineItem(
             context,
-            "Learned on",
+            "Initiated on",
             widget.details['date_learnt'],
             Icons.school_outlined,
             isFirst: true,
           ),
           _buildTimelineItem(
             context,
-            "Last Revised",
+            "Last Reviewed",
             widget.details['date_revised'] ?? 'NA',
             Icons.history,
           ),
           _buildTimelineItem(
             context,
-            "Next Revision",
+            "Next Review",
             widget.details['date_scheduled'],
             Icons.event_outlined,
             isLast: true,
@@ -766,7 +764,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       ),
       child: Column(
         children: [
-          // Revision Frequency dropdown
           Row(
             children: [
               Expanded(
@@ -774,7 +771,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Revision Frequency",
+                      "Review Frequency",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,

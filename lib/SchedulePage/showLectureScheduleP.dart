@@ -422,20 +422,20 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
       children: [
         _buildTimelineItem(
           context,
-          "Learned on",
+          "Initiated on",
           details['date_learnt'],
           Icons.school_outlined,
           isFirst: true,
         ),
         _buildTimelineItem(
           context,
-          "Last Revised",
+          "Last Reviewed",
           details['date_revised'] ?? 'NA',
           Icons.history,
         ),
         _buildTimelineItem(
           context,
-          "Next Revision",
+          "Next Review",
           details['date_scheduled'],
           Icons.event_outlined,
           isLast: true,
