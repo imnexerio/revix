@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
 import '../Utils/FetchRecord.dart';
@@ -44,6 +46,48 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     super.initState();
     _recordService.startRealTimeUpdates();
     _recordsStream = _recordService.recordsStream;
+    _fetchTrackingTypesFromFirebase();
+  }
+
+// Method to fetch tracking types from Firebase
+  Future<void> _fetchTrackingTypesFromFirebase() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final String uid = user.uid;
+
+        // Create a reference to the tracking types node
+        DatabaseReference typesRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
+
+        // Get a snapshot of the data
+        DatabaseEvent event = await typesRef.once();
+
+        // If data exists, update the _selectedTrackingTypesMap
+        if (event.snapshot.exists) {
+          // Cast the data to Map
+          Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
+
+          setState(() {
+            // Update each tracking type if it exists in the fetched data
+            data.forEach((key, value) {
+              if (_selectedTrackingTypesMap.containsKey(key)) {
+                // Convert the list from Firebase to a Set<String>
+                List<dynamic> valueList = value as List<dynamic>;
+                _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+              }
+            });
+          });
+
+          print('Successfully loaded tracking types from Firebase');
+        } else {
+          print('No tracking types found in Firebase');
+        }
+      }
+    } catch (e) {
+      print('Error fetching tracking types from Firebase: $e');
+      // Handle any errors here
+    }
   }
 
   @override
@@ -521,6 +565,31 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         _selectedTrackingTypesMap[type] = result.toSet();
       });
       print('Updated for $type: ${_selectedTrackingTypesMap[type]}');
+
+      // Save only the updated tracking type to Firebase
+      await _saveTrackingTypeToFirebase(type, result.toList());
+    }
+  }
+
+// Add this new method to save just the specific tracking type
+  Future<void> _saveTrackingTypeToFirebase(String type, List<String> selectedTypes) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final String uid = user.uid;
+
+        // Create a reference specifically to the tracking type we want to update
+        DatabaseReference typeRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes/$type');
+
+        // Update just this specific type
+        await typeRef.set(selectedTypes);
+
+        print('Successfully saved $type preferences to Firebase');
+      }
+    } catch (e) {
+      print('Error saving to Firebase: $e');
+      // Optionally show an error message to the user
     }
   }
 

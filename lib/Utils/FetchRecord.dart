@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:retracker/Utils/FetchAllDataUtils.dart';
 
 class FetchRecord {
   // Add a stream controller to broadcast changes
