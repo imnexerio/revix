@@ -20,7 +20,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   final FetchRecord _recordService = FetchRecord();
   Stream<Map<String, dynamic>>? _recordsStream;
 
-  // Add these state variables
   String _lectureViewType = 'Total';
   String _revisionViewType = 'Total';
   String _completionViewType = 'Total';
@@ -32,17 +31,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     'missed': {},
   };
 
-  // Track custom total values
-  int _customTotalLectures = 0; // Default value from your code
-  int _customTotalRevisions = 0;
   int _customCompletionTarget = 322;
-  int _customMissedRevisions = 0;
 
-  // Add MediaQuery size caching
   Size? _previousSize;
 
   @override
-  bool get wantKeepAlive => true; // Keep state alive when widget is not visible
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -273,7 +267,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               child: _buildStatCard(
                 "Completion",
                 _getCompletionValue(allRecords, _completionViewType),
-                getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customTotalLectures)),
+                getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
                 _completionViewType,
                     () => _cycleViewType('completion'),
                     () => _showCustomizationSheet('completion'),
@@ -363,15 +357,15 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customTotalLectures).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
       case 'Monthly':
-        return "${calculateMonthlyCompletion(records, _selectedTrackingTypesMap,_customTotalLectures).toStringAsFixed(1)}%";
+        return "${calculateMonthlyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
       case 'Weekly':
-        return "${calculateWeeklyCompletion(records, _selectedTrackingTypesMap,_customTotalLectures).toStringAsFixed(1)}%";
+        return "${calculateWeeklyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
       case 'Daily':
-        return "${calculateDailyCompletion(records, _selectedTrackingTypesMap,_customTotalLectures).toStringAsFixed(1)}%";
+        return "${calculateDailyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
       default:
-        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customTotalLectures).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
     }
   }
 
@@ -422,7 +416,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           child: _buildStatCard(
             "Completion",
             _getCompletionValue(allRecords, _completionViewType),
-            getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customTotalLectures)),
+            getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
             _completionViewType,
                 () => _cycleViewType('completion'),
                 () => _showCustomizationSheet('completion'),
@@ -451,16 +445,16 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     // Set initial controller values
     switch (type) {
       case 'lecture':
-        controller.text = _customTotalLectures.toString();
+        controller.text = _customCompletionTarget.toString();
         break;
       case 'revision':
-        controller.text = _customTotalRevisions.toString();
+        controller.text = _customCompletionTarget.toString();
         break;
       case 'completion':
         controller.text = _customCompletionTarget.toString();
         break;
       case 'missed':
-        controller.text = _customMissedRevisions.toString();
+        controller.text = _customCompletionTarget.toString();
         break;
     }
 
