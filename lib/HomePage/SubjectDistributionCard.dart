@@ -30,7 +30,7 @@ Widget buildSubjectDistributionCard(Map<String, int> subjectDistribution, double
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Subject Distribution',
+          'Category Distribution',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
