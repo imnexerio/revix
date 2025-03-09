@@ -40,7 +40,7 @@ class SubjectDropdown extends StatelessWidget {
             child: Text('Others'),
           ),
         ],
-        validator: (value) => value == null ? 'Please select a subject' : null,
+        validator: (value) => value == null ? 'Please select a Category' : null,
       ),
     );
   }

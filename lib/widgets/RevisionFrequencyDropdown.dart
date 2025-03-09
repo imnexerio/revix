@@ -130,7 +130,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
               },
               items: _dropdownItems,
               menuMaxHeight: MediaQuery.of(context).size.height * 0.5,
-              validator: (value) => value == null ? 'Please select a revision frequency' : null,
+              validator: (value) => value == null ? 'Please select a Review frequency' : null,
             ),
           ),
         );
