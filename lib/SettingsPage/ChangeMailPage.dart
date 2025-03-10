@@ -77,6 +77,10 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
                               message: 'Verification email sent to $_newEmail. Please verify it and Pull to refresh.',
                             ),
                           );
+
+                          _newEmailController.clear();
+                          _currentPassword = null;
+                          _formKey.currentState!.reset();
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
