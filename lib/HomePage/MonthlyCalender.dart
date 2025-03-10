@@ -210,7 +210,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 LegendItem( label: 'Initiated', color: Colors.blue, icon: Icons.school,),
-                LegendItem( label: 'Reviews', color: Colors.green, icon: Icons.check_circle,),
+                LegendItem( label: 'Reviewed', color: Colors.green, icon: Icons.check_circle,),
                 LegendItem( label: 'Scheduled', color: Colors.orange, icon: Icons.event,),
                 LegendItem( label: 'Missed', color: Colors.red, icon: Icons.cancel,),
               ],
@@ -345,9 +345,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
         children: [
           // Display events grouped by type with summary count
           if (groupedEvents['learned']!.isNotEmpty)
-            _buildEventTypeSection('Learned', groupedEvents['learned']!, Colors.blue),
+            _buildEventTypeSection('Initiated', groupedEvents['learned']!, Colors.blue),
           if (groupedEvents['revised']!.isNotEmpty)
-            _buildEventTypeSection('Revised', groupedEvents['revised']!, Colors.green),
+            _buildEventTypeSection('Reviewed', groupedEvents['revised']!, Colors.green),
           if (groupedEvents['scheduled']!.isNotEmpty)
             _buildEventTypeSection('Scheduled', groupedEvents['scheduled']!, Colors.orange),
           if (groupedEvents['missed']!.isNotEmpty)

@@ -96,6 +96,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               message: 'Password updated successfully',
                             ),
                           );
+
+                          _newPasswordController.clear();
+                          _currentPassword = null;
+                          _confirmPassword = null;
+                          _formKey.currentState!.reset();
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

@@ -191,10 +191,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined), // Using outlined version for modern look
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: Colors.blue.withOpacity(0.1),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
+                                  // style: IconButton.styleFrom(
+                                  //   backgroundColor: Colors.blue.withOpacity(0.1),
+                                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  // ),
                                   onPressed: () {
                                     final TextEditingController textFieldController = TextEditingController(
                                       text: _customCompletionTarget.toString(),
@@ -375,7 +375,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
-                'Completed',
+                'Reviewed',
                 _getRevisionValue(allRecords, _revisionViewType),
                 const Color(0xFFDA5656),
                 _revisionViewType,
@@ -528,7 +528,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            'Completed',
+            'Reviewed',
             _getRevisionValue(allRecords, _revisionViewType),
             const Color(0xFFDA5656),
             _revisionViewType,
