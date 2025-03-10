@@ -47,8 +47,8 @@ Widget buildLegend() {
   return const Row(
     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
     children: [
-      LegendItem(label: 'Lectures', color: Colors.blue, icon: Icons.school),
-      LegendItem(label: 'Revisions', color: Colors.green, icon: Icons.check_circle),
+      LegendItem(label: 'Initiatives', color: Colors.blue, icon: Icons.school),
+      LegendItem(label: 'Reviews', color: Colors.green, icon: Icons.check_circle),
       LegendItem(label: 'Missed', color: Colors.red, icon: Icons.cancel),
       LegendItem(label: 'Scheduled', color: Colors.orange, icon: Icons.schedule),
     ],

@@ -209,8 +209,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                LegendItem( label: 'Learned', color: Colors.blue, icon: Icons.school,),
-                LegendItem( label: 'Revised', color: Colors.green, icon: Icons.check_circle,),
+                LegendItem( label: 'Initiated', color: Colors.blue, icon: Icons.school,),
+                LegendItem( label: 'Reviews', color: Colors.green, icon: Icons.check_circle,),
                 LegendItem( label: 'Scheduled', color: Colors.orange, icon: Icons.event,),
                 LegendItem( label: 'Missed', color: Colors.red, icon: Icons.cancel,),
               ],

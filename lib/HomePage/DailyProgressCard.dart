@@ -36,11 +36,11 @@ Widget buildDailyProgressCard(List<Map<String, dynamic>> allRecords, double card
           child: LineChart(createLineChartData(allRecords)),
         ),
         const SizedBox(height: 24),
-        Row(
+        const Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: const [
-            LegendItem(label: 'Lectures', color: Colors.blue, icon: Icons.school),
-            LegendItem(label: 'Revisions', color: Colors.green, icon: Icons.check_circle),
+          children: [
+            LegendItem(label: 'Initiatives', color: Colors.blue, icon: Icons.school),
+            LegendItem(label: 'Reviewed', color: Colors.green, icon: Icons.check_circle),
           ],
         ),
       ],
