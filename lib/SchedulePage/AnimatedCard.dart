@@ -80,10 +80,6 @@ class AnimatedCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
-                              // Wrap(
-                              //   spacing: 16,
-                              //   runSpacing: 8,
-                              //   children: [
                                   _buildDateInfo(
                                     context,
                                     'Scheduled',
@@ -93,7 +89,7 @@ class AnimatedCard extends StatelessWidget {
                                   if (isCompleted)
                                     _buildDateInfo(
                                       context,
-                                      'Completed',
+                                      'Initiated',
                                       record['date_learnt'] ?? '',
                                       Icons.check_circle_outline,
                                     ),

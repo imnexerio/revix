@@ -317,7 +317,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           children: [
                             Expanded(
                               child: TextFormField(
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   labelText: 'Add New Sub Category',
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -341,14 +341,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       },
                     ),
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: TextFormField(
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Title',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -366,7 +366,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                     ),
 
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
@@ -378,7 +378,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             child: TextFormField(
                               controller: _timeController,
                               readOnly: true,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Reminder Time',
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -430,7 +430,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                 });
                               },
                               child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -440,8 +440,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                           : Icons.check_box_outline_blank,
                                       color: Theme.of(context).primaryColor,
                                     ),
-                                    SizedBox(width: 4),
-                                    Text('All Day'),
+                                    const SizedBox(width: 4),
+                                    const Text('All Day'),
                                   ],
                                 ),
                               ),
@@ -452,7 +452,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                     ),
 
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
@@ -461,8 +461,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       child: TextFormField(
                         controller: _initiationdateController,
                         readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: 'Select Starting Date',
+                        decoration: const InputDecoration(
+                          labelText: 'Select Initiation Date',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
@@ -501,7 +501,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
                     if (!onlyOnce)
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
@@ -539,14 +539,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
                     ),
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: TextFormField(
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Description',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -586,7 +586,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
                     Row(
                       children: [
                         Expanded(
@@ -595,12 +595,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               Navigator.of(context).pop();
                             },
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Text(
+                            child: const Text(
                               'Cancel',
                               style: TextStyle(
                                 fontSize: 16,
@@ -630,12 +630,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                              padding: EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Text(
+                            child: const Text(
                               'Save',
                               style: TextStyle(
                                 fontSize: 16,
