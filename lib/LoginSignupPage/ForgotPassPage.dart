@@ -160,14 +160,14 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                       ),
                       SizedBox(height: 24),
                       Text(
-                        'Create Account',
+                        'Password Reset',
                         style: textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.primary,
                         ),
                       ),
                       Text(
-                        'Sign up to get started',
+                        'Enter your email to receive a password reset link',
                         style: textTheme.bodyLarge?.copyWith(
                           color: colorScheme.onSurface.withOpacity(0.7),
                         ),
