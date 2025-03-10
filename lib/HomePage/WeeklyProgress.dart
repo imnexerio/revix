@@ -164,10 +164,10 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
           String label;
           switch (rodIndex) {
             case 0:
-              label = 'Lectures';
+              label = 'Initiatives';
               break;
             case 1:
-              label = 'Revisions';
+              label = 'Reviewed';
               break;
             case 2:
               label = 'Missed';
