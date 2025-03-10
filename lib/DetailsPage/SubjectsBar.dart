@@ -1,6 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import '../Utils/subject_utils.dart';
 import 'CodeBar.dart';
 
 class SubjectsBar extends StatefulWidget {
@@ -13,6 +12,10 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
+  // Stream subscription
+  Stream<Map<String, dynamic>>? _subjectsStream;
+  Map<String, dynamic>? _currentData;
+
   @override
   void initState() {
     super.initState();
@@ -23,7 +26,13 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+
+    // Initialize with current data if available
     _initializeSelectedSubject();
+
+    // Subscribe to the stream
+    _subjectsStream = getSubjectsStream();
+
     _controller.forward();
   }
 
@@ -35,10 +44,11 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
 
   Future<void> _initializeSelectedSubject() async {
     try {
-      final data = await _fetchDataFromServer();
-      if (data.isNotEmpty) {
+      final data = await fetchSubjectsAndCodes();
+      if (data['subjects'].isNotEmpty) {
         setState(() {
-          _selectedSubject = data.keys.first;
+          _selectedSubject = data['subjects'].first;
+          _currentData = data;
         });
       }
     } catch (e) {
@@ -46,28 +56,15 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
     }
   }
 
-  Future<Map<String, dynamic>> _fetchDataFromServer() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
-    DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-    DataSnapshot snapshot = await ref.get();
-    if (snapshot.exists) {
-      return Map<String, dynamic>.from(snapshot.value as Map);
-    } else {
-      throw Exception('No data found on server');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _fetchDataFromServer(),
+      body: StreamBuilder<Map<String, dynamic>>(
+        // Use the stream instead of future
+        stream: _subjectsStream,
+        initialData: _currentData,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return Center(
               child: CircularProgressIndicator(
                 color: Theme.of(context).colorScheme.primary,
@@ -92,7 +89,7 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
                 ],
               ),
             );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          } else if (!snapshot.hasData || snapshot.data!['subjects'].isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -112,8 +109,21 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
             );
           }
 
-          final data = snapshot.data!;
-          final subjects = data.keys.toList();
+          final subjects = snapshot.data!['subjects'];
+
+          // If we have data but no selected subject, select the first one
+          if (_selectedSubject == null && subjects.isNotEmpty) {
+            _selectedSubject = subjects.first;
+          }
+
+          // If selected subject no longer exists in the updated list
+          if (_selectedSubject != null && !subjects.contains(_selectedSubject)) {
+            if (subjects.isNotEmpty) {
+              _selectedSubject = subjects.first;
+            } else {
+              _selectedSubject = null;
+            }
+          }
 
           return Column(
             children: [
@@ -193,31 +203,33 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                  Icon(
-                                  Icons.book,
-                                  size: 18,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurface,
+                                    Icon(
+                                      Icons.book,
+                                      size: 18,
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.onPrimary
+                                          : Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      subject,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Theme.of(context).colorScheme.onPrimary
+                                            : Theme.of(context).colorScheme.onSurface,
+                                        fontSize: 16,
+                                        fontWeight:
+                                        isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(width: 8),
-                                Text(
-                                  subject,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Theme.of(context).colorScheme.onPrimary
-                                        : Theme.of(context).colorScheme.onSurface,
-                                    fontSize: 16,
-                                    fontWeight:
-                                    isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ]),
+                              ),
                             ),
                           ),
                         ),
-                      ));
+                      );
                     },
                   ),
                 ),

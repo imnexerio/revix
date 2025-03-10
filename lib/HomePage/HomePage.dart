@@ -1,473 +1,333 @@
-import 'dart:math';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-
-import 'WeeklyProgressData.dart';
+import 'package:flutter/services.dart';
+import 'package:retracker/HomePage/revision_calculations.dart';
+import '../Utils/FetchRecord.dart';
+import '../Utils/FetchTypesUtils.dart';
+import 'CustomLectureSave.dart';
+import 'CustomizationBottomSheet.dart';
+import 'DailyProgressCard.dart';
+import 'ProgressCalendarCard.dart';
+import 'SubjectDistributionCard.dart';
+import 'WeeklyProgressCard.dart';
+import 'calculation_utils.dart';
+import 'completion_utils.dart';
+import 'lecture_calculations.dart';
+import 'missed_calculations.dart';
 
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  Future<Map<String, dynamic>> _getAllRecords() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
+class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
+  final FetchRecord _recordService = FetchRecord();
+  Stream<Map<String, dynamic>>? _recordsStream;
 
+  String _lectureViewType = 'Total';
+  String _revisionViewType = 'Total';
+  String _completionViewType = 'Total';
+  String _missedViewType = 'Total';
+  Map<String, Set<String>> _selectedTrackingTypesMap = {
+    'lecture': {},
+    'revision': {},
+    'completion': {},
+    'missed': {},
+  };
+
+  int _customCompletionTarget = 200;
+
+  Size? _previousSize;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _recordService.startRealTimeUpdates();
+    _recordsStream = _recordService.recordsStream;
+    _fetchTrackingTypesAndTargetFromFirebase();
+  }
+
+  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-      DataSnapshot snapshot = await ref.get();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final String uid = user.uid;
 
-      if (!snapshot.exists) {
-        return {'allRecords': []};
-      }
+        DatabaseReference typesRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
+        DatabaseReference targetRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/customCompletionTarget');
 
-      Map<Object?, Object?> rawData = snapshot.value as Map<Object?, Object?>;
+        DatabaseEvent typesEvent = await typesRef.once();
+        DatabaseEvent targetEvent = await targetRef.once();
+        if (typesEvent.snapshot.exists) {
+          Map<dynamic, dynamic> data = typesEvent.snapshot.value as Map<dynamic, dynamic>;
 
-      List<Map<String, dynamic>> allRecords = [];
-
-      rawData.forEach((subjectKey, subjectValue) {
-        if (subjectValue is Map) {
-          subjectValue.forEach((codeKey, codeValue) {
-            if (codeValue is Map) {
-              codeValue.forEach((recordKey, recordValue) {
-                if (recordValue is Map) {
-                  var record = {
-                    'subject': subjectKey.toString(),
-                    'subject_code': codeKey.toString(),
-                    'lecture_no': recordKey.toString(),
-                    'details': Map<String, dynamic>.from(recordValue),
-                  };
-                  allRecords.add(record);
-                }
-              });
-            }
+          setState(() {
+            data.forEach((key, value) {
+              if (_selectedTrackingTypesMap.containsKey(key)) {
+                List<dynamic> valueList = value as List<dynamic>;
+                _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+              }
+            });
           });
+        } else {
         }
-      });
-      return {'allRecords': allRecords};
+
+        if (targetEvent.snapshot.exists) {
+          setState(() {
+            _customCompletionTarget = int.parse(targetEvent.snapshot.value.toString());
+          });
+        } else {
+        }
+      }
     } catch (e) {
-      throw Exception('Failed to fetch records');
     }
-  }
-
-  Map<String, int> _calculateSubjectDistribution(List<Map<String, dynamic>> records) {
-    Map<String, int> subjectCounts = {};
-
-    for (var record in records) {
-      String subject = record['subject'];
-      subjectCounts[subject] = (subjectCounts[subject] ?? 0) + 1;
-    }
-
-    return subjectCounts;
-  }
-
-  List<PieChartSectionData> _createPieChartSections(Map<String, int> subjectCounts) {
-    final colors = [
-      Colors.purple,
-      Colors.green,
-      Colors.red,
-      Colors.yellow,
-      Colors.blue,
-    ];
-
-    List<PieChartSectionData> sections = [];
-    int totalLectures = subjectCounts.values.fold(0, (sum, count) => sum + count);
-    int colorIndex = 0;
-
-    subjectCounts.forEach((subject, count) {
-      double percentage = (count / totalLectures) * 100;
-      sections.add(
-        PieChartSectionData(
-          color: colors[colorIndex % colors.length],
-          value: percentage,
-          title: '${percentage.toStringAsFixed(1)}%',
-          radius: 100,
-          titleStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      );
-      colorIndex++;
-    });
-
-    return sections;
-  }
-
-  Widget _buildPieChartLegend(Map<String, int> subjectCounts) {
-    final colors = [
-      Colors.purple,
-      Colors.green,
-      Colors.red,
-      Colors.yellow,
-      Colors.blue,
-    ];
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      children: subjectCounts.entries.map((entry) {
-        int index = subjectCounts.keys.toList().indexOf(entry.key);
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: colors[index % colors.length],
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            SizedBox(width: 8),
-            Text(
-              '${entry.key} (${entry.value})',
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
-    );
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _recordService.stopRealTimeUpdates();
+    } else if (state == AppLifecycleState.resumed) {
+      _recordService.startRealTimeUpdates();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Stop listening when the widget is disposed
+    _recordService.stopRealTimeUpdates();
+    _recordService.dispose();
+    super.dispose();
+  }
+
+
+  @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    super.build(context);
+
+    final currentSize = MediaQuery.of(context).size;
+    final screenWidth = currentSize.width;
+
+    // Only rebuild the layout if the screen size has changed significantly
+    final rebuildLayout = _previousSize == null ||
+        (_previousSize!.width != currentSize.width &&
+            (_crossesBreakpoint(_previousSize!.width, currentSize.width, 600) ||
+                _crossesBreakpoint(_previousSize!.width, currentSize.width, 900)));
+
+    // Update the previous size
+    _previousSize = currentSize;
+
     final horizontalPadding = screenWidth > 600 ? 24.0 : 16.0;
     final cardPadding = screenWidth > 600 ? 24.0 : 16.0;
 
     return Scaffold(
-
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: () async {
-          setState(() {});
-        },
-        child: Padding(
+      body: Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final cardWidth = (constraints.maxWidth - 40) / 2;
-              return FutureBuilder<Map<String, dynamic>>(
-                future: _getAllRecords(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                          SizedBox(height: 16),
-                          Text(
-                            'Oops! Something went wrong',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.red[300],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!['allRecords']!.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
-                          SizedBox(height: 16),
-                          Text(
-                            'No records yet',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+          child: StreamBuilder(
+            stream: _recordsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return _buildErrorWidget();
+              } else if (!snapshot.hasData || snapshot.data!['allRecords']!.isEmpty) {
+                return _buildEmptyWidget();
+              }
 
-                  List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
-                  Map<String, int> subjectDistribution = _calculateSubjectDistribution(allRecords);
+              List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
+              Map<String, int> subjectDistribution = calculateSubjectDistribution(allRecords);
 
-                  return CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
+              return CustomScrollView(
+                key: const PageStorageKey('homeScrollView'),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Performance Analytics',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).textTheme.titleLarge?.color,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          padding: EdgeInsets.all(cardPadding),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Performance Analytics',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).textTheme.titleLarge?.color,
-                              ),
-                            ),
-                            SizedBox(height: 32),
-                            // Overview Section
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 20,
-                                    offset: Offset(0, 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Overview',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).textTheme.titleLarge?.color,
                                   ),
-                                ],
-                              ),
-                              padding: EdgeInsets.all(cardPadding),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Overview',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).textTheme.titleLarge?.color,
-                                    ),
-                                  ),
-                                  SizedBox(height: 16), // Add some space between the title and the content
-                                  Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: _buildStatCard(
-                                              'Total Lectures',
-                                              _calculateTotalLectures(allRecords).toString(),
-                                              Color(0xFF6C63FF),
-                                              cardWidth,
-                                            ),
-                                          ),
-                                          SizedBox(width: 16), // Add some spacing between the cards
-                                          Expanded(
-                                            child: _buildStatCard(
-                                              'Total Revisions',
-                                              _calculateTotalRevisions(allRecords).toString(),
-                                              Color(0xFFDA5656),
-                                              cardWidth,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined), // Using outlined version for modern look
+                                  // style: IconButton.styleFrom(
+                                  //   backgroundColor: Colors.blue.withOpacity(0.1),
+                                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  // ),
+                                  onPressed: () {
+                                    final TextEditingController textFieldController = TextEditingController(
+                                      text: _customCompletionTarget.toString(),
+                                    );
 
-                                      SizedBox(height: 16), // Add some space between the rows
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: _buildStatCard(
-                                              "Percentage Completion",
-                                              "${_calculatePercentageCompltion(allRecords).toStringAsFixed(1)}%",
-                                              _getCompletionColor(_calculatePercentageCompltion(allRecords)),
-                                              cardWidth,
-                                            ),
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          title: const Text(
+                                            'Set Target',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
                                           ),
-                                          SizedBox(width: 16), // Add some spacing between the cards
-                                          Expanded(
-                                            child: _buildStatCard(
-                                              "Missed Revision",
-                                              _calculateMissedrevisions(allRecords).toString(),
-                                              Color(0xFF008CC4),
-                                              cardWidth,
-                                            ),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'Enter your completion target:',
+                                              ),
+                                              const SizedBox(height: 16),
+                                              TextField(
+                                                controller: textFieldController,
+                                                keyboardType: TextInputType.number,
+                                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                                decoration: InputDecoration(
+                                                  prefixIcon: const Icon(Icons.flag_outlined),
+                                                  hintText: "Enter your target",
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    borderSide: BorderSide.none,
+                                                  ),
+                                                  filled: true,
+                                                  fillColor: Colors.grey.withOpacity(0.1),
+                                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                          actions: [
+                                            TextButton(
+                                              style: TextButton.styleFrom(
+                                              ),
+                                              child: const Text('Cancel'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                            FilledButton(
+                                              style: FilledButton.styleFrom(
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text('Save'),
+                                              onPressed: () async {
+                                                final String targetValue = textFieldController.text;
+                                                if (targetValue.isNotEmpty) {
+                                                  final int newTarget = int.parse(targetValue);
 
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                                  final profileService = ProfileDataService();
+                                                  await profileService.saveCompletionTarget(targetValue);
+                                                  setState(() {
+                                                    _customCompletionTarget = newTarget;
+                                                  });
+                                                }
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
-                            SizedBox(height: 32),
-                            // Progress Graph Section
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 20,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              padding: EdgeInsets.all(cardPadding),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Daily Progress',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(context).textTheme.titleLarge?.color,
-                                    ),
-                                  ),
-                                  SizedBox(height: 24),
-                                  SizedBox(
-                                    height: 250,
-                                    width: double.infinity,
-                                    child: LineChart(_createLineChartData(allRecords)),
-                                  ),
-                                  SizedBox(height: 24),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      _buildLegendItem('Lectures', Colors.blue),
-                                      SizedBox(width: 24),
-                                      _buildLegendItem('Revisions', Colors.orange),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 32),
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 20,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              padding: EdgeInsets.all(cardPadding),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Weekly Progress',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(context).textTheme.titleLarge?.color,
-                                    ),
-                                  ),
-                                  SizedBox(height: 24),
-                                  SizedBox(
-                                    height: 250,
-                                    width: double.infinity,
-                                    child: BarChart(_createBarChartWeeklyData(allRecords)),
-                                  ),
-                                  SizedBox(height: 24),
+                            const SizedBox(height: 16),
 
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 32),
-
-                            // Subject Distribution Section
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 20,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              padding: EdgeInsets.all(cardPadding),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Subject Distribution',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(context).textTheme.titleLarge?.color,
-                                    ),
-                                  ),
-                                  SizedBox(height: 24),
-                                  AspectRatio(
-                                    aspectRatio: 1.3,
-                                    child: PieChart(
-                                      PieChartData(
-                                        sections: _createPieChartSections(subjectDistribution),
-                                        sectionsSpace: 2,
-                                        centerSpaceRadius: 40,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 24),
-                                  _buildPieChartLegend(subjectDistribution),
-                                ],
-                              ),
-                            ),
+                            // Responsive grid layout for stats - only rebuild if needed
+                            rebuildLayout
+                                ? screenWidth > 900
+                                ? _buildSingleRowStatsGrid(allRecords)
+                                : _buildTwoByTwoStatsGrid(allRecords)
+                                : screenWidth > 900
+                                ? _buildSingleRowStatsGrid(allRecords)
+                                : _buildTwoByTwoStatsGrid(allRecords),
                           ],
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        ),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: rebuildLayout
+                        ? screenWidth > 900
+                        ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
+                        : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding)
+                        : screenWidth > 900
+                        ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
+                        : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding),
+                  ),
+                ],
               );
             },
           ),
         ),
-      ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color color, double width) {
-    return Container(
-      width: width,
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
+  // Check if the width crosses any of our breakpoints
+  bool _crossesBreakpoint(double oldWidth, double newWidth, double breakpoint) {
+    return (oldWidth <= breakpoint && newWidth > breakpoint) ||
+        (oldWidth > breakpoint && newWidth <= breakpoint);
+  }
+
+  // Error widget - extracted to reduce build method complexity
+  Widget _buildErrorWidget() {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+          const SizedBox(height: 16),
           Text(
-            title,
+            'Oops! Something went wrong',
             style: TextStyle(
-              fontSize: 14,
-              color: color.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.red[300],
             ),
           ),
         ],
@@ -475,322 +335,419 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
+  // Empty widget - extracted to reduce build method complexity
+  Widget _buildEmptyWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'No records yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Two-by-two grid for medium screens
+  Widget _buildTwoByTwoStatsGrid(List<Map<String, dynamic>> allRecords) {
+    return Column(
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  int _calculateTotalLectures(List<Map<String, dynamic>> records) {
-    return records.where((record) => record['details']['date_learnt'] != null).length;
-  }
-
-  int _calculateTotalRevisions(List<Map<String, dynamic>> records) {
-    int totalRevisions = 0;
-    for (var record in records) {
-      if (record['details']['no_revision'] != null ) {
-        totalRevisions += (record['details']['no_revision'] as int);
-      }
-    }
-    return totalRevisions;
-  }
-
-  int _calculateMissedrevisions(List<Map<String, dynamic>> records) {
-    int missedRevisionsCount = 0;
-
-    for (var record in records) {
-      if (record.containsKey('details') && record['details'] is Map) {
-        var details = record['details'] as Map;
-        if (details.containsKey('missed_revision') && details['missed_revision'] > 0) {
-          missedRevisionsCount++;
-        }
-      }
-    }
-
-    return missedRevisionsCount;
-  }
-
-  Color _getCompletionColor(double percentage) {
-    if (percentage <= 50) {
-      return Color.lerp(Color(0xFFC40000), Color(0xFFFFEB3B), percentage / 50)!; // Red to Yellow
-    } else {
-      return Color.lerp(Color(0xFFFFEB3B), Color(0xFF00C853), (percentage - 50) / 50)!; // Yellow to Green
-    }
-  }
-
-  double _calculatePercentageCompltion(List<Map<String, dynamic>> records) {
-    int completedLectures = records.where((record) => record['details']['date_learnt'] != null && record['details']['lecture_type'] == 'Lectures').length;
-    int totalLectures = 322;
-    double percentageCompletion = (completedLectures / totalLectures) * 100;
-    return percentageCompletion;
-  }
-
-  LineChartData _createLineChartData(List<Map<String, dynamic>> records) {
-    Map<String, int> lectureCounts = {};
-    Map<String, int> revisionCounts = {};
-
-    DateTime today = DateTime.now();
-    for (int i = 0; i < 14; i++) {
-      DateTime date = today.subtract(Duration(days: i));
-      String dateStr = date.toIso8601String().split('T')[0];
-      lectureCounts[dateStr] = 0;
-      revisionCounts[dateStr] = 0;
-    }
-
-    for (var record in records) {
-      String? dateLearnt = record['details']['date_learnt'];
-      List<dynamic>? datesRevised = record['details']['dates_revised'];
-
-      if (dateLearnt != null && lectureCounts.containsKey(dateLearnt)) {
-        lectureCounts[dateLearnt] = lectureCounts[dateLearnt]! + 1;
-      }
-
-      if (datesRevised != null) {
-        for (var dateRevised in datesRevised) {
-          if (revisionCounts.containsKey(dateRevised)) {
-            revisionCounts[dateRevised] = revisionCounts[dateRevised]! + 1;
-          }
-        }
-      }
-    }
-
-    List<FlSpot> lectureSpots = [];
-    List<FlSpot> revisionSpots = [];
-
-    int index = 6; // Start from the rightmost position
-    lectureCounts.forEach((date, count) {
-      lectureSpots.add(FlSpot(index.toDouble(), count.toDouble()));
-      index--;
-    });
-
-    index = 6; // Start from the rightmost position
-    revisionCounts.forEach((date, count) {
-      revisionSpots.add(FlSpot(index.toDouble(), count.toDouble()));
-      index--;
-    });
-
-    return LineChartData(
-      titlesData: FlTitlesData(
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) => Text(value.toInt().toString())),
-        ),
-        rightTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        topTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
-            DateTime date = today.subtract(Duration(days: 6 - value.toInt()));
-            return Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                date.day.toString(), // Only show the day
-                style: TextStyle(fontSize: 10),
-                textAlign: TextAlign.center,
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Initiatives',
+                _getLectureValue(allRecords, _lectureViewType),
+                const Color(0xFF6C63FF),
+                _lectureViewType,
+                    () => _cycleViewType('lecture'),
+                    () => _showCustomizationSheet('lecture'),
               ),
-            );
-          }),
-        ),
-      ),
-      lineBarsData: [
-        LineChartBarData(
-          spots: lectureSpots,
-          isCurved: true,
-          color: Colors.blue,
-          barWidth: 3,
-          dotData: FlDotData(show: true),
-          belowBarData: BarAreaData(
-            show: true,
-            color: Colors.blue.withOpacity(0.1),
-          ),
-        ),
-        LineChartBarData(
-          spots: revisionSpots,
-          isCurved: true,
-          color: Colors.orange,
-          barWidth: 3,
-          dotData: FlDotData(show: true),
-          belowBarData: BarAreaData(
-            show: true,
-            color: Colors.orange.withOpacity(0.1),
-          ),
-        ),
-      ],
-      lineTouchData: LineTouchData(
-        enabled: true,
-        touchTooltipData: LineTouchTooltipData(),
-      ),
-    );
-  }
-  // Inside your _HomePageState class, modify the _createBarChartWeeklyData function:
-  BarChartData _createBarChartWeeklyData(List<Map<String, dynamic>> records) {
-    Map<int, WeeklyProgressData> weeklyData = {};
-    DateTime now = DateTime.now();
-
-    // Find the most recent Sunday
-    // Find the next Sunday instead of the last Sunday
-    DateTime nextSunday = now.add(Duration(days: 7 - (now.weekday % 7)));
-    nextSunday = DateTime(nextSunday.year, nextSunday.month, nextSunday.day, 23, 59, 59);
-
-    // DateTime lastSunday = now.subtract(Duration(days: now.weekday % 7));
-    // lastSunday = DateTime(lastSunday.year, lastSunday.month, lastSunday.day, 23, 59, 59);
-
-    // Initialize the last 4 complete weeks of data
-    // Now 3 represents the most recent week (rightmost)
-    for (int i = 0; i < 4; i++) {
-      weeklyData[i] = WeeklyProgressData(i, 0);
-    }
-
-    // Calculate the start date (Monday) of the earliest week we want to track
-    DateTime startDate = nextSunday.subtract(Duration(days: (4 * 7) - 1));
-    startDate = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
-
-
-    for (var record in records) {
-      // String? dateLearnt = record['details']['date_learnt'];
-
-      String? dateLearnt;
-      if (record['details']['lecture_type'] == 'Lectures') {
-        dateLearnt = record['details']['date_learnt'];
-      }
-
-      if (dateLearnt != null) {
-        DateTime lectureDate = DateTime.parse(dateLearnt);
-        if (lectureDate.isAfter(startDate) && lectureDate.isBefore(nextSunday.add(Duration(days: 1)))) {
-          // Calculate which week this date belongs to
-          int daysFromNextSunday = nextSunday.difference(lectureDate).inDays;
-          int weekIndex = 3 - (daysFromNextSunday ~/ 7); // Reverse the index so newest week is at index 3
-
-          if (weekIndex >= 0) {
-            var currentData = weeklyData[weekIndex]!;
-            weeklyData[weekIndex] = WeeklyProgressData(
-              weekIndex,
-              currentData.lectures + 1,
-            );
-          }
-        }
-      }
-
-    }
-
-    // Calculate maxY from the data
-    double maxY = 0;
-    weeklyData.values.forEach((data) {
-      maxY = max(maxY, data.lectures.toDouble());
-    });
-
-    // Add padding to maxY to prevent bars from touching the top
-    maxY = maxY + (maxY * 0.2);
-
-    return BarChartData(
-      alignment: BarChartAlignment.spaceAround,
-      maxY: maxY,
-      barTouchData: BarTouchData(
-        enabled: true,
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-            String label = rodIndex == 0 ? 'Lectures' : 'Revisions';
-            return BarTooltipItem(
-              '${label}: ${rod.toY.toInt()}',
-              const TextStyle(color: Colors.white),
-            );
-          },
-        ),
-      ),
-      titlesData: FlTitlesData(
-        show: true,
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              int weekIndex = value.toInt();
-              // Calculate the Monday and Sunday dates for each week
-              // Now we subtract less days for higher indices (newer weeks)
-              // When displaying dates in the bottom titles:
-              DateTime weekStart = nextSunday.subtract(Duration(days: ((3 - weekIndex) * 7) + 6));
-              DateTime weekEnd = nextSunday.subtract(Duration(days: (3 - weekIndex) * 7));
-
-              return Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  '${weekStart.day}/${weekStart.month}-${weekEnd.day}/${weekEnd.month}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              );
-            },
-            reservedSize: 40,
-          ),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              return Text(
-                value.toInt().toString(),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              );
-            },
-            reservedSize: 30,
-          ),
-        ),
-        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      ),
-      borderData: FlBorderData(show: false),
-      barGroups: weeklyData.entries.map((entry) {
-        final data = entry.value;
-        return BarChartGroupData(
-          x: entry.key,
-          barRods: [
-            BarChartRodData(
-              toY: data.lectures.toDouble(),
-              color: Colors.blue,
-              width: 16,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(4),
-                topRight: Radius.circular(4),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                'Reviewed',
+                _getRevisionValue(allRecords, _revisionViewType),
+                const Color(0xFFDA5656),
+                _revisionViewType,
+                    () => _cycleViewType('revision'),
+                    () => _showCustomizationSheet('revision'),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                "Completion Percentage",
+                _getCompletionValue(allRecords, _completionViewType),
+                getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
+                _completionViewType,
+                    () => _cycleViewType('completion'),
+                    () => _showCustomizationSheet('completion'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                "Missed",
+                _getMissedValue(allRecords, _missedViewType),
+                const Color(0xFF008CC4),
+                _missedViewType,
+                    () => _cycleViewType('missed'),
+                    () => _showCustomizationSheet('missed'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _cycleViewType(String type) {
+    setState(() {
+      switch (type) {
+        case 'lecture':
+          _lectureViewType = _getNextViewType(_lectureViewType);
+          break;
+        case 'revision':
+          _revisionViewType = _getNextViewType(_revisionViewType);
+          break;
+        case 'completion':
+          _completionViewType = _getNextViewType(_completionViewType);
+          break;
+        case 'missed':
+          _missedViewType = _getNextViewType(_missedViewType);
+          break;
+      }
+    });
+  }
+
+  String _getNextViewType(String currentType) {
+    switch (currentType) {
+      case 'Total':
+        return 'Monthly';
+      case 'Monthly':
+        return 'Weekly';
+      case 'Weekly':
+        return 'Daily';
+      case 'Daily':
+        return 'Total';
+      default:
+        return 'Total';
+    }
+  }
+
+  String _getLectureValue(List<Map<String, dynamic>> records, String viewType) {
+    switch (viewType) {
+      case 'Total':
+        return calculateTotalLectures(records,_selectedTrackingTypesMap).toString();
+      case 'Monthly':
+        return calculateMonthlyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+      case 'Weekly':
+        return calculateWeeklyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+      case 'Daily':
+        return calculateDailyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+      default:
+        return calculateTotalLectures(records,_selectedTrackingTypesMap).toString();
+    }
+  }
+
+  String _getRevisionValue(List<Map<String, dynamic>> records, String viewType) {
+    switch (viewType) {
+      case 'Total':
+        return calculateTotalRevisions(records,_selectedTrackingTypesMap).toString();
+      case 'Monthly':
+        return calculateMonthlyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+      case 'Weekly':
+        return calculateWeeklyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+      case 'Daily':
+        return calculateDailyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+      default:
+        return calculateTotalRevisions(records,_selectedTrackingTypesMap).toString();
+    }
+  }
+
+  String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
+    switch (viewType) {
+      case 'Total':
+        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+      case 'Monthly':
+        return "${calculateMonthlyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+      case 'Weekly':
+        return "${calculateWeeklyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+      case 'Daily':
+        return "${calculateDailyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+      default:
+        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+    }
+  }
+
+  String _getMissedValue(List<Map<String, dynamic>> records, String viewType) {
+    switch (viewType) {
+      case 'Total':
+        return calculateMissedRevisions(records,_selectedTrackingTypesMap).toString();
+      case 'Monthly':
+        return calculateMonthlyMissed(records,_selectedTrackingTypesMap).toString();
+      case 'Weekly':
+        return calculateWeeklyMissed(records,_selectedTrackingTypesMap).toString();
+      case 'Daily':
+        return calculateDailyMissed(records,_selectedTrackingTypesMap).toString();
+      default:
+        return calculateMissedRevisions(records,_selectedTrackingTypesMap).toString();
+    }
+  }
+
+
+
+  // Single row layout for larger screens
+  Widget _buildSingleRowStatsGrid(List<Map<String, dynamic>> allRecords) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            'Initiatives',
+            _getLectureValue(allRecords, _lectureViewType),
+            const Color(0xFF6C63FF),
+            _lectureViewType,
+                () => _cycleViewType('lecture'),
+                () => _showCustomizationSheet('lecture'),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildStatCard(
+            'Reviewed',
+            _getRevisionValue(allRecords, _revisionViewType),
+            const Color(0xFFDA5656),
+            _revisionViewType,
+                () => _cycleViewType('revision'),
+                () => _showCustomizationSheet('revision'),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildStatCard(
+            "Completion Percentage",
+            _getCompletionValue(allRecords, _completionViewType),
+            getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
+            _completionViewType,
+                () => _cycleViewType('completion'),
+                () => _showCustomizationSheet('completion'),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildStatCard(
+            "Missed",
+            _getMissedValue(allRecords, _missedViewType),
+            const Color(0xFF008CC4),
+            _missedViewType,
+                () => _cycleViewType('missed'),
+                () => _showCustomizationSheet('missed'),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Future<void> _showCustomizationSheet(String type) async {
+    final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
+    final TextEditingController controller = TextEditingController();
+
+    // Set initial controller values
+    switch (type) {
+      case 'lecture':
+        controller.text = _customCompletionTarget.toString();
+        break;
+      case 'revision':
+        controller.text = _customCompletionTarget.toString();
+        break;
+      case 'completion':
+        controller.text = _customCompletionTarget.toString();
+        break;
+      case 'missed':
+        controller.text = _customCompletionTarget.toString();
+        break;
+    }
+
+    final result = await showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return CustomizationBottomSheet(
+          type: type,
+          typeTitle: _getTypeTitle(type),
+          trackingTypes: trackingTypes,
+          initialSelected: _selectedTrackingTypesMap[type]!,
+          controller: controller,
         );
-      }).toList(),
-      gridData: FlGridData(
-        show: true,
-        drawHorizontalLine: true,
-        horizontalInterval: 1,
-        drawVerticalLine: false,
-        getDrawingHorizontalLine: (value) {
-          return FlLine(
-            color: Colors.grey.withOpacity(0.2),
-            strokeWidth: 1,
-          );
-        },
+      },
+    );
+    if (result != null) {
+      setState(() {
+        _selectedTrackingTypesMap[type] = result.toSet();
+      });
+      await _saveTrackingTypeToFirebase(type, result.toList());
+    }
+  }
+  Future<void> _saveTrackingTypeToFirebase(String type, List<String> selectedTypes) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final String uid = user.uid;
+        DatabaseReference typeRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes/$type');
+
+        // Update just this specific type
+        await typeRef.set(selectedTypes);
+      }
+    } catch (e) {
+    }
+  }
+
+  String _getTypeTitle(String type) {
+    switch (type) {
+      case 'lecture':
+        return 'Lectures';
+      case 'revision':
+        return 'Revisions';
+      case 'completion':
+        return 'Completion Target';
+      case 'missed':
+        return 'Missed Revisions';
+      default:
+        return '';
+    }
+  }
+
+  double calculatePercentageCompletion(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap, int customCompletionTarget) {
+    Set<String> selectedCompletionTypes = selectedTrackingTypesMap['completion'] ?? {};
+    int completedLectures = records.where((record) =>
+      record['details']['date_learnt'] != null &&
+      selectedCompletionTypes.contains(record['details']['lecture_type'])
+    ).length;
+    double percentageCompletion = customCompletionTarget > 0
+        ? (completedLectures / customCompletionTarget) * 100
+        : 0;
+    return percentageCompletion;
+  }
+
+  Widget _buildTwoColumnLayout(
+      List<Map<String, dynamic>> allRecords,
+      Map<String, int> subjectDistribution,
+      double cardPadding) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left column
+        Expanded(
+          flex: 1,
+          child: Column(
+            children: [
+              buildDailyProgressCard(allRecords, cardPadding,context),
+              const SizedBox(height: 32),
+              buildSubjectDistributionCard(subjectDistribution, cardPadding,context),
+            ],
+          ),
+        ),
+        const SizedBox(width: 32),
+        // Right column
+        Expanded(
+          flex: 1,
+          child: Column(
+            children: [
+              buildWeeklyProgressCard(allRecords, cardPadding,context),
+              const SizedBox(height: 32),
+              buildProgressCalendarCard(allRecords, cardPadding,context),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSingleColumnLayout(
+      List<Map<String, dynamic>> allRecords,
+      Map<String, int> subjectDistribution,
+      double cardPadding) {
+    return Column(
+      children: [
+        buildDailyProgressCard(allRecords, cardPadding,context),
+        const SizedBox(height: 24),
+        buildWeeklyProgressCard(allRecords, cardPadding,context),
+        const SizedBox(height: 24),
+        buildProgressCalendarCard(allRecords, cardPadding,context),
+        const SizedBox(height: 24),
+        buildSubjectDistributionCard(subjectDistribution, cardPadding,context),
+      ],
+    );
+  }
+
+
+  Widget _buildStatCard(String title, String value, Color color, String viewType, Function() onTap, Function() onLongPress) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: color.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  viewType,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: color.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,11 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:retracker/AddLectureForm.dart';
 import 'package:retracker/DetailsPage/DetailsPage.dart';
 import 'package:retracker/LoginSignupPage/LoginPage.dart';
-import 'package:retracker/ProfilePage/ProfilePage.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
+import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'firebase_options.dart';
@@ -98,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
     HomePage(),
     TodayPage(),
     DetailsPage(),
-    ProfilePage()
+    SettingsPage()
   ];
 
   @override

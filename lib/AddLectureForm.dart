@@ -1,13 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:retracker/Utils/date_utils.dart';
 import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
-import 'package:retracker/widgets/SubjectCodeDropdown.dart';
-import 'package:retracker/widgets/SubjectDropdown.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/customSnackBar_error.dart';
+import 'Utils/subject_utils_static.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -16,46 +16,50 @@ class AddLectureForm extends StatefulWidget {
 
 class _AddLectureFormState extends State<AddLectureForm> {
   final _formKey = GlobalKey<FormState>();
-  String _selectedSubject = '';
+  final TextEditingController _initiationdateController = TextEditingController();
+  final TextEditingController _scheduleddateController = TextEditingController();
+  final TextEditingController _timeController = TextEditingController();
+  String _selectedSubject = 'DEFAULT_VALUE';
   String _selectedSubjectCode = '';
   String _lectureType = 'Lectures';
   String _lectureNo = '';
   String _description = '';
   String _revisionFrequency = 'Default';
   bool isEnabled = true;
+  bool onlyOnce = false;
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
+  String dateScheduled = '';
+  String todayDate = '';
+
+  bool _showAddNewSubject = false;
+  bool _showAddNewSubjectCode_ = false;
 
   @override
   void initState() {
     super.initState();
     _loadSubjectsAndCodes();
+    _setInitialDate();
+    _setScheduledDate();
+    _timeController.text = 'All Day';
   }
 
+
+
   Future<void> _loadSubjectsAndCodes() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
-    String uid = user.uid;
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
-      DataSnapshot snapshot = await ref.get();
+      final last_revised = await fetchSubjectsAndCodesStatic();
+      setState(() {
+        _subjects = last_revised['subjects'];
+        _subjectCodes = last_revised['subjectCodes'];
 
-      if (snapshot.exists) {
-        Map<Object?, Object?> data = snapshot.value as Map<Object?, Object?>;
-        setState(() {
-          _subjects = data.keys.map((key) => key.toString()).toList();
-          _subjectCodes = {};
-
-          data.forEach((subject, value) {
-            if (value is Map) {
-              _subjectCodes[subject.toString()] =
-                  value.keys.map((code) => code.toString()).toList();
-            }
-          });
-        });
-      }
+        // Set default selection if available
+        if (_subjects.isNotEmpty) {
+          _selectedSubject = _subjects[0];
+        } else {
+          _selectedSubject = 'DEFAULT_VALUE'; // Keep the default value
+        }
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         customSnackBar_error(
@@ -66,36 +70,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
     }
   }
 
-  Future<void> _addNewSubject(String newSubject) async {
-    try {
-      setState(() {
-        _subjects.add(newSubject);
-        _subjectCodes[newSubject] = [];
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar_error(
-          context: context,
-          message: 'Error adding new subject: $e',
-        ),
-      );
-    }
-  }
-
-  Future<void> _addNewSubjectCode(String subject, String newCode) async {
-    try {
-      setState(() {
-        _subjectCodes[subject]!.add(newCode);
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        customSnackBar_error(
-          context: context,
-          message: 'Error adding new subject code: $e',
-        ),
-      );
-    }
-  }
 
   Future<void> UpdateRecords(BuildContext context) async {
     try {
@@ -105,29 +79,26 @@ class _AddLectureFormState extends State<AddLectureForm> {
       }
       String uid = user.uid;
 
-      String todayDate = DateTime.now().toIso8601String().split('T')[0];
-
-      String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-        DateTime.now(),
-        _revisionFrequency,
-        0,
-      )).toIso8601String().split('T')[0];
-
       DatabaseReference ref = FirebaseDatabase.instance
           .ref('users/$uid/user_data')
           .child(_selectedSubject)
           .child(_selectedSubjectCode)
           .child(_lectureNo);
 
+      String initiated_on = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+
       await ref.set({
+        'initiated_on': initiated_on,
+        'reminder_time': _timeController.text,
         'lecture_type': _lectureType,
         'date_learnt': todayDate,
-        'date_revised': todayDate,
+        'date_revised': initiated_on,
         'date_scheduled': dateScheduled,
         'description': _description,
         'missed_revision': 0,
         'no_revision': 0,
         'revision_frequency': _revisionFrequency,
+        'only_once': onlyOnce? 1 : 0,
         'status': isEnabled ? 'Enabled' : 'Disabled',
       });
 
@@ -142,19 +113,41 @@ class _AddLectureFormState extends State<AddLectureForm> {
       throw Exception('Failed to save lecture: $e');
     }
   }
+
+  Future<void> _setInitialDate() async {
+    DateTime initialDate = DateTime.now();
+    setState(() {
+      todayDate = initialDate.toIso8601String().split('T')[0];
+      _initiationdateController.text = todayDate;
+    });
+  }
+
+  Future<void> _setScheduledDate() async {
+    DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
+      DateTime.parse(todayDate), // Convert todayDate to DateTime
+      _revisionFrequency,
+      0,
+    );
+    setState(() {
+      dateScheduled = initialDate.toIso8601String().split('T')[0];
+      _scheduleddateController.text = dateScheduled;
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Handle bar
           Container(
-            margin: EdgeInsets.only(top: 12, bottom: 8),
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
             width: 40,
             height: 4,
             decoration: BoxDecoration(
@@ -164,7 +157,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
           ),
           // Title
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
               'Add New Record',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -176,87 +169,169 @@ class _AddLectureFormState extends State<AddLectureForm> {
             child: Form(
               key: _formKey,
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    SubjectDropdown(
-                      subjects: _subjects,
-                      selectedSubject: _selectedSubject,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          if (newValue == 'Others') {
-                            _selectedSubject = '';
-                          } else {
-                            _selectedSubject = newValue!;
-                            _selectedSubjectCode = '';
-                          }
-                        });
-                      },
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedSubject == 'DEFAULT_VALUE' && _subjects.isNotEmpty ? _subjects[0] :
+                        (_subjects.contains(_selectedSubject) ? _selectedSubject : null),
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        isExpanded: true,
+                        items: [
+                          ..._subjects.map((subject) => DropdownMenuItem(
+                            value: subject,
+                            child: Text(subject),
+                          )).toList(),
+                          const DropdownMenuItem(
+                            value: "Add New Category",
+                            child: Text("Add New Category"),
+                          ),
+                        ],
+                        onChanged: (newValue) {
+                          setState(() {
+                            if (newValue == "Add New Category") {
+                              _showAddNewSubject = true;
+                            } else {
+                              _selectedSubject = newValue!;
+                              _selectedSubjectCode = '';
+                              _showAddNewSubject = false;
+                            }
+                          });
+                        },
+                      ),
                     ),
-                    if (_selectedSubject.isEmpty)
+
+                    if (_showAddNewSubject)
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(context).cardColor,
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
-                        child: TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Or Add New Subject',
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          onFieldSubmitted: (value) {
-                            if (value.isNotEmpty && !_subjects.contains(value)) {
-                              _addNewSubject(value);
-                              setState(() {
-                                _selectedSubject = value;
-                                _selectedSubjectCode = '';
-                              });
-                            }
-                          },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Add New Category',
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                                onSaved: (value) {
+                                  _selectedSubject = value!;
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    SubjectCodeDropdown(
-                      subjectCodes: _subjectCodes,
-                      selectedSubject: _selectedSubject,
-                      selectedSubjectCode: _selectedSubjectCode,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          if (newValue == 'Others') {
-                            _selectedSubjectCode = '';
-                          } else {
-                            _selectedSubjectCode = newValue!;
-                          }
-                        });
-                      },
+                    if (_showAddNewSubject)
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              // controller: _newSubjectCodeController,
+                              decoration: const InputDecoration(
+                                labelText: 'Add New Sub Category',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                              onSaved: (value) {
+                                _selectedSubjectCode = value!;
+                              },
+                              // onFieldSubmitted: (_) => _addNewSubjectCode(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    if (_selectedSubjectCode.isEmpty && _selectedSubject.isNotEmpty)
+
+                    if (_selectedSubject != 'DEFAULT_VALUE' && !_showAddNewSubject)
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(context).cardColor,
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
-                        child: TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Or Add New Subject Code',
+                        child: DropdownButtonFormField<String>(
+                          value: _subjectCodes[_selectedSubject]?.contains(_selectedSubjectCode) ?? false
+                              ? _selectedSubjectCode : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Sub Category',
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
-                          onSaved: (value) {
-                            if (value != null && value.isNotEmpty && !_subjectCodes[_selectedSubject]!.contains(value)) {
-                              _addNewSubjectCode(_selectedSubject, value);
-                              setState(() {
-                                _selectedSubjectCode = value;
-                              });
-                            }
+                          isExpanded: true,
+                          items: [
+                            ...(_subjectCodes[_selectedSubject] ?? []).map((code) => DropdownMenuItem(
+                              value: code,
+                              child: Text(code),
+                            )).toList(),
+                            const DropdownMenuItem(
+                              value: "Add New Sub Category",
+                              child: Text("Add New Sub Category"),
+                            ),
+                          ],
+                          onChanged: (newValue) {
+                            setState(() {
+                              if (newValue == "Add New Sub Category") {
+                                _showAddNewSubjectCode_ = true;
+                              } else {
+                                _selectedSubjectCode = newValue!;
+                              }
+                            });
                           },
                         ),
                       ),
+
+                    if (_showAddNewSubjectCode_)
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(context).cardColor,
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Add New Sub Category',
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                                onSaved: (value) {
+                                  _selectedSubjectCode = value!;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Rest of the form remains the same
                     LectureTypeDropdown(
                       lectureType: _lectureType,
                       onChanged: (String? newValue) {
@@ -266,14 +341,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       },
                     ),
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: TextFormField(
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Title',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -289,15 +364,189 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         },
                       ),
                     ),
+
                     Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _timeController,
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Reminder Time',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                hintText: 'Tap to select time',
+                              ),
+                              onTap: () async {
+                                TimeOfDay? pickedTime = await showTimePicker(
+                                  context: context,
+                                  initialTime: _timeController.text != 'All Day' && _timeController.text.isNotEmpty
+                                      ? TimeOfDay(
+                                      hour: int.parse(_timeController.text.split(':')[0]),
+                                      minute: int.parse(_timeController.text.split(':')[1]))
+                                      : TimeOfDay.now(),
+                                  builder: (BuildContext context, Widget? child) {
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+
+                                if (pickedTime != null) {
+                                  final now = DateTime.now();
+                                  final formattedTime = DateFormat('HH:mm').format(
+                                    DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
+                                  );
+                                  setState(() {
+                                    _timeController.text = formattedTime;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          // Add "All Day" option as a toggle button
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                setState(() {
+                                  if (_timeController.text == 'All Day') {
+                                    // If already "All Day", set to current time
+                                    final now = DateTime.now();
+                                    _timeController.text = DateFormat('HH:mm').format(now);
+                                  } else {
+                                    // Set to "All Day" (all day)
+                                    _timeController.text = 'All Day';
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _timeController.text == 'All Day'
+                                          ? Icons.check_box
+                                          : Icons.check_box_outline_blank,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Text('All Day'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Theme.of(context).cardColor,
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: TextFormField(
-                        decoration: InputDecoration(
+                        controller: _initiationdateController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Initiation Date',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onTap: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                          );
+                          if (pickedDate != null) {
+                            setState(() {
+                              todayDate = pickedDate.toIso8601String().split('T')[0];
+                              _initiationdateController.text = todayDate; // Update the controller
+                              _setScheduledDate(); // Update the scheduled date
+                            });
+                          }
+                        },
+                        validator: (value) {
+                          if (todayDate.isEmpty) {
+                            return 'Please select a date';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    if (!onlyOnce)
+                      RevisionFrequencyDropdown(
+                        revisionFrequency: _revisionFrequency,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _revisionFrequency = newValue!;
+                          });
+                          _setScheduledDate();
+                        },
+                      ),
+                    if (!onlyOnce)
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: TextFormField(
+                        controller: _scheduleddateController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Select First Reminder Date',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onTap: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: await DateNextRevision.calculateNextRevisionDate(
+                              DateTime.parse(todayDate), // Convert todayDate to DateTime
+                              _revisionFrequency,
+                              0,
+                            ),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                          );
+                          if (pickedDate != null) {
+                            setState(() {
+                              dateScheduled = pickedDate.toIso8601String().split('T')[0];
+                              _initiationdateController.text = dateScheduled;
+                            });
+                          }
+                        },
+                        validator: (value) {
+                          return null;
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).cardColor,
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: TextFormField(
+                        decoration: const InputDecoration(
                           labelText: 'Description',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -314,14 +563,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         },
                       ),
                     ),
-                    RevisionFrequencyDropdown(
-                      revisionFrequency: _revisionFrequency,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _revisionFrequency = newValue!;
-                        });
-                      },
-                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -334,9 +575,18 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             });
                           },
                         ),
+                        Text('No Repetition', style: Theme.of(context).textTheme.titleMedium),
+                        Switch(
+                          value: onlyOnce,
+                          onChanged: (bool newValue) {
+                            setState(() {
+                              onlyOnce = newValue;
+                            });
+                          },
+                        ),
                       ],
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
                     Row(
                       children: [
                         Expanded(
@@ -345,12 +595,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               Navigator.of(context).pop();
                             },
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Text(
+                            child: const Text(
                               'Cancel',
                               style: TextStyle(
                                 fontSize: 16,
@@ -380,12 +630,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                              padding: EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Text(
+                            child: const Text(
                               'Save',
                               style: TextStyle(
                                 fontSize: 16,

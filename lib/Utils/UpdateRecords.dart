@@ -7,6 +7,8 @@ Future<void> UpdateRecords(
     String selectedSubjectCode,
     String lectureNo,
     String dateRevised,
+    String description,
+    String reminderTime,
     int noRevision,
     String dateScheduled,
     List<String> datesRevised,
@@ -32,6 +34,7 @@ Future<void> UpdateRecords(
 
   // Perform the update operation
   await ref.update({
+    'reminder_time': reminderTime,
     'date_revised': dateRevised,
     'no_revision': noRevision,
     'date_scheduled': dateScheduled,
@@ -40,5 +43,6 @@ Future<void> UpdateRecords(
     'revision_frequency': revisionFrequency,
     'status': status,
     'dates_revised': datesRevised,
+    'description': description,
   });
 }

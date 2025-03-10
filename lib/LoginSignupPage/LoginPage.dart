@@ -2,9 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:retracker/LoginSignupPage/ForgotPassPage.dart';
 import 'package:retracker/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../ThemeNotifier.dart';
 import 'SignupPage.dart';
 import 'UrlLauncher.dart';
 
@@ -105,6 +107,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setBool('isLoggedIn', true);
+
+          // Fetch and apply the latest custom theme
+          ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+          await themeNotifier.fetchCustomTheme();
 
           Navigator.pushReplacement(
             context,
