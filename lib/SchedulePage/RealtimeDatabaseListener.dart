@@ -63,7 +63,7 @@ class RealtimeDatabaseListener {
           if (recordValue is! Map) return;
 
           final dateScheduled = recordValue['date_scheduled'];
-          final dateLearnt = recordValue['date_learnt'];
+          final dateInitiated = recordValue['initiated_on'];
           final status = recordValue['status'];
 
           // Early filtering - skip disabled records
@@ -99,8 +99,8 @@ class RealtimeDatabaseListener {
           } else if (scheduledDateStr.compareTo(_todayStr) < 0) {
             // If scheduled date is before today
             missedRecords.add(record);
-          } else if (dateLearnt != null &&
-              dateLearnt.toString().split('T')[0] == _todayStr) {
+          } else if (dateInitiated != null &&
+              dateInitiated.toString().split('T')[0] == _todayStr) {
             todayAddedRecords.add(record);
           } else if (scheduledDateStr == _nextDayStr) {
             nextDayRecords.add(record);
