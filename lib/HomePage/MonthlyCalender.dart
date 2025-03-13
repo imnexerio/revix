@@ -47,8 +47,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
       final details = record['details'] as Map<String, dynamic>;
 
       // Add date learned events
-      if (details.containsKey('date_learnt')) {
-        final dateLearnedStr = details['date_learnt'] as String;
+      if (details.containsKey('initiated_on')) {
+        final dateLearnedStr = details['initiated_on'] as String;
         final dateLearned = DateTime.parse(dateLearnedStr);
         final key = DateTime(dateLearned.year, dateLearned.month, dateLearned.day);
 
