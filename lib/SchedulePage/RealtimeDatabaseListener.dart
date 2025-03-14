@@ -35,6 +35,19 @@ class RealtimeDatabaseListener {
     });
   }
 
+  void forceDataReprocessing() {
+    // If we have a database reference and have received data before
+    if (_databaseRef != null) {
+      _databaseRef!.get().then((snapshot) {
+        // Process data with fresh date calculations regardless of changes
+        Map<String, List<Map<String, dynamic>>> processedData = _processSnapshot(snapshot);
+        _recordsController.add(processedData);
+      }).catchError((error) {
+        _recordsController.addError('Failed to refresh records: $error');
+      });
+    }
+  }
+
   Map<String, List<Map<String, dynamic>>> _processSnapshot(DataSnapshot snapshot) {
     // Calculate dates on-the-fly for each processing
     final DateTime today = DateTime.now();

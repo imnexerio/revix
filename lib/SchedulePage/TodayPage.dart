@@ -20,7 +20,6 @@ class _TodayPageState extends State<TodayPage> {
     super.initState();
     _recordsController = StreamController<Map<String, List<Map<String, dynamic>>>>();
     _recordsStream = _recordsController.stream;
-    // Pass only the records controller
     _databaseListener = RealtimeDatabaseListener(_recordsController);
     _databaseListener.setupDatabaseListener();
   }
@@ -37,7 +36,7 @@ class _TodayPageState extends State<TodayPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: () async {
-          await _databaseListener.databaseRef?.get();
+          _databaseListener.forceDataReprocessing();
           return Future.delayed(Duration(milliseconds: 300));
         },
         child: StreamBuilder<Map<String, List<Map<String, dynamic>>>>(
