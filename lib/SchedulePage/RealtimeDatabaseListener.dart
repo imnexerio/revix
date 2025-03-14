@@ -4,13 +4,10 @@ import 'package:firebase_database/firebase_database.dart';
 
 class RealtimeDatabaseListener {
   final StreamController<Map<String, List<Map<String, dynamic>>>> _recordsController;
-  final String _todayStr;
-  final String _nextDayStr;
-  final DateTime _today;
-  final DateTime _next7Days;
   DatabaseReference? _databaseRef;
 
-  RealtimeDatabaseListener(this._recordsController, this._todayStr, this._nextDayStr, this._today, this._next7Days);
+  // Remove date parameters from constructor
+  RealtimeDatabaseListener(this._recordsController);
 
   void setupDatabaseListener() {
     User? user = FirebaseAuth.instance.currentUser;
@@ -39,6 +36,12 @@ class RealtimeDatabaseListener {
   }
 
   Map<String, List<Map<String, dynamic>>> _processSnapshot(DataSnapshot snapshot) {
+    // Calculate dates on-the-fly for each processing
+    final DateTime today = DateTime.now();
+    final String todayStr = today.toIso8601String().split('T')[0];
+    final String nextDayStr = today.add(Duration(days: 1)).toIso8601String().split('T')[0];
+    final DateTime next7Days = today.add(Duration(days: 7));
+
     if (!snapshot.exists) {
       return {'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []};
     }
@@ -52,7 +55,7 @@ class RealtimeDatabaseListener {
     List<Map<String, dynamic>> next7DaysRecords = [];
     List<Map<String, dynamic>> todayAddedRecords = [];
 
-    // Process records more efficiently
+    // Process records with fresh date calculations
     rawData.forEach((subjectKey, subjectValue) {
       if (subjectValue is! Map) return;
 
@@ -93,21 +96,21 @@ class RealtimeDatabaseListener {
           // Parse date only once
           final scheduledDateStr = dateScheduled.toString().split('T')[0];
 
-          // Efficient categorization
-          if (scheduledDateStr == _todayStr) {
+          // Efficient categorization using freshly calculated dates
+          if (scheduledDateStr == todayStr) {
             todayRecords.add(record);
-          } else if (scheduledDateStr.compareTo(_todayStr) < 0) {
+          } else if (scheduledDateStr.compareTo(todayStr) < 0) {
             // If scheduled date is before today
             missedRecords.add(record);
           } else if (dateInitiated != null &&
-              dateInitiated.toString().split('T')[0] == _todayStr) {
+              dateInitiated.toString().split('T')[0] == todayStr) {
             todayAddedRecords.add(record);
-          } else if (scheduledDateStr == _nextDayStr) {
+          } else if (scheduledDateStr == nextDayStr) {
             nextDayRecords.add(record);
           } else {
             // Only parse full date object if needed for the 7-day comparison
             final scheduledDate = DateTime.parse(dateScheduled.toString());
-            if (scheduledDate.isAfter(_today) && scheduledDate.isBefore(_next7Days)) {
+            if (scheduledDate.isAfter(today) && scheduledDate.isBefore(next7Days)) {
               next7DaysRecords.add(record);
             }
           }

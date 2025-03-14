@@ -14,17 +14,14 @@ class _TodayPageState extends State<TodayPage> {
   late Stream<Map<String, List<Map<String, dynamic>>>> _recordsStream;
   late RealtimeDatabaseListener _databaseListener;
 
-  String _todayStr = DateTime.now().toIso8601String().split('T')[0];
-  String _nextDayStr = DateTime.now().add(Duration(days: 1)).toIso8601String().split('T')[0];
-  DateTime _today = DateTime.now();
-  DateTime _next7Days = DateTime.now().add(Duration(days: 7));
 
   @override
   void initState() {
     super.initState();
     _recordsController = StreamController<Map<String, List<Map<String, dynamic>>>>();
     _recordsStream = _recordsController.stream;
-    _databaseListener = RealtimeDatabaseListener(_recordsController, _todayStr, _nextDayStr, _today, _next7Days);
+    // Pass only the records controller
+    _databaseListener = RealtimeDatabaseListener(_recordsController);
     _databaseListener.setupDatabaseListener();
   }
 
@@ -33,7 +30,6 @@ class _TodayPageState extends State<TodayPage> {
     _recordsController.close();
     super.dispose();
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +37,6 @@ class _TodayPageState extends State<TodayPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: () async {
-          _todayStr = DateTime.now().toIso8601String().split('T')[0];
-          _nextDayStr = DateTime.now().add(Duration(days: 1)).toIso8601String().split('T')[0];
-          _today = DateTime.now();
-          _next7Days = DateTime.now().add(Duration(days: 7));
-
-          // Fetch latest data
           await _databaseListener.databaseRef?.get();
           return Future.delayed(Duration(milliseconds: 300));
         },
