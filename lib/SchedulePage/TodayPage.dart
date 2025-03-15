@@ -37,7 +37,7 @@ class _TodayPageState extends State<TodayPage> {
       body: RefreshIndicator(
         onRefresh: () async {
           _databaseListener.forceDataReprocessing();
-          return Future.delayed(Duration(milliseconds: 300));
+          // return Future.delayed(const Duration(milliseconds: 3000));
         },
         child: StreamBuilder<Map<String, List<Map<String, dynamic>>>>(
           stream: _recordsStream,
