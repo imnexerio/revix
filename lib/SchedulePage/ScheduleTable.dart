@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sorting_utils.dart';
 import 'AnimatedCard.dart';
 
 class ScheduleTable extends StatefulWidget {
@@ -49,6 +50,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     // Start the animation immediately to show cards properly
     _animationController.value = 1.0;
 
+
     // Apply default sorting after initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applySorting(currentSortField!, isAscending);
@@ -83,128 +85,22 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
   }
 
   void _applySorting(String field, bool ascending) {
-    // Check if we already have sorted records in cache
-    final String cacheKey = '${field}_${ascending ? 'asc' : 'desc'}';
-    if (_sortedRecordsCache.containsKey(cacheKey)) {
-      setState(() {
-        currentSortField = field;
-        isAscending = ascending;
-        records = _sortedRecordsCache[cacheKey]!;
-      });
-
-      // Animate cards
-      _animationController.reset();
-      _animationController.forward();
-      return;
-    }
-
-    // Reset animation controller
-    _animationController.reset();
-
-    // Create a copy of records to sort
-    final List<Map<String, dynamic>> sortedRecords = List.from(records);
-
-    // Sort the copy
-    sortedRecords.sort((a, b) {
-      switch (field) {
-        case 'date_learnt':
-          final String? aDate = a['date_learnt'] as String?;
-          final String? bDate = b['date_learnt'] as String?;
-
-          // Handle null dates (null comes first in ascending, last in descending)
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return ascending ? -1 : 1;
-          if (bDate == null) return ascending ? 1 : -1;
-
-          // Compare dates
-          return ascending
-              ? aDate.compareTo(bDate)
-              : bDate.compareTo(aDate);
-
-        case 'date_revised':
-          final List<String> aRevised = List<String>.from(a['dates_revised'] ?? []);
-          final List<String> bRevised = List<String>.from(b['dates_revised'] ?? []);
-
-          // Get the most recent revision date - optimize with null-aware operator
-          String? aLatest = aRevised.isNotEmpty
-              ? aRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next)
-              : null;
-          String? bLatest = bRevised.isNotEmpty
-              ? bRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next)
-              : null;
-
-          // Handle null dates
-          if (aLatest == null && bLatest == null) return 0;
-          if (aLatest == null) return ascending ? -1 : 1;
-          if (bLatest == null) return ascending ? 1 : -1;
-
-          return ascending
-              ? aLatest.compareTo(bLatest)
-              : bLatest.compareTo(aLatest);
-
-        case 'missed_revision':
-          final int aMissed = a['missed_revision'] as int? ?? 0;
-          final int bMissed = b['missed_revision'] as int? ?? 0;
-
-          return ascending
-              ? aMissed.compareTo(bMissed)
-              : bMissed.compareTo(aMissed);
-
-        case 'no_revision':
-          final int aRevisions = a['no_revision'] as int? ?? 0;
-          final int bRevisions = b['no_revision'] as int? ?? 0;
-
-          return ascending
-              ? aRevisions.compareTo(bRevisions)
-              : bRevisions.compareTo(aRevisions);
-
-        case 'reminder_time':
-          final String aTime = a['reminder_time'] as String? ?? '';
-          final String bTime = b['reminder_time'] as String? ?? '';
-
-          // Special handling for "All Day" - treat it as highest time in ascending order
-          if (aTime == 'All Day' && bTime == 'All Day') return 0;
-          if (aTime == 'All Day') return ascending ? 1 : -1;
-          if (bTime == 'All Day') return ascending ? -1 : 1;
-
-          return ascending
-              ? aTime.compareTo(bTime)
-              : bTime.compareTo(aTime);
-
-        case 'revision_frequency':
-        // Map priority levels to numeric values for sorting
-        // Use const map as static to avoid recreation
-          const Map<String, int> priorityValues = {
-            'High Priority': 3,
-            'Medium Priority': 2,
-            'Low Priority': 1,
-            'Default': 0,
-            '': 0, // For empty values
-          };
-
-          final int aValue = priorityValues[a['revision_frequency'] ?? ''] ?? 0;
-          final int bValue = priorityValues[b['revision_frequency'] ?? ''] ?? 0;
-
-          return ascending
-              ? aValue.compareTo(bValue)
-              : bValue.compareTo(aValue);
-
-        default:
-          return 0;
-      }
-    });
-
-    // Store sorted list in cache
-    _sortedRecordsCache[cacheKey] = sortedRecords;
-
-    setState(() {
-      currentSortField = field;
-      isAscending = ascending;
-      records = sortedRecords;
-    });
-
-    // Start animation after sorting
-    _animationController.forward();
+    applySorting(
+      records: records,
+      field: field,
+      ascending: ascending,
+      animationController: _animationController,
+      onSorted: (sortedRecords) {
+        setState(() {
+          currentSortField = field;
+          isAscending = ascending;
+          records = sortedRecords;
+        });
+      },
+      sortedRecordsCache: _sortedRecordsCache,
+      currentSortField: currentSortField,
+      isAscending: isAscending,
+    );
   }
 
   int _calculateColumns(double width) {
