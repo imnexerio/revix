@@ -35,16 +35,19 @@ class RealtimeDatabaseListener {
     });
   }
 
-  void forceDataReprocessing() {
+  Future<void> forceDataReprocessing() async {
     // If we have a database reference and have received data before
     if (_databaseRef != null) {
-      _databaseRef!.get().then((snapshot) {
+      try {
+        final snapshot = await _databaseRef!.get();
         // Process data with fresh date calculations regardless of changes
         Map<String, List<Map<String, dynamic>>> processedData = _processSnapshot(snapshot);
         _recordsController.add(processedData);
-      }).catchError((error) {
+        return; // Success
+      } catch (error) {
         _recordsController.addError('Failed to refresh records: $error');
-      });
+        throw error; // Propagate error
+      }
     }
   }
 

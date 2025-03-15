@@ -75,13 +75,27 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
         // Reapply sorting if we had a sort field
         if (currentSortField != null) {
-          _applySorting(currentSortField!, isAscending);
-        } else {
-          // Ensure animation is completed if not sorting
-          _animationController.value = 1.0;
+          // Apply sorting without resetting animation
+          _applyRefreshSorting(currentSortField!, isAscending);
         }
       });
     }
+  }
+
+// New method for refreshing without animation reset
+  void _applyRefreshSorting(String field, bool ascending) {
+    // Skip animation reset and directly apply sorting
+    final sortedRecords = SortingUtils.sortRecords(
+      records: records,
+      field: field,
+      ascending: ascending,
+    );
+
+    setState(() {
+      currentSortField = field;
+      isAscending = ascending;
+      records = sortedRecords;
+    });
   }
 
   void _applySorting(String field, bool ascending) {
@@ -365,6 +379,40 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
 }
 
+class SortingUtils {
+  // Method to sort records without animation
+  static List<Map<String, dynamic>> sortRecords({
+    required List<Map<String, dynamic>> records,
+    required String field,
+    required bool ascending,
+  }) {
+    final List<Map<String, dynamic>> sortedRecords = List.from(records);
+
+    sortedRecords.sort((a, b) {
+      var valueA = a[field];
+      var valueB = b[field];
+
+      // Handle null values
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return ascending ? -1 : 1;
+      if (valueB == null) return ascending ? 1 : -1;
+
+      // Handle different types
+      if (valueA is num && valueB is num) {
+        return ascending ? valueA.compareTo(valueB) : valueB.compareTo(valueA);
+      } else if (valueA is String && valueB is String) {
+        return ascending ? valueA.compareTo(valueB) : valueB.compareTo(valueA);
+      } else {
+        // Convert to string for comparison as fallback
+        return ascending
+            ? valueA.toString().compareTo(valueB.toString())
+            : valueB.toString().compareTo(valueA.toString());
+      }
+    });
+
+    return sortedRecords;
+  }
+}
 class _SortFieldBox extends StatelessWidget {
   final String label;
   final String field;
