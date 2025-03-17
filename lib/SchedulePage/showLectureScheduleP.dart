@@ -433,7 +433,7 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
         _buildTimelineItem(
           context,
           "Last Reviewed",
-          details['date_revised'] ?? 'NA',
+          details['date_revised'] != null ? formatDate(details['date_revised']) : 'NA',
           Icons.history,
         ),
         _buildTimelineItem(
@@ -447,6 +447,12 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
       ],
     ),
   );
+}
+
+String formatDate(String date) {
+  final DateTime parsedDate = DateTime.parse(date);
+  final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+  return formatter.format(parsedDate);
 }
 
 Widget _buildTimelineItem(

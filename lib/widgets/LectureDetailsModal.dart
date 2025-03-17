@@ -630,7 +630,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildTimelineItem(
             context,
             "Last Reviewed",
-            widget.details['date_revised'] ?? 'NA',
+            widget.details['date_revised'] != null ? formatDate(widget.details['date_revised']) : 'NA',
             Icons.history,
           ),
           _buildTimelineItem(
@@ -803,6 +803,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         ],
       ),
     );
+  }
+
+  String formatDate(String date) {
+    final DateTime parsedDate = DateTime.parse(date);
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+    return formatter.format(parsedDate);
   }
 
 }
