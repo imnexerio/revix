@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../LoginSignupPage/UrlLauncher.dart';
+
 class ApiKeyManager {
   static const String apiKeyPrefKey = 'gemini_api_key';
+  static const String geminiApiUrl = 'https://aistudio.google.com/apikey';
 
   // Check if API key exists
   static Future<bool> hasApiKey() async {
@@ -47,9 +50,10 @@ class ApiKeyManager {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Enter your Gemini API key to enable AI features. '
-                    'If you don\'t have one, you can get it from Google AI Studio.',
+                'Enter your Gemini API key to enable AI features.',
               ),
+              // SizedBox(height: 8),
+
               SizedBox(height: 16),
               TextField(
                 controller: controller,
@@ -62,6 +66,13 @@ class ApiKeyManager {
             ],
           ),
           actions: <Widget>[
+            ElevatedButton.icon(
+              icon: Icon(Icons.open_in_new),
+              label: Text('Get API Key'),
+              onPressed: () {
+                UrlLauncher.launchURL(context, geminiApiUrl);
+              },
+            ),
             TextButton(
               child: Text('SKIP'),
               onPressed: () {
