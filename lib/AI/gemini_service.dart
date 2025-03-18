@@ -1,32 +1,42 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
-
 import 'ChatMessage.dart';
 
 class GeminiService {
-  final String apiKey;
-  final GenerativeModel _model;
+  final String? apiKey;
+  GenerativeModel? _model;
   ChatSession? _chatSession;
+  bool isAvailable = false;
 
-  GeminiService({required this.apiKey})
-      : _model = GenerativeModel(
-    model: 'gemini-2.0-flash',
-    apiKey: apiKey,
-  ) {
-    // Initialize chat session
-    _initChatSession();
+  GeminiService({this.apiKey}) {
+    if (apiKey != null && apiKey!.isNotEmpty) {
+      _model = GenerativeModel(
+        model: 'gemini-2.0-flash',
+        apiKey: apiKey!,
+      );
+      isAvailable = true;
+      _initChatSession();
+    }
   }
 
   void _initChatSession() {
-    _chatSession = _model.startChat();
+    if (_model != null) {
+      _chatSession = _model!.startChat();
+    }
   }
 
   // Manually reset the chat session
   void resetChat() {
-    _initChatSession();
+    if (isAvailable) {
+      _initChatSession();
+    }
   }
 
   // Send a message within the chat session
   Future<String> sendMessage(String message) async {
+    if (!isAvailable) {
+      return "AI features are not available. Please set your Gemini API key in settings.";
+    }
+
     try {
       final response = await _chatSession!.sendMessage(Content.text(message));
       return response.text ?? "No response received";
@@ -37,6 +47,10 @@ class GeminiService {
 
   // Provide the user's schedule data context to Gemini
   Future<String> askAboutSchedule(String question, String scheduleData, {bool withContext = false}) async {
+    if (!isAvailable) {
+      return "AI features are not available. Please set your Gemini API key in settings.";
+    }
+
     try {
       String prompt;
 
@@ -57,6 +71,8 @@ class GeminiService {
 
   // Load a chat history into the session
   Future<void> loadChatHistory(List<ChatMessage> messages) async {
+    if (!isAvailable) return;
+
     // Reset the chat
     resetChat();
 

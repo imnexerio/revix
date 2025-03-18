@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:retracker/AI/gemini_service.dart';
 import 'package:retracker/AI/schedule_data_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'ApiKeyManager.dart';
 import 'ChatHistoryPage.dart';
 import 'ChatMessage.dart';
 import 'ChatStorage.dart';
@@ -23,6 +24,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _isLoading = false;
   String _currentConversationId = '';
   bool _isInitialized = false;
+  bool _aiEnabled = false;
 
   // Cache for schedule data
   String? _cachedScheduleData;
@@ -31,8 +33,15 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    final apiKey = "AIzaSyBWEzIjMNIWoT0z0kITPjm3N5Vnx8RgMSY"; // Store this securely!
-    _geminiService = GeminiService(apiKey: apiKey);
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Initialize with null API key first
+    _geminiService = GeminiService(apiKey: null);
+
+    // Check if API key exists and initialize Gemini if it does
+    await _initializeGeminiService();
 
     // Load the specific conversation if provided, otherwise load the last active or create new
     if (widget.conversationId != null) {
@@ -43,6 +52,35 @@ class _ChatPageState extends State<ChatPage> {
 
     // Fetch schedule data once at startup
     _fetchAndCacheScheduleData();
+  }
+
+  Future<void> _initializeGeminiService() async {
+    final apiKey = await ApiKeyManager.getApiKey();
+    if (apiKey != null && apiKey.isNotEmpty) {
+      _geminiService = GeminiService(apiKey: apiKey);
+      setState(() {
+        _aiEnabled = _geminiService.isAvailable;
+      });
+    }
+  }
+
+  Future<void> _showApiKeyDialog() async {
+    final apiKey = await ApiKeyManager.showApiKeyDialog(context);
+    if (apiKey != null && apiKey.isNotEmpty) {
+      await ApiKeyManager.saveApiKey(apiKey);
+      // Reinitialize the service with the new API key
+      setState(() {
+        _geminiService = GeminiService(apiKey: apiKey);
+        _aiEnabled = _geminiService.isAvailable;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('API key saved, AI features enabled')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('AI features disabled')),
+      );
+    }
   }
 
   Future<void> _fetchAndCacheScheduleData() async {
@@ -109,8 +147,10 @@ class _ChatPageState extends State<ChatPage> {
 
       _currentConversationId = conversationId;
 
-      // Load the messages into the Gemini chat session
-      await _geminiService.loadChatHistory(_messages);
+      // Load the messages into the Gemini chat session if AI is enabled
+      if (_aiEnabled) {
+        await _geminiService.loadChatHistory(_messages);
+      }
 
       setState(() {
         _isLoading = false;
@@ -131,12 +171,18 @@ class _ChatPageState extends State<ChatPage> {
     // Clear messages
     _messages.clear();
 
-    // Reset the Gemini chat session
-    _geminiService.resetChat();
+    // Reset the Gemini chat session if AI is enabled
+    if (_aiEnabled) {
+      _geminiService.resetChat();
+    }
 
     // Add welcome message
+    String welcomeMessage = _aiEnabled
+        ? "Hi there! I can help you understand your schedule. What would you like to know?"
+        : "Welcome to your Schedule Assistant. AI features are currently disabled. You can enable them by setting your Gemini API key.";
+
     _messages.add(ChatMessage(
-      text: "Hi there! I can help you understand your schedule. What would you like to know?",
+      text: welcomeMessage,
       isUser: false,
     ));
 
@@ -178,6 +224,11 @@ class _ChatPageState extends State<ChatPage> {
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
         actions: [
+          // Add button to configure API key
+          IconButton(
+            icon: Icon(_aiEnabled ? Icons.key : Icons.key_off),
+            onPressed: _showApiKeyDialog,
+          ),
           // Add button to view chat history
           IconButton(
             icon: Icon(Icons.history),
@@ -241,6 +292,23 @@ class _ChatPageState extends State<ChatPage> {
       ),
       body: Column(
         children: [
+          if (!_aiEnabled)
+            Container(
+              color: Colors.amber.withOpacity(0.3),
+              padding: EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.amber[800]),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'AI chat features are disabled. Tap the key icon to set your Gemini API key.',
+                      style: TextStyle(color: Colors.amber[800]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -267,7 +335,9 @@ class _ChatPageState extends State<ChatPage> {
                   child: TextField(
                     controller: _controller,
                     decoration: InputDecoration(
-                      hintText: 'Ask about your schedule...',
+                      hintText: _aiEnabled
+                          ? 'Ask about your schedule...'
+                          : 'AI is disabled. Set API key to chat...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),
@@ -275,6 +345,7 @@ class _ChatPageState extends State<ChatPage> {
                       fillColor: theme.colorScheme.surface,
                     ),
                     onSubmitted: _sendMessage,
+                    enabled: _aiEnabled,
                   ),
                 ),
                 SizedBox(width: 8),
@@ -282,8 +353,8 @@ class _ChatPageState extends State<ChatPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.secondary,
+                        _aiEnabled ? theme.colorScheme.primary : Colors.grey,
+                        _aiEnabled ? theme.colorScheme.secondary : Colors.grey.shade400,
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -291,8 +362,12 @@ class _ChatPageState extends State<ChatPage> {
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.send_rounded, color: theme.colorScheme.onPrimary),
-                    onPressed: () => _sendMessage(_controller.text),
+                    icon: Icon(Icons.send_rounded, color: _aiEnabled
+                        ? theme.colorScheme.onPrimary
+                        : Colors.grey.shade300),
+                    onPressed: _aiEnabled
+                        ? () => _sendMessage(_controller.text)
+                        : () => _showApiKeyDialog(),
                   ),
                 ),
               ],
@@ -304,7 +379,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty || !_aiEnabled) return;
 
     final userMessage = text;
     _controller.clear();
