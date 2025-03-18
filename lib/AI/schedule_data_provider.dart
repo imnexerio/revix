@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 class ScheduleDataProvider {
   User? user;
@@ -24,7 +23,7 @@ class ScheduleDataProvider {
 
   Future<DataSnapshot> getData() async {
     final dataSnapshot = await ref.get();
-    print('Getting schedule data: ${dataSnapshot.value}');
+    // print('Getting schedule data: ${dataSnapshot.value}');
     return dataSnapshot;
   }
 
@@ -49,7 +48,7 @@ class ScheduleDataProvider {
         return scheduleString;
       }
     } catch (e) {
-      print('Error fetching schedule data: $e');
+      // print('Error fetching schedule data: $e');
       // If there's an error but we have cached data, return it as fallback
       final cachedData = await _getCachedScheduleData(ignoreAge: true);
       if (cachedData != null) {
@@ -66,7 +65,7 @@ class ScheduleDataProvider {
       await prefs.setString(_cacheKey, data);
       await prefs.setInt(_cacheDateKey, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
-      print('Error caching schedule data: $e');
+      // print('Error caching schedule data: $e');
     }
   }
 
@@ -86,7 +85,7 @@ class ScheduleDataProvider {
         }
       }
     } catch (e) {
-      print('Error retrieving cached schedule data: $e');
+      // print('Error retrieving cached schedule data: $e');
     }
 
     return null;
@@ -99,7 +98,7 @@ class ScheduleDataProvider {
       await prefs.remove(_cacheKey);
       await prefs.remove(_cacheDateKey);
     } catch (e) {
-      print('Error clearing schedule data cache: $e');
+      // print('Error clearing schedule data cache: $e');
     }
   }
 }

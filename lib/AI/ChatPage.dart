@@ -51,7 +51,7 @@ class _ChatPageState extends State<ChatPage> {
       _cachedScheduleData = await scheduleDataProvider.getScheduleData();
       _lastScheduleDataFetch = DateTime.now();
     } catch (e) {
-      print('Error fetching schedule data: $e');
+      // print('Error fetching schedule data: $e');
       _cachedScheduleData = 'No schedule data available';
     }
   }
@@ -117,7 +117,7 @@ class _ChatPageState extends State<ChatPage> {
         _isInitialized = true;
       });
     } catch (e) {
-      print('Error loading conversation: $e');
+      // print('Error loading conversation: $e');
       // If there's an error, start a new conversation
       _startNewConversation();
     }
