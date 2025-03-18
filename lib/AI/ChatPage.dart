@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:retracker/AI/gemini_service.dart';
+import 'package:retracker/AI/schedule_data_provider.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({Key? key}) : super(key: key);
@@ -118,9 +119,10 @@ class _ChatPageState extends State<ChatPage> {
     });
 
     try {
-      // Get schedule data from your provider
-      // final scheduleData = Provider.of<YourScheduleProvider>(context, listen: false).getScheduleData();
-      final scheduleData = "Sample schedule data"; // Replace with actual data
+      // Ensure ScheduleDataProvider is properly instantiated
+      final scheduleDataProvider = ScheduleDataProvider();
+      final scheduleData = await scheduleDataProvider.getScheduleData();
+      print('Schedule data: $scheduleData');
 
       final response = await _geminiService.askAboutSchedule(userMessage, scheduleData);
 
