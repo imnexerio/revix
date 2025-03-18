@@ -166,7 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         floatingActionButton: Transform.translate(
-          offset: Offset(0, 10),
+          offset: Offset(0, -100),
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -195,7 +195,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       ),
     );
   }
