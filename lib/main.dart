@@ -6,6 +6,7 @@ import 'package:retracker/DetailsPage/DetailsPage.dart';
 import 'package:retracker/LoginSignupPage/LoginPage.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'AI/ChatPage.dart';
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
 import 'SettingsPage/SettingsPage.dart';
@@ -98,6 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
     HomePage(),
     TodayPage(),
     DetailsPage(),
+    ChatPage(),
     SettingsPage()
   ];
 
@@ -144,6 +146,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 icon: Icon(Icons.auto_awesome_rounded),
                 activeIcon: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary),
                 label: 'Details',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.chat_rounded),
+                activeIcon: Icon(Icons.chat_rounded, color: theme.colorScheme.primary),
+                label: 'Chat',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.settings_rounded),

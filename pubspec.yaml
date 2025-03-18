@@ -52,7 +52,8 @@ dependencies:
   provider: ^6.1.2
   table_calendar: ^3.2.0
   intl: ^0.20.2
-
+  google_generative_ai: ^0.4.6
+  flutter_markdown: ^0.7.6+2
 
 flutter_launcher_icons:
 
