@@ -208,10 +208,6 @@ class _ChatPageState extends State<ChatPage> {
 
     if (!_isInitialized) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text('Schedule Assistant'),
-          backgroundColor: theme.colorScheme.primary,
-        ),
         body: Center(
           child: CircularProgressIndicator(),
         ),
@@ -219,161 +215,226 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Schedule Assistant'),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
-        actions: [
-          // Add button to configure API key
-          IconButton(
-            icon: Icon(_aiEnabled ? Icons.key : Icons.key_off),
-            onPressed: _showApiKeyDialog,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.surface,
+              theme.colorScheme.background,
+            ],
           ),
-          // Add button to view chat history
-          IconButton(
-            icon: Icon(Icons.history),
-            onPressed: () async {
-              // Navigate to chat history page
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatHistoryPage(),
-                ),
-              );
-
-              // If a conversation ID was returned, load it
-              if (result != null && result is String) {
-                await _loadConversation(result);
-              }
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('Start New Chat'),
-                  content: Text('Are you sure you want to start a new chat?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('CANCEL'),
+        ),
+        child: SafeArea( // Added SafeArea to maintain proper spacing at the top
+          child: Column(
+            children: [
+              // Control buttons row that was previously in the AppBar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // API key button
+                    IconButton(
+                      icon: Icon(
+                        _aiEnabled ? Icons.key : Icons.key_off,
+                        color: theme.colorScheme.primary,
+                      ),
+                      onPressed: _showApiKeyDialog,
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _startNewConversation();
+                    // History button
+                    IconButton(
+                      icon: Icon(
+                        Icons.history,
+                        color: theme.colorScheme.primary,
+                      ),
+                      onPressed: () async {
+                        // Navigate to chat history page
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatHistoryPage(),
+                          ),
+                        );
+
+                        // If a conversation ID was returned, load it
+                        if (result != null && result is String) {
+                          await _loadConversation(result);
+                        }
                       },
-                      child: Text('NEW CHAT'),
+                    ),
+                    // New chat button
+                    IconButton(
+                      icon: Icon(
+                        Icons.add,
+                        color: theme.colorScheme.primary,
+                      ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Start New Chat'),
+                            content: Text('Are you sure you want to start a new chat?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('CANCEL'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _startNewConversation();
+                                },
+                                child: Text('NEW CHAT'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    // Refresh button
+                    IconButton(
+                      icon: Icon(
+                        Icons.refresh,
+                        color: theme.colorScheme.primary,
+                      ),
+                      onPressed: () async {
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        await _fetchAndCacheScheduleData();
+                        setState(() {
+                          _isLoading = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Schedule data refreshed')),
+                        );
+                      },
+                    ),
+                    SizedBox(width: 8), // Add some padding at the end
+                  ],
+                ),
+              ),
+              if (!_aiEnabled)
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.amber[800]),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'AI chat features are disabled. Tap the key icon to set your Gemini API key.',
+                          style: TextStyle(color: Colors.amber[800]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final message = _messages[index];
+                    return ChatBubble(
+                      message: message,
+                      theme: theme,
+                    );
+                  },
+                ),
+              ),
+              if (_isLoading)
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: CircularProgressIndicator(),
+                ),
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, -2),
                     ),
                   ],
                 ),
-              );
-            },
-          ),
-          // Add a refresh button for schedule data
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () async {
-              setState(() {
-                _isLoading = true;
-              });
-              await _fetchAndCacheScheduleData();
-              setState(() {
-                _isLoading = false;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Schedule data refreshed')),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (!_aiEnabled)
-            Container(
-              color: Colors.amber.withOpacity(0.3),
-              padding: EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.amber[800]),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'AI chat features are disabled. Tap the key icon to set your Gemini API key.',
-                      style: TextStyle(color: Colors.amber[800]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return ChatBubble(
-                  message: message,
-                  theme: theme,
-                );
-              },
-            ),
-          ),
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: _aiEnabled
-                          ? 'Ask about your schedule...'
-                          : 'AI is disabled. Set API key to chat...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          hintText: _aiEnabled
+                              ? 'Ask about your schedule...'
+                              : 'AI is disabled. Set API key to chat...',
+                          hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(25),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        ),
+                        onSubmitted: _sendMessage,
+                        enabled: _aiEnabled,
                       ),
-                      filled: true,
-                      fillColor: theme.colorScheme.surface,
                     ),
-                    onSubmitted: _sendMessage,
-                    enabled: _aiEnabled,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        _aiEnabled ? theme.colorScheme.primary : Colors.grey,
-                        _aiEnabled ? theme.colorScheme.secondary : Colors.grey.shade400,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                    SizedBox(width: 12),
+                    Container(
+                      height: 48,
+                      width: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            _aiEnabled ? theme.colorScheme.primary : Colors.grey,
+                            _aiEnabled ? theme.colorScheme.secondary : Colors.grey.shade400,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _aiEnabled
+                                ? theme.colorScheme.primary.withOpacity(0.4)
+                                : Colors.transparent,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.send_rounded,
+                          color: _aiEnabled
+                              ? theme.colorScheme.onPrimary
+                              : Colors.grey.shade300,
+                          size: 22,
+                        ),
+                        onPressed: _aiEnabled
+                            ? () => _sendMessage(_controller.text)
+                            : () => _showApiKeyDialog(),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.send_rounded, color: _aiEnabled
-                        ? theme.colorScheme.onPrimary
-                        : Colors.grey.shade300),
-                    onPressed: _aiEnabled
-                        ? () => _sendMessage(_controller.text)
-                        : () => _showApiKeyDialog(),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -441,16 +502,19 @@ class ChatBubble extends StatelessWidget {
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 8),
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: message.isUser
               ? theme.colorScheme.primary
               : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20).copyWith(
+            bottomRight: message.isUser ? Radius.circular(4) : Radius.circular(20),
+            bottomLeft: message.isUser ? Radius.circular(20) : Radius.circular(4),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
               offset: Offset(0, 2),
             ),
           ],
@@ -459,11 +523,16 @@ class ChatBubble extends StatelessWidget {
         child: message.isUser
             ? Text(
           message.text,
-          style: TextStyle(color: theme.colorScheme.onPrimary),
+          style: TextStyle(
+            color: theme.colorScheme.onPrimary,
+            fontSize: 15,
+          ),
         )
             : MarkdownBody(
           data: message.text,
-          styleSheet: MarkdownStyleSheet.fromTheme(theme),
+          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+            p: TextStyle(fontSize: 15),
+          ),
         ),
       ),
     );
