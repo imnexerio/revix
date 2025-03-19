@@ -302,20 +302,20 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
       top: 16,
       left: 16,
       child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
+        // decoration: BoxDecoration(
+        //   color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+        //   borderRadius: BorderRadius.circular(12),
+        //   boxShadow: [
+        //     BoxShadow(
+        //       color: Colors.black.withOpacity(0.1),
+        //       blurRadius: 8,
+        //       offset: Offset(0, 2),
+        //     ),
+        //   ],
+        // ),
         child: IconButton(
           icon: Icon(Icons.arrow_back_rounded),
-          color: Theme.of(context).colorScheme.primary,
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
           onPressed: _handleBackNavigation,
           tooltip: 'Back',
           padding: EdgeInsets.all(8),
