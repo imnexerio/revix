@@ -229,6 +229,7 @@ class _MyHomePageState extends State<MyHomePage> {
             style: TextStyle(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
+              fontSize: 25
             ),
           ),
           actions: [
