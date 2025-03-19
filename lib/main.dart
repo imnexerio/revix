@@ -79,7 +79,7 @@ Future<String?> getProfilePicture(String uid) async {
 // Helper function to decode profile image
 Future<Widget> decodeProfileImage(BuildContext context, String uid) async {
   const String defaultImagePath = 'assets/icon/icon.png'; // Path to your default image
-  final double profileSize = 36.0; // Size of the profile picture
+  final double profileSize = 35.0; // Size of the profile picture
 
   try {
     String? base64String = await getProfilePicture(uid);
@@ -232,32 +232,35 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           actions: [
-            GestureDetector(
+            InkWell(
               onTap: _openSettings,
-              child: Container(
-                margin: EdgeInsets.only(right: 16),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-                child: _isProfileLoading
-                    ? Container(
-                  width: 36,
-                  height: 36,
-                  padding: EdgeInsets.all(8),
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(20), // Circular radius for the ripple effect
+              child: Padding(
+                padding: EdgeInsets.all(8.0), // Add some padding to increase tap target
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      width: 2,
                     ),
                   ),
-                )
-                    : _profilePicWidget,
+                  child: _isProfileLoading
+                      ? Container(
+                    width: 35,
+                    height: 35,
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.primary,
+                      ),
+                    ),
+                  )
+                      : _profilePicWidget,
+                ),
               ),
-            ),
+            )
           ],
         ),
         body: Stack(
@@ -284,23 +287,23 @@ class _MyHomePageState extends State<MyHomePage> {
             backgroundColor: theme.colorScheme.surface,
             items: <BottomNavigationBarItem>[
               BottomNavigationBarItem(
-                icon: Icon(Icons.home_rounded),
+                icon: Icon(Icons.home_outlined),
                 activeIcon: Icon(Icons.home_rounded, color: theme.colorScheme.primary),
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.schedule_rounded),
-                activeIcon: Icon(Icons.schedule_rounded, color: theme.colorScheme.primary),
+                icon: Icon(Icons.today_outlined),
+                activeIcon: Icon(Icons.today_rounded, color: theme.colorScheme.primary),
                 label: 'Schedule',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.auto_awesome_rounded),
-                activeIcon: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary),
+                icon: Icon(Icons.fiber_smart_record_outlined),
+                activeIcon: Icon(Icons.fiber_smart_record_rounded, color: theme.colorScheme.primary),
                 label: 'Details',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.chat_rounded),
-                activeIcon: Icon(Icons.chat_rounded, color: theme.colorScheme.primary),
+                icon: Icon(Icons.auto_awesome_outlined),
+                activeIcon: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary),
                 label: 'Chat',
               ),
             ],
