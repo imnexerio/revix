@@ -87,6 +87,11 @@ When in doubt, ask for clarification about what part of the schedule they are in
       // Always store the latest schedule data
       _currentScheduleData = scheduleData;
 
+      // Get current date and time
+      final now = DateTime.now();
+      final currentDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      final currentTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
       String prompt;
 
       if (withContext) {
@@ -96,10 +101,16 @@ When in doubt, ask for clarification about what part of the schedule they are in
 SCHEDULE DATA:
 $scheduleData
 
+CURRENT DATE AND TIME:
+Today's date is $currentDate and the current time is $currentTime.
+
 My question is: $question''';
       } else {
         // For follow-up questions, remind the model to stick to schedule data
         prompt = '''Remember to only answer questions about my schedule data that I shared earlier.
+
+CURRENT DATE AND TIME:
+Today's date is $currentDate and the current time is $currentTime.
 
 My follow-up question is: $question''';
       }
@@ -122,6 +133,11 @@ My follow-up question is: $question''';
     bool isFirstAssistantMessage = true;
     bool hasLoadedScheduleContext = false;
 
+    // Get current date and time
+    final now = DateTime.now();
+    final currentDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    final currentTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
     // Add each message to recreate the conversation
     for (final message in messages) {
       if (message.isUser) {
@@ -129,7 +145,9 @@ My follow-up question is: $question''';
         if (!hasLoadedScheduleContext && _currentScheduleData != null) {
           // Send a hidden system message with schedule data before the first user message
           await _chatSession!.sendMessage(Content.text(
-              "Here is the user's schedule data: $_currentScheduleData\n\nRemember to ONLY answer questions related to this schedule data."
+              "Here is the user's schedule data: $_currentScheduleData\n\n" +
+                  "CURRENT DATE AND TIME: Today's date is $currentDate and the current time is $currentTime.\n\n" +
+                  "Remember to ONLY answer questions related to this schedule data."
           ));
           hasLoadedScheduleContext = true;
         }
