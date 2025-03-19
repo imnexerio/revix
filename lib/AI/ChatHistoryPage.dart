@@ -95,8 +95,6 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Conversation History'),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
