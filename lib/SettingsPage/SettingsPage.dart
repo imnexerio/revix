@@ -291,6 +291,45 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     );
   }
 
+  // Method to handle back navigation
+  void _handleBackNavigation() {
+    Navigator.of(context).pop();
+  }
+
+  // Back button component that appears at the top regardless of screen size
+  Widget _buildBackButton() {
+    return Positioned(
+      top: 16,
+      left: 16,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: IconButton(
+          icon: Icon(Icons.arrow_back_rounded),
+          color: Theme.of(context).colorScheme.primary,
+          onPressed: _handleBackNavigation,
+          tooltip: 'Back',
+          padding: EdgeInsets.all(8),
+          constraints: BoxConstraints(),
+          style: IconButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   PreferredSizeWidget _buildLargeScreenAppBar() {
     return AppBar(
       title: AnimatedSwitcher(
@@ -499,98 +538,104 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshProfile,
-        child: isSmallScreen
-        // Small screen layout - Single column scrollable with animation
-            ? SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              ProfileHeader(
-                isSmallScreen: isSmallScreen,
-                cachedProfileImage: _cachedProfileImage,
-                cachedDisplayName: _cachedDisplayName,
-                cachedEmailVerified: _cachedEmailVerified,
-                decodeProfileImage: _decodeProfileImage,
-                getDisplayName: _getDisplayName,
-                isEmailVerified: _isEmailVerified,
-                sendVerificationEmail: _sendVerificationEmail,
-                uploadProfilePicture: uploadProfilePicture,
-                refreshProfile: _refreshProfile,
-                showEditProfilePage: _showEditProfilePage,
-                getCurrentUserUid: getCurrentUserUid,
-              ),
-              _buildSettingsOptions(isSmallScreen),
-            ],
-          ),
-        )
-        // Large screen layout - Side-by-side master-detail view with animation
-            : Row(
+        child: Stack(
           children: [
-            // Left side - Settings options
-            Container(
-              width: MediaQuery.of(context).size.width * 0.33, // 33% of the screen width
-              child: SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    ProfileHeader(
-                      isSmallScreen: isSmallScreen,
-                      cachedProfileImage: _cachedProfileImage,
-                      cachedDisplayName: _cachedDisplayName,
-                      cachedEmailVerified: _cachedEmailVerified,
-                      decodeProfileImage: _decodeProfileImage,
-                      getDisplayName: _getDisplayName,
-                      isEmailVerified: _isEmailVerified,
-                      sendVerificationEmail: _sendVerificationEmail,
-                      uploadProfilePicture: uploadProfilePicture,
-                      refreshProfile: _refreshProfile,
-                      showEditProfilePage: _showEditProfilePage,
-                      getCurrentUserUid: getCurrentUserUid,
-                    ),
-                    _buildSettingsOptions(isSmallScreen),
-                  ],
-                ),
-              ),
-            ),
-            // Divider between sections
-            VerticalDivider(width: 1, thickness: 1),
-            // Right side - Detail view with app bar and animations
-            Expanded(
+            isSmallScreen
+            // Small screen layout - Single column scrollable with animation
+                ? SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
-                  // App bar for large screens
-                  _buildLargeScreenAppBar(),
-                  // Detail content with fade animation
-                  Expanded(
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: _currentDetailPage ?? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.touch_app,
-                                size: 64,
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  ProfileHeader(
+                    isSmallScreen: isSmallScreen,
+                    cachedProfileImage: _cachedProfileImage,
+                    cachedDisplayName: _cachedDisplayName,
+                    cachedEmailVerified: _cachedEmailVerified,
+                    decodeProfileImage: _decodeProfileImage,
+                    getDisplayName: _getDisplayName,
+                    isEmailVerified: _isEmailVerified,
+                    sendVerificationEmail: _sendVerificationEmail,
+                    uploadProfilePicture: uploadProfilePicture,
+                    refreshProfile: _refreshProfile,
+                    showEditProfilePage: _showEditProfilePage,
+                    getCurrentUserUid: getCurrentUserUid,
+                  ),
+                  _buildSettingsOptions(isSmallScreen),
+                ],
+              ),
+            )
+            // Large screen layout - Side-by-side master-detail view with animation
+                : Row(
+              children: [
+                // Left side - Settings options
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.33, // 33% of the screen width
+                  child: SingleChildScrollView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        ProfileHeader(
+                          isSmallScreen: isSmallScreen,
+                          cachedProfileImage: _cachedProfileImage,
+                          cachedDisplayName: _cachedDisplayName,
+                          cachedEmailVerified: _cachedEmailVerified,
+                          decodeProfileImage: _decodeProfileImage,
+                          getDisplayName: _getDisplayName,
+                          isEmailVerified: _isEmailVerified,
+                          sendVerificationEmail: _sendVerificationEmail,
+                          uploadProfilePicture: uploadProfilePicture,
+                          refreshProfile: _refreshProfile,
+                          showEditProfilePage: _showEditProfilePage,
+                          getCurrentUserUid: getCurrentUserUid,
+                        ),
+                        _buildSettingsOptions(isSmallScreen),
+                      ],
+                    ),
+                  ),
+                ),
+                // Divider between sections
+                VerticalDivider(width: 1, thickness: 1),
+                // Right side - Detail view with app bar and animations
+                Expanded(
+                  child: Column(
+                    children: [
+                      // App bar for large screens
+                      _buildLargeScreenAppBar(),
+                      // Detail content with fade animation
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: _currentDetailPage ?? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.touch_app,
+                                    size: 64,
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Select an option from the left menu',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Select an option from the left menu',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+            // Back button positioned at the top left, regardless of screen size
+            _buildBackButton(),
           ],
         ),
       ),
