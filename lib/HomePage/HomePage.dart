@@ -151,15 +151,15 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Performance Analytics',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).textTheme.titleLarge?.color,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
+                        // Text(
+                        //   'Performance Analytics',
+                        //   style: TextStyle(
+                        //     fontSize: 28,
+                        //     fontWeight: FontWeight.bold,
+                        //     color: Theme.of(context).textTheme.titleLarge?.color,
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 32),
 
                         Container(
                           width: double.infinity,

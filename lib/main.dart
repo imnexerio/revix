@@ -74,6 +74,14 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedIndex = index;
     });
   }
+
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SettingsPage()),
+    );
+  }
+
   void _addLecture() {
     showModalBottomSheet(
       context: context,
@@ -95,12 +103,20 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // Updated widget list without the Settings page
   final List<Widget> _widgetOptions = <Widget>[
     HomePage(),
     TodayPage(),
     DetailsPage(),
     ChatPage(),
-    SettingsPage()
+  ];
+
+  // Page titles for the app bar
+  final List<String> _pageTitles = <String>[
+    'Home',
+    'Schedule',
+    'Details',
+    'Chat',
   ];
 
   @override
@@ -109,6 +125,25 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return SafeArea(
       child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false, // This removes the back button
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            _pageTitles[_selectedIndex],
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.settings_rounded, color: theme.colorScheme.primary),
+              onPressed: _openSettings,
+            ),
+            SizedBox(width: 8), // Add some padding
+          ],
+        ),
         body: Stack(
           children: [
             IndexedStack(
@@ -152,11 +187,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 activeIcon: Icon(Icons.chat_rounded, color: theme.colorScheme.primary),
                 label: 'Chat',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings_rounded),
-                activeIcon: Icon(Icons.settings, color: theme.colorScheme.primary),
-                label: 'Settings',
-              ),
             ],
             currentIndex: _selectedIndex,
             selectedItemColor: theme.colorScheme.primary,
@@ -166,7 +196,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         floatingActionButton: Transform.translate(
-          offset: Offset(0, -100),
+          offset: Offset(0, 10),
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -195,7 +225,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
