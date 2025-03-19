@@ -51,7 +51,77 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     // Fetch schedule data once at startup
-    _fetchAndCacheScheduleData();
+    await _fetchAndCacheScheduleData();
+
+    // Set the schedule data in the Gemini service
+    if (_cachedScheduleData != null && _aiEnabled) {
+      _geminiService.setScheduleData(_cachedScheduleData!);
+    }
+  }
+
+  Future<void> _fetchAndCacheScheduleData() async {
+    try {
+      final scheduleDataProvider = ScheduleDataProvider();
+      _cachedScheduleData = await scheduleDataProvider.getScheduleData();
+      _lastScheduleDataFetch = DateTime.now();
+
+      // Update the Gemini service with the new schedule data
+      if (_cachedScheduleData != null && _aiEnabled) {
+        _geminiService.setScheduleData(_cachedScheduleData!);
+      }
+    } catch (e) {
+      // print('Error fetching schedule data: $e');
+      _cachedScheduleData = 'No schedule data available';
+    }
+  }
+
+  void _sendMessage(String text) async {
+    if (text.trim().isEmpty || !_aiEnabled) return;
+
+    final userMessage = text;
+    _controller.clear();
+
+    setState(() {
+      _messages.add(ChatMessage(text: userMessage, isUser: true));
+      _isLoading = true;
+    });
+
+    // Save the conversation with the new user message
+    await _saveConversation();
+
+    try {
+      // Get schedule data (from cache if available)
+      final scheduleData = await _getScheduleData();
+
+      // Ensure the Gemini service has the latest schedule data
+      _geminiService.setScheduleData(scheduleData);
+
+      // Determine if this is the first user message
+      final isFirstUserMessage = _messages.where((msg) => msg.isUser).length == 1;
+
+      // Send message to Gemini
+      final response = await _geminiService.askAboutSchedule(
+        userMessage,
+        scheduleData,
+        withContext: isFirstUserMessage, // Only send context with first message
+      );
+
+      setState(() {
+        _messages.add(ChatMessage(text: response, isUser: false));
+        _isLoading = false;
+      });
+
+      // Save conversation with assistant's response
+      await _saveConversation();
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(text: "Sorry, I encountered an error: $e", isUser: false));
+        _isLoading = false;
+      });
+
+      // Save conversation with error message
+      await _saveConversation();
+    }
   }
 
   Future<void> _initializeGeminiService() async {
@@ -83,16 +153,16 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _fetchAndCacheScheduleData() async {
-    try {
-      final scheduleDataProvider = ScheduleDataProvider();
-      _cachedScheduleData = await scheduleDataProvider.getScheduleData();
-      _lastScheduleDataFetch = DateTime.now();
-    } catch (e) {
-      // print('Error fetching schedule data: $e');
-      _cachedScheduleData = 'No schedule data available';
-    }
-  }
+  // Future<void> _fetchAndCacheScheduleData() async {
+  //   try {
+  //     final scheduleDataProvider = ScheduleDataProvider();
+  //     _cachedScheduleData = await scheduleDataProvider.getScheduleData();
+  //     _lastScheduleDataFetch = DateTime.now();
+  //   } catch (e) {
+  //     // print('Error fetching schedule data: $e');
+  //     _cachedScheduleData = 'No schedule data available';
+  //   }
+  // }
 
   // Get schedule data (from cache if available and recent)
   Future<String> _getScheduleData() async {
@@ -439,51 +509,51 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  void _sendMessage(String text) async {
-    if (text.trim().isEmpty || !_aiEnabled) return;
-
-    final userMessage = text;
-    _controller.clear();
-
-    setState(() {
-      _messages.add(ChatMessage(text: userMessage, isUser: true));
-      _isLoading = true;
-    });
-
-    // Save the conversation with the new user message
-    await _saveConversation();
-
-    try {
-      // Get schedule data (from cache if available)
-      final scheduleData = await _getScheduleData();
-
-      // Determine if this is the first user message
-      final isFirstUserMessage = _messages.where((msg) => msg.isUser).length == 1;
-
-      // Send message to Gemini
-      final response = await _geminiService.askAboutSchedule(
-        userMessage,
-        scheduleData,
-        withContext: isFirstUserMessage, // Only send context with first message
-      );
-
-      setState(() {
-        _messages.add(ChatMessage(text: response, isUser: false));
-        _isLoading = false;
-      });
-
-      // Save conversation with assistant's response
-      await _saveConversation();
-    } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(text: "Sorry, I encountered an error: $e", isUser: false));
-        _isLoading = false;
-      });
-
-      // Save conversation with error message
-      await _saveConversation();
-    }
-  }
+  // void _sendMessage(String text) async {
+  //   if (text.trim().isEmpty || !_aiEnabled) return;
+  //
+  //   final userMessage = text;
+  //   _controller.clear();
+  //
+  //   setState(() {
+  //     _messages.add(ChatMessage(text: userMessage, isUser: true));
+  //     _isLoading = true;
+  //   });
+  //
+  //   // Save the conversation with the new user message
+  //   await _saveConversation();
+  //
+  //   try {
+  //     // Get schedule data (from cache if available)
+  //     final scheduleData = await _getScheduleData();
+  //
+  //     // Determine if this is the first user message
+  //     final isFirstUserMessage = _messages.where((msg) => msg.isUser).length == 1;
+  //
+  //     // Send message to Gemini
+  //     final response = await _geminiService.askAboutSchedule(
+  //       userMessage,
+  //       scheduleData,
+  //       withContext: isFirstUserMessage, // Only send context with first message
+  //     );
+  //
+  //     setState(() {
+  //       _messages.add(ChatMessage(text: response, isUser: false));
+  //       _isLoading = false;
+  //     });
+  //
+  //     // Save conversation with assistant's response
+  //     await _saveConversation();
+  //   } catch (e) {
+  //     setState(() {
+  //       _messages.add(ChatMessage(text: "Sorry, I encountered an error: $e", isUser: false));
+  //       _isLoading = false;
+  //     });
+  //
+  //     // Save conversation with error message
+  //     await _saveConversation();
+  //   }
+  // }
 }
 
 class ChatBubble extends StatelessWidget {
