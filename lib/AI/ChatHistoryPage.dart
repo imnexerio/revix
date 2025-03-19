@@ -91,95 +91,275 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Conversation History'),
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _conversationIds.isEmpty
-          ? Center(
-        child: Text(
-          'No previous conversations found',
-          style: theme.textTheme.bodyLarge,
-        ),
-      )
-          : ListView.builder(
-        itemCount: _conversationIds.length,
-        itemBuilder: (context, index) {
-          final id = _conversationIds[index];
-          final isActive = id == _activeConversationId;
-
-          return Dismissible(
-            key: Key(id),
-            background: Container(
-              color: Colors.red,
-              alignment: Alignment.centerRight,
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Icon(Icons.delete, color: Colors.white),
-            ),
-            direction: DismissDirection.endToStart,
-            confirmDismiss: (direction) async {
-              return await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('Delete Conversation'),
-                  content: Text('Are you sure you want to delete this conversation?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text('CANCEL'),
+      backgroundColor: colorScheme.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // App bar section
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.shadow.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Back button
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: colorScheme.primary,
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: Text('DELETE'),
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.primaryContainer.withOpacity(0.8),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  SizedBox(width: 12),
+
+                  // Title
+                  Expanded(
+                    child: Text(
+                      'Conversation History',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content area
+            Expanded(
+              child: _isLoading
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading conversations...',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
-              );
-            },
-            onDismissed: (direction) async {
-              await ChatStorage.deleteConversation(id);
-              setState(() {
-                _conversationIds.removeAt(index);
-                _conversationPreviews.remove(id);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Conversation deleted')),
-              );
-            },
-            child: ListTile(
-              title: Text(
-                _getConversationPreview(id),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(_getConversationDate(id)),
-              leading: CircleAvatar(
-                backgroundColor: isActive
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.surface,
-                child: Icon(
-                  Icons.chat,
-                  color: isActive
-                      ? theme.colorScheme.onPrimary
-                      : theme.colorScheme.onSurface,
-                ),
-              ),
-              trailing: isActive
-                  ? Chip(
-                label: Text('Active'),
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
               )
-                  : null,
-              onTap: () {
-                // Return the ID to the previous screen
-                Navigator.pop(context, id);
-              },
+                  : _conversationIds.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 60,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'No previous conversations found',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Start a new chat to begin',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                itemCount: _conversationIds.length,
+                padding: EdgeInsets.all(16),
+                itemBuilder: (context, index) {
+                  final id = _conversationIds[index];
+                  final isActive = id == _activeConversationId;
+
+                  return Dismissible(
+                    key: Key(id),
+                    background: Container(
+                      margin: EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.error,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Icon(Icons.delete, color: colorScheme.onError),
+                    ),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (direction) async {
+                      return await showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text('Delete Conversation'),
+                          content: Text('Are you sure you want to delete this conversation?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: Text('CANCEL'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: colorScheme.error,
+                                foregroundColor: colorScheme.onError,
+                              ),
+                              child: Text('DELETE'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    onDismissed: (direction) async {
+                      await ChatStorage.deleteConversation(id);
+                      setState(() {
+                        _conversationIds.removeAt(index);
+                        _conversationPreviews.remove(id);
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Conversation deleted'),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: isActive
+                              ? colorScheme.primary.withOpacity(0.5)
+                              : colorScheme.outlineVariant.withOpacity(0.2),
+                          width: isActive ? 1.5 : 0.5,
+                        ),
+                      ),
+                      color: isActive
+                          ? colorScheme.primaryContainer.withOpacity(0.2)
+                          : colorScheme.surface,
+                      margin: EdgeInsets.symmetric(vertical: 4),
+                      child: InkWell(
+                        onTap: () {
+                          // Return the ID to the previous screen
+                          Navigator.pop(context, id);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              // Chat icon
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? colorScheme.primary
+                                      : colorScheme.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: isActive
+                                          ? colorScheme.primary.withOpacity(0.3)
+                                          : colorScheme.shadow.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.chat_rounded,
+                                  color: isActive
+                                      ? colorScheme.onPrimary
+                                      : colorScheme.onSurfaceVariant,
+                                  size: 24,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+
+                              // Chat preview
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _getConversationPreview(id),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                        fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      _getConversationDate(id),
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Active chip if this is the active conversation
+                              if (isActive)
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Active',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+
+                              // Drag hint
+                              if (!isActive)
+                                Icon(
+                                  Icons.chevron_left,
+                                  color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
