@@ -122,14 +122,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
     // Update the previous size
     _previousSize = currentSize;
-
-    final horizontalPadding = screenWidth > 600 ? 24.0 : 16.0;
     final cardPadding = screenWidth > 600 ? 24.0 : 16.0;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 0.0),
+         padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0.0),
           child: StreamBuilder(
             stream: _recordsStream,
             builder: (context, snapshot) {
@@ -151,16 +149,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text(
-                        //   'Performance Analytics',
-                        //   style: TextStyle(
-                        //     fontSize: 28,
-                        //     fontWeight: FontWeight.bold,
-                        //     color: Theme.of(context).textTheme.titleLarge?.color,
-                        //   ),
-                        // ),
-                        // const SizedBox(height: 32),
-
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
@@ -190,11 +178,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.edit_outlined), // Using outlined version for modern look
-                                  // style: IconButton.styleFrom(
-                                  //   backgroundColor: Colors.blue.withOpacity(0.1),
-                                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  // ),
+                                  icon: const Icon(Icons.edit_outlined),
                                   onPressed: () {
                                     final TextEditingController textFieldController = TextEditingController(
                                       text: _customCompletionTarget.toString(),
