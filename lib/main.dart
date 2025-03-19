@@ -6,6 +6,10 @@ import 'package:retracker/DetailsPage/DetailsPage.dart';
 import 'package:retracker/LoginSignupPage/LoginPage.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'AI/ChatPage.dart';
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
@@ -19,9 +23,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
   ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
-  // await themeNotifier.loadPreferences();
   await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
 
   runApp(
@@ -59,6 +61,56 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// Helper function to get profile picture
+Future<String?> getProfilePicture(String uid) async {
+  try {
+    DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
+    DataSnapshot snapshot = await databaseRef.child('profile_picture').get();
+    if (snapshot.exists) {
+      return snapshot.value as String?;
+    }
+  } catch (e) {
+    // Handle the error appropriately in the calling function
+    throw Exception('Error retrieving profile picture: $e');
+  }
+  return null;
+}
+
+// Helper function to decode profile image
+Future<Widget> decodeProfileImage(BuildContext context, String uid) async {
+  const String defaultImagePath = 'assets/icon/icon.png'; // Path to your default image
+  final double profileSize = 36.0; // Size of the profile picture
+
+  try {
+    String? base64String = await getProfilePicture(uid);
+    if (base64String != null && base64String.isNotEmpty) {
+      Uint8List imageBytes = base64Decode(base64String);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(profileSize / 2),
+        child: Image.memory(
+          imageBytes,
+          width: profileSize,
+          height: profileSize,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+  } catch (e) {
+    // Silently fallback to default image
+    print('Error decoding profile picture: $e');
+  }
+
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(profileSize / 2),
+    child: Image.asset(
+      defaultImagePath,
+      width: profileSize,
+      height: profileSize,
+      fit: BoxFit.cover,
+    ),
+  );
+}
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -68,6 +120,46 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
+  String _currentUserUid = '';
+  Widget _profilePicWidget = Container(); // Placeholder for profile pic
+  bool _isProfileLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentUser();
+  }
+
+  void _getCurrentUser() async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        _currentUserUid = user.uid;
+      });
+      _loadProfilePicture();
+    }
+  }
+
+  void _loadProfilePicture() async {
+    if (_currentUserUid.isNotEmpty) {
+      try {
+        Widget profileWidget = await decodeProfileImage(context, _currentUserUid);
+        if (mounted) {
+          setState(() {
+            _profilePicWidget = profileWidget;
+            _isProfileLoading = false;
+          });
+        }
+      } catch (e) {
+        print('Error loading profile picture: $e');
+        if (mounted) {
+          setState(() {
+            _isProfileLoading = false;
+          });
+        }
+      }
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -79,7 +171,10 @@ class _MyHomePageState extends State<MyHomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => SettingsPage()),
-    );
+    ).then((_) {
+      // Reload profile picture when returning from settings
+      _loadProfilePicture();
+    });
   }
 
   void _addLecture() {
@@ -137,11 +232,32 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           actions: [
-            IconButton(
-              icon: Icon(Icons.settings_rounded, color: theme.colorScheme.primary),
-              onPressed: _openSettings,
+            GestureDetector(
+              onTap: _openSettings,
+              child: Container(
+                margin: EdgeInsets.only(right: 16),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: _isProfileLoading
+                    ? Container(
+                  width: 36,
+                  height: 36,
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.primary,
+                    ),
+                  ),
+                )
+                    : _profilePicWidget,
+              ),
             ),
-            SizedBox(width: 8), // Add some padding
           ],
         ),
         body: Stack(
