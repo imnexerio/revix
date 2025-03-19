@@ -222,7 +222,14 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _startNewConversation() {
+  Future<void> _startNewConversation() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Refresh schedule data first
+    await _fetchAndCacheScheduleData();
+
     // Generate a new UUID for the conversation
     final uuid = Uuid();
     _currentConversationId = uuid.v4();
@@ -233,6 +240,11 @@ class _ChatPageState extends State<ChatPage> {
     // Reset the Gemini chat session if AI is enabled
     if (_aiEnabled) {
       _geminiService.resetChat();
+
+      // Set the fresh schedule data in the Gemini service
+      if (_cachedScheduleData != null) {
+        _geminiService.setScheduleData(_cachedScheduleData!);
+      }
     }
 
     // Add welcome message
@@ -246,10 +258,11 @@ class _ChatPageState extends State<ChatPage> {
     ));
 
     // Save this new conversation
-    _saveConversation();
+    await _saveConversation();
 
     setState(() {
       _isInitialized = true;
+      _isLoading = false;
     });
   }
 
@@ -334,7 +347,7 @@ class _ChatPageState extends State<ChatPage> {
                           context: context,
                           builder: (context) => AlertDialog(
                             title: Text('Start New Chat'),
-                            content: Text('Are you sure you want to start a new chat?'),
+                            content: Text('Are you sure you want to start a new chat? This will refresh your schedule data.'),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
@@ -349,25 +362,6 @@ class _ChatPageState extends State<ChatPage> {
                               ),
                             ],
                           ),
-                        );
-                      },
-                    ),
-                    // Refresh button
-                    IconButton(
-                      icon: Icon(
-                        Icons.refresh,
-                        color: theme.colorScheme.primary,
-                      ),
-                      onPressed: () async {
-                        setState(() {
-                          _isLoading = true;
-                        });
-                        await _fetchAndCacheScheduleData();
-                        setState(() {
-                          _isLoading = false;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Schedule data refreshed')),
                         );
                       },
                     ),
