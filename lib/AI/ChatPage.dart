@@ -294,7 +294,7 @@ class _ChatPageState extends State<ChatPage> {
     // Add welcome message
     String welcomeMessage = _aiEnabled
         ? "Hi there! I can help you understand your schedule. What would you like to know?"
-        : "Welcome to your Schedule Assistant. AI features are currently disabled. You can enable them by setting your Gemini API key.";
+        : "Welcome to your reTrAIcker. AI features are currently disabled. You can enable them by setting your Gemini API key.";
 
     _messages.add(ChatMessage(
       text: welcomeMessage,
@@ -358,7 +358,7 @@ class _ChatPageState extends State<ChatPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Schedule Assistant',
+                      'reTrAIcker',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
