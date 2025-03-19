@@ -438,34 +438,6 @@ class _ChatPageState extends State<ChatPage> {
                           filled: true,
                           fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.5),
                           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                          // suffixIcon: IconButton(
-                          //   icon: Icon(
-                          //     Icons.add,
-                          //     color: theme.colorScheme.primary,
-                          //   ),
-                          //   onPressed: () {
-                          //     showDialog(
-                          //       context: context,
-                          //       builder: (context) => AlertDialog(
-                          //         title: Text('Start New Chat'),
-                          //         content: Text('Are you sure you want to start a new chat? This will refresh your schedule data.'),
-                          //         actions: [
-                          //           TextButton(
-                          //             onPressed: () => Navigator.pop(context),
-                          //             child: Text('CANCEL'),
-                          //           ),
-                          //           TextButton(
-                          //             onPressed: () {
-                          //               Navigator.pop(context);
-                          //               _startNewConversation();
-                          //             },
-                          //             child: Text('NEW CHAT'),
-                          //           ),
-                          //         ],
-                          //       ),
-                          //     );
-                          //   },
-                          // ),
                         ),
                         onSubmitted: _sendMessage,
                         enabled: _aiEnabled,
