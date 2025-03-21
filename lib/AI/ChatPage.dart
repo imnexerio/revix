@@ -28,10 +28,8 @@ class _ChatPageState extends State<ChatPage> {
   bool _isInitialized = false;
   bool _aiEnabled = false;
 
-  // Cache for schedule data with better expiration handling
-  String? _cachedScheduleData;
-  DateTime? _lastScheduleDataFetch;
-  static const int _cacheExpirationMinutes = 15; // Reduced from 30
+  // Store schedule data directly
+  String? _scheduleData;
 
   @override
   void initState() {
@@ -54,15 +52,13 @@ class _ChatPageState extends State<ChatPage> {
       // Check if API key exists and initialize Gemini if it does
       await _initializeGeminiService();
 
-      // Load conversation and fetch schedule data in parallel
-      await Future.wait([
-        _loadConversationData(),
-        _fetchAndCacheScheduleData(),
-      ]);
-
-      // Set the schedule data in the Gemini service
-      if (_cachedScheduleData != null && _aiEnabled) {
-        _geminiService.setScheduleData(_cachedScheduleData!);
+      // Load conversation if ID provided, otherwise start a new conversation
+      if (widget.conversationId != null) {
+        await _loadConversation(widget.conversationId!);
+      } else {
+        // If no conversation ID provided, fetch fresh data and start new conversation
+        await _fetchScheduleData();
+        _startNewConversation();
       }
 
       setState(() {
@@ -80,27 +76,17 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _loadConversationData() async {
-    // Load the specific conversation if provided, otherwise load the last active or create new
-    if (widget.conversationId != null) {
-      await _loadConversation(widget.conversationId!);
-    } else {
-      await _loadOrCreateConversation();
-    }
-  }
-
-  Future<void> _fetchAndCacheScheduleData() async {
+  Future<void> _fetchScheduleData() async {
     try {
       final scheduleDataProvider = ScheduleDataProvider();
-      _cachedScheduleData = await scheduleDataProvider.getScheduleData();
-      _lastScheduleDataFetch = DateTime.now();
+      _scheduleData = await scheduleDataProvider.getScheduleData(forceRefresh: true);
 
       // Update the Gemini service with the new schedule data
-      if (_cachedScheduleData != null && _aiEnabled) {
-        _geminiService.setScheduleData(_cachedScheduleData!);
+      if (_scheduleData != null && _aiEnabled) {
+        _geminiService.setScheduleData(_scheduleData!);
       }
     } catch (e) {
-      _cachedScheduleData = 'No schedule data available';
+      _scheduleData = 'No schedule data available';
     }
   }
 
@@ -133,11 +119,10 @@ class _ChatPageState extends State<ChatPage> {
     _saveConversation();
 
     try {
-      // Get schedule data (from cache if available)
-      final scheduleData = await _getScheduleData();
-
-      // Ensure the Gemini service has the latest schedule data
-      _geminiService.setScheduleData(scheduleData);
+      // Ensure the Gemini service has the schedule data
+      if (_scheduleData != null) {
+        _geminiService.setScheduleData(_scheduleData!);
+      }
 
       // Determine if this is the first user message
       final isFirstUserMessage = _messages.where((msg) => msg.isUser).length == 1;
@@ -145,7 +130,7 @@ class _ChatPageState extends State<ChatPage> {
       // Send message to Gemini
       final response = await _geminiService.askAboutSchedule(
         userMessage,
-        scheduleData,
+        _scheduleData ?? 'No schedule data available',
         withContext: isFirstUserMessage, // Only send context with first message
       );
 
@@ -211,40 +196,6 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  // Get schedule data (from cache if available and recent)
-  Future<String> _getScheduleData() async {
-    // If we have cached data that's less than 15 minutes old, use it
-    if (_cachedScheduleData != null && _lastScheduleDataFetch != null) {
-      final difference = DateTime.now().difference(_lastScheduleDataFetch!);
-      if (difference.inMinutes < _cacheExpirationMinutes) {
-        return _cachedScheduleData!;
-      }
-    }
-
-    // Otherwise, fetch fresh data
-    await _fetchAndCacheScheduleData();
-    return _cachedScheduleData ?? 'No schedule data available';
-  }
-
-  Future<void> _loadOrCreateConversation() async {
-    // If a specific conversation ID was provided, use that
-    if (widget.conversationId != null) {
-      await _loadConversation(widget.conversationId!);
-      return;
-    }
-
-    // Otherwise try to get the last active conversation
-    final activeConversationId = await ChatStorage.getActiveConversationId();
-
-    if (activeConversationId != null) {
-      // Load the last active conversation
-      await _loadConversation(activeConversationId);
-    } else {
-      // Start a new conversation
-      _startNewConversation();
-    }
-  }
-
   Future<void> _loadConversation(String conversationId) async {
     try {
       // Load conversation from storage
@@ -265,15 +216,13 @@ class _ChatPageState extends State<ChatPage> {
         await _geminiService.loadChatHistory(_messages);
       }
     } catch (e) {
-      // If there's an error, start a new conversation
+      // If there's an error, fetch fresh data and start a new conversation
+      await _fetchScheduleData();
       _startNewConversation();
     }
   }
 
   Future<void> _startNewConversation() async {
-    // Refresh schedule data in the background
-    _fetchAndCacheScheduleData();
-
     // Generate a new UUID for the conversation
     final uuid = Uuid();
     _currentConversationId = uuid.v4();
@@ -285,9 +234,9 @@ class _ChatPageState extends State<ChatPage> {
     if (_aiEnabled) {
       _geminiService.resetChat();
 
-      // Set the fresh schedule data in the Gemini service
-      if (_cachedScheduleData != null) {
-        _geminiService.setScheduleData(_cachedScheduleData!);
+      // Set the schedule data in the Gemini service
+      if (_scheduleData != null) {
+        _geminiService.setScheduleData(_scheduleData!);
       }
     }
 
@@ -455,14 +404,6 @@ class _ChatPageState extends State<ChatPage> {
             // Chat messages
             Expanded(
               child: Container(
-                // decoration: BoxDecoration(
-                //   color: colorScheme.background,
-                //   image: DecorationImage(
-                //     image: AssetImage('assets/chat_bg.png'), // Optional subtle pattern
-                //     opacity: 0.05,
-                //     repeat: ImageRepeat.repeat,
-                //   ),
-                // ),
                 child: ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
@@ -552,8 +493,10 @@ class _ChatPageState extends State<ChatPage> {
                               child: Text('CANCEL'),
                             ),
                             FilledButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 Navigator.pop(context);
+                                // Fetch fresh data when starting a new chat
+                                await _fetchScheduleData();
                                 _startNewConversation();
                                 setState(() {}); // Refresh UI
                               },
