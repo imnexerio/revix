@@ -23,6 +23,11 @@ class ChatStorage {
     await prefs.setString(_activeConversationKey, conversationId);
   }
 
+  static Future<bool> conversationExists(String conversationId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey('chat_$conversationId');
+  }
+
   // Load a specific conversation from local storage
   static Future<List<Map<String, dynamic>>> loadConversation(
       String conversationId) async {

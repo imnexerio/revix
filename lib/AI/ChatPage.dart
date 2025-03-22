@@ -43,37 +43,6 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-  Future<void> _initializeApp() async {
-    try {
-      // Initialize with null API key first
-      _geminiService = GeminiService(apiKey: null);
-
-      // Check if API key exists and initialize Gemini if it does
-      await _initializeGeminiService();
-
-      // Load conversation if ID provided, otherwise start a new conversation
-      if (widget.conversationId != null) {
-        await _loadConversation(widget.conversationId!);
-      } else {
-        // If no conversation ID provided, fetch fresh data and start new conversation
-        await _fetchScheduleData();
-        _startNewConversation();
-      }
-
-      setState(() {
-        _isInitialized = true;
-      });
-    } catch (e) {
-      // If initialization fails, still show the UI with error state
-      setState(() {
-        _isInitialized = true;
-        _messages.add(ChatMessage(
-          text: "There was an error initializing the app. Please try again or check your connection.",
-          isUser: false,
-        ));
-      });
-    }
-  }
 
   Future<void> _fetchScheduleData() async {
     try {
@@ -101,60 +70,7 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _sendMessage(String text) async {
-    if (text.trim().isEmpty || !_aiEnabled) return;
 
-    final userMessage = text;
-    _controller.clear();
-
-    setState(() {
-      _messages.add(ChatMessage(text: userMessage, isUser: true));
-      _isLoading = true;
-    });
-
-    _scrollToBottom();
-
-    // Save the conversation with the new user message - do this in background
-    _saveConversation();
-
-    try {
-      // Ensure the Gemini service has the schedule data
-      if (_scheduleData != null) {
-        _geminiService.setScheduleData(_scheduleData!);
-      }
-
-      // Determine if this is the first user message
-      final isFirstUserMessage = _messages.where((msg) => msg.isUser).length == 1;
-
-      // Send message to Gemini
-      final response = await _geminiService.askAboutSchedule(
-        userMessage,
-        _scheduleData ?? 'No schedule data available',
-        withContext: isFirstUserMessage, // Only send context with first message
-      );
-
-      setState(() {
-        _messages.add(ChatMessage(text: response, isUser: false));
-        _isLoading = false;
-      });
-
-      _scrollToBottom();
-
-      // Save conversation with assistant's response - do this in background
-      _saveConversation();
-    } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(
-          text: "Sorry, I encountered an error. Please try again or check your connection.",
-          isUser: false,
-        ));
-        _isLoading = false;
-      });
-
-      // Save conversation with error message
-      _saveConversation();
-    }
-  }
 
   Future<void> _initializeGeminiService() async {
     final apiKey = await ApiKeyManager.getApiKey();
@@ -220,6 +136,110 @@ class _ChatPageState extends State<ChatPage> {
       _startNewConversation();
     }
   }
+  // In _ChatPageState class, modify the _initializeApp method
+
+  Future<void> _initializeApp() async {
+    try {
+      // Initialize with null API key first
+      _geminiService = GeminiService(apiKey: null);
+
+      // Check if API key exists and initialize Gemini if it does
+      await _initializeGeminiService();
+
+      // Load conversation if ID provided
+      if (widget.conversationId != null) {
+        await _loadConversation(widget.conversationId!);
+      } else {
+        // If no conversation ID provided, just fetch fresh data
+        // but don't save a new conversation yet
+        await _fetchScheduleData();
+
+        // Generate a new conversation ID but don't save it yet
+        final uuid = Uuid();
+        _currentConversationId = uuid.v4();
+
+        // Add welcome message to UI but don't save to storage yet
+        _messages.add(ChatMessage(
+          text: _aiEnabled
+              ? "Hi there! I can help you understand your schedule. What would you like to know?"
+              : "Welcome to your reTrAIcker. AI features are currently disabled. You can enable them by setting your Gemini API key.",
+          isUser: false,
+        ));
+      }
+
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      // If initialization fails, still show the UI with error state
+      setState(() {
+        _isInitialized = true;
+        _messages.add(ChatMessage(
+          text: "There was an error initializing the app. Please try again or check your connection.",
+          isUser: false,
+        ));
+      });
+    }
+  }
+
+// Modify _sendMessage to save the conversation only when the user actually sends a message
+  void _sendMessage(String text) async {
+    if (text.trim().isEmpty || !_aiEnabled) return;
+
+    final userMessage = text;
+    _controller.clear();
+
+    setState(() {
+      _messages.add(ChatMessage(text: userMessage, isUser: true));
+      _isLoading = true;
+    });
+
+    _scrollToBottom();
+
+    // First, check if this is the first message in a new conversation
+    bool isFirstMessageInNewConversation = !await ChatStorage.conversationExists(_currentConversationId);
+
+    // Now save the conversation with the user message - this will be the first save for a new conversation
+    _saveConversation();
+
+    try {
+      // Ensure the Gemini service has the schedule data
+      if (_scheduleData != null) {
+        _geminiService.setScheduleData(_scheduleData!);
+      }
+
+      // Determine if this is the first user message
+      final isFirstUserMessage = _messages.where((msg) => msg.isUser).length == 1;
+
+      // Send message to Gemini
+      final response = await _geminiService.askAboutSchedule(
+        userMessage,
+        _scheduleData ?? 'No schedule data available',
+        withContext: isFirstUserMessage, // Only send context with first message
+      );
+
+      setState(() {
+        _messages.add(ChatMessage(text: response, isUser: false));
+        _isLoading = false;
+      });
+
+      _scrollToBottom();
+
+      // Save conversation with assistant's response
+      _saveConversation();
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: "Sorry, I encountered an error. Please try again or check your connection.",
+          isUser: false,
+        ));
+        _isLoading = false;
+      });
+
+      // Save conversation with error message
+      _saveConversation();
+    }
+  }
 
   Future<void> _startNewConversation() async {
     // Generate a new UUID for the conversation
@@ -239,7 +259,7 @@ class _ChatPageState extends State<ChatPage> {
       }
     }
 
-    // Add welcome message
+    // Add welcome message but don't save it yet
     String welcomeMessage = _aiEnabled
         ? "Hi there! I can help you understand your schedule. What would you like to know?"
         : "Welcome to your reTrAIcker. AI features are currently disabled. You can enable them by setting your Gemini API key.";
@@ -249,8 +269,7 @@ class _ChatPageState extends State<ChatPage> {
       isUser: false,
     ));
 
-    // Save this new conversation
-    _saveConversation();
+    // No _saveConversation() call here - we'll save only when user interacts
   }
 
   Future<void> _saveConversation() async {
