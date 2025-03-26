@@ -6,6 +6,7 @@ import '../LoginSignupPage/LoginPage.dart';
 import 'AboutPage.dart';
 import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
+import 'DIsplayName.dart';
 import 'DecodeProfilePic.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
@@ -17,6 +18,7 @@ import 'ProfilePage.dart';
 import 'SendVerificationMail.dart';
 import 'ThemePage.dart';
 import 'TrackingTypePage.dart';
+import 'VerifiedMail.dart';
 import 'buildDetailPageAppBar.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -86,8 +88,8 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
   // Prefetch user data to avoid multiple fetches
   Future<void> _prefetchUserData() async {
     try {
-      _cachedDisplayName = await _getDisplayName();
-      _cachedEmailVerified = await _isEmailVerified();
+      _cachedDisplayName = await getDisplayName();
+      _cachedEmailVerified = await isEmailVerified();
       _cachedProfileImage = await _decodeProfileImage(getCurrentUserUid());
 
       if (mounted) {
@@ -148,20 +150,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     return '${packageInfo.version}+${packageInfo.buildNumber}';
   }
 
-  Future<String> _getDisplayName() async {
-    if (_cachedDisplayName != null) return _cachedDisplayName!;
 
-    User? user = FirebaseAuth.instance.currentUser;
-    return user?.displayName ?? 'User';
-  }
-
-  Future<bool> _isEmailVerified() async {
-    if (_cachedEmailVerified != null) return _cachedEmailVerified!;
-
-    User? user = FirebaseAuth.instance.currentUser;
-    await user?.reload();
-    return user?.emailVerified ?? false;
-  }
 
   Future<Image?> _decodeProfileImage(String uid) async {
     if (_cachedProfileImage != null) return _cachedProfileImage;
@@ -233,7 +222,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
   // Create pages once and store them in variables to avoid recreation
   Widget _createEditProfilePage() {
     return EditProfilePage(
-      getDisplayName: _getDisplayName,
+      getDisplayName: getDisplayName,
       decodeProfileImage: _decodeProfileImage,
       uploadProfilePicture: uploadProfilePicture,
       getCurrentUserUid: getCurrentUserUid,
@@ -536,8 +525,8 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
                     cachedDisplayName: _cachedDisplayName,
                     cachedEmailVerified: _cachedEmailVerified,
                     decodeProfileImage: _decodeProfileImage,
-                    getDisplayName: _getDisplayName,
-                    isEmailVerified: _isEmailVerified,
+                    getDisplayName: getDisplayName,
+                    isEmailVerified: isEmailVerified,
                     sendVerificationEmail: _sendVerificationEmail,
                     uploadProfilePicture: uploadProfilePicture,
                     refreshProfile: _refreshProfile,
@@ -564,8 +553,8 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
                           cachedDisplayName: _cachedDisplayName,
                           cachedEmailVerified: _cachedEmailVerified,
                           decodeProfileImage: _decodeProfileImage,
-                          getDisplayName: _getDisplayName,
-                          isEmailVerified: _isEmailVerified,
+                          getDisplayName: getDisplayName,
+                          isEmailVerified: isEmailVerified,
                           sendVerificationEmail: _sendVerificationEmail,
                           uploadProfilePicture: uploadProfilePicture,
                           refreshProfile: _refreshProfile,
