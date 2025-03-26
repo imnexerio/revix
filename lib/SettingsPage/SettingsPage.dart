@@ -7,7 +7,6 @@ import 'AboutPage.dart';
 import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
 import 'DecodeProfilePic.dart';
-import 'FetchProfilePic.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
 import 'NotificationPage.dart';
@@ -164,14 +163,10 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     return user?.emailVerified ?? false;
   }
 
-  Future<String?> _getProfilePicture(String uid) {
-    return getProfilePicture(uid);
-  }
-
   Future<Image?> _decodeProfileImage(String uid) async {
     if (_cachedProfileImage != null) return _cachedProfileImage;
 
-    return decodeProfileImage(context, uid, _getProfilePicture);
+    return decodeProfileImage(context, uid);
   }
 
   Future<void> _sendVerificationEmail(BuildContext context) async {
