@@ -158,7 +158,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               child: const Icon(
                 Icons.camera_alt,
-                color: Colors.white,
+                // color: Colors.white,
                 size: 20,
               ),
             ),
