@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'DIsplayName.dart';
+import 'DisplayName.dart';
 import 'DecodeProfilePic.dart';
 
 class ProfileProvider with ChangeNotifier {
