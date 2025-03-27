@@ -20,8 +20,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   String? _fullName;
-  bool _isLoading = true;
-  bool _isLoading_name = true;
+  bool _isLoading = false;
+  bool _isLoading_name = false;
   late final String _uid;
 
   @override
@@ -33,20 +33,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
 
   Future<void> _loadUserData() async {
-    try {
+    // try {
       await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
       await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateDisplayName();
       _nameController.text = Provider.of<ProfileProvider>(context, listen: false).displayName ?? 'User';
-    } catch (e) {
-      _nameController.text = 'User';
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isLoading_name = false;
-        });
-      }
-    }
+    // } catch (e) {
+    //   _nameController.text = 'User';
+    // } finally {
+    //   if (mounted) {
+    //     setState(() {
+    //       _isLoading = false;
+    //       _isLoading_name = false;
+    //     });
+    //   }
+    // }
   }
 
   @override
