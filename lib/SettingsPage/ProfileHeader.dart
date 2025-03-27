@@ -11,7 +11,6 @@ class ProfileHeader extends StatelessWidget {
   final Future<String> Function() getDisplayName;
   final Future<bool> Function() isEmailVerified;
   final Future<void> Function(BuildContext) sendVerificationEmail;
-  final Future<void> Function(BuildContext, XFile, String) uploadProfilePicture;
   final Future<void> Function() refreshProfile;
   final void Function(BuildContext) showEditProfilePage;
   final String Function() getCurrentUserUid;
@@ -25,7 +24,6 @@ class ProfileHeader extends StatelessWidget {
     required this.getDisplayName,
     required this.isEmailVerified,
     required this.sendVerificationEmail,
-    required this.uploadProfilePicture,
     required this.refreshProfile,
     required this.showEditProfilePage,
     required this.getCurrentUserUid,
