@@ -95,7 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
       MaterialPageRoute(builder: (context) => SettingsPage()),
     ).then((_) {
       // Reload profile picture when returning from settings
-      // Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
+      Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
     });
   }
 
