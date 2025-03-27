@@ -83,9 +83,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
     // Start the animation
     _animationController.forward();
-
-    // Prefetch data to improve UX
-    _prefetchUserData();
   }
 
   @override
@@ -94,18 +91,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     super.dispose();
   }
 
-  // Prefetch user data to avoid multiple fetches
-  Future<void> _prefetchUserData() async {
-    try {
-
-
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      print('Error prefetching user data: $e');
-    }
-  }
 
   Future<void> _logout(BuildContext context) async {
     // Add a subtle animation before logout
@@ -133,15 +118,9 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   }
 
   Future<void> _refreshProfile() async {
-
-    // Reload data
-    await _prefetchUserData();
-
-    if (mounted) {
-      setState(() {
-        // This will only rebuild the necessary widgets thanks to the cache
-      });
-    }
+    final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+    await profileProvider.fetchAndUpdateDisplayName();
+    await profileProvider.fetchAndUpdateProfileImage(context);
   }
 
   String getCurrentUserUid() {
