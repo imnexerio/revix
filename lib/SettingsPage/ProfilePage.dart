@@ -21,6 +21,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _nameController = TextEditingController();
   String? _fullName;
   bool _isLoading = true;
+  bool _isLoading_name = true;
   late final String _uid;
 
   @override
@@ -42,6 +43,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isLoading_name = false;
         });
       }
     }
@@ -209,7 +211,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Widget _buildSaveButton() {
     return FilledButton(
-      onPressed: _saveProfile,
+      onPressed: _isLoading_name ? null : _saveProfile, // Disable button when loading
       style: FilledButton.styleFrom(
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
@@ -217,7 +219,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         elevation: 0,
       ),
-      child: _isLoading
+      child: _isLoading_name
           ? const SizedBox(
         width: 24,
         height: 24,
@@ -238,9 +240,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _saveProfile() async {
+    // Check if the form is valid
     if (_formKey.currentState!.validate()) {
+      // Save form data
       _formKey.currentState!.save();
 
+      // Show a snackbar indicating the operation is in progress
       ScaffoldMessenger.of(context).showSnackBar(
         customSnackBar(
           context: context,
@@ -248,17 +253,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       );
 
+      // Begin the async operation and update the loading state
+      setState(() {
+        _isLoading_name = true; // Start loading spinner
+      });
+
       try {
         User? user = FirebaseAuth.instance.currentUser;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$_uid/profile_data');
+        DatabaseReference ref =
+        FirebaseDatabase.instance.ref('users/$_uid/profile_data');
+
+        // Update name in Firebase database
         await ref.update({
-          'name': _fullName
+          'name': _fullName,
         });
 
+        // Update display name for FirebaseAuth user
         await user?.updateDisplayName(_fullName);
 
-        await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateDisplayName();
+        // Update the display name in the provider
+        await Provider.of<ProfileProvider>(context, listen: false)
+            .fetchAndUpdateDisplayName();
 
+        // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             customSnackBar(
@@ -268,12 +285,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
           );
         }
       } catch (e) {
+        // Handle errors and show an error message
         ScaffoldMessenger.of(context).showSnackBar(
           customSnackBar_error(
             context: context,
             message: 'Failed to update profile: $e',
           ),
         );
+      } finally {
+        // Reset loading state
+        if (mounted) {
+          setState(() {
+            _isLoading_name = false; // Stop loading spinner
+          });
+        }
       }
     }
   }
