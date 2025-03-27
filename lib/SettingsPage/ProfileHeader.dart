@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileHeader extends StatelessWidget {
   final bool isSmallScreen;
+  final void Function(BuildContext) showEditProfilePage;
   final Image? cachedProfileImage;
   final String? cachedDisplayName;
   final bool? cachedEmailVerified;
@@ -12,11 +13,11 @@ class ProfileHeader extends StatelessWidget {
   final Future<bool> Function() isEmailVerified;
   final Future<void> Function(BuildContext) sendVerificationEmail;
   final Future<void> Function() refreshProfile;
-  final void Function(BuildContext) showEditProfilePage;
   final String Function() getCurrentUserUid;
 
   ProfileHeader({
     required this.isSmallScreen,
+    required this.showEditProfilePage,
     required this.cachedProfileImage,
     required this.cachedDisplayName,
     required this.cachedEmailVerified,
@@ -25,7 +26,6 @@ class ProfileHeader extends StatelessWidget {
     required this.isEmailVerified,
     required this.sendVerificationEmail,
     required this.refreshProfile,
-    required this.showEditProfilePage,
     required this.getCurrentUserUid,
   });
 
