@@ -3,12 +3,7 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
-
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
 
 Future<Image?> decodeProfileImage(BuildContext context) async {
   const String defaultImagePath = 'assets/icon/icon.png'; // Path to your default image
