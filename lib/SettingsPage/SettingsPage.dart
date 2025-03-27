@@ -50,6 +50,9 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   void initState() {
     super.initState();
 
+    Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
+    Provider.of<ProfileProvider>(context, listen: false).loadDisplayName();
+
     // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
@@ -74,6 +77,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
     // Start the animation
     _animationController.forward();
+
   }
 
   @override
