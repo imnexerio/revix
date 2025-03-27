@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'DisplayName.dart';
 import 'ProfileImageWidget.dart';
+import 'ProfileProvider.dart';
 import 'SendVerificationMail.dart';
 import 'VerifiedMail.dart';
 
@@ -74,21 +76,18 @@ class ProfileHeader extends StatelessWidget {
             ),
             SizedBox(height: 16),
             // Animated display name
-            FutureBuilder<String>(
-              future: getDisplayName(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+            Consumer<ProfileProvider>(
+              builder: (context, profileProvider, child) {
+                if (profileProvider.displayName == null) {
                   return SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   );
-                } else if (snapshot.hasError) {
-                  return Text('Error loading name');
                 } else {
                   return Text(
-                    snapshot.data!,
-                    key: ValueKey(snapshot.data),
+                    profileProvider.displayName!,
+                    key: ValueKey(profileProvider.displayName),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,

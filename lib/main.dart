@@ -80,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    Provider.of<ProfileProvider>(context, listen: false).loadProfileData(context);
+    Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
   }
 
   void _onItemTapped(int index) {
@@ -95,7 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
       MaterialPageRoute(builder: (context) => SettingsPage()),
     ).then((_) {
       // Reload profile picture when returning from settings
-      Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
+      Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
     });
   }
 

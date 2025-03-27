@@ -27,17 +27,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
+    _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     _loadUserData();
   }
 
+
   Future<void> _loadUserData() async {
     try {
-      // Load display name
-      String displayName = await getDisplayName();
-      _nameController.text = displayName;
-
-      // Load profile image
-      await Provider.of<ProfileProvider>(context, listen: false).loadProfileData(context);
+      await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
+      await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateDisplayName();
+      _nameController.text = Provider.of<ProfileProvider>(context, listen: false).displayName ?? 'User';
     } catch (e) {
       _nameController.text = 'User';
     } finally {
@@ -243,9 +242,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      setState(() {
-        _isLoading = true;
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        customSnackBar(
+          context: context,
+          message: 'Updating Display Name',
+        ),
+      );
 
       try {
         User? user = FirebaseAuth.instance.currentUser;
@@ -256,29 +258,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
         await user?.updateDisplayName(_fullName);
 
+        await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateDisplayName();
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             customSnackBar(
               context: context,
-              message: 'Profile updated successfully',
+              message: 'Display Name updated successfully',
             ),
           );
         }
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            customSnackBar_error(
-              context: context,
-              message: 'Failed to update profile: $e',
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          customSnackBar_error(
+            context: context,
+            message: 'Failed to update profile: $e',
+          ),
+        );
       }
     }
   }
