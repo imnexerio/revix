@@ -10,7 +10,7 @@ Future<void> sendVerificationEmail(BuildContext context) async {
     ScaffoldMessenger.of(context).showSnackBar(
       customSnackBar(
         context: context,
-        message: 'Verification email sent successfully',
+        message: 'Verification email sent successfully after verification restart the app',
       ),
     );
   } catch (e) {
