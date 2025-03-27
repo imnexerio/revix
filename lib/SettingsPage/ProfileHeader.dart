@@ -90,55 +90,10 @@ class ProfileHeader extends StatelessWidget {
                     ),
                   )
                       : FutureBuilder<Image?>(
-                    future: decodeProfileImage(getCurrentUserUid()),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Container(
-                          width: 110,
-                          height: 110,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              width: 4,
-                            ),
-                          ),
-                          child: CircularProgressIndicator(),
-                        );
-                      } else if (snapshot.hasError || snapshot.data == null) {
-                        return InkWell(
-                          onTap: () async {
-                            final ImagePicker _picker = ImagePicker();
-                            final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                            if (image != null) {
-                              await uploadProfilePicture(context, image, getCurrentUserUid());
-                              refreshProfile();
-                            }
-                          },
-                          child: Container(
-                            width: 110,
-                            height: 110,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                width: 4,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundImage: AssetImage('assets/icon/icon.png'),
-                              backgroundColor: Colors.transparent,
-                            ),
-                          ),
-                        );
-                      } else {
-                        // Cache the image for future use
-                        return Hero(
-                          tag: 'profile-image',
-                          child: InkWell(
-                            onTap: () => showEditProfilePage(context),
-                            child: Container(
+                        future: decodeProfileImage(getCurrentUserUid()),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Container(
                               width: 110,
                               height: 110,
                               decoration: BoxDecoration(
@@ -148,17 +103,64 @@ class ProfileHeader extends StatelessWidget {
                                   width: 4,
                                 ),
                               ),
+                              child: CircularProgressIndicator(),
+                            );
+                          } else if (snapshot.hasError) {
+                            return Container(
+                              width: 110,
+                              height: 110,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                width: 4,
+                                ),
+                                ),
                               child: CircleAvatar(
                                 radius: 50,
-                                backgroundImage: snapshot.data!.image,
+                                backgroundImage: AssetImage('assets/icon/icon.png'),
                                 backgroundColor: Colors.transparent,
+                                ),
+                              );
+                          } else if (snapshot.hasData) {
+                            return Hero(
+                              tag: 'profile-image',
+                              child: InkWell(
+                                onTap: () => showEditProfilePage(context),
+                                child: Container(
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      width: 4,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: snapshot.data!.image,
+                                    backgroundColor: Colors.transparent,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
+                            );
+                          } else {
+                            return Container(
+                              width: 110,
+                              height: 110,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  width: 4,
+                                ),
+                              ),
+                              child: Icon(Icons.person, color: Colors.grey),
+                            );
+                          }
+                        },
+                      )
                 ],
               ),
             ),
