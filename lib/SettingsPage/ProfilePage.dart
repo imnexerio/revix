@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:provider/provider.dart';
-import 'DisplayName.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileProvider.dart';
 import 'ProfileImageWidget.dart';

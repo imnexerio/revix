@@ -34,9 +34,6 @@ class SettingsPageContent extends StatefulWidget {
 }
 
 class _SettingsPageContentState extends State<SettingsPageContent> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
-
-// class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
-  // Track currently selected page for large screens
   Widget? _currentDetailPage;
   String _currentTitle = 'Edit Profile'; // Set default title
   bool _isInitialized = false;
@@ -46,12 +43,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // // Cache for frequently accessed data to prevent unnecessary rebuilds
-  // String? _cachedDisplayName;
-  // Image? _cachedProfileImage;
-  // bool? _cachedEmailVerified;
-
-  // Keep widget alive when switching tabs or resizing
   @override
   bool get wantKeepAlive => true;
 

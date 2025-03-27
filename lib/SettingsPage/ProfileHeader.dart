@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'DisplayName.dart';
 import 'ProfileImageWidget.dart';
 import 'ProfileProvider.dart';
 import 'SendVerificationMail.dart';
