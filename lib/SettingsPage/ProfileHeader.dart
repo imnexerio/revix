@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:provider/provider.dart';
 import 'DIsplayName.dart';
 import 'SendVerificationMail.dart';
 import 'VerifiedMail.dart';
+import 'ProfileProvider.dart';
 
 class ProfileHeader extends StatelessWidget {
   final bool isSmallScreen;
@@ -49,32 +49,34 @@ class ProfileHeader extends StatelessWidget {
               },
               child: Stack(
                 children: [
-                  // Profile image - use cached value when available
-                  cachedProfileImage != null
-                      ? Hero(
-                    tag: 'profile-image',
-                    child: InkWell(
-                      onTap: () => showEditProfilePage(context),
-                      child: Container(
-                        width: 110,
-                        height: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            width: 4,
+                  // Profile image - use provider value when available
+                  Consumer<ProfileProvider>(
+                    builder: (context, profileProvider, child) {
+                      return profileProvider.profileImage != null
+                          ? Hero(
+                        tag: 'profile-image',
+                        child: InkWell(
+                          onTap: () => showEditProfilePage(context),
+                          child: Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                width: 4,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundImage: profileProvider.profileImage!.image,
+                              backgroundColor: Colors.transparent,
+                            ),
                           ),
                         ),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundImage: cachedProfileImage!.image,
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  )
-                      : FutureBuilder<Image?>(
-                        future: decodeProfileImage(getCurrentUserUid()),
+                      )
+                          : FutureBuilder<void>(
+                        future: profileProvider.loadProfileData(context),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return Container(
@@ -96,37 +98,14 @@ class ProfileHeader extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                width: 4,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  width: 4,
                                 ),
-                                ),
+                              ),
                               child: CircleAvatar(
                                 radius: 50,
                                 backgroundImage: AssetImage('assets/icon/icon.png'),
                                 backgroundColor: Colors.transparent,
-                                ),
-                              );
-                          } else if (snapshot.hasData) {
-                            return Hero(
-                              tag: 'profile-image',
-                              child: InkWell(
-                                onTap: () => showEditProfilePage(context),
-                                child: Container(
-                                  width: 110,
-                                  height: 110,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                      width: 4,
-                                    ),
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 50,
-                                    backgroundImage: snapshot.data!.image,
-                                    backgroundColor: Colors.transparent,
-                                  ),
-                                ),
                               ),
                             );
                           } else {
@@ -144,112 +123,76 @@ class ProfileHeader extends StatelessWidget {
                             );
                           }
                         },
-                      )
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
             SizedBox(height: 16),
             // Animated display name
-            AnimatedSwitcher(
-              duration: Duration(milliseconds: 400),
-              child: cachedDisplayName != null
-                  ? Text(
-                cachedDisplayName!,
-                key: ValueKey(cachedDisplayName),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-                  : FutureBuilder<String>(
-                future: getDisplayName(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Text('Error loading name');
-                  } else {
-                    return Text(
-                      snapshot.data!,
-                      key: ValueKey(snapshot.data),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  }
-                },
-              ),
+            FutureBuilder<String>(
+              future: getDisplayName(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                } else if (snapshot.hasError) {
+                  return Text('Error loading name');
+                } else {
+                  return Text(
+                    snapshot.data!,
+                    key: ValueKey(snapshot.data),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }
+              },
             ),
             SizedBox(height: 4),
             // Animated email verification status
-            AnimatedSwitcher(
-              duration: Duration(milliseconds: 400),
-              child: cachedEmailVerified != null
-                  ? Center(
-                key: ValueKey('email-${cachedEmailVerified}'),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    if (cachedEmailVerified!)
-                      Icon(Icons.verified_outlined, color: Colors.green)
-                    else
-                      TextButton(
-                        onPressed: () => sendVerificationEmail(context),
-                        child: Icon(Icons.error, color: Colors.red),
-                      )
-                  ],
-                ),
-              )
-                  : FutureBuilder<bool>(
-                future: isEmailVerified(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Text('Error loading verification status');
-                  } else {
-                    bool isVerified = snapshot.data!;
-                    return Center(
-                      key: ValueKey('email-${isVerified}'),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                            ),
+            FutureBuilder<bool>(
+              future: isEmailVerified(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                } else if (snapshot.hasError) {
+                  return Text('Error loading verification status');
+                } else {
+                  bool isVerified = snapshot.data!;
+                  return Center(
+                    key: ValueKey('email-${isVerified}'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                           ),
-                          SizedBox(width: 8),
-                          if (isVerified)
-                            Icon(Icons.verified_outlined, color: Colors.green)
-                          else
-                            TextButton(
-                              onPressed: () => sendVerificationEmail(context),
-                              child: Icon(Icons.error, color: Colors.red),
-                            )
-                        ],
-                      ),
-                    );
-                  }
-                },
-              ),
+                        ),
+                        SizedBox(width: 8),
+                        if (isVerified)
+                          Icon(Icons.verified_outlined, color: Colors.green)
+                        else
+                          TextButton(
+                            onPressed: () => sendVerificationEmail(context),
+                            child: Icon(Icons.error, color: Colors.red),
+                          )
+                      ],
+                    ),
+                  );
+                }
+              },
             ),
           ],
         ),
