@@ -7,20 +7,15 @@ import '../LoginSignupPage/LoginPage.dart';
 import 'AboutPage.dart';
 import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
-import 'DIsplayName.dart';
-import 'DecodeProfilePic.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
 import 'NotificationPage.dart';
 import 'ProfileHeader.dart';
-import 'ProfileImageUpload.dart';
 import 'ProfileOptionCard.dart';
 import 'ProfilePage.dart';
 import 'ProfileProvider.dart';
-import 'SendVerificationMail.dart';
 import 'ThemePage.dart';
 import 'TrackingTypePage.dart';
-import 'VerifiedMail.dart';
 import 'buildDetailPageAppBar.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -51,10 +46,10 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Cache for frequently accessed data to prevent unnecessary rebuilds
-  String? _cachedDisplayName;
-  Image? _cachedProfileImage;
-  bool? _cachedEmailVerified;
+  // // Cache for frequently accessed data to prevent unnecessary rebuilds
+  // String? _cachedDisplayName;
+  // Image? _cachedProfileImage;
+  // bool? _cachedEmailVerified;
 
   // Keep widget alive when switching tabs or resizing
   @override
@@ -102,9 +97,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   // Prefetch user data to avoid multiple fetches
   Future<void> _prefetchUserData() async {
     try {
-      _cachedDisplayName = await getDisplayName();
-      _cachedEmailVerified = await isEmailVerified();
-      _cachedProfileImage = await _decodeProfileImage(getCurrentUserUid());
+
 
       if (mounted) {
         setState(() {});
@@ -140,10 +133,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   }
 
   Future<void> _refreshProfile() async {
-    // Clear cache
-    _cachedDisplayName = null;
-    _cachedProfileImage = null;
-    _cachedEmailVerified = null;
 
     // Reload data
     await _prefetchUserData();
@@ -162,20 +151,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   Future<String> _getAppVersion() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     return '${packageInfo.version}+${packageInfo.buildNumber}';
-  }
-
-
-
-  Future<Image?> _decodeProfileImage(String uid) async {
-    if (_cachedProfileImage != null) return _cachedProfileImage;
-
-    return decodeProfileImage(context);
-  }
-
-  Future<void> _sendVerificationEmail(BuildContext context) async {
-    await sendVerificationEmail(context);
-    _cachedEmailVerified = null; // Clear cache to force refresh
-    await _refreshProfile();
   }
 
   Future<String> _fetchReleaseNotes() {
@@ -236,10 +211,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   // Create pages once and store them in variables to avoid recreation
   Widget _createEditProfilePage() {
     return EditProfilePage(
-      // getDisplayName: getDisplayName,
-      // decodeProfileImage: _decodeProfileImage,
-      // uploadProfilePicture: uploadProfilePicture,
-      // getCurrentUserUid: getCurrentUserUid,
     );
   }
 
