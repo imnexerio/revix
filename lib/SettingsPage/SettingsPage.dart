@@ -535,16 +535,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
                 children: [
                   ProfileHeader(
                     isSmallScreen: isSmallScreen,
-                    cachedProfileImage: _cachedProfileImage,
-                    cachedDisplayName: _cachedDisplayName,
-                    cachedEmailVerified: _cachedEmailVerified,
-                    decodeProfileImage: _decodeProfileImage,
-                    getDisplayName: getDisplayName,
-                    isEmailVerified: isEmailVerified,
-                    sendVerificationEmail: _sendVerificationEmail,
-                    refreshProfile: _refreshProfile,
                     showEditProfilePage: _showEditProfilePage,
-                    getCurrentUserUid: getCurrentUserUid,
                   ),
                   _buildSettingsOptions(isSmallScreen),
                 ],
@@ -562,16 +553,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
                       children: [
                         ProfileHeader(
                           isSmallScreen: isSmallScreen,
-                          cachedProfileImage: _cachedProfileImage,
-                          cachedDisplayName: _cachedDisplayName,
-                          cachedEmailVerified: _cachedEmailVerified,
-                          decodeProfileImage: _decodeProfileImage,
-                          getDisplayName: getDisplayName,
-                          isEmailVerified: isEmailVerified,
-                          sendVerificationEmail: _sendVerificationEmail,
-                          refreshProfile: _refreshProfile,
                           showEditProfilePage: _showEditProfilePage,
-                          getCurrentUserUid: getCurrentUserUid,
                         ),
                         _buildSettingsOptions(isSmallScreen),
                       ],

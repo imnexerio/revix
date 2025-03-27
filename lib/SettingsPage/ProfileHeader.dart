@@ -2,31 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'DIsplayName.dart';
+import 'SendVerificationMail.dart';
+import 'VerifiedMail.dart';
+
 class ProfileHeader extends StatelessWidget {
   final bool isSmallScreen;
   final void Function(BuildContext) showEditProfilePage;
-  final Image? cachedProfileImage;
-  final String? cachedDisplayName;
-  final bool? cachedEmailVerified;
-  final Future<Image?> Function(String) decodeProfileImage;
-  final Future<String> Function() getDisplayName;
-  final Future<bool> Function() isEmailVerified;
-  final Future<void> Function(BuildContext) sendVerificationEmail;
-  final Future<void> Function() refreshProfile;
-  final String Function() getCurrentUserUid;
 
   ProfileHeader({
     required this.isSmallScreen,
     required this.showEditProfilePage,
-    required this.cachedProfileImage,
-    required this.cachedDisplayName,
-    required this.cachedEmailVerified,
-    required this.decodeProfileImage,
-    required this.getDisplayName,
-    required this.isEmailVerified,
-    required this.sendVerificationEmail,
-    required this.refreshProfile,
-    required this.getCurrentUserUid,
   });
 
   @override
