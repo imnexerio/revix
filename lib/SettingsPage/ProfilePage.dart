@@ -20,7 +20,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   String? _fullName;
-  bool _isLoading = false;
+  bool _isLoading_pic = false;
   bool _isLoading_name = false;
   late final String _uid;
 
@@ -33,20 +33,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
 
   Future<void> _loadUserData() async {
-    // try {
       await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
       await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateDisplayName();
       _nameController.text = Provider.of<ProfileProvider>(context, listen: false).displayName ?? 'User';
-    // } catch (e) {
-    //   _nameController.text = 'User';
-    // } finally {
-    //   if (mounted) {
-    //     setState(() {
-    //       _isLoading = false;
-    //       _isLoading_name = false;
-    //     });
-    //   }
-    // }
   }
 
   @override
@@ -61,7 +50,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (image != null && mounted) {
       setState(() {
-        _isLoading = true;
+        _isLoading_pic = true;
       });
 
       await uploadProfilePicture(context, image);
@@ -70,7 +59,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isLoading_pic = false;
         });
       }
     }
@@ -130,7 +119,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         SizedBox(
           width: 110,
           height: 110,
-          child: _isLoading
+          child: _isLoading_pic
               ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
               : ClipOval(
             child: ProfileImageWidget(),
