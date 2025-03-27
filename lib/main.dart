@@ -13,6 +13,7 @@ import 'dart:typed_data';
 import 'AI/ChatPage.dart';
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
+import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
@@ -27,8 +28,11 @@ void main() async {
   await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => themeNotifier,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => themeNotifier),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+      ],
       child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
     ),
   );
