@@ -13,6 +13,7 @@ import 'dart:typed_data';
 import 'AI/ChatPage.dart';
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
+import 'SettingsPage/ProfileImageWidget.dart';
 import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
@@ -65,55 +66,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Helper function to get profile picture
-Future<String?> getProfilePicture(String uid) async {
-  try {
-    DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
-    DataSnapshot snapshot = await databaseRef.child('profile_picture').get();
-    if (snapshot.exists) {
-      return snapshot.value as String?;
-    }
-  } catch (e) {
-    // Handle the error appropriately in the calling function
-    throw Exception('Error retrieving profile picture: $e');
-  }
-  return null;
-}
-
-// Helper function to decode profile image
-Future<Widget> decodeProfileImage(BuildContext context, String uid) async {
-  const String defaultImagePath = 'assets/icon/icon.png'; // Path to your default image
-  final double profileSize = 35.0; // Size of the profile picture
-
-  try {
-    String? base64String = await getProfilePicture(uid);
-    if (base64String != null && base64String.isNotEmpty) {
-      Uint8List imageBytes = base64Decode(base64String);
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(profileSize / 2),
-        child: Image.memory(
-          imageBytes,
-          width: profileSize,
-          height: profileSize,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-  } catch (e) {
-    // Silently fallback to default image
-    print('Error decoding profile picture: $e');
-  }
-
-  return ClipRRect(
-    borderRadius: BorderRadius.circular(profileSize / 2),
-    child: Image.asset(
-      defaultImagePath,
-      width: profileSize,
-      height: profileSize,
-      fit: BoxFit.cover,
-    ),
-  );
-}
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -124,45 +76,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
-  String _currentUserUid = '';
-  Widget _profilePicWidget = Container(); // Placeholder for profile pic
-  bool _isProfileLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentUser();
-  }
-
-  void _getCurrentUser() async {
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      setState(() {
-        _currentUserUid = user.uid;
-      });
-      _loadProfilePicture();
-    }
-  }
-
-  void _loadProfilePicture() async {
-    if (_currentUserUid.isNotEmpty) {
-      try {
-        Widget profileWidget = await decodeProfileImage(context, _currentUserUid);
-        if (mounted) {
-          setState(() {
-            _profilePicWidget = profileWidget;
-            _isProfileLoading = false;
-          });
-        }
-      } catch (e) {
-        print('Error loading profile picture: $e');
-        if (mounted) {
-          setState(() {
-            _isProfileLoading = false;
-          });
-        }
-      }
-    }
+    Provider.of<ProfileProvider>(context, listen: false).loadProfileData(context);
   }
 
   void _onItemTapped(int index) {
@@ -177,7 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
       MaterialPageRoute(builder: (context) => SettingsPage()),
     ).then((_) {
       // Reload profile picture when returning from settings
-      _loadProfilePicture();
+      // Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
     });
   }
 
@@ -202,7 +120,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // Updated widget list without the Settings page
   final List<Widget> _widgetOptions = <Widget>[
     HomePage(),
     TodayPage(),
@@ -210,7 +127,6 @@ class _MyHomePageState extends State<MyHomePage> {
     ChatPage(),
   ];
 
-  // Page titles for the app bar
   final List<String> _pageTitles = <String>[
     'Home',
     'Schedule',
@@ -225,7 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: false, // This removes the back button
+          automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: Text(
@@ -233,15 +149,15 @@ class _MyHomePageState extends State<MyHomePage> {
             style: TextStyle(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
-              fontSize: 25
+              fontSize: 25,
             ),
           ),
           actions: [
             InkWell(
               onTap: _openSettings,
-              borderRadius: BorderRadius.circular(20), // Circular radius for the ripple effect
+              borderRadius: BorderRadius.circular(20),
               child: Padding(
-                padding: EdgeInsets.all(8.0), // Add some padding to increase tap target
+                padding: EdgeInsets.all(8.0),
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -250,19 +166,27 @@ class _MyHomePageState extends State<MyHomePage> {
                       width: 2,
                     ),
                   ),
-                  child: _isProfileLoading
-                      ? Container(
-                    width: 35,
-                    height: 35,
-                    padding: EdgeInsets.all(8),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        theme.colorScheme.primary,
-                      ),
-                    ),
-                  )
-                      : _profilePicWidget,
+                  child: Consumer<ProfileProvider>(
+                    builder: (context, profileProvider, child) {
+                      return profileProvider.profileImage != null
+                          ? CircleAvatar(
+                        radius: 17.5,
+                        backgroundImage: profileProvider.profileImage!.image,
+                        backgroundColor: Colors.transparent,
+                      )
+                          : Container(
+                        width: 35,
+                        height: 35,
+                        padding: EdgeInsets.all(8),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            theme.colorScheme.primary,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             )
