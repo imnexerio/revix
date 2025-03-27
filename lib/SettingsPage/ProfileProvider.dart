@@ -11,4 +11,8 @@ class ProfileProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> fetchAndUpdateProfileImage(BuildContext context) async {
+    _profileImage = await decodeProfileImage(context); // Fetch updated image from server
+    notifyListeners();
+  }
 }

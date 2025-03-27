@@ -37,6 +37,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _nameController.text = displayName;
 
       // Load profile image
+      await Provider.of<ProfileProvider>(context, listen: false).loadProfileData(context);
       _profileImage = Provider.of<ProfileProvider>(context, listen: false).profileImage;
     } catch (e) {
       _nameController.text = 'User';
@@ -66,8 +67,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       await uploadProfilePicture(context, image);
 
-      // Load updated profile image
-      _profileImage = Provider.of<ProfileProvider>(context, listen: false).profileImage;
+      await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
 
       if (mounted) {
         setState(() {
