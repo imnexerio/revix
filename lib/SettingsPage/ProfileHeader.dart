@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'DIsplayName.dart';
+import 'ProfileProvider.dart';
+import 'ProfileImageWidget.dart';
 import 'SendVerificationMail.dart';
 import 'VerifiedMail.dart';
-import 'ProfileProvider.dart';
 
 class ProfileHeader extends StatelessWidget {
   final bool isSmallScreen;
@@ -49,82 +50,26 @@ class ProfileHeader extends StatelessWidget {
               },
               child: Stack(
                 children: [
-                  // Profile image - use provider value when available
-                  Consumer<ProfileProvider>(
-                    builder: (context, profileProvider, child) {
-                      return profileProvider.profileImage != null
-                          ? Hero(
-                        tag: 'profile-image',
-                        child: InkWell(
-                          onTap: () => showEditProfilePage(context),
-                          child: Container(
-                            width: 110,
-                            height: 110,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                width: 4,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundImage: profileProvider.profileImage!.image,
-                              backgroundColor: Colors.transparent,
-                            ),
+                  // Profile image - use ProfileImageWidget
+                  Hero(
+                    tag: 'profile-image',
+                    child: InkWell(
+                      onTap: () => showEditProfilePage(context),
+                      child: Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            width: 4,
                           ),
                         ),
-                      )
-                          : FutureBuilder<void>(
-                        future: profileProvider.loadProfileData(context),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Container(
-                              width: 110,
-                              height: 110,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  width: 4,
-                                ),
-                              ),
-                              child: CircularProgressIndicator(),
-                            );
-                          } else if (snapshot.hasError) {
-                            return Container(
-                              width: 110,
-                              height: 110,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  width: 4,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundImage: AssetImage('assets/icon/icon.png'),
-                                backgroundColor: Colors.transparent,
-                              ),
-                            );
-                          } else {
-                            return Container(
-                              width: 110,
-                              height: 110,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  width: 4,
-                                ),
-                              ),
-                              child: Icon(Icons.person, color: Colors.grey),
-                            );
-                          }
-                        },
-                      );
-                    },
+                        child: ClipOval(
+                          child: ProfileImageWidget(),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),

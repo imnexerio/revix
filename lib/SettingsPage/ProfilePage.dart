@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'DIsplayName.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileProvider.dart';
+import 'ProfileImageWidget.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
 
@@ -21,7 +22,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _nameController = TextEditingController();
   String? _fullName;
   bool _isLoading = true;
-  Image? _profileImage;
   late final String _uid;
 
   @override
@@ -38,7 +38,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       // Load profile image
       await Provider.of<ProfileProvider>(context, listen: false).loadProfileData(context);
-      _profileImage = Provider.of<ProfileProvider>(context, listen: false).profileImage;
     } catch (e) {
       _nameController.text = 'User';
     } finally {
@@ -134,14 +133,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
               : ClipOval(
-            child: _profileImage != null
-                ? _profileImage!
-                : Image.asset(
-              'assets/icon/icon.png',
-              width: 110,
-              height: 110,
-              fit: BoxFit.cover,
-            ),
+            child: ProfileImageWidget(),
           ),
         ),
 
