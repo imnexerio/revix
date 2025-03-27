@@ -12,10 +12,11 @@ class ProfileProvider with ChangeNotifier {
   bool get emailVerified => _emailVerified;
   String get displayName => _displayName;
 
-  Future<void> loadProfileData(BuildContext context, String uid) async {
-    _profileImage = await decodeProfileImage(context, uid);
+  Future<void> loadProfileData(BuildContext context) async {
+    _profileImage = await decodeProfileImage(context);
     _emailVerified = await isEmailVerified();
     _displayName = await getDisplayName();
     notifyListeners();
   }
+
 }

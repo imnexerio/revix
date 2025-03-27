@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../LoginSignupPage/LoginPage.dart';
 import 'AboutPage.dart';
@@ -15,18 +16,31 @@ import 'ProfileHeader.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileOptionCard.dart';
 import 'ProfilePage.dart';
+import 'ProfileProvider.dart';
 import 'SendVerificationMail.dart';
 import 'ThemePage.dart';
 import 'TrackingTypePage.dart';
 import 'VerifiedMail.dart';
 import 'buildDetailPageAppBar.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends StatelessWidget {
   @override
-  _SettingsPageState createState() => _SettingsPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ProfileProvider(),
+      child: SettingsPageContent(),
+    );
+  }
 }
 
-class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+class SettingsPageContent extends StatefulWidget {
+  @override
+  _SettingsPageContentState createState() => _SettingsPageContentState();
+}
+
+class _SettingsPageContentState extends State<SettingsPageContent> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+
+// class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   // Track currently selected page for large screens
   Widget? _currentDetailPage;
   String _currentTitle = 'Edit Profile'; // Set default title
@@ -155,7 +169,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
   Future<Image?> _decodeProfileImage(String uid) async {
     if (_cachedProfileImage != null) return _cachedProfileImage;
 
-    return decodeProfileImage(context, uid);
+    return decodeProfileImage(context);
   }
 
   Future<void> _sendVerificationEmail(BuildContext context) async {
