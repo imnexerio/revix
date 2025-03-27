@@ -236,10 +236,10 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   // Create pages once and store them in variables to avoid recreation
   Widget _createEditProfilePage() {
     return EditProfilePage(
-      getDisplayName: getDisplayName,
-      decodeProfileImage: _decodeProfileImage,
-      uploadProfilePicture: uploadProfilePicture,
-      getCurrentUserUid: getCurrentUserUid,
+      // getDisplayName: getDisplayName,
+      // decodeProfileImage: _decodeProfileImage,
+      // uploadProfilePicture: uploadProfilePicture,
+      // getCurrentUserUid: getCurrentUserUid,
     );
   }
 

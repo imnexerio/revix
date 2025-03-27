@@ -2,22 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart';
+import 'DIsplayName.dart';
+import 'ProfileImageUpload.dart';
+import 'ProfileProvider.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final Future<String> Function() getDisplayName;
-  final Future<Image?> Function(String) decodeProfileImage;
-  final Future<void> Function(BuildContext, XFile, String) uploadProfilePicture;
-  final String Function() getCurrentUserUid;
-
-  const EditProfilePage({
-    Key? key,
-    required this.getDisplayName,
-    required this.decodeProfileImage,
-    required this.uploadProfilePicture,
-    required this.getCurrentUserUid,
-  }) : super(key: key);
+  const EditProfilePage({Key? key}) : super(key: key);
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
@@ -34,18 +27,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _uid = widget.getCurrentUserUid();
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
     try {
       // Load display name
-      String displayName = await widget.getDisplayName();
+      String displayName = await getDisplayName();
       _nameController.text = displayName;
 
-      // Cache profile image
-      _profileImage = await widget.decodeProfileImage(_uid);
+      // Load profile image
+      _profileImage = Provider.of<ProfileProvider>(context, listen: false).profileImage;
     } catch (e) {
       _nameController.text = 'User';
     } finally {
@@ -72,10 +64,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _isLoading = true;
       });
 
-      await widget.uploadProfilePicture(context, image, _uid);
+      await uploadProfilePicture(context, image);
 
-      // Update cached image
-      _profileImage = await widget.decodeProfileImage(_uid);
+      // Load updated profile image
+      _profileImage = Provider.of<ProfileProvider>(context, listen: false).profileImage;
 
       if (mounted) {
         setState(() {
