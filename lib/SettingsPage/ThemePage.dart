@@ -78,19 +78,9 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
-    final theme = Theme.of(context);
     final gridColumnCount = _getGridColumnCount(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Theme Settings',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
       body: FadeTransition(
         opacity: _animation,
         child: SingleChildScrollView(
@@ -289,8 +279,8 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                   child: Hero(
                     tag: 'theme_color_$themeIndex',
                     child: Container(
-                      width: 48, // Slightly smaller
-                      height: 48, // Slightly smaller
+                      width: 42, // Slightly smaller
+                      height: 42, // Slightly smaller
                       decoration: BoxDecoration(
                         color: themeColor,
                         shape: BoxShape.circle,
