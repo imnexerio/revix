@@ -5,7 +5,7 @@ import 'package:retracker/theme_data.dart';
 
 import 'CustomThemeGenerator.dart';
 
-class ThemeNotifier extends ChangeNotifier {
+class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   ThemeData _currentTheme;
   ThemeMode _currentThemeMode;
   int _selectedThemeIndex;
@@ -14,7 +14,37 @@ class ThemeNotifier extends ChangeNotifier {
 
   // Constructor
   ThemeNotifier(this._currentTheme, this._currentThemeMode) : _selectedThemeIndex = 0 {
+    // Register as an observer to listen for system theme changes
+    WidgetsBinding.instance.addObserver(this);
     fetchCustomTheme();
+  }
+
+  // Override didChangePlatformBrightness to detect system theme changes
+  @override
+  void didChangePlatformBrightness() {
+    if (_currentThemeMode == ThemeMode.system) {
+      // Update theme based on new system brightness
+      if (isCustomTheme && _customThemeColor != null) {
+        _applyCustomTheme(_customThemeColor!);
+      } else {
+        _updateThemeBasedOnSystemBrightness();
+      }
+      notifyListeners();
+    }
+    super.didChangePlatformBrightness();
+  }
+
+  // Cleanup when the notifier is disposed
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Helper method to update theme based on system brightness
+  void _updateThemeBasedOnSystemBrightness() {
+    final brightness = WidgetsBinding.instance.window.platformBrightness;
+    _currentTheme = AppThemes.themes[_selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
   }
 
   // Getters
@@ -115,8 +145,7 @@ class ThemeNotifier extends ChangeNotifier {
     if (user == null) {
       // User is not logged in, use default theme
       if (_currentThemeMode == ThemeMode.system) {
-        final brightness = WidgetsBinding.instance.window.platformBrightness;
-        _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+        _updateThemeBasedOnSystemBrightness();
       } else {
         _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
       }
@@ -135,8 +164,7 @@ class ThemeNotifier extends ChangeNotifier {
     } else {
       // Determine which theme to use based on current theme mode
       if (_currentThemeMode == ThemeMode.system) {
-        final brightness = WidgetsBinding.instance.window.platformBrightness;
-        _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+        _updateThemeBasedOnSystemBrightness();
       } else {
         _currentTheme = AppThemes.themes[selectedThemeIndex * 2 + (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
       }
@@ -158,6 +186,5 @@ class ThemeNotifier extends ChangeNotifier {
     } else {
       _currentTheme = _currentThemeMode == ThemeMode.dark ? darkTheme : lightTheme;
     }
-    notifyListeners();
   }
 }
