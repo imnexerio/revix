@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'RealtimeDatabaseListener.dart';
+import '../Utils/UnifiedDatabaseService.dart';
 import 'ScheduleTable.dart';
 import 'showLectureScheduleP.dart';
 
@@ -12,16 +12,20 @@ class TodayPage extends StatefulWidget {
 class _TodayPageState extends State<TodayPage> {
   late StreamController<Map<String, List<Map<String, dynamic>>>> _recordsController;
   late Stream<Map<String, List<Map<String, dynamic>>>> _recordsStream;
-  late RealtimeDatabaseListener _databaseListener;
-
+  late UnifiedDatabaseService _databaseListener;
 
   @override
   void initState() {
     super.initState();
     _recordsController = StreamController<Map<String, List<Map<String, dynamic>>>>();
     _recordsStream = _recordsController.stream;
-    _databaseListener = RealtimeDatabaseListener(_recordsController);
-    _databaseListener.setupDatabaseListener();
+    _databaseListener = UnifiedDatabaseService();
+    _databaseListener.initialize();
+    _databaseListener.categorizedRecordsStream.listen((data) {
+      _recordsController.add(data);
+    }, onError: (error) {
+      _recordsController.addError(error);
+    });
   }
 
   @override

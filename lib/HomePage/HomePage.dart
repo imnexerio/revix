@@ -3,7 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
-import '../Utils/FetchRecord.dart';
+import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';
 import 'CustomLectureSave.dart';
 import 'CustomizationBottomSheet.dart';
@@ -22,7 +22,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
-  final FetchRecord _recordService = FetchRecord();
+  final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
   Stream<Map<String, dynamic>>? _recordsStream;
 
   String _lectureViewType = 'Total';
@@ -46,8 +46,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   @override
   void initState() {
     super.initState();
-    _recordService.startRealTimeUpdates();
-    _recordsStream = _recordService.recordsStream;
+    _recordService.initialize();
+    _recordsStream = _recordService.allRecordsStream;
     _fetchTrackingTypesAndTargetFromFirebase();
   }
 
@@ -75,37 +75,33 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               }
             });
           });
-        } else {
         }
 
         if (targetEvent.snapshot.exists) {
           setState(() {
             _customCompletionTarget = int.parse(targetEvent.snapshot.value.toString());
           });
-        } else {
         }
       }
     } catch (e) {
+      // Handle error
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      _recordService.stopRealTimeUpdates();
+      _recordService.stopListening();
     } else if (state == AppLifecycleState.resumed) {
-      _recordService.startRealTimeUpdates();
+      _recordService.initialize();
     }
   }
 
   @override
   void dispose() {
-    // Stop listening when the widget is disposed
-    _recordService.stopRealTimeUpdates();
     _recordService.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -114,57 +110,55 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     final currentSize = MediaQuery.of(context).size;
     final screenWidth = currentSize.width;
 
-    // Only rebuild the layout if the screen size has changed significantly
     final rebuildLayout = _previousSize == null ||
         (_previousSize!.width != currentSize.width &&
             (_crossesBreakpoint(_previousSize!.width, currentSize.width, 600) ||
                 _crossesBreakpoint(_previousSize!.width, currentSize.width, 900)));
 
-    // Update the previous size
     _previousSize = currentSize;
     final cardPadding = screenWidth > 600 ? 24.0 : 16.0;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
-         padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0.0),
-          child: StreamBuilder(
-            stream: _recordsStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return _buildErrorWidget();
-              } else if (!snapshot.hasData || snapshot.data!['allRecords']!.isEmpty) {
-                return _buildEmptyWidget();
-              }
+        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0.0),
+        child: StreamBuilder(
+          stream: _recordsStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return _buildErrorWidget();
+            } else if (!snapshot.hasData || snapshot.data!['allRecords']!.isEmpty) {
+              return _buildEmptyWidget();
+            }
 
-              List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
-              Map<String, int> subjectDistribution = calculateSubjectDistribution(allRecords);
+            List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
+            Map<String, int> subjectDistribution = calculateSubjectDistribution(allRecords);
 
-              return CustomScrollView(
-                key: const PageStorageKey('homeScrollView'),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          padding: EdgeInsets.all(cardPadding),
+            return CustomScrollView(
+              key: const PageStorageKey('homeScrollView'),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        padding: EdgeInsets.all(cardPadding),
                         child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -221,8 +215,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                           ),
                                           actions: [
                                             TextButton(
-                                              style: TextButton.styleFrom(
-                                              ),
+                                              style: TextButton.styleFrom(),
                                               child: const Text('Cancel'),
                                               onPressed: () {
                                                 Navigator.of(context).pop();
@@ -259,8 +252,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                               ],
                             ),
                             const SizedBox(height: 16),
-
-                            // Responsive grid layout for stats - only rebuild if needed
                             rebuildLayout
                                 ? screenWidth > 900
                                 ? _buildSingleRowStatsGrid(allRecords)
@@ -270,35 +261,33 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                 : _buildTwoByTwoStatsGrid(allRecords),
                           ],
                         ),
-                        ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
                   ),
-                  SliverToBoxAdapter(
-                    child: rebuildLayout
-                        ? screenWidth > 900
-                        ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
-                        : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding)
-                        : screenWidth > 900
-                        ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
-                        : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding),
-                  ),
-                ],
-              );
-            },
-          ),
+                ),
+                SliverToBoxAdapter(
+                  child: rebuildLayout
+                      ? screenWidth > 900
+                      ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
+                      : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding)
+                      : screenWidth > 900
+                      ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
+                      : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding),
+                ),
+              ],
+            );
+          },
         ),
+      ),
     );
   }
 
-  // Check if the width crosses any of our breakpoints
   bool _crossesBreakpoint(double oldWidth, double newWidth, double breakpoint) {
     return (oldWidth <= breakpoint && newWidth > breakpoint) ||
         (oldWidth > breakpoint && newWidth <= breakpoint);
   }
 
-  // Error widget - extracted to reduce build method complexity
   Widget _buildErrorWidget() {
     return Center(
       child: Column(
@@ -319,7 +308,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  // Empty widget - extracted to reduce build method complexity
   Widget _buildEmptyWidget() {
     return Center(
       child: Column(
@@ -340,7 +328,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  // Two-by-two grid for medium screens
   Widget _buildTwoByTwoStatsGrid(List<Map<String, dynamic>> allRecords) {
     return Column(
       children: [
@@ -376,7 +363,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               child: _buildStatCard(
                 "Completion Percentage",
                 _getCompletionValue(allRecords, _completionViewType),
-                getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
+                getCompletionColor(calculatePercentageCompletion(allRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
                 _completionViewType,
                     () => _cycleViewType('completion'),
                     () => _showCustomizationSheet('completion'),
@@ -436,66 +423,63 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   String _getLectureValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalLectures(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalLectures(records, _selectedTrackingTypesMap).toString();
       case 'Monthly':
-        return calculateMonthlyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateMonthlyLectures(records, _selectedTrackingTypesMap).toString();
       case 'Weekly':
-        return calculateWeeklyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateWeeklyLectures(records, _selectedTrackingTypesMap).toString();
       case 'Daily':
-        return calculateDailyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateDailyLectures(records, _selectedTrackingTypesMap).toString();
       default:
-        return calculateTotalLectures(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalLectures(records, _selectedTrackingTypesMap).toString();
     }
   }
 
   String _getRevisionValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalRevisions(records, _selectedTrackingTypesMap).toString();
       case 'Monthly':
-        return calculateMonthlyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateMonthlyRevisions(records, _selectedTrackingTypesMap).toString();
       case 'Weekly':
-        return calculateWeeklyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateWeeklyRevisions(records, _selectedTrackingTypesMap).toString();
       case 'Daily':
-        return calculateDailyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateDailyRevisions(records, _selectedTrackingTypesMap).toString();
       default:
-        return calculateTotalRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalRevisions(records, _selectedTrackingTypesMap).toString();
     }
   }
 
   String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
       case 'Monthly':
-        return "${calculateMonthlyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateMonthlyCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
       case 'Weekly':
-        return "${calculateWeeklyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateWeeklyCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
       case 'Daily':
-        return "${calculateDailyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateDailyCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
       default:
-        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
     }
   }
 
   String _getMissedValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateMissedRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateMissedRevisions(records, _selectedTrackingTypesMap).toString();
       case 'Monthly':
-        return calculateMonthlyMissed(records,_selectedTrackingTypesMap).toString();
+        return calculateMonthlyMissed(records, _selectedTrackingTypesMap).toString();
       case 'Weekly':
-        return calculateWeeklyMissed(records,_selectedTrackingTypesMap).toString();
+        return calculateWeeklyMissed(records, _selectedTrackingTypesMap).toString();
       case 'Daily':
-        return calculateDailyMissed(records,_selectedTrackingTypesMap).toString();
+        return calculateDailyMissed(records, _selectedTrackingTypesMap).toString();
       default:
-        return calculateMissedRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateMissedRevisions(records, _selectedTrackingTypesMap).toString();
     }
   }
 
-
-
-  // Single row layout for larger screens
   Widget _buildSingleRowStatsGrid(List<Map<String, dynamic>> allRecords) {
     return Row(
       children: [
@@ -525,7 +509,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           child: _buildStatCard(
             "Completion Percentage",
             _getCompletionValue(allRecords, _completionViewType),
-            getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
+            getCompletionColor(calculatePercentageCompletion(allRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
             _completionViewType,
                 () => _cycleViewType('completion'),
                 () => _showCustomizationSheet('completion'),
@@ -546,12 +530,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-
   Future<void> _showCustomizationSheet(String type) async {
     final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
     final TextEditingController controller = TextEditingController();
 
-    // Set initial controller values
     switch (type) {
       case 'lecture':
         controller.text = _customCompletionTarget.toString();
@@ -590,6 +572,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       await _saveTrackingTypeToFirebase(type, result.toList());
     }
   }
+
   Future<void> _saveTrackingTypeToFirebase(String type, List<String> selectedTypes) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -623,8 +606,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   double calculatePercentageCompletion(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap, int customCompletionTarget) {
     Set<String> selectedCompletionTypes = selectedTrackingTypesMap['completion'] ?? {};
     int completedLectures = records.where((record) =>
-      record['details']['date_learnt'] != null &&
-      selectedCompletionTypes.contains(record['details']['lecture_type'])
+    record['details']['date_learnt'] != null &&
+        selectedCompletionTypes.contains(record['details']['lecture_type'])
     ).length;
     double percentageCompletion = customCompletionTarget > 0
         ? (completedLectures / customCompletionTarget) * 100
