@@ -50,8 +50,11 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   void initState() {
     super.initState();
 
-    Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
-    Provider.of<ProfileProvider>(context, listen: false).loadDisplayName();
+    // First load cached data (will display immediately if available)
+    // Then fetch updated profile data in the background
+    final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+    profileProvider.loadProfileImage(context);
+    profileProvider.loadDisplayName();
 
     // Initialize animation controller
     _animationController = AnimationController(

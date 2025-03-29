@@ -80,17 +80,21 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
+    // First load cached image (will display immediately if available)
+    // Then fetch updated profile data in the background
     Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
+
+    // Optional: if you need display name in main activity too
+    // Provider.of<ProfileProvider>(context, listen: false).loadDisplayName();
   }
 
   void _openSettings() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => SettingsPage()),
-    ).then((_) {
-      // Reload profile picture when returning from settings
-      Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
-    });
+    );
+    // No need to reload here as the ProfileProvider will handle updates
   }
 
   void _onItemTapped(int index) {
