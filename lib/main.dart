@@ -80,13 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
-    // First load cached image (will display immediately if available)
-    // Then fetch updated profile data in the background
     Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
-
-    // Optional: if you need display name in main activity too
-    // Provider.of<ProfileProvider>(context, listen: false).loadDisplayName();
   }
 
   void _openSettings() {
