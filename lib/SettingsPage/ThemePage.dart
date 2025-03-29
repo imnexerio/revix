@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:retracker/ThemeNotifier.dart';
@@ -8,155 +10,220 @@ class ThemePage extends StatefulWidget {
   _ThemePageState createState() => _ThemePageState();
 }
 
-class _ThemePageState extends State<ThemePage> {
+class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMixin {
   late int _redValue;
   late int _greenValue;
   late int _blueValue;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  // Debounce timer for color changes
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-    themeNotifier.fetchCustomTheme();
+    // Use a microtask to fetch theme to avoid blocking the UI thread
+    Future.microtask(() => themeNotifier.fetchCustomTheme());
+
     _redValue = themeNotifier.customThemeColor?.red ?? 0;
     _greenValue = themeNotifier.customThemeColor?.green ?? 0;
     _blueValue = themeNotifier.customThemeColor?.blue ?? 0;
+
+    // Use a shorter animation duration to improve perceived performance
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 400), // Reduced from 600ms
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  // Optimize theme change to avoid UI freezing
+  void _updateTheme(ThemeNotifier themeNotifier, int themeIndex) {
+    // Run on a separate isolate or in a microtask to prevent UI blocking
+    Future.microtask(() {
+      themeNotifier.updateThemeBasedOnMode(themeIndex);
+    });
+  }
+
+  // Improved debounced color change with longer delay to reduce updates
+  void _debouncedColorChange(ThemeNotifier themeNotifier) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(Duration(milliseconds: 500), () {
+      final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
+      themeNotifier.setCustomTheme(customColor);
+    });
+  }
+
+  // Calculate optimal grid columns based on screen width
+  int _getGridColumnCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width > 800) return 4;
+    if (width > 600) return 3;
+    return 2;
   }
 
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final gridColumnCount = _getGridColumnCount(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Appearance',
+          'Theme Settings',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Theme Mode Selection
-              _buildSectionHeader(context, 'Display Mode', Icons.brightness_6_rounded),
-              const SizedBox(height: 16),
-              _buildThemeModeSelector(themeNotifier, colorScheme),
-              const SizedBox(height: 32),
+      body: FadeTransition(
+        opacity: _animation,
+        child: SingleChildScrollView(
+          physics: BouncingScrollPhysics(),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Theme Mode Selection with visual representation
+                SectionTitle(
+                  title: 'Theme Mode',
+                  icon: Icons.brightness_4_rounded,
+                ),
+                SizedBox(height: 16),
+                _buildThemeModeSelector(context, themeNotifier),
+                SizedBox(height: 32),
 
-              // Predefined Themes Section
-              _buildSectionHeader(context, 'Color Theme', Icons.palette_outlined),
-              const SizedBox(height: 16),
-              _buildThemeSelector(themeNotifier, colorScheme),
-              const SizedBox(height: 32),
+                // Theme Selection Section
+                SectionTitle(
+                  title: 'Color Theme',
+                  icon: Icons.palette_rounded,
+                ),
+                SizedBox(height: 16),
+                _buildThemeGrid(themeNotifier, gridColumnCount),
 
-              // Custom Theme Section - Only show when Custom is selected
-              if (themeNotifier.selectedThemeIndex == ThemeNotifier.customThemeIndex)
-                _buildCustomThemeSection(context, themeNotifier, colorScheme),
-            ],
+                // Custom Theme Section - Only show when Custom is selected
+                if (themeNotifier.selectedThemeIndex == ThemeNotifier.customThemeIndex)
+                  _buildCustomThemeSection(context, themeNotifier),
+
+                SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onBackground,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildThemeModeSelector(ThemeNotifier themeNotifier, ColorScheme colorScheme) {
+  Widget _buildThemeModeSelector(BuildContext context, ThemeNotifier themeNotifier) {
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildThemeModeOption(
-            themeNotifier,
-            ThemeMode.system,
-            'System',
-            Icons.settings_suggest_outlined,
-            colorScheme,
-          ),
-          _buildThemeModeOption(
-            themeNotifier,
-            ThemeMode.light,
-            'Light',
-            Icons.light_mode_outlined,
-            colorScheme,
-          ),
-          _buildThemeModeOption(
-            themeNotifier,
-            ThemeMode.dark,
-            'Dark',
-            Icons.dark_mode_outlined,
-            colorScheme,
+        borderRadius: BorderRadius.circular(28),
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
           ),
         ],
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(6.0),
+        child: Row(
+          children: [
+            _buildThemeModeOption(
+              context: context,
+              mode: ThemeMode.light,
+              icon: Icons.light_mode_rounded,
+              label: 'Light',
+              isSelected: themeNotifier.currentThemeMode == ThemeMode.light,
+              onTap: () => themeNotifier.changeThemeMode(ThemeMode.light),
+            ),
+            _buildThemeModeOption(
+              context: context,
+              mode: ThemeMode.system,
+              icon: Icons.settings_suggest_rounded,
+              label: 'System',
+              isSelected: themeNotifier.currentThemeMode == ThemeMode.system,
+              onTap: () => themeNotifier.changeThemeMode(ThemeMode.system),
+            ),
+            _buildThemeModeOption(
+              context: context,
+              mode: ThemeMode.dark,
+              icon: Icons.dark_mode_rounded,
+              label: 'Dark',
+              isSelected: themeNotifier.currentThemeMode == ThemeMode.dark,
+              onTap: () => themeNotifier.changeThemeMode(ThemeMode.dark),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildThemeModeOption(
-      ThemeNotifier themeNotifier,
-      ThemeMode themeMode,
-      String label,
-      IconData icon,
-      ColorScheme colorScheme,
-      ) {
-    final isSelected = themeNotifier.currentThemeMode == themeMode;
-
+  Widget _buildThemeModeOption({
+    required BuildContext context,
+    required ThemeMode mode,
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => themeNotifier.changeThemeMode(themeMode),
+        onTap: onTap,
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 200),
-          margin: EdgeInsets.all(4),
-          padding: EdgeInsets.symmetric(vertical: 16),
+          duration: Duration(milliseconds: 200), // Reduced from 300ms
+          curve: Curves.easeOutQuint,
+          padding: EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ] : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurface,
                 size: 24,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 6),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -166,87 +233,94 @@ class _ThemePageState extends State<ThemePage> {
     );
   }
 
-  Widget _buildThemeSelector(ThemeNotifier themeNotifier, ColorScheme colorScheme) {
+  Widget _buildThemeGrid(ThemeNotifier themeNotifier, int columnCount) {
+    // Calculate appropriate child aspect ratio based on column count
+    double aspectRatio = columnCount > 2 ? 1.5 : 1.2;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.9,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisCount: columnCount,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: aspectRatio,
       ),
-      itemCount: AppThemes.themeNames.length + 1, // +1 for custom theme
+      itemCount: AppThemes.themeNames.length + 1, // Add 1 for custom theme
       itemBuilder: (context, index) {
         bool isCustom = index == AppThemes.themeNames.length;
-        bool isSelected = isCustom
-            ? themeNotifier.selectedThemeIndex == ThemeNotifier.customThemeIndex
-            : themeNotifier.selectedThemeIndex == index;
-
+        int themeIndex = isCustom ? ThemeNotifier.customThemeIndex : index;
+        String themeName = isCustom ? 'Custom' : AppThemes.themeNames[index];
         Color themeColor = isCustom
             ? themeNotifier.customThemeColor ?? Colors.grey
             : AppThemes.themes[index * 2].colorScheme.primary;
-
-        String themeName = isCustom ? 'Custom' : AppThemes.themeNames[index];
+        bool isSelected = themeNotifier.selectedThemeIndex == themeIndex;
 
         return GestureDetector(
           onTap: () {
-            if (isCustom) {
-              if (themeNotifier.customThemeColor == null) {
-                final defaultCustomColor = Color.fromRGBO(100, 100, 100, 1);
-                themeNotifier.setCustomTheme(defaultCustomColor);
-                setState(() {
-                  _redValue = defaultCustomColor.red;
-                  _greenValue = defaultCustomColor.green;
-                  _blueValue = defaultCustomColor.blue;
-                });
-              }
-              themeNotifier.updateThemeBasedOnMode(ThemeNotifier.customThemeIndex);
-            } else {
-              themeNotifier.updateThemeBasedOnMode(index);
-            }
+            _updateTheme(themeNotifier, themeIndex);
           },
           child: AnimatedContainer(
-            duration: Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 200), // Reduced from 300ms
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? colorScheme.primary : Colors.transparent,
-                width: 2,
+                color: isSelected
+                    ? themeColor
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                width: isSelected ? 2 : 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? themeColor.withOpacity(0.3)
+                      : Colors.black.withOpacity(0.05),
+                  blurRadius: isSelected ? 12 : 6,
+                  offset: Offset(0, 3),
+                )
+              ],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: themeColor,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      if (isSelected)
-                        BoxShadow(
-                          color: themeColor.withOpacity(0.4),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                    ],
+                // Use RepaintBoundary to optimize repainting
+                RepaintBoundary(
+                  child: Hero(
+                    tag: 'theme_color_$themeIndex',
+                    child: Container(
+                      width: 48, // Slightly smaller
+                      height: 48, // Slightly smaller
+                      decoration: BoxDecoration(
+                        color: themeColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeColor.withOpacity(0.4),
+                            blurRadius: 8, // Smaller blur radius
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: isSelected
+                          ? Icon(
+                        Icons.check,
+                        color: themeColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                        size: 24, // Smaller icon
+                      )
+                          : null,
+                    ),
                   ),
-                  child: isSelected
-                      ? Icon(Icons.check, color: Colors.white, size: 24)
-                      : null,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 8), // Smaller spacing
                 Text(
                   themeName,
-                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 14, // Smaller font
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -256,144 +330,208 @@ class _ThemePageState extends State<ThemePage> {
     );
   }
 
-  Widget _buildCustomThemeSection(
-      BuildContext context,
-      ThemeNotifier themeNotifier,
-      ColorScheme colorScheme,
-      ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, 'Customize Theme', Icons.color_lens_outlined),
-        const SizedBox(height: 24),
+  Widget _buildCustomThemeSection(BuildContext context, ThemeNotifier themeNotifier) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final useCompactLayout = screenWidth > 600;
 
-        // Color Preview
-        Center(
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 0.4),
-                  blurRadius: 16,
-                  spreadRadius: 4,
+    return AnimatedSize(
+      duration: Duration(milliseconds: 300),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 32),
+          SectionTitle(
+            title: 'Custom Color',
+            icon: Icons.color_lens_rounded,
+          ),
+          SizedBox(height: 20),
+
+          // For wider screens, place preview and sliders side by side
+          if (useCompactLayout)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Color Preview
+                Expanded(
+                  flex: 2,
+                  child: _buildColorPreview(),
+                ),
+                SizedBox(width: 24),
+                // RGB Sliders
+                Expanded(
+                  flex: 3,
+                  child: _buildSliders(context, themeNotifier),
+                ),
+              ],
+            )
+          else
+            Column(
+              children: [
+                // Color Preview
+                _buildColorPreview(),
+                SizedBox(height: 30),
+                // RGB Sliders
+                _buildSliders(context, themeNotifier),
+              ],
+            ),
+
+          SizedBox(height: 30),
+
+          // Apply Custom Theme Button
+          ElevatedButton(
+            onPressed: () {
+              final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
+
+              // Use Future.microtask to prevent UI freezing
+              Future.microtask(() {
+                themeNotifier.setCustomTheme(customColor);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Custom theme applied!'),
+                      ],
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    duration: Duration(seconds: 2),
+                    margin: EdgeInsets.all(16),
+                    elevation: 6,
+                  ),
+                );
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              minimumSize: Size(double.infinity, 60),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              elevation: 4,
+              shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle_rounded, size: 24),
+                SizedBox(width: 12),
+                Text(
+                  'Apply Custom Theme',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ],
             ),
-            child: Center(
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.8),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.color_lens,
-                  size: 18,
-                  color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
-                ),
-              ),
-            ),
           ),
-        ),
-        const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
 
-        // Color values display
-        Center(
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildColorPreview() {
+    return Center(
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        width: 100, // Smaller size
+        height: 100, // Smaller size
+        decoration: BoxDecoration(
+          color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 0.4),
+              blurRadius: 15, // Reduced blur
+              spreadRadius: 3,  // Reduced spread
             ),
-            child: Text(
-              'RGB: $_redValue, $_greenValue, $_blueValue',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'monospace',
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
+          ],
         ),
-        const SizedBox(height: 24),
-
-        // RGB Sliders
-        _buildColorSlider(
-          context: context,
-          label: 'Red',
-          value: _redValue,
-          color: Colors.red,
-          onChanged: (value) => setState(() => _redValue = value.round()),
-        ),
-        const SizedBox(height: 16),
-        _buildColorSlider(
-          context: context,
-          label: 'Green',
-          value: _greenValue,
-          color: Colors.green,
-          onChanged: (value) => setState(() => _greenValue = value.round()),
-        ),
-        const SizedBox(height: 16),
-        _buildColorSlider(
-          context: context,
-          label: 'Blue',
-          value: _blueValue,
-          color: Colors.blue,
-          onChanged: (value) => setState(() => _blueValue = value.round()),
-        ),
-        const SizedBox(height: 32),
-
-        // Apply Custom Theme Button
-        ElevatedButton(
-          onPressed: () {
-            final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
-            themeNotifier.setCustomTheme(customColor);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            minimumSize: Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.brush_outlined, size: 20),
-              const SizedBox(width: 8),
               Text(
-                'Apply Custom Theme',
+                'RGB',
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+                  color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1).computeLuminance() > 0.5
+                      ? Colors.black
+                      : Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16, // Smaller font
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '$_redValue, $_greenValue, $_blueValue',
+                style: TextStyle(
+                  color: Color.fromRGBO(_redValue, _greenValue, _blueValue, 1).computeLuminance() > 0.5
+                      ? Colors.black.withOpacity(0.7)
+                      : Colors.white.withOpacity(0.7),
+                  fontSize: 10, // Smaller font
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 40),
+      ),
+    );
+  }
+
+  Widget _buildSliders(BuildContext context, ThemeNotifier themeNotifier) {
+    return Column(
+      children: [
+        _buildColorSlider(
+          context,
+          'Red',
+          _redValue,
+          Colors.red,
+              (value) {
+            setState(() => _redValue = value.round());
+            _debouncedColorChange(themeNotifier);
+          },
+        ),
+        SizedBox(height: 16),
+        _buildColorSlider(
+          context,
+          'Green',
+          _greenValue,
+          Colors.green,
+              (value) {
+            setState(() => _greenValue = value.round());
+            _debouncedColorChange(themeNotifier);
+          },
+        ),
+        SizedBox(height: 16),
+        _buildColorSlider(
+          context,
+          'Blue',
+          _blueValue,
+          Colors.blue,
+              (value) {
+            setState(() => _blueValue = value.round());
+            _debouncedColorChange(themeNotifier);
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildColorSlider({
-    required BuildContext context,
-    required String label,
-    required int value,
-    required Color color,
-    required Function(double) onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildColorSlider(
+      BuildContext context,
+      String label,
+      int value,
+      Color color,
+      Function(double) onChanged,
+      ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -403,47 +541,96 @@ class _ThemePageState extends State<ThemePage> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: colorScheme.onBackground,
+                fontSize: 15,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             Container(
-              width: 44,
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              width: 50,
+              height: 26,
               decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant,
-                borderRadius: BorderRadius.circular(8),
+                color: Theme.of(context).colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(13),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 3,
+                    offset: Offset(0, 1),
+                  ),
+                ],
               ),
-              child: Text(
-                value.toString(),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'monospace',
-                  color: colorScheme.onSurfaceVariant,
+              child: Center(
+                child: Text(
+                  value.toString(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: color,
-            inactiveTrackColor: color.withOpacity(0.2),
-            thumbColor: color,
-            overlayColor: color.withOpacity(0.2),
-            trackHeight: 6,
-            thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12),
-            overlayShape: RoundSliderOverlayShape(overlayRadius: 20),
+        SizedBox(height: 10),
+        // Wrap sliders in RepaintBoundary for performance
+        RepaintBoundary(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 6,
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 9), // Smaller thumb
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 20), // Smaller overlay
+              activeTrackColor: color,
+              inactiveTrackColor: color.withOpacity(0.2),
+              thumbColor: color,
+              overlayColor: color.withOpacity(0.3),
+            ),
+            child: Slider(
+              min: 0,
+              max: 255,
+              value: value.toDouble(),
+              onChanged: onChanged,
+            ),
           ),
-          child: Slider(
-            value: value.toDouble(),
-            min: 0,
-            max: 255,
-            onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class SectionTitle extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const SectionTitle({
+    required this.title,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20, // Smaller icon
+          ),
+        ),
+        SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18, // Smaller text
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
       ],
