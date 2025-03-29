@@ -93,8 +93,10 @@ class _MyHomePageState extends State<MyHomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => SettingsPage()),
-    );
-    // No need to reload here as the ProfileProvider will handle updates
+    ).then((_) {
+      // Reload profile picture when returning from settings
+      Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
+    });
   }
 
   void _onItemTapped(int index) {
