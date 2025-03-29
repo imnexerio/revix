@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:retracker/ThemeNotifier.dart';
@@ -24,7 +23,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-    // Use a microtask to fetch theme to avoid blocking the UI thread
+
     Future.microtask(() => themeNotifier.fetchCustomTheme());
 
     _redValue = themeNotifier.customThemeColor?.red ?? 0;
@@ -33,7 +32,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
 
     // Use a shorter animation duration to improve perceived performance
     _animationController = AnimationController(
-      duration: Duration(milliseconds: 400), // Reduced from 600ms
+      duration: const Duration(milliseconds: 400), // Reduced from 600ms
       vsync: this,
     );
     _animation = CurvedAnimation(
@@ -52,7 +51,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
 
   // Optimize theme change to avoid UI freezing
   void _updateTheme(ThemeNotifier themeNotifier, int themeIndex) {
-    // Run on a separate isolate or in a microtask to prevent UI blocking
+
     Future.microtask(() {
       themeNotifier.updateThemeBasedOnMode(themeIndex);
     });
@@ -61,7 +60,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
   // Improved debounced color change with longer delay to reduce updates
   void _debouncedColorChange(ThemeNotifier themeNotifier) {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(Duration(milliseconds: 500), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
       themeNotifier.setCustomTheme(customColor);
     });
@@ -84,34 +83,34 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
       body: FadeTransition(
         opacity: _animation,
         child: SingleChildScrollView(
-          physics: BouncingScrollPhysics(),
+          physics: const BouncingScrollPhysics(),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Theme Mode Selection with visual representation
-                SectionTitle(
+                const SectionTitle(
                   title: 'Theme Mode',
                   icon: Icons.brightness_4_rounded,
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildThemeModeSelector(context, themeNotifier),
-                SizedBox(height: 32),
+                const SizedBox(height: 32),
 
                 // Theme Selection Section
-                SectionTitle(
+                const SectionTitle(
                   title: 'Color Theme',
                   icon: Icons.palette_rounded,
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildThemeGrid(themeNotifier, gridColumnCount),
 
                 // Custom Theme Section - Only show when Custom is selected
                 if (themeNotifier.selectedThemeIndex == ThemeNotifier.customThemeIndex)
                   _buildCustomThemeSection(context, themeNotifier),
 
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -124,12 +123,12 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -179,9 +178,9 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 200), // Reduced from 300ms
+          duration: const Duration(milliseconds: 200), // Reduced from 300ms
           curve: Curves.easeOutQuint,
-          padding: EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
@@ -191,7 +190,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
               BoxShadow(
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                 blurRadius: 8,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ] : null,
           ),
@@ -205,7 +204,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                     : Theme.of(context).colorScheme.onSurface,
                 size: 24,
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
                 label,
                 style: TextStyle(
@@ -229,7 +228,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
 
     return GridView.builder(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: columnCount,
         crossAxisSpacing: 16,
@@ -251,7 +250,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
             _updateTheme(themeNotifier, themeIndex);
           },
           child: AnimatedContainer(
-            duration: Duration(milliseconds: 200), // Reduced from 300ms
+            duration: const Duration(milliseconds: 200), // Reduced from 300ms
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(20),
@@ -267,7 +266,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                       ? themeColor.withOpacity(0.3)
                       : Colors.black.withOpacity(0.05),
                   blurRadius: isSelected ? 12 : 6,
-                  offset: Offset(0, 3),
+                  offset: const Offset(0, 3),
                 )
               ],
             ),
@@ -302,7 +301,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                     ),
                   ),
                 ),
-                SizedBox(height: 8), // Smaller spacing
+                const SizedBox(height: 8), // Smaller spacing
                 Text(
                   themeName,
                   style: TextStyle(
@@ -325,16 +324,16 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
     final useCompactLayout = screenWidth > 600;
 
     return AnimatedSize(
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 32),
-          SectionTitle(
+          const SizedBox(height: 32),
+          const SectionTitle(
             title: 'Custom Color',
             icon: Icons.color_lens_rounded,
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
 
           // For wider screens, place preview and sliders side by side
           if (useCompactLayout)
@@ -346,7 +345,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                   flex: 2,
                   child: _buildColorPreview(),
                 ),
-                SizedBox(width: 24),
+                const SizedBox(width: 24),
                 // RGB Sliders
                 Expanded(
                   flex: 3,
@@ -359,25 +358,24 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
               children: [
                 // Color Preview
                 _buildColorPreview(),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
                 // RGB Sliders
                 _buildSliders(context, themeNotifier),
               ],
             ),
 
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
 
           // Apply Custom Theme Button
           ElevatedButton(
             onPressed: () {
               final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
 
-              // Use Future.microtask to prevent UI freezing
               Future.microtask(() {
                 themeNotifier.setCustomTheme(customColor);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Row(
+                    content: const Row(
                       children: [
                         Icon(Icons.check_circle, color: Colors.white),
                         SizedBox(width: 10),
@@ -389,8 +387,8 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                       borderRadius: BorderRadius.circular(16),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    duration: Duration(seconds: 2),
-                    margin: EdgeInsets.all(16),
+                    duration: const Duration(seconds: 2),
+                    margin: const EdgeInsets.all(16),
                     elevation: 6,
                   ),
                 );
@@ -399,15 +397,15 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
             style: ElevatedButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
               backgroundColor: Theme.of(context).colorScheme.primary,
-              minimumSize: Size(double.infinity, 60),
+              minimumSize: const Size(double.infinity, 60),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
               elevation: 4,
               shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.check_circle_rounded, size: 24),
@@ -431,7 +429,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
   Widget _buildColorPreview() {
     return Center(
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         width: 100, // Smaller size
         height: 100, // Smaller size
         decoration: BoxDecoration(
@@ -459,7 +457,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                   fontSize: 16, // Smaller font
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 '$_redValue, $_greenValue, $_blueValue',
                 style: TextStyle(
@@ -489,7 +487,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
             _debouncedColorChange(themeNotifier);
           },
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         _buildColorSlider(
           context,
           'Green',
@@ -500,7 +498,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
             _debouncedColorChange(themeNotifier);
           },
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         _buildColorSlider(
           context,
           'Blue',
@@ -540,13 +538,13 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
               width: 50,
               height: 26,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(13),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
                     blurRadius: 3,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -563,14 +561,14 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
             ),
           ],
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         // Wrap sliders in RepaintBoundary for performance
         RepaintBoundary(
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 6,
-              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 9), // Smaller thumb
-              overlayShape: RoundSliderOverlayShape(overlayRadius: 20), // Smaller overlay
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9), // Smaller thumb
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 20), // Smaller overlay
               activeTrackColor: color,
               inactiveTrackColor: color.withOpacity(0.2),
               thumbColor: color,
@@ -603,7 +601,7 @@ class SectionTitle extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),
@@ -614,7 +612,7 @@ class SectionTitle extends StatelessWidget {
             size: 20, // Smaller icon
           ),
         ),
-        SizedBox(width: 12),
+        const SizedBox(width: 12),
         Text(
           title,
           style: TextStyle(
