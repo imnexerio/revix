@@ -295,6 +295,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           if (widget.details['only_once'] != 0) {
                             isEnabled = false;
                           }
+                          if (widget.details['no_revision'] < 0) {
+                            datesRevised = [];
+                          }
 
                           await UpdateRecords(
                             widget.selectedSubject,

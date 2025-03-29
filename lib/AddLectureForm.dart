@@ -31,6 +31,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   Map<String, List<String>> _subjectCodes = {};
   String dateScheduled = '';
   String todayDate = '';
+  int no_revision = 0;
 
   bool _showAddNewSubject = false;
   bool _showAddNewSubjectCode_ = false;
@@ -86,6 +87,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
           .child(_lectureNo);
 
       String initiated_on = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+      if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate))) {
+        no_revision = -1;
+      }
 
       await ref.set({
         'initiated_on': initiated_on,
@@ -96,7 +100,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'date_scheduled': dateScheduled,
         'description': _description,
         'missed_revision': 0,
-        'no_revision': 0,
+        'no_revision': no_revision,
         'revision_frequency': _revisionFrequency,
         'only_once': onlyOnce? 1 : 0,
         'status': isEnabled ? 'Enabled' : 'Disabled',
@@ -615,7 +619,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               if (_formKey.currentState!.validate()) {
                                 try {
                                   _formKey.currentState!.save();
-                                  await UpdateRecords(context); // Pass context to UpdateRecords
+                                  await UpdateRecords(context);
                                   Navigator.of(context).pop(); // Navigate after showing SnackBar
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(

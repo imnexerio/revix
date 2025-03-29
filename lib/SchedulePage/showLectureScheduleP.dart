@@ -243,6 +243,11 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               details['status'] = 'Disabled';
                             }
 
+                            if (details['no_revision'] < 0) {
+                              datesRevised = [];
+                            }
+
+
                             await UpdateRecords(
                               details['subject'],
                               details['subject_code'],
