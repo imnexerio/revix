@@ -83,12 +83,6 @@ class _MyHomePageState extends State<MyHomePage> {
     Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
   }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   void _openSettings() {
     Navigator.push(
       context,
@@ -96,6 +90,12 @@ class _MyHomePageState extends State<MyHomePage> {
     ).then((_) {
       // Reload profile picture when returning from settings
       Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
+    });
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
     });
   }
 
