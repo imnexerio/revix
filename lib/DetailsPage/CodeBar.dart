@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/subject_utils.dart';
 import 'LectureBar.dart';
-import 'package:firebase_database/firebase_database.dart';
 
 class CodeBar extends StatefulWidget {
   final String selectedSubject;
@@ -17,8 +16,8 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   String? _selectedSubjectCode;
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
-  final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
-  Stream<Map<String, dynamic>>? _recordsStream;
+  final SubjectDataProvider _subjectDataProvider = SubjectDataProvider();
+  Stream<Map<String, dynamic>>? _subjectsStream;
   StreamSubscription? _subscription;
   Map<String, dynamic>? _subjectData;
   bool _isLoading = true;
@@ -35,25 +34,22 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
-    // Initialize the UnifiedDatabaseService and stream
-    _recordService.initialize();
-    _recordsStream = _recordService.allRecordsStream;
+    // Initialize data stream
+    _subjectsStream = _subjectDataProvider.subjectsStream;
 
     // Subscribe to stream
     _subscribeToStream();
   }
 
-  /// Subscribe to the records stream and listen for data updates
+  /// Subscribe to the subjects stream and listen for data updates
   void _subscribeToStream() {
     // Cancel any existing subscription
     _subscription?.cancel();
 
-    // Start listening to records stream
-    _subscription = _recordsStream?.listen(
+    // Start listening to subjects stream
+    _subscription = _subjectsStream?.listen(
           (data) {
-        if (data.containsKey('allRecords')) {
-          _processData(data['allRecords']);
-        }
+        _processData(data);
       },
       onError: (e) {
         setState(() {
@@ -64,50 +60,21 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     );
   }
 
-  void _processData(dynamic allRecords) {
-    print('allRecords: $allRecords');
+  void _processData(Map<String, dynamic> data) {
     try {
-      if (allRecords is List) {
-        Map<String, List<String>> subjectCodes = {};
-        Set<String> subjects = {};
+      setState(() {
+        _subjectData = data;
+        _isLoading = false;
 
-        for (var record in allRecords) {
-          if (record is Map) {
-            final subject = record['subject'] as String?;
-            final subjectCode = record['subject_code'] as String?;
-            if (subject != null && subjectCode != null) {
-              subjects.add(subject);
-
-              subjectCodes.putIfAbsent(subject, () => []);
-
-              if (!subjectCodes[subject]!.contains(subjectCode)) {
-                subjectCodes[subject]!.add(subjectCode);
-              }
-            }
-          }
-        }
-
-        final processedData = {
-          'subjects': subjects.toList(),
-          'subjectCodes': subjectCodes,
-        };
-
-        setState(() {
-          _subjectData = processedData;
-          _isLoading = false;
-
-        final codes = subjectCodes[widget.selectedSubject] ?? [];
-        if (codes.isNotEmpty && (_selectedSubjectCode == null || !codes.contains(_selectedSubjectCode))) {
+        final codes = data['subjectCodes'][widget.selectedSubject] as List<String>? ?? [];
+        if (codes.isNotEmpty &&
+            (_selectedSubjectCode == null || !codes.contains(_selectedSubjectCode))) {
           _selectedSubjectCode = codes.first;
           _controller.reset();
           _controller.forward();
         }
       });
-      } else {
-        throw Exception('Invalid data format: Expected a list of maps.');
-      }
     } catch (e) {
-      // print('Error processing data: $e');
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error processing data: ${e.toString()}';
@@ -141,11 +108,9 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     }
   }
 
-
   @override
   void dispose() {
     _subscription?.cancel();
-    _recordService.dispose();
     _controller.dispose();
     super.dispose();
   }
