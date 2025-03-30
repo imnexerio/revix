@@ -47,9 +47,9 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   Future<void> _initializeSelectedSubjectCode() async {
     try {
       final data = await fetchSubjectsAndCodes();
-      if (data['subjects'].isNotEmpty) {
+      if (data['subjectCodes'].isNotEmpty) {
         setState(() {
-          _selectedSubjectCode = data['subjects'].first;
+          _selectedSubjectCode = data['subjectCodes'].first;
           _subjectData = data;
         });
       }
@@ -119,7 +119,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
             ],
           ),
         );
-      } else if (!snapshot.hasData || snapshot.data!['subjects'].isEmpty) {
+      } else if (!snapshot.hasData || snapshot.data!['subjectCodes'].isEmpty) {
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -127,7 +127,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
               Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
               SizedBox(height: 16),
               Text(
-                'No subjects found',
+                'No subject code found',
                 style: TextStyle(
                   fontSize: 18,
                   color: Colors.grey[600],
@@ -140,9 +140,23 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
       }
 
     // Prepare list of codes for the selected subject
-    final codes = _subjectData!['subjectCodes'][widget.selectedSubject] as List<String>;
+    final codes = snapshot.data!['subjectCodes'][widget.selectedSubject];
+      // If we have data but no selected subject, select the first one
+      if (_selectedSubjectCode == null && codes.isNotEmpty) {
+        _selectedSubjectCode = codes.first;
+      }
 
-    return Stack(
+      // If selected subject no longer exists in the updated list
+      if (_selectedSubjectCode != null && !codes.contains(_selectedSubjectCode)) {
+        if (codes.isNotEmpty) {
+          _selectedSubjectCode = codes.first;
+        } else {
+          _selectedSubjectCode = null;
+        }
+      }
+
+
+      return Stack(
       children: [
         if (_selectedSubjectCode != null)
           Positioned.fill(
