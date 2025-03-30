@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Utils/subject_utils.dart';
+import '../Utils/UnifiedDatabaseService.dart';
 import 'CodeBar.dart';
 
 class SubjectsBar extends StatefulWidget {

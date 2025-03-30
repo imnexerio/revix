@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../Utils/subject_utils.dart';
+import '../Utils/UnifiedDatabaseService.dart';
 import 'LectureBar.dart';
 
 class CodeBar extends StatefulWidget {

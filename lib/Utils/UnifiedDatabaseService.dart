@@ -2,13 +2,48 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-class UnifiedDatabaseService {
+/// CombinedDatabaseService combines the functionality of UnifiedDatabaseService and SubjectDataProvider
+/// into a single, efficient service that maintains only one Firebase listener.
+class CombinedDatabaseService {
+  // Singleton pattern implementation
+  static final CombinedDatabaseService _instance = CombinedDatabaseService._internal();
+
+  factory CombinedDatabaseService() {
+    return _instance;
+  }
+
+  CombinedDatabaseService._internal() {
+    // Initialize auth listener when the service is first created
+    _auth.authStateChanges().listen((User? user) {
+      _cleanupCurrentListener();
+      if (user != null) {
+        _initialize(user.uid);
+      } else {
+        _resetState();
+      }
+    });
+  }
+
+  // Firebase instances
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
+
+  // Database reference and subscription
+  DatabaseReference? _databaseRef;
+  StreamSubscription<DatabaseEvent>? _databaseSubscription;
+
   // Stream controllers for different data views
   final StreamController<Map<String, List<Map<String, dynamic>>>> _categorizedRecordsController =
   StreamController<Map<String, List<Map<String, dynamic>>>>.broadcast();
 
   final StreamController<Map<String, dynamic>> _allRecordsController =
   StreamController<Map<String, dynamic>>.broadcast();
+
+  final StreamController<Map<String, dynamic>> _subjectsController =
+  StreamController<Map<String, dynamic>>.broadcast();
+
+  final StreamController<dynamic> _rawDataController =
+  StreamController<dynamic>.broadcast();
 
   // Expose streams that components can listen to
   Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
@@ -17,23 +52,35 @@ class UnifiedDatabaseService {
   Stream<Map<String, dynamic>> get allRecordsStream =>
       _allRecordsController.stream;
 
-  // Firebase reference
-  DatabaseReference? _databaseRef;
-  StreamSubscription<DatabaseEvent>? _databaseSubscription;
+  Stream<Map<String, dynamic>> get subjectsStream =>
+      _subjectsController.stream;
 
-  // Initialize the service
+  Stream<dynamic> get rawDataStream =>
+      _rawDataController.stream;
+
+  // Cached data for faster access
+  Map<String, dynamic>? _cachedSubjectsData;
+  dynamic _cachedRawData;
+
+  // Initialize the service (can be called manually or automatically via auth state)
   void initialize() {
-    User? user = FirebaseAuth.instance.currentUser;
+    User? user = _auth.currentUser;
     if (user == null) {
-      _categorizedRecordsController.addError('No authenticated user');
-      _allRecordsController.addError('No authenticated user');
+      _addErrorToAllControllers('No authenticated user');
       return;
     }
 
-    String uid = user.uid;
-    _databaseRef = FirebaseDatabase.instance.ref('users/$uid/user_data');
+    _initialize(user.uid);
+  }
 
-    // Set up the single database listener
+  // Internal initialization with user ID
+  void _initialize(String uid) {
+    _databaseRef = _database.ref('users/$uid/user_data');
+
+    // Enable offline persistence
+    _databaseRef!.keepSynced(true);
+
+    // Set up single database listener
     _setupDatabaseListener();
   }
 
@@ -45,36 +92,44 @@ class UnifiedDatabaseService {
 
     _databaseSubscription = _databaseRef!.onValue.listen((event) {
       if (!event.snapshot.exists) {
-        // Send empty data to both streams
+        // Send empty data to all streams
         _categorizedRecordsController.add({
           'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
         });
         _allRecordsController.add({'allRecords': []});
+        _subjectsController.add({'subjects': [], 'subjectCodes': {}});
+        _rawDataController.add(null);
         return;
       }
 
-      // Process data once for both streams
+      // Process snapshot data once and distribute to all streams
       _processSnapshot(event.snapshot);
 
     }, onError: (error) {
-      String errorMsg = 'Failed to fetch records: $error';
-      _categorizedRecordsController.addError(errorMsg);
-      _allRecordsController.addError(errorMsg);
+      String errorMsg = 'Failed to fetch data: $error';
+      _addErrorToAllControllers(errorMsg);
     });
   }
 
-  // Process snapshot data and distribute to both streams
+  // Process snapshot data efficiently for all streams
   void _processSnapshot(DataSnapshot snapshot) {
     if (!snapshot.exists) {
+      // Send empty data to all streams
       _categorizedRecordsController.add({
         'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
       });
       _allRecordsController.add({'allRecords': []});
+      _subjectsController.add({'subjects': [], 'subjectCodes': {}});
+      _rawDataController.add(null);
       return;
     }
 
     // Get the raw data
     Map<Object?, Object?> rawData = snapshot.value as Map<Object?, Object?>;
+
+    // Cache and broadcast raw data
+    _cachedRawData = rawData;
+    _rawDataController.add(_cachedRawData);
 
     // Process for categorized view
     Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(rawData);
@@ -83,9 +138,35 @@ class UnifiedDatabaseService {
     // Process for all records view
     List<Map<String, dynamic>> allRecords = _processAllRecords(rawData);
     _allRecordsController.add({'allRecords': allRecords});
+
+    // Process for subjects view (formerly SubjectDataProvider)
+    _processSubjectsData(rawData);
   }
 
-  // Method for categorized data processing (similar to RealtimeDatabaseListener._processSnapshot)
+  // Process subjects data for the subjects stream
+  void _processSubjectsData(Map<Object?, Object?> rawData) {
+    List<String> subjects = rawData.keys
+        .map((key) => key.toString())
+        .toList();
+
+    Map<String, List<String>> subjectCodes = {};
+
+    rawData.forEach((subject, value) {
+      if (value is Map) {
+        subjectCodes[subject.toString()] =
+            value.keys.map((code) => code.toString()).toList();
+      }
+    });
+
+    _cachedSubjectsData = {
+      'subjects': subjects,
+      'subjectCodes': subjectCodes,
+    };
+
+    _subjectsController.add(_cachedSubjectsData!);
+  }
+
+  // Method for categorized data processing
   Map<String, List<Map<String, dynamic>>> _processCategorizedData(Map<Object?, Object?> rawData) {
     // Calculate dates on-the-fly
     final DateTime today = DateTime.now();
@@ -170,7 +251,7 @@ class UnifiedDatabaseService {
     };
   }
 
-  // Method for all records processing (similar to FetchRecord logic)
+  // Method for all records processing
   List<Map<String, dynamic>> _processAllRecords(Map<Object?, Object?> rawData) {
     List<Map<String, dynamic>> allRecords = [];
 
@@ -205,18 +286,37 @@ class UnifiedDatabaseService {
         _processSnapshot(snapshot);
         return;
       } catch (error) {
-        String errorMsg = 'Failed to refresh records: $error';
-        _categorizedRecordsController.addError(errorMsg);
-        _allRecordsController.addError(errorMsg);
+        String errorMsg = 'Failed to refresh data: $error';
+        _addErrorToAllControllers(errorMsg);
         throw error;
       }
     }
   }
 
-  // Stop listening to database updates
-  void stopListening() {
+  // Helper to add the same error to all controllers
+  void _addErrorToAllControllers(String errorMsg) {
+    _categorizedRecordsController.addError(errorMsg);
+    _allRecordsController.addError(errorMsg);
+    _subjectsController.addError(errorMsg);
+    _rawDataController.addError(errorMsg);
+  }
+
+  // Reset state when user logs out
+  void _resetState() {
+    _cachedSubjectsData = null;
+    _cachedRawData = null;
+    _databaseRef = null;
+  }
+
+  // Clean up current listener to prevent memory leaks
+  void _cleanupCurrentListener() {
     _databaseSubscription?.cancel();
     _databaseSubscription = null;
+  }
+
+  // Stop listening to database updates
+  void stopListening() {
+    _cleanupCurrentListener();
   }
 
   // Clean up resources
@@ -224,8 +324,120 @@ class UnifiedDatabaseService {
     stopListening();
     _categorizedRecordsController.close();
     _allRecordsController.close();
+    _subjectsController.close();
+    _rawDataController.close();
   }
 
   // Getter for the database reference
   DatabaseReference? get databaseRef => _databaseRef;
+
+  // SubjectDataProvider compatibility methods
+  Map<String, dynamic>? get currentSubjectsData => _cachedSubjectsData;
+  dynamic get currentRawData => _cachedRawData;
+
+  // Get schedule data as string (for compatibility)
+  String getScheduleData() {
+    if (_cachedRawData != null) {
+      return _cachedRawData.toString();
+    }
+    return 'No schedule data available';
+  }
+
+  // Manual fetch method (for compatibility)
+  Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
+    if (_cachedSubjectsData != null) {
+      return _cachedSubjectsData!;
+    }
+
+    User? user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user');
+    }
+
+    // Force a refresh from the database
+    await forceDataReprocessing();
+
+    // If we still don't have cached data, return empty result
+    if (_cachedSubjectsData == null) {
+      return {'subjects': [], 'subjectCodes': {}};
+    }
+
+    return _cachedSubjectsData!;
+  }
+
+  // Fetch only raw data (for compatibility)
+  Future<dynamic> fetchRawData() async {
+    if (_cachedRawData != null) {
+      return _cachedRawData;
+    }
+
+    User? user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user');
+    }
+
+    // Force a refresh from the database
+    await forceDataReprocessing();
+
+    return _cachedRawData;
+  }
+}
+
+// Backward compatibility functions from SubjectDataProvider
+Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
+  return await CombinedDatabaseService().fetchSubjectsAndCodes();
+}
+
+// Get the subjects stream directly
+Stream<Map<String, dynamic>> getSubjectsStream() {
+  return CombinedDatabaseService().subjectsStream;
+}
+
+// Backward compatibility class that uses the CombinedDatabaseService internally
+class SubjectDataProvider {
+  static final SubjectDataProvider _instance = SubjectDataProvider._internal();
+
+  final CombinedDatabaseService _service = CombinedDatabaseService();
+
+  factory SubjectDataProvider() {
+    return _instance;
+  }
+
+  SubjectDataProvider._internal();
+
+  // Forward all method calls to the CombinedDatabaseService
+  Stream<Map<String, dynamic>> get subjectsStream => _service.subjectsStream;
+  Stream<dynamic> get rawDataStream => _service.rawDataStream;
+  Map<String, dynamic>? get currentData => _service.currentSubjectsData;
+  dynamic get currentRawData => _service.currentRawData;
+
+  String getScheduleData() => _service.getScheduleData();
+  Future<Map<String, dynamic>> fetchSubjectsAndCodes() => _service.fetchSubjectsAndCodes();
+  Future<dynamic> fetchRawData() => _service.fetchRawData();
+  void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
+}
+
+// Backward compatibility class that uses the CombinedDatabaseService internally
+class UnifiedDatabaseService {
+  static final UnifiedDatabaseService _instance = UnifiedDatabaseService._internal();
+
+  final CombinedDatabaseService _service = CombinedDatabaseService();
+
+  factory UnifiedDatabaseService() {
+    return _instance;
+  }
+
+  UnifiedDatabaseService._internal();
+
+  // Forward all method calls to the CombinedDatabaseService
+  Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
+      _service.categorizedRecordsStream;
+
+  Stream<Map<String, dynamic>> get allRecordsStream => _service.allRecordsStream;
+
+  void initialize() => _service.initialize();
+  Future<void> forceDataReprocessing() => _service.forceDataReprocessing();
+  void stopListening() => _service.stopListening();
+  void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
+  DatabaseReference? get databaseRef => _service.databaseRef;
 }
