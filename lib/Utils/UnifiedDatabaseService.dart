@@ -78,7 +78,7 @@ class CombinedDatabaseService {
     _databaseRef = _database.ref('users/$uid/user_data');
 
     // Enable offline persistence
-    _databaseRef!.keepSynced(true);
+    // _databaseRef!.keepSynced(true);
 
     // Set up single database listener
     _setupDatabaseListener();
