@@ -7,7 +7,7 @@ import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/customSnackBar_error.dart';
-import 'Utils/subject_utils_static.dart';
+import 'Utils/subject_utils.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -49,7 +49,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
   Future<void> _loadSubjectsAndCodes() async {
     try {
-      final last_revised = await fetchSubjectsAndCodesStatic();
+      // Create or get the singleton instance of SubjectDataProvider
+      final provider = SubjectDataProvider();
+
+      // Get the data from the provider
+      final last_revised = await provider.fetchSubjectsAndCodes();
+
       setState(() {
         _subjects = last_revised['subjects'];
         _subjectCodes = last_revised['subjectCodes'];
@@ -61,6 +66,22 @@ class _AddLectureFormState extends State<AddLectureForm> {
           _selectedSubject = 'DEFAULT_VALUE'; // Keep the default value
         }
       });
+
+      // Optionally, subscribe to future changes
+      provider.subjectsStream.listen((updatedData) {
+        setState(() {
+          _subjects = updatedData['subjects'];
+          _subjectCodes = updatedData['subjectCodes'];
+
+          // Maintain selection if possible or reset
+          if (!_subjects.contains(_selectedSubject) && _subjects.isNotEmpty) {
+            _selectedSubject = _subjects[0];
+          } else if (_subjects.isEmpty) {
+            _selectedSubject = 'DEFAULT_VALUE';
+          }
+        });
+      });
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         customSnackBar_error(
