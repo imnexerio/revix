@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../Utils/UnifiedDatabaseService.dart';
 import 'LectureBar.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 class CodeBar extends StatefulWidget {
@@ -17,7 +17,9 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   String? _selectedSubjectCode;
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
-  StreamSubscription<DatabaseEvent>? _subscription;
+  final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
+  Stream<Map<String, dynamic>>? _recordsStream;
+  StreamSubscription? _subscription;
   Map<String, dynamic>? _subjectData;
   bool _isLoading = true;
   String? _errorMessage;
@@ -32,89 +34,68 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     _slideAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
-    _setupDatabaseListener();
+
+    // Initialize the UnifiedDatabaseService and stream
+    _recordService.initialize();
+    _recordsStream = _recordService.allRecordsStream;
+
+    // Subscribe to stream
+    _subscribeToStream();
   }
 
-  @override
-  void dispose() {
+  /// Subscribe to the records stream and listen for data updates
+  void _subscribeToStream() {
+    // Cancel any existing subscription
     _subscription?.cancel();
-    _controller.dispose();
-    super.dispose();
+
+    // Start listening to records stream
+    _subscription = _recordsStream?.listen(
+          (data) {
+        if (data.containsKey('allRecords')) {
+          _processData(data['allRecords']);
+        }
+      },
+      onError: (e) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error fetching data: ${e.toString()}';
+        });
+      },
+    );
   }
 
-  void _setupDatabaseListener() async {
+  void _processData(dynamic allRecords) {
+    print('allRecords: $allRecords');
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'No authenticated user';
-        });
-        return;
-      }
+      if (allRecords is List) {
+        Map<String, List<String>> subjectCodes = {};
+        Set<String> subjects = {};
 
-      String uid = user.uid;
-      DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/user_data');
+        for (var record in allRecords) {
+          if (record is Map) {
+            final subject = record['subject'] as String?;
+            final subjectCode = record['subject_code'] as String?;
+            if (subject != null && subjectCode != null) {
+              subjects.add(subject);
 
-      // Initial fetch to populate data quickly
-      DataSnapshot snapshot = await ref.get();
-      if (snapshot.exists) {
-        _processSnapshot(snapshot);
-      } else {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'No subject data found on server';
-        });
-        return;
-      }
+              subjectCodes.putIfAbsent(subject, () => []);
 
-      // Set up listener for ongoing changes
-      _subscription = ref.onValue.listen((DatabaseEvent event) {
-        if (event.snapshot.exists) {
-          _processSnapshot(event.snapshot);
-        } else {
-          setState(() {
-            _subjectData = null;
-            _errorMessage = 'No subject data found on server';
-          });
+              if (!subjectCodes[subject]!.contains(subjectCode)) {
+                subjectCodes[subject]!.add(subjectCode);
+              }
+            }
+          }
         }
-      }, onError: (error) {
+
+        final processedData = {
+          'subjects': subjects.toList(),
+          'subjectCodes': subjectCodes,
+        };
+
         setState(() {
+          _subjectData = processedData;
           _isLoading = false;
-          _errorMessage = 'Error: ${error.toString()}';
-        });
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Error: ${e.toString()}';
-      });
-    }
-  }
 
-  void _processSnapshot(DataSnapshot snapshot) {
-    try {
-      Map<Object?, Object?> subjectDataUtil = snapshot.value as Map<Object?, Object?>;
-      List<String> subjects = subjectDataUtil.keys.map((key) => key.toString()).toList();
-      Map<String, List<String>> subjectCodes = {};
-
-      subjectDataUtil.forEach((subject, value) {
-        if (value is Map) {
-          subjectCodes[subject.toString()] =
-              value.keys.map((code) => code.toString()).toList();
-        }
-      });
-
-      final processedData = {
-        'subjects': subjects,
-        'subjectCodes': subjectCodes,
-      };
-
-      setState(() {
-        _subjectData = processedData;
-        _isLoading = false;
-
-        // Initialize selected code if necessary
         final codes = subjectCodes[widget.selectedSubject] ?? [];
         if (codes.isNotEmpty && (_selectedSubjectCode == null || !codes.contains(_selectedSubjectCode))) {
           _selectedSubjectCode = codes.first;
@@ -122,7 +103,11 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
           _controller.forward();
         }
       });
+      } else {
+        throw Exception('Invalid data format: Expected a list of maps.');
+      }
     } catch (e) {
+      // print('Error processing data: $e');
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error processing data: ${e.toString()}';
@@ -156,6 +141,15 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     }
   }
 
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _recordService.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -173,13 +167,14 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
       );
     }
 
+    // Handle errors
     if (_errorMessage != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               _errorMessage!,
               style: TextStyle(
@@ -187,6 +182,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                 color: Colors.red[300],
                 fontWeight: FontWeight.w500,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -200,9 +196,9 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.code_off_outlined, size: 48, color: Colors.grey[400]),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'No code sections found',
+              'No code sections found for this subject',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey[600],
@@ -214,6 +210,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
       );
     }
 
+    // Prepare list of codes for the selected subject
     final codes = _subjectData!['subjectCodes'][widget.selectedSubject] as List<String>;
 
     return Stack(
