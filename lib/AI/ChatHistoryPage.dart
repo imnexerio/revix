@@ -50,7 +50,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading conversations: $e');
+      // print('Error loading conversations: $e');
       setState(() {
         _isLoading = false;
       });
@@ -94,7 +94,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
