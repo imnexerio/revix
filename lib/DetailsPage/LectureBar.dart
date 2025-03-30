@@ -54,7 +54,7 @@ class _LectureBarState extends State<LectureBar> {
         });
       }
     }, onError: (e) {
-      print('Failed to set up listener: $e');
+      // print('Failed to set up listener: $e');
     });
   }
 
@@ -68,7 +68,7 @@ class _LectureBarState extends State<LectureBar> {
         .toList();
 
     // Debug print for verification
-    print('Filtered Data: $filteredData');
+    // print('Filtered Data: $filteredData');
 
     _filteredLectureData = filteredData;
   }
