@@ -16,12 +16,8 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   String? _selectedSubjectCode;
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
-  final SubjectDataProvider _subjectDataProvider = SubjectDataProvider();
   Stream<Map<String, dynamic>>? _subjectsStream;
-  StreamSubscription? _subscription;
   Map<String, dynamic>? _subjectData;
-  bool _isLoading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -34,53 +30,34 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
-    // Initialize data stream
-    _subjectsStream = _subjectDataProvider.subjectsStream;
+    _initializeSelectedSubjectCode();
 
-    // Subscribe to stream
-    _subscribeToStream();
+    // Subscribe to the stream
+    _subjectsStream = getSubjectsStream();
+
+    _controller.forward();
   }
 
-  /// Subscribe to the subjects stream and listen for data updates
-  void _subscribeToStream() {
-    // Cancel any existing subscription
-    _subscription?.cancel();
-
-    // Start listening to subjects stream
-    _subscription = _subjectsStream?.listen(
-          (data) {
-        _processData(data);
-      },
-      onError: (e) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Error fetching data: ${e.toString()}';
-        });
-      },
-    );
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
-  void _processData(Map<String, dynamic> data) {
+  Future<void> _initializeSelectedSubjectCode() async {
     try {
-      setState(() {
-        _subjectData = data;
-        _isLoading = false;
-
-        final codes = data['subjectCodes'][widget.selectedSubject] as List<String>? ?? [];
-        if (codes.isNotEmpty &&
-            (_selectedSubjectCode == null || !codes.contains(_selectedSubjectCode))) {
-          _selectedSubjectCode = codes.first;
-          _controller.reset();
-          _controller.forward();
-        }
-      });
+      final data = await fetchSubjectsAndCodes();
+      if (data['subjects'].isNotEmpty) {
+        setState(() {
+          _selectedSubjectCode = data['subjects'].first;
+          _subjectData = data;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Error processing data: ${e.toString()}';
-      });
+      // Handle error silently
     }
   }
+
 
   @override
   void didUpdateWidget(CodeBar oldWidget) {
@@ -108,72 +85,59 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     }
   }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildContent(),
-    );
-  }
-
-  Widget _buildContent() {
-    if (_isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: Theme.of(context).colorScheme.primary,
-          strokeWidth: 3,
-        ),
-      );
-    }
-
-    // Handle errors
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.red[300],
-                fontWeight: FontWeight.w500,
+        body: StreamBuilder<Map<String, dynamic>>(
+        // Use the stream instead of future
+        stream: _subjectsStream,
+        initialData: _subjectData,
+        builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+        return Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+            strokeWidth: 3,
+          ),
+        );
+      } else if (snapshot.hasError) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
+              SizedBox(height: 16),
+              Text(
+                'No records found try adding some',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[600],
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_subjectData == null || _subjectData!['subjectCodes'][widget.selectedSubject] == null ||
-        (_subjectData!['subjectCodes'][widget.selectedSubject] as List).isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.code_off_outlined, size: 48, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No code sections found for this subject',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+            ],
+          ),
+        );
+      } else if (!snapshot.hasData || snapshot.data!['subjects'].isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
+              SizedBox(height: 16),
+              Text(
+                'No subjects found',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-    }
+            ],
+          ),
+        );
+      }
 
     // Prepare list of codes for the selected subject
     final codes = _subjectData!['subjectCodes'][widget.selectedSubject] as List<String>;
@@ -300,5 +264,8 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
         ),
       ],
     );
-  }
-}
+    },
+    ),
+    );
+}}
+
