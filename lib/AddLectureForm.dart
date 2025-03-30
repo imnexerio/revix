@@ -49,38 +49,32 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
   Future<void> _loadSubjectsAndCodes() async {
     try {
-      // Create or get the singleton instance of SubjectDataProvider
+      // Get the singleton instance
       final provider = SubjectDataProvider();
 
-      // Get the data from the provider
-      final last_revised = await provider.fetchSubjectsAndCodes();
+      // First check if cached data is available
+      Map<String, dynamic>? data = provider.currentData;
 
+      if (data == null) {
+        // If no cached data, fetch from database
+        data = await provider.fetchSubjectsAndCodes();
+      }
+
+      // Update state with the retrieved data
       setState(() {
-        _subjects = last_revised['subjects'];
-        _subjectCodes = last_revised['subjectCodes'];
+        _subjects = data!['subjects'];
+        _subjectCodes = data['subjectCodes'];
 
-        // Set default selection if available
+        // Set appropriate selection
         if (_subjects.isNotEmpty) {
           _selectedSubject = _subjects[0];
         } else {
-          _selectedSubject = 'DEFAULT_VALUE'; // Keep the default value
+          _selectedSubject = 'DEFAULT_VALUE';
         }
       });
 
-      // Optionally, subscribe to future changes
-      provider.subjectsStream.listen((updatedData) {
-        setState(() {
-          _subjects = updatedData['subjects'];
-          _subjectCodes = updatedData['subjectCodes'];
-
-          // Maintain selection if possible or reset
-          if (!_subjects.contains(_selectedSubject) && _subjects.isNotEmpty) {
-            _selectedSubject = _subjects[0];
-          } else if (_subjects.isEmpty) {
-            _selectedSubject = 'DEFAULT_VALUE';
-          }
-        });
-      });
+      // No need to set up a listener here since this is part of a form
+      // that's not constantly visible in the UI
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
