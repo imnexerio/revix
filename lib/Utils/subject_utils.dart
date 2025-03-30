@@ -9,9 +9,11 @@ class SubjectDataProvider {
 
   // Stream controllers to broadcast data changes
   final _subjectsController = StreamController<Map<String, dynamic>>.broadcast();
+  final _rawDataController = StreamController<dynamic>.broadcast();
 
   // Cached data
   Map<String, dynamic>? _cachedData;
+  dynamic _cachedRawData;
 
   // Database reference and subscription
   DatabaseReference? _databaseRef;
@@ -31,6 +33,7 @@ class SubjectDataProvider {
         _setupDatabaseListener(user.uid);
       } else {
         _cachedData = null;
+        _cachedRawData = null;
       }
     });
   }
@@ -38,8 +41,22 @@ class SubjectDataProvider {
   // Get the stream that will emit data when changes occur
   Stream<Map<String, dynamic>> get subjectsStream => _subjectsController.stream;
 
+  // Get the stream that will emit raw user_data when changes occur
+  Stream<dynamic> get rawDataStream => _rawDataController.stream;
+
   // Get current data immediately (from cache if available)
   Map<String, dynamic>? get currentData => _cachedData;
+
+  // Get current raw data immediately (from cache if available)
+  dynamic get currentRawData => _cachedRawData;
+
+  // Get schedule data as string
+  String getScheduleData() {
+    if (_cachedRawData != null) {
+      return _cachedRawData.toString();
+    }
+    return 'No schedule data available';
+  }
 
   // Setup the database listener
   void _setupDatabaseListener(String uid) {
@@ -51,6 +68,13 @@ class SubjectDataProvider {
     // Listen for changes
     _subscription = _databaseRef!.onValue.listen((event) {
       if (event.snapshot.exists) {
+        // Cache the raw data first
+        _cachedRawData = event.snapshot.value;
+
+        // Broadcast the raw data changes
+        _rawDataController.add(_cachedRawData);
+
+        // Process for subjects and subject codes
         Map<Object?, Object?> subject_data_util =
         event.snapshot.value as Map<Object?, Object?>;
 
@@ -75,11 +99,15 @@ class SubjectDataProvider {
         // Broadcast the changes
         _subjectsController.add(_cachedData!);
       } else {
+        _cachedRawData = null;
+        _rawDataController.add(null);
+
         _cachedData = {'subjects': [], 'subjectCodes': {}};
         _subjectsController.add(_cachedData!);
       }
     }, onError: (error) {
       _subjectsController.addError(error);
+      _rawDataController.addError(error);
     });
   }
 
@@ -106,6 +134,9 @@ class SubjectDataProvider {
     DataSnapshot snapshot = await ref.get();
 
     if (snapshot.exists) {
+      // Cache the raw data
+      _cachedRawData = snapshot.value;
+
       Map<Object?, Object?> subject_data_util = snapshot.value as Map<Object?, Object?>;
       List<String> subjects = subject_data_util.keys
           .map((key) => key.toString())
@@ -127,7 +158,31 @@ class SubjectDataProvider {
 
       return _cachedData!;
     } else {
+      _cachedRawData = null;
       return {'subjects': [], 'subjectCodes': {}};
+    }
+  }
+
+  // Fetch only raw data (when needed)
+  Future<dynamic> fetchRawData() async {
+    if (_cachedRawData != null) {
+      return _cachedRawData;
+    }
+
+    User? user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user');
+    }
+
+    String uid = user.uid;
+    DatabaseReference ref = _database.ref('users/$uid/user_data');
+    DataSnapshot snapshot = await ref.get();
+
+    if (snapshot.exists) {
+      _cachedRawData = snapshot.value;
+      return _cachedRawData;
+    } else {
+      return null;
     }
   }
 
@@ -135,6 +190,7 @@ class SubjectDataProvider {
   void dispose() {
     _cleanupCurrentListener();
     _subjectsController.close();
+    _rawDataController.close();
   }
 }
 

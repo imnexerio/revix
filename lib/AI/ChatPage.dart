@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:retracker/AI/gemini_service.dart';
-import 'package:retracker/AI/schedule_data_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../Utils/subject_utils.dart';
 import 'ApiKeyManager.dart';
 import 'ChatHistoryPage.dart';
 import 'ChatMessage.dart';
@@ -46,13 +46,33 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _fetchScheduleData() async {
     try {
-      final scheduleDataProvider = ScheduleDataProvider();
-      _scheduleData = await scheduleDataProvider.getScheduleData(forceRefresh: true);
+      // Use the new SubjectDataProvider instead of ScheduleDataProvider
+      _scheduleData = SubjectDataProvider().getScheduleData();
+
+      // If the data isn't already in cache, try to fetch it
+      if (_scheduleData == 'No schedule data available') {
+        await SubjectDataProvider().fetchRawData();
+        _scheduleData = SubjectDataProvider().getScheduleData();
+      }
 
       // Update the Gemini service with the new schedule data
       if (_scheduleData != null && _aiEnabled) {
         _geminiService.setScheduleData(_scheduleData!);
       }
+
+      // Optional: Subscribe to raw data changes to keep the schedule data updated
+      SubjectDataProvider().rawDataStream.listen((data) {
+        if (data != null) {
+          _scheduleData = data.toString();
+
+          // Update the Gemini service with the new schedule data
+          if (_scheduleData != null && _aiEnabled) {
+            _geminiService.setScheduleData(_scheduleData!);
+          }
+        } else {
+          _scheduleData = 'No schedule data available';
+        }
+      });
     } catch (e) {
       _scheduleData = 'No schedule data available';
     }
