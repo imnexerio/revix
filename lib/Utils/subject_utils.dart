@@ -1,11 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
+// import 'package:firebase_auth/firebase_auth.dart';
+import 'UnifiedDatabaseService.dart';
 
 class SubjectDataProvider {
   static final SubjectDataProvider _instance = SubjectDataProvider._internal();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseDatabase _database = FirebaseDatabase.instance;
+  // final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Reference to the UnifiedDatabaseService
+  final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();
 
   // Stream controllers to broadcast data changes
   final _subjectsController = StreamController<Map<String, dynamic>>.broadcast();
@@ -15,9 +17,8 @@ class SubjectDataProvider {
   Map<String, dynamic>? _cachedData;
   dynamic _cachedRawData;
 
-  // Database reference and subscription
-  DatabaseReference? _databaseRef;
-  StreamSubscription<DatabaseEvent>? _subscription;
+  // Subscriptions to UnifiedDatabaseService streams
+  StreamSubscription? _allRecordsSubscription;
 
   // Factory constructor
   factory SubjectDataProvider() {
@@ -30,11 +31,74 @@ class SubjectDataProvider {
     _auth.authStateChanges().listen((User? user) {
       _cleanupCurrentListener();
       if (user != null) {
-        _setupDatabaseListener(user.uid);
+        _setupServiceListener();
       } else {
         _cachedData = null;
         _cachedRawData = null;
       }
+    });
+  }
+
+  // Setup listeners to the UnifiedDatabaseService
+  void _setupServiceListener() {
+    // Initialize the UnifiedDatabaseService if not already
+    _databaseService.initialize();
+
+    // Subscribe to the allRecordsStream
+    _allRecordsSubscription = _databaseService.allRecordsStream.listen((allRecordsData) {
+      // Get the raw data from allRecordsData
+      List<Map<String, dynamic>> records = allRecordsData['allRecords'] ?? [];
+
+      // Convert to the structure needed for raw data
+      if (records.isNotEmpty) {
+        // Reconstruct the raw data structure from the records
+        Map<String, Map<String, Map<String, dynamic>>> rawData = {};
+
+        for (var record in records) {
+          String subject = record['subject'];
+          String subjectCode = record['subject_code'];
+          String lectureNo = record['lecture_no'];
+          Map<String, dynamic> details = record['details'];
+
+          // Create subject if it doesn't exist
+          rawData[subject] ??= {};
+
+          // Create subject code if it doesn't exist
+          rawData[subject]![subjectCode] ??= {};
+
+          // Add lecture details
+          rawData[subject]![subjectCode]![lectureNo] = details;
+        }
+
+        // Cache and broadcast the raw data
+        _cachedRawData = rawData;
+        _rawDataController.add(_cachedRawData);
+
+        // Process for subjects and subject codes
+        List<String> subjects = rawData.keys.toList();
+        Map<String, List<String>> subjectCodes = {};
+
+        rawData.forEach((subject, value) {
+          subjectCodes[subject] = value.keys.toList();
+        });
+
+        _cachedData = {
+          'subjects': subjects,
+          'subjectCodes': subjectCodes,
+        };
+
+        // Broadcast the changes
+        _subjectsController.add(_cachedData!);
+      } else {
+        _cachedRawData = null;
+        _rawDataController.add(null);
+
+        _cachedData = {'subjects': [], 'subjectCodes': {}};
+        _subjectsController.add(_cachedData!);
+      }
+    }, onError: (error) {
+      _subjectsController.addError(error);
+      _rawDataController.addError(error);
     });
   }
 
@@ -58,64 +122,10 @@ class SubjectDataProvider {
     return 'No schedule data available';
   }
 
-  // Setup the database listener
-  void _setupDatabaseListener(String uid) {
-    _databaseRef = _database.ref('users/$uid/user_data');
-
-    // Optimize by setting keep-sync to true for offline capabilities
-    _databaseRef!.keepSynced(true);
-
-    // Listen for changes
-    _subscription = _databaseRef!.onValue.listen((event) {
-      if (event.snapshot.exists) {
-        // Cache the raw data first
-        _cachedRawData = event.snapshot.value;
-
-        // Broadcast the raw data changes
-        _rawDataController.add(_cachedRawData);
-
-        // Process for subjects and subject codes
-        Map<Object?, Object?> subject_data_util =
-        event.snapshot.value as Map<Object?, Object?>;
-
-        List<String> subjects = subject_data_util.keys
-            .map((key) => key.toString())
-            .toList();
-
-        Map<String, List<String>> subjectCodes = {};
-
-        subject_data_util.forEach((subject, value) {
-          if (value is Map) {
-            subjectCodes[subject.toString()] =
-                value.keys.map((code) => code.toString()).toList();
-          }
-        });
-
-        _cachedData = {
-          'subjects': subjects,
-          'subjectCodes': subjectCodes,
-        };
-
-        // Broadcast the changes
-        _subjectsController.add(_cachedData!);
-      } else {
-        _cachedRawData = null;
-        _rawDataController.add(null);
-
-        _cachedData = {'subjects': [], 'subjectCodes': {}};
-        _subjectsController.add(_cachedData!);
-      }
-    }, onError: (error) {
-      _subjectsController.addError(error);
-      _rawDataController.addError(error);
-    });
-  }
-
   // Clean up current listener to prevent memory leaks
   void _cleanupCurrentListener() {
-    _subscription?.cancel();
-    _subscription = null;
-    _databaseRef = null;
+    _allRecordsSubscription?.cancel();
+    _allRecordsSubscription = null;
   }
 
   // Manual fetch method (fallback or for initial load)
@@ -129,38 +139,15 @@ class SubjectDataProvider {
       throw Exception('No authenticated user');
     }
 
-    String uid = user.uid;
-    DatabaseReference ref = _database.ref('users/$uid/user_data');
-    DataSnapshot snapshot = await ref.get();
+    // Force a refresh from the UnifiedDatabaseService
+    await _databaseService.forceDataReprocessing();
 
-    if (snapshot.exists) {
-      // Cache the raw data
-      _cachedRawData = snapshot.value;
-
-      Map<Object?, Object?> subject_data_util = snapshot.value as Map<Object?, Object?>;
-      List<String> subjects = subject_data_util.keys
-          .map((key) => key.toString())
-          .toList();
-
-      Map<String, List<String>> subjectCodes = {};
-
-      subject_data_util.forEach((subject, value) {
-        if (value is Map) {
-          subjectCodes[subject.toString()] =
-              value.keys.map((code) => code.toString()).toList();
-        }
-      });
-
-      _cachedData = {
-        'subjects': subjects,
-        'subjectCodes': subjectCodes,
-      };
-
-      return _cachedData!;
-    } else {
-      _cachedRawData = null;
+    // If we still don't have cached data, return empty result
+    if (_cachedData == null) {
       return {'subjects': [], 'subjectCodes': {}};
     }
+
+    return _cachedData!;
   }
 
   // Fetch only raw data (when needed)
@@ -174,16 +161,10 @@ class SubjectDataProvider {
       throw Exception('No authenticated user');
     }
 
-    String uid = user.uid;
-    DatabaseReference ref = _database.ref('users/$uid/user_data');
-    DataSnapshot snapshot = await ref.get();
+    // Force a refresh from the UnifiedDatabaseService
+    await _databaseService.forceDataReprocessing();
 
-    if (snapshot.exists) {
-      _cachedRawData = snapshot.value;
-      return _cachedRawData;
-    } else {
-      return null;
-    }
+    return _cachedRawData;
   }
 
   // Dispose method to clean up resources
@@ -191,6 +172,7 @@ class SubjectDataProvider {
     _cleanupCurrentListener();
     _subjectsController.close();
     _rawDataController.close();
+    // Note: Don't dispose the _databaseService here as it might be used elsewhere
   }
 }
 
