@@ -56,12 +56,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.15),
             blurRadius: 15,
-            offset: Offset(0, -2),
+            offset: const Offset(0, -2),
             spreadRadius: 2,
           )
         ],
@@ -70,7 +70,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         children: [
           // Handle bar for dragging
           Container(
-            margin: EdgeInsets.only(top: 12),
+            margin: const EdgeInsets.only(top: 12),
             height: 4,
             width: 40,
             decoration: BoxDecoration(
@@ -81,11 +81,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
           // Header with subject and lecture info
           Container(
-            padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
             child: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -100,29 +100,29 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       BoxShadow(
                         color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                         blurRadius: 10,
-                        offset: Offset(0, 4),
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.menu_book,
                     color: Colors.white,
                     size: 28,
                   ),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '${widget.selectedSubject} · ${widget.selectedSubjectCode} · ${widget.lectureNo}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         '${widget.details['lecture_type']}',
                         style: TextStyle(
@@ -139,7 +139,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.close),
+                    icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -151,14 +151,14 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           // Details sections
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
                   Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
+                      constraints: const BoxConstraints(
                         maxWidth: 300,
                         maxHeight: 300,
                       ),
@@ -175,7 +175,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   // Status card
                   _buildStatusCard(context),
 
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Timeline section
                   Text(
@@ -186,10 +186,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _buildTimelineCard(context),
 
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // Description section
                   Text(
@@ -200,7 +200,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   DescriptionCard(
                     details: widget.details,
                     onDescriptionChanged: (text) {
@@ -210,7 +210,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     },
                   ),
 
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   Text(
                     "Review Settings",
                     style: TextStyle(
@@ -219,10 +219,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _buildRevisionSettingsCard(context),
 
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -231,13 +231,13 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           // Action buttons
           SafeArea(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: Icon(Icons.check_circle_outline),
-                      label: Text('MARK AS DONE'),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('MARK AS DONE'),
                       onPressed: () async {
                         try {
                           showDialog(
@@ -246,12 +246,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             builder: (BuildContext context) {
                               return Center(
                                 child: Container(
-                                  padding: EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Column(
+                                  child: const Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       CircularProgressIndicator(),
@@ -349,7 +349,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -357,11 +357,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: Icon(Icons.save),
-                      label: Text('SAVE CHANGES'),
+                      icon: const Icon(Icons.save),
+                      label: const Text('SAVE CHANGES'),
                       onPressed: () async {
                         try {
                           showDialog(
@@ -370,12 +370,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             builder: (BuildContext context) {
                               return Center(
                                 child: Container(
-                                  padding: EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Column(
+                                  child: const Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       CircularProgressIndicator(),
@@ -441,7 +441,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.secondary,
                         foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -460,7 +460,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
   Widget _buildStatusCard(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -475,7 +475,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -609,7 +609,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
   Widget _buildTimelineCard(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -617,7 +617,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -687,7 +687,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         const SizedBox(width: 16),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -698,7 +698,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   date,
                   style: TextStyle(
@@ -719,7 +719,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
   Widget _buildRevisionSettingsCard(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -727,7 +727,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -747,7 +747,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     RevisionFrequencyDropdown(
                       revisionFrequency: revisionFrequency,
                       onChanged: (String? newValue) {
@@ -762,7 +762,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ],
           ),
 
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
 
           // Status toggle
           Row(
@@ -779,7 +779,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       isEnabled
                           ? "This lecture is enabled for future revisions"

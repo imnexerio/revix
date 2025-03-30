@@ -59,7 +59,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
 
     _fadeAnimation = Tween<double>(
@@ -71,7 +71,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     ));
 
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0.05, 0),
+      begin: const Offset(0.05, 0),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -100,7 +100,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            var begin = Offset(0.0, 1.0);
+            var begin = const Offset(0.0, 1.0);
             var end = Offset.zero;
             var curve = Curves.easeInOutCubic;
             var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
@@ -109,7 +109,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
               child: child,
             );
           },
-          transitionDuration: Duration(milliseconds: 500),
+          transitionDuration: const Duration(milliseconds: 500),
         ),
       );
     });
@@ -150,7 +150,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             body: page,
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            var begin = Offset(1.0, 0.0);
+            var begin = const Offset(1.0, 0.0);
             var end = Offset.zero;
             var curve = Curves.easeOutCubic;
             var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
@@ -163,7 +163,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
               ),
             );
           },
-          transitionDuration: Duration(milliseconds: 300),
+          transitionDuration: const Duration(milliseconds: 300),
         ),
       ).then((_) {
         // Optional: refresh data when returning from detail page
@@ -187,7 +187,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
   // Create pages once and store them in variables to avoid recreation
   Widget _createEditProfilePage() {
-    return EditProfilePage(
+    return const EditProfilePage(
     );
   }
 
@@ -249,12 +249,12 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       left: 16,
       child: Container(
         child: IconButton(
-          icon: Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_rounded),
           color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
           onPressed: _handleBackNavigation,
           tooltip: 'Back',
-          padding: EdgeInsets.all(8),
-          constraints: BoxConstraints(),
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(),
           style: IconButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -268,13 +268,13 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   PreferredSizeWidget _buildLargeScreenAppBar() {
     return AppBar(
       title: AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         transitionBuilder: (Widget child, Animation<double> animation) {
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
               position: Tween<Offset>(
-                begin: Offset(0.0, 0.2),
+                begin: const Offset(0.0, 0.2),
                 end: Offset.zero,
               ).animate(animation),
               child: child,
@@ -310,12 +310,12 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         children: [
           // Using staggered animations for each option card
           ..._buildAnimatedOptionCards(isSmallScreen),
-          SizedBox(height: 32),
+          const SizedBox(height: 32),
 
           // Animated logout button
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0.0, end: 1.0),
-            duration: Duration(milliseconds: 500),
+            duration: const Duration(milliseconds: 500),
             curve: Curves.easeOutCubic,
             builder: (context, value, child) {
               return Opacity(
@@ -329,14 +329,14 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             child: FilledButton(
               onPressed: () => _logout(context),
               style: FilledButton.styleFrom(
-                minimumSize: Size(70, 55),
+                minimumSize: const Size(70, 55),
                 backgroundColor: Theme.of(context).colorScheme.errorContainer,
                 foregroundColor: Theme.of(context).colorScheme.error,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.logout, size: 20),
@@ -423,7 +423,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       // Create staggered animation for each card
       final card = TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.0, end: 1.0),
-        duration: Duration(milliseconds: 600),
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeOutCubic,
         // Delay each card by a bit more
         builder: (context, value, child) {
@@ -453,7 +453,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
       // Add spacing except after the last item
       if (i < options.length - 1) {
-        cards.add(SizedBox(height: 16));
+        cards.add(const SizedBox(height: 16));
       }
     }
 
@@ -478,7 +478,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             isSmallScreen
             // Small screen layout - Single column scrollable with animation
                 ? SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
+              physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
                   ProfileHeader(
@@ -496,7 +496,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
                 Container(
                   width: MediaQuery.of(context).size.width * 0.33, // 33% of the screen width
                   child: SingleChildScrollView(
-                    physics: AlwaysScrollableScrollPhysics(),
+                    physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
                       children: [
                         ProfileHeader(
@@ -509,7 +509,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
                   ),
                 ),
                 // Divider between sections
-                VerticalDivider(width: 1, thickness: 1),
+                const VerticalDivider(width: 1, thickness: 1),
                 // Right side - Detail view with app bar and animations
                 Expanded(
                   child: Column(
@@ -531,7 +531,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
                                     size: 64,
                                     color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
                                   ),
-                                  SizedBox(height: 16),
+                                  const SizedBox(height: 16),
                                   Text(
                                     'Select an option from the left menu',
                                     style: Theme.of(context).textTheme.titleMedium?.copyWith(

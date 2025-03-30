@@ -25,7 +25,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1000),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -130,13 +130,13 @@ class _ForgotPassPageState extends State<ForgotPassPage>
             height: double.infinity,
             child: SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       Hero(
                         tag: 'app_logo',
                         child: Container(
@@ -148,7 +148,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                               BoxShadow(
                                 color: colorScheme.primary.withOpacity(0.2),
                                 blurRadius: 10,
-                                offset: Offset(0, 4),
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -158,7 +158,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                           ),
                         ),
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       Text(
                         'Password Reset',
                         style: textTheme.headlineSmall?.copyWith(
@@ -172,12 +172,12 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                           color: colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
                       if (_errorMessage != null)
                         Container(
                           width: double.infinity,
-                          margin: EdgeInsets.only(bottom: 16),
-                          padding: EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: colorScheme.error.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -189,7 +189,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                                 color: colorScheme.error,
                                 size: 20,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
@@ -201,7 +201,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                             ],
                           ),
                         ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
                         validator: _validateEmail,
@@ -209,7 +209,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                         decoration: InputDecoration(
                           labelText: 'Email Address',
                           hintText: 'Enter your email...',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          prefixIcon: const Icon(Icons.email_outlined),
                           enabledBorder: OutlineInputBorder(
                             borderSide: BorderSide(
                               color: colorScheme.onSurface.withOpacity(0.12),
@@ -240,9 +240,9 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                           ),
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -259,7 +259,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                               ),
                             ),
                           )
-                              : Text('Send Password Reset Email'),
+                              : const Text('Send Password Reset Email'),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: colorScheme.onPrimary,
                             backgroundColor: colorScheme.primary,
@@ -267,7 +267,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
-                            padding: EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                                 horizontal: 24, vertical: 12),
                           ),
                         ),
@@ -297,7 +297,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                                     size: 24,
                                   ),
                                   Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         4, 0, 24, 0),
                                     child: Text(
                                       'Login',
@@ -313,7 +313,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                       ),
 
                       IconButton(
-                        icon: ImageIcon(
+                        icon: const ImageIcon(
                           AssetImage('assets/github.png'), // Path to your GitHub icon
                         ),
                         onPressed: () {

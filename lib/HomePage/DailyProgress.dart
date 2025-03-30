@@ -52,10 +52,10 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
       leftTitles: AxisTitles(
         sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) => Text(value.toInt().toString())),
       ),
-      rightTitles: AxisTitles(
+      rightTitles: const AxisTitles(
         sideTitles: SideTitles(showTitles: false),
       ),
-      topTitles: AxisTitles(
+      topTitles: const AxisTitles(
         sideTitles: SideTitles(showTitles: false),
       ),
       bottomTitles: AxisTitles(
@@ -65,7 +65,7 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
             padding: const EdgeInsets.only(top: 8.0),
             child: Text(
               date.day.toString(), // Only show the day
-              style: TextStyle(fontSize: 10),
+              style: const TextStyle(fontSize: 10),
               textAlign: TextAlign.center,
             ),
           );
@@ -78,7 +78,7 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
         isCurved: true,
         color: Colors.blue,
         barWidth: 3,
-        dotData: FlDotData(show: true),
+        dotData: const FlDotData(show: true),
         belowBarData: BarAreaData(
           show: true,
           color: Colors.blue.withOpacity(0.1),
@@ -89,14 +89,14 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
         isCurved: true,
         color: Colors.orange,
         barWidth: 3,
-        dotData: FlDotData(show: true),
+        dotData: const FlDotData(show: true),
         belowBarData: BarAreaData(
           show: true,
           color: Colors.orange.withOpacity(0.1),
         ),
       ),
     ],
-    lineTouchData: LineTouchData(
+    lineTouchData: const LineTouchData(
       enabled: true,
       touchTooltipData: LineTouchTooltipData(),
     ),

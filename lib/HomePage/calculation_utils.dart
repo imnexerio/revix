@@ -39,9 +39,9 @@ int calculateMissedRevisions(List<Map<String, dynamic>> records, Map<String, Set
 
 Color getCompletionColor(double percentage) {
   if (percentage <= 50) {
-    return Color.lerp(Color(0xFFC40000), Color(0xFFFFEB3B), percentage / 50)!; // Red to Yellow
+    return Color.lerp(const Color(0xFFC40000), const Color(0xFFFFEB3B), percentage / 50)!; // Red to Yellow
   } else {
-    return Color.lerp(Color(0xFFFFEB3B), Color(0xFF00C853), (percentage - 50) / 50)!; // Yellow to Green
+    return Color.lerp(const Color(0xFFFFEB3B), const Color(0xFF00C853), (percentage - 50) / 50)!; // Yellow to Green
   }
 }
 

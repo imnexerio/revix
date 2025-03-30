@@ -54,7 +54,7 @@ class _TodayPageState extends State<TodayPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       'Error: ${snapshot.error}',
                       style: TextStyle(
@@ -91,7 +91,7 @@ class _TodayPageState extends State<TodayPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'No schedules found',
             style: TextStyle(

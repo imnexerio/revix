@@ -41,14 +41,14 @@ class _TrackingTypeDropdownState extends State<TrackingTypeDropdown> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).cardColor,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: DropdownButtonFormField<String>(
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           labelText: 'Tracking Type',
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

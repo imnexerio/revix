@@ -80,10 +80,10 @@ class _ChatPageState extends State<ChatPage> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      Future.delayed(Duration(milliseconds: 100), () {
+      Future.delayed(const Duration(milliseconds: 100), () {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       });
@@ -111,7 +111,7 @@ class _ChatPageState extends State<ChatPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('API key saved, AI features enabled'),
+          content: const Text('API key saved, AI features enabled'),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -121,7 +121,7 @@ class _ChatPageState extends State<ChatPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('AI features disabled'),
+          content: const Text('AI features disabled'),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -175,7 +175,7 @@ class _ChatPageState extends State<ChatPage> {
         await _fetchScheduleData();
 
         // Generate a new conversation ID but don't save it yet
-        final uuid = Uuid();
+        final uuid = const Uuid();
         _currentConversationId = uuid.v4();
 
         // Add welcome message to UI but don't save to storage yet
@@ -263,7 +263,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _startNewConversation() async {
     // Generate a new UUID for the conversation
-    final uuid = Uuid();
+    final uuid = const Uuid();
     _currentConversationId = uuid.v4();
 
     // Clear messages
@@ -311,8 +311,8 @@ class _ChatPageState extends State<ChatPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
               Text(
                 'Loading your assistant...',
                 style: theme.textTheme.bodyLarge,
@@ -330,14 +330,14 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             // App bar section
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
                     color: colorScheme.shadow.withOpacity(0.05),
                     blurRadius: 8,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -361,7 +361,7 @@ class _ChatPageState extends State<ChatPage> {
                       borderRadius: BorderRadius.circular(20),
                       onTap: _showApiKeyDialog,
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -372,7 +372,7 @@ class _ChatPageState extends State<ChatPage> {
                                   ? colorScheme.onPrimaryContainer
                                   : colorScheme.onErrorContainer,
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
                               _aiEnabled ? 'API Key' : 'Set Key',
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -387,7 +387,7 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   // History button
                   IconButton(
                     icon: Icon(
@@ -402,7 +402,7 @@ class _ChatPageState extends State<ChatPage> {
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ChatHistoryPage(),
+                          builder: (context) => const ChatHistoryPage(),
                         ),
                       );
 
@@ -419,8 +419,8 @@ class _ChatPageState extends State<ChatPage> {
 
             if (!_aiEnabled)
               Container(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.errorContainer.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -428,7 +428,7 @@ class _ChatPageState extends State<ChatPage> {
                 child: Row(
                   children: [
                     Icon(Icons.info_outline, color: colorScheme.error),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'AI chat features are disabled. Tap the key icon to set your Gemini API key.',
@@ -484,7 +484,7 @@ class _ChatPageState extends State<ChatPage> {
                         valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
                       'Thinking...',
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -504,7 +504,7 @@ class _ChatPageState extends State<ChatPage> {
                   BoxShadow(
                     color: colorScheme.shadow.withOpacity(0.1),
                     blurRadius: 10,
-                    offset: Offset(0, -2),
+                    offset: const Offset(0, -2),
                   ),
                 ],
               ),
@@ -523,12 +523,12 @@ class _ChatPageState extends State<ChatPage> {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text('Start New Chat'),
-                          content: Text('Are you sure you want to start a new chat? This will refresh your schedule data.'),
+                          title: const Text('Start New Chat'),
+                          content: const Text('Are you sure you want to start a new chat? This will refresh your schedule data.'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text('CANCEL'),
+                              child: const Text('CANCEL'),
                             ),
                             FilledButton(
                               onPressed: () async {
@@ -538,14 +538,14 @@ class _ChatPageState extends State<ChatPage> {
                                 _startNewConversation();
                                 setState(() {}); // Refresh UI
                               },
-                              child: Text('NEW CHAT'),
+                              child: const Text('NEW CHAT'),
                             ),
                           ],
                         ),
                       );
                     },
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
                   // Text field
                   Expanded(
@@ -562,7 +562,7 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         filled: true,
                         fillColor: colorScheme.surfaceVariant.withOpacity(0.4),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         isDense: true,
                       ),
                       onSubmitted: _sendMessage,
@@ -571,7 +571,7 @@ class _ChatPageState extends State<ChatPage> {
                       textInputAction: TextInputAction.send,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
                   // Send button
                   Container(
@@ -584,7 +584,7 @@ class _ChatPageState extends State<ChatPage> {
                         BoxShadow(
                           color: colorScheme.primary.withOpacity(0.3),
                           blurRadius: 8,
-                          offset: Offset(0, 2),
+                          offset: const Offset(0, 2),
                         ),
                       ] : null,
                     ),
@@ -639,7 +639,7 @@ class ChatBubble extends StatelessWidget {
             Container(
               width: 28,
               height: 28,
-              margin: EdgeInsets.only(right: 8, bottom: 4),
+              margin: const EdgeInsets.only(right: 8, bottom: 4),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
                 shape: BoxShape.circle,
@@ -656,7 +656,7 @@ class ChatBubble extends StatelessWidget {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 10,
               ),
@@ -665,14 +665,14 @@ class ChatBubble extends StatelessWidget {
                     ? colorScheme.primary
                     : colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(18).copyWith(
-                  bottomRight: message.isUser ? Radius.circular(4) : Radius.circular(18),
-                  bottomLeft: message.isUser ? Radius.circular(18) : Radius.circular(4),
+                  bottomRight: message.isUser ? const Radius.circular(4) : const Radius.circular(18),
+                  bottomLeft: message.isUser ? const Radius.circular(18) : const Radius.circular(4),
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: colorScheme.shadow.withOpacity(0.08),
                     blurRadius: 4,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -707,7 +707,7 @@ class ChatBubble extends StatelessWidget {
             Container(
               width: 28,
               height: 28,
-              margin: EdgeInsets.only(left: 8, bottom: 4),
+              margin: const EdgeInsets.only(left: 8, bottom: 4),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
                 shape: BoxShape.circle,

@@ -11,8 +11,8 @@ SnackBar customSnackBar({
   return SnackBar(
     content: Row(
       children: [
-        Icon(Icons.check_circle, color: Colors.white),
-        SizedBox(width: 8),
+        const Icon(Icons.check_circle, color: Colors.white),
+        const SizedBox(width: 8),
         Flexible(
           child: Text(message),
         ),

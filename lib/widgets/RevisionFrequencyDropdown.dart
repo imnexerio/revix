@@ -52,7 +52,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     flex: 3,
                     child: Text(
@@ -96,7 +96,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return Container(
-          margin: EdgeInsets.symmetric(vertical: 8),
+          margin: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             color: Theme.of(context).cardColor,
@@ -106,7 +106,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
             alignedDropdown: true,
             child: DropdownButtonFormField<String>(
               isExpanded: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Review Frequency',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -37,7 +37,7 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             Container(
@@ -51,7 +51,7 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
               child: Column(
                 children: [
                   Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
                         Expanded(
@@ -66,11 +66,11 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
                       ],
                     ),
                   ),
-                  Divider(height: 1),
+                  const Divider(height: 1),
                   ...trackingtype.map((tracking) => Column(
                     children: [
                       Padding(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
                             Expanded(
@@ -85,13 +85,13 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
                         ),
                       ),
                       if (trackingtype.indexOf(tracking) != trackingtype.length - 1)
-                        Divider(height: 1),
+                        const Divider(height: 1),
                     ],
                   )).toList(),
                 ],
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => showAddtrackingTypeSheet(
                 context,
@@ -100,10 +100,10 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
                 setState,
                 fetchtrackingType, // Pass the callback to refresh the list
               ),
-              icon: Icon(Icons.add),
-              label: Text('Add Custom Type'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Custom Type'),
               style: FilledButton.styleFrom(
-                minimumSize: Size(200, 48),
+                minimumSize: const Size(200, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

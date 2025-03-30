@@ -148,7 +148,7 @@ class ProfileProvider with ChangeNotifier {
 
   Future<ByteData> _getImageByteData(Image image) async {
     final completer = Completer<ByteData>();
-    image.image.resolve(ImageConfiguration()).addListener(
+    image.image.resolve(const ImageConfiguration()).addListener(
       ImageStreamListener((ImageInfo info, bool _) async {
         final byteData = await info.image.toByteData(format: ImageByteFormat.png);
         completer.complete(byteData!);

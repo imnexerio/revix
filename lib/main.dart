@@ -52,8 +52,8 @@ class MyApp extends StatelessWidget {
           themeMode: themeNotifier.currentThemeMode,
           initialRoute: '/',
           routes: {
-            '/': (context) => SplashScreen(),
-            '/home': (context) => isLoggedIn ? MyHomePage() : LoginPage(),
+            '/': (context) => const SplashScreen(),
+            '/home': (context) => isLoggedIn ? const MyHomePage() : LoginPage(),
           },
         );
       },
@@ -98,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
       ),
       builder: (BuildContext context) {
@@ -119,7 +119,7 @@ class _MyHomePageState extends State<MyHomePage> {
     HomePage(),
     TodayPage(),
     DetailsPage(),
-    ChatPage(),
+    const ChatPage(),
   ];
 
   final List<String> _pageTitles = <String>[
@@ -152,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onTap: _openSettings,
               borderRadius: BorderRadius.circular(20),
               child: Padding(
-                padding: EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -172,7 +172,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           : Container(
                         width: 35,
                         height: 35,
-                        padding: EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(8),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
@@ -201,7 +201,7 @@ class _MyHomePageState extends State<MyHomePage> {
               BoxShadow(
                 color: theme.colorScheme.primary.withOpacity(0.1),
                 blurRadius: 10,
-                offset: Offset(0, -5),
+                offset: const Offset(0, -5),
               ),
             ],
           ),
@@ -211,22 +211,22 @@ class _MyHomePageState extends State<MyHomePage> {
             backgroundColor: theme.colorScheme.surface,
             items: <BottomNavigationBarItem>[
               BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
+                icon: const Icon(Icons.home_outlined),
                 activeIcon: Icon(Icons.home_rounded, color: theme.colorScheme.primary),
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.today_outlined),
+                icon: const Icon(Icons.today_outlined),
                 activeIcon: Icon(Icons.today_rounded, color: theme.colorScheme.primary),
                 label: 'Schedule',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.fiber_smart_record_outlined),
+                icon: const Icon(Icons.fiber_smart_record_outlined),
                 activeIcon: Icon(Icons.fiber_smart_record_rounded, color: theme.colorScheme.primary),
                 label: 'Details',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.auto_awesome_outlined),
+                icon: const Icon(Icons.auto_awesome_outlined),
                 activeIcon: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary),
                 label: 'Chat',
               ),
@@ -234,12 +234,12 @@ class _MyHomePageState extends State<MyHomePage> {
             currentIndex: _selectedIndex,
             selectedItemColor: theme.colorScheme.primary,
             unselectedItemColor: theme.colorScheme.onSurface.withOpacity(0.6),
-            selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
             onTap: _onItemTapped,
           ),
         ),
         floatingActionButton: Transform.translate(
-          offset: Offset(0, 10),
+          offset: const Offset(0, 10),
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -255,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 BoxShadow(
                   color: theme.colorScheme.primary.withOpacity(0.3),
                   blurRadius: 8,
-                  offset: Offset(0, 4),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -264,7 +264,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Icon(Icons.add_rounded, color: theme.colorScheme.onPrimary),
               elevation: 0,
               backgroundColor: Colors.transparent,
-              shape: CircleBorder(),
+              shape: const CircleBorder(),
             ),
           ),
         ),

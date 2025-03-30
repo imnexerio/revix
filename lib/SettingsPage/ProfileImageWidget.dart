@@ -19,7 +19,7 @@ class ProfileImageWidget extends StatelessWidget {
         )
             : CircleAvatar(
           radius: radius,
-          backgroundImage: AssetImage('assets/icon/icon.png'),
+          backgroundImage: const AssetImage('assets/icon/icon.png'),
           backgroundColor: Colors.transparent,
         );
       },

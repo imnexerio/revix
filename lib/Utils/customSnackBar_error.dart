@@ -11,8 +11,8 @@ SnackBar customSnackBar_error({
   return SnackBar(
     content: Row(
       children: [
-        Icon(Icons.error_outline_rounded, color: Colors.white),
-        SizedBox(width: 8),
+        const Icon(Icons.error_outline_rounded, color: Colors.white),
+        const SizedBox(width: 8),
         Flexible(
           child: Text(message),
         ),

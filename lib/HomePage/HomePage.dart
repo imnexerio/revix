@@ -121,7 +121,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0.0),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0.0),
         child: StreamBuilder(
           stream: _recordsStream,
           builder: (context, snapshot) {

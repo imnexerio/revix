@@ -45,19 +45,19 @@ class ApiKeyManager {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Gemini API Key'),
+          title: const Text('Gemini API Key'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              const Text(
                 'Enter your Gemini API key to enable AI features.',
               ),
               // SizedBox(height: 8),
 
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextField(
                 controller: controller,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Enter your API key',
                   border: OutlineInputBorder(),
                 ),
@@ -67,20 +67,20 @@ class ApiKeyManager {
           ),
           actions: <Widget>[
             ElevatedButton.icon(
-              icon: Icon(Icons.open_in_new),
-              label: Text('Get API Key'),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Get API Key'),
               onPressed: () {
                 UrlLauncher.launchURL(context, geminiApiUrl);
               },
             ),
             TextButton(
-              child: Text('SKIP'),
+              child: const Text('SKIP'),
               onPressed: () {
                 Navigator.of(context).pop(null);
               },
             ),
             TextButton(
-              child: Text('SAVE'),
+              child: const Text('SAVE'),
               onPressed: () {
                 Navigator.of(context).pop(controller.text);
               },

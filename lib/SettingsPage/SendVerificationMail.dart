@@ -18,13 +18,13 @@ Future<void> sendVerificationEmail(BuildContext context) async {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error, color: Colors.white),
-            SizedBox(width: 8),
+            const Icon(Icons.error, color: Colors.white),
+            const SizedBox(width: 8),
             Text('Failed to send verification email: $e'),
           ],
         ),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),

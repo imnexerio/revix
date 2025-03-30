@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class CustomizationBottomSheet extends StatefulWidget {
@@ -49,7 +48,7 @@ class _CustomizationBottomSheetState extends State<CustomizationBottomSheet> {
             children: [
               Text(
                 'Customize ${widget.typeTitle}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -59,7 +58,7 @@ class _CustomizationBottomSheetState extends State<CustomizationBottomSheet> {
                 onPressed: () {
                   Navigator.pop(context, selectedTypes.toList());
                 },
-                child: Text('Save'),
+                child: const Text('Save'),
               ),
             ],
           ),
@@ -67,7 +66,7 @@ class _CustomizationBottomSheetState extends State<CustomizationBottomSheet> {
 
           // Show tracking types
           if (widget.trackingTypes.isNotEmpty) ...[
-            Text(
+            const Text(
               'Select Tracking Type:',
               style: TextStyle(
                 fontSize: 16,

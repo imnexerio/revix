@@ -188,13 +188,13 @@ class _StudyCalendarState extends State<StudyCalendar> {
                 );
               },
             ),
-            headerStyle: HeaderStyle(
+            headerStyle: const HeaderStyle(
               formatButtonVisible: true,
               titleCentered: true,
               formatButtonShowsNext: false,
             ),
             // Add this to hide the default markers
-            calendarStyle: CalendarStyle(
+            calendarStyle: const CalendarStyle(
               markersMaxCount: 0,
               // Make sure any marker-related properties are set to be invisible
               // markerDecoration: const BoxDecoration(
@@ -204,8 +204,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
             ),
           ),
           const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -401,7 +401,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             ),
             title: Text(
               '${event['subject']} (${event['subject_code']}) - ${event['lecture_no']}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),

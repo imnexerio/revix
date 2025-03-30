@@ -13,7 +13,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
 
     return Scaffold(
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -26,7 +26,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                 Icons.notifications_outlined,
                 false,
               ),
-              Divider(height: 32),
+              const Divider(height: 32),
               _buildNotificationOption(
                 context,
                 'Email Notifications',
@@ -34,7 +34,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                 Icons.email_outlined,
                 false,
               ),
-              Divider(height: 32),
+              const Divider(height: 32),
               _buildNotificationOption(
                 context,
                 'Marketing Communications',
@@ -59,14 +59,14 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     return Row(
       children: [
         Container(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.grey.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

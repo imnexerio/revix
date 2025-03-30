@@ -64,7 +64,7 @@ class EnhancedRingPainter extends CustomPainter {
               endColor,
             ],
             stops: const [0.0, 0.7, 1.0], // Adjust these values to control gradient progression
-            transform: GradientRotation(startPosition),
+            transform: const GradientRotation(startPosition),
           ).createShader(Rect.fromCircle(center: center, radius: radius));
       } else {
         // Use solid color

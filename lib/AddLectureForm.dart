@@ -627,7 +627,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             ),
                           ),
                         ),
-                        SizedBox(width: 16),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () async {

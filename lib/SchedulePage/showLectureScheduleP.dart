@@ -22,12 +22,12 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
             height: MediaQuery.of(context).size.height * 0.85,
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.15),
                   blurRadius: 15,
-                  offset: Offset(0, -2),
+                  offset: const Offset(0, -2),
                   spreadRadius: 2,
                 )
               ],
@@ -36,7 +36,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
               children: [
                 // Handle bar for dragging
                 Container(
-                  margin: EdgeInsets.only(top: 12),
+                  margin: const EdgeInsets.only(top: 12),
                   height: 4,
                   width: 40,
                   decoration: BoxDecoration(
@@ -47,11 +47,11 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
                 // Header with subject and lecture info
                 Container(
-                  padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -66,29 +66,29 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             BoxShadow(
                               color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                               blurRadius: 10,
-                              offset: Offset(0, 4),
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.menu_book,
                           color: Colors.white,
                           size: 28,
                         ),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               '${details['subject']} · ${details['subject_code']} · ${details['lecture_no']}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               '${details['lecture_type']} · ${details['reminder_time']}',
                               style: TextStyle(
@@ -105,7 +105,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: Icon(Icons.close),
+                          icon: const Icon(Icons.close),
                           onPressed: () => Navigator.pop(context),
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
@@ -117,13 +117,13 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                 // Details sections
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(
                           child: ConstrainedBox(
-                            constraints: BoxConstraints(
+                            constraints: const BoxConstraints(
                               maxWidth: 300, // Maximum width to prevent the chart from becoming too large
                               maxHeight: 300, // Maximum height to maintain aspect ratio
                             ),
@@ -140,7 +140,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                         // Status card
                         _buildStatusCard(context, details),
 
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
                         // Dates section
                         Text(
@@ -151,10 +151,10 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         _buildTimelineCard(context, details),
 
-                        SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
                         Text(
                           "Description",
@@ -164,7 +164,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         DescriptionCard(
                           details: details,
                           onDescriptionChanged: (text) {
@@ -174,7 +174,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             });
                           },
                         ),
-                        SizedBox(height: 24),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -183,12 +183,12 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                 // Action button
                 SafeArea(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        icon: Icon(Icons.check_circle_outline),
-                        label: Text('MARK AS DONE'),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('MARK AS DONE'),
                         onPressed: () async {
                           try {
                             showDialog(
@@ -197,12 +197,12 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               builder: (BuildContext context) {
                                 return Center(
                                   child: Container(
-                                    padding: EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    child: Column(
+                                    child: const Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         CircularProgressIndicator(),
@@ -298,7 +298,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.primary,
                           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 2,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -322,7 +322,7 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
   int noRevision = details['no_revision'];
 
   return Container(
-    padding: EdgeInsets.all(16),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topLeft,
@@ -337,7 +337,7 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
         BoxShadow(
           color: Colors.black.withOpacity(0.05),
           blurRadius: 10,
-          offset: Offset(0, 5),
+          offset: const Offset(0, 5),
         ),
       ],
     ),
@@ -414,7 +414,7 @@ Widget _buildStatusItem(BuildContext context, String label, String value, IconDa
 
 Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
   return Container(
-    padding: EdgeInsets.all(16),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
@@ -422,7 +422,7 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
         BoxShadow(
           color: Colors.black.withOpacity(0.05),
           blurRadius: 10,
-          offset: Offset(0, 5),
+          offset: const Offset(0, 5),
         ),
       ],
     ),
@@ -498,7 +498,7 @@ Widget _buildTimelineItem(
       const SizedBox(width: 16),
       Expanded(
         child: Padding(
-          padding: EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.only(top: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -509,7 +509,7 @@ Widget _buildTimelineItem(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 date,
                 style: TextStyle(

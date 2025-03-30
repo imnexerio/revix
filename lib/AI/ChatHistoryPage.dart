@@ -100,14 +100,14 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
           children: [
             // App bar section
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
                     color: colorScheme.shadow.withOpacity(0.05),
                     blurRadius: 8,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -126,7 +126,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                       Navigator.pop(context);
                     },
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
 
                   // Title
                   Expanded(
@@ -151,7 +151,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                     CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       'Loading conversations...',
                       style: theme.textTheme.bodyLarge?.copyWith(
@@ -171,14 +171,14 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                       size: 60,
                       color: colorScheme.onSurfaceVariant.withOpacity(0.3),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       'No previous conversations found',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Start a new chat to begin',
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -190,7 +190,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
               )
                   : ListView.builder(
                 itemCount: _conversationIds.length,
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 itemBuilder: (context, index) {
                   final id = _conversationIds[index];
                   final isActive = id == _activeConversationId;
@@ -198,13 +198,13 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                   return Dismissible(
                     key: Key(id),
                     background: Container(
-                      margin: EdgeInsets.symmetric(vertical: 4),
+                      margin: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         color: colorScheme.error,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.centerRight,
-                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Icon(Icons.delete, color: colorScheme.onError),
                     ),
                     direction: DismissDirection.endToStart,
@@ -212,12 +212,12 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                       return await showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text('Delete Conversation'),
-                          content: Text('Are you sure you want to delete this conversation?'),
+                          title: const Text('Delete Conversation'),
+                          content: const Text('Are you sure you want to delete this conversation?'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(false),
-                              child: Text('CANCEL'),
+                              child: const Text('CANCEL'),
                             ),
                             FilledButton(
                               onPressed: () => Navigator.of(context).pop(true),
@@ -225,7 +225,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                                 backgroundColor: colorScheme.error,
                                 foregroundColor: colorScheme.onError,
                               ),
-                              child: Text('DELETE'),
+                              child: const Text('DELETE'),
                             ),
                           ],
                         ),
@@ -239,7 +239,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Conversation deleted'),
+                          content: const Text('Conversation deleted'),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -261,7 +261,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                       color: isActive
                           ? colorScheme.primaryContainer.withOpacity(0.2)
                           : colorScheme.surface,
-                      margin: EdgeInsets.symmetric(vertical: 4),
+                      margin: const EdgeInsets.symmetric(vertical: 4),
                       child: InkWell(
                         onTap: () {
                           // Return the ID to the previous screen
@@ -269,7 +269,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: Padding(
-                          padding: EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
                               // Chat icon
@@ -287,7 +287,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                                           ? colorScheme.primary.withOpacity(0.3)
                                           : colorScheme.shadow.withOpacity(0.1),
                                       blurRadius: 4,
-                                      offset: Offset(0, 2),
+                                      offset: const Offset(0, 2),
                                     ),
                                   ],
                                 ),
@@ -299,7 +299,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                                   size: 24,
                                 ),
                               ),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
 
                               // Chat preview
                               Expanded(
@@ -314,7 +314,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                                         fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                                       ),
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       _getConversationDate(id),
                                       style: theme.textTheme.bodySmall?.copyWith(
@@ -328,7 +328,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                               // Active chip if this is the active conversation
                               if (isActive)
                                 Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: colorScheme.primary.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(12),

@@ -315,7 +315,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                             shape: BoxShape.circle,
                             color: Colors.blueGrey.shade800,
                             boxShadow: [
-                              BoxShadow(
+                              const BoxShadow(
                                 color: Colors.black26,
                                 blurRadius: 3,
                                 spreadRadius: 1,

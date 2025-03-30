@@ -124,7 +124,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                     'No records found try adding some',
                     style: TextStyle(
@@ -144,7 +144,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                     'No subject code found for ${widget.selectedSubject}',
                     style: TextStyle(
@@ -207,23 +207,23 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
                         blurRadius: 10,
-                        offset: Offset(0, -5),
+                        offset: const Offset(0, -5),
                       ),
                     ],
                   ),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      physics: BouncingScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       itemCount: codes.length,
                       itemBuilder: (context, index) {
                         final code = codes[index].toString();
                         final isSelected = _selectedSubjectCode == code;
 
                         return AnimatedContainer(
-                          duration: Duration(milliseconds: 200),
-                          margin: EdgeInsets.symmetric(horizontal: 6.0),
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 6.0),
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
@@ -236,7 +236,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                               },
                               borderRadius: BorderRadius.circular(15.0),
                               child: Container(
-                                padding: EdgeInsets.symmetric(
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 20.0,
                                   vertical: 12.0,
                                 ),
@@ -259,7 +259,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                                           .primary
                                           .withOpacity(0.3),
                                       blurRadius: 8,
-                                      offset: Offset(0, 2),
+                                      offset: const Offset(0, 2),
                                     ),
                                   ]
                                       : null,
@@ -274,7 +274,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                                           ? Theme.of(context).colorScheme.onPrimary
                                           : Theme.of(context).colorScheme.onSurface,
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Text(
                                       code,
                                       style: TextStyle(

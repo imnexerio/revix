@@ -14,14 +14,14 @@ class SubjectDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).cardColor,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: DropdownButtonFormField<String>(
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           labelText: 'Select Subject',
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -35,7 +35,7 @@ class SubjectDropdown extends StatelessWidget {
               child: Text(value),
             );
           }).toList(),
-          DropdownMenuItem<String>(
+          const DropdownMenuItem<String>(
             value: 'Others',
             child: Text('Others'),
           ),

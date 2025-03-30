@@ -18,7 +18,7 @@ class ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 500),
       curve: Curves.easeOutQuart,
       width: double.infinity,
       height: isSmallScreen ? 250 : 300,
@@ -28,8 +28,8 @@ class ProfileHeader extends StatelessWidget {
             Theme.of(context).colorScheme.primary,
             Theme.of(context).colorScheme.secondary,
           ],
-          begin: AlignmentDirectional(0.94, -1),
-          end: AlignmentDirectional(-0.94, 1),
+          begin: const AlignmentDirectional(0.94, -1),
+          end: const AlignmentDirectional(-0.94, 1),
         ),
       ),
       child: SafeArea(
@@ -39,7 +39,7 @@ class ProfileHeader extends StatelessWidget {
             // Animated profile image
             TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 800),
+              duration: const Duration(milliseconds: 800),
               curve: Curves.elasticOut,
               builder: (context, value, child) {
                 return Transform.scale(
@@ -73,12 +73,12 @@ class ProfileHeader extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             // Animated display name
             Consumer<ProfileProvider>(
               builder: (context, profileProvider, child) {
                 if (profileProvider.displayName == null) {
-                  return SizedBox(
+                  return const SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
@@ -95,19 +95,19 @@ class ProfileHeader extends StatelessWidget {
                 }
               },
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             // Animated email verification status
             FutureBuilder<bool>(
               future: isEmailVerified(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return SizedBox(
+                  return const SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   );
                 } else if (snapshot.hasError) {
-                  return Text('Error loading verification status');
+                  return const Text('Error loading verification status');
                 } else {
                   bool isVerified = snapshot.data!;
                   return Center(
@@ -121,13 +121,13 @@ class ProfileHeader extends StatelessWidget {
                             color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         if (isVerified)
-                          Icon(Icons.verified_outlined, color: Colors.green)
+                          const Icon(Icons.verified_outlined, color: Colors.green)
                         else
                           TextButton(
                             onPressed: () => sendVerificationEmail(context),
-                            child: Icon(Icons.error, color: Colors.red),
+                            child: const Icon(Icons.error, color: Colors.red),
                           )
                       ],
                     ),

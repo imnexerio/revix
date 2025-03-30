@@ -15,7 +15,7 @@ class AboutPage extends StatelessWidget {
         builder: (BuildContext context, BoxConstraints constraints) {
           return SingleChildScrollView(
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -26,7 +26,7 @@ class AboutPage extends StatelessWidget {
                       child: Stack(
                         children: [
                           ColorFiltered(
-                            colorFilter: ColorFilter.mode(
+                            colorFilter: const ColorFilter.mode(
                               Colors.grey,
                               BlendMode.saturation,
                             ),
@@ -55,7 +55,7 @@ class AboutPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(
                     'reTracker',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -63,14 +63,14 @@ class AboutPage extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 5),
                   FutureBuilder<String>(
                     future: getAppVersion(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
+                        return const CircularProgressIndicator();
                       } else if (snapshot.hasError) {
-                        return Text('Error loading version');
+                        return const Text('Error loading version');
                       } else {
                         return Column(
                           children: [
@@ -84,9 +84,9 @@ class AboutPage extends StatelessWidget {
                                     fontSize: 14,
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     border: Border.all(color: Theme.of(context).colorScheme.secondary),
                                     borderRadius: BorderRadius.circular(8),
@@ -102,7 +102,7 @@ class AboutPage extends StatelessWidget {
                               ],
                             ),
                             IconButton(
-                              icon: ImageIcon(
+                              icon: const ImageIcon(
                                 AssetImage('assets/github.png'), // Path to your GitHub icon
                               ),
                               onPressed: () {
@@ -119,12 +119,12 @@ class AboutPage extends StatelessWidget {
                       color: Colors.grey.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: FutureBuilder<String>(
                       future: fetchReleaseNotes(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Center(
+                          return const Center(
                             child: CircularProgressIndicator(),
                           );
                         } else if (snapshot.hasError) {
@@ -142,7 +142,7 @@ class AboutPage extends StatelessWidget {
                       },
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Container(
                     width: 200, // Set the desired width
                     child: FilledButton(
@@ -156,13 +156,13 @@ class AboutPage extends StatelessWidget {
 
                       },
                       style: FilledButton.styleFrom(
-                        minimumSize: Size(double.infinity, 55),
+                        minimumSize: const Size(double.infinity, 55),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                         backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
-                      child: Text(
+                      child: const Text(
                         'I Understand',
                         style: TextStyle(
                           fontSize: 16,
