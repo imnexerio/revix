@@ -47,7 +47,6 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   Future<void> _initializeSelectedSubjectCode() async {
     try {
       final data = await fetchSubjectsAndCodes();
-      print('Data: $data');
 
       setState(() {
         _subjectData = data;
@@ -63,7 +62,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
         }
       });
     } catch (e) {
-      print('Error initializing subject code: $e');
+      // print('Error initializing subject code: $e');
       setState(() {
         _isLoading = false;
       });
