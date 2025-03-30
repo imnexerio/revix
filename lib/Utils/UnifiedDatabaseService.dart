@@ -171,8 +171,8 @@ class CombinedDatabaseService {
     // Calculate dates on-the-fly
     final DateTime today = DateTime.now();
     final String todayStr = today.toIso8601String().split('T')[0];
-    final String nextDayStr = today.add(Duration(days: 1)).toIso8601String().split('T')[0];
-    final DateTime next7Days = today.add(Duration(days: 7));
+    final String nextDayStr = today.add(const Duration(days: 1)).toIso8601String().split('T')[0];
+    final DateTime next7Days = today.add(const Duration(days: 7));
 
     // Pre-allocate lists
     List<Map<String, dynamic>> todayRecords = [];
@@ -288,7 +288,7 @@ class CombinedDatabaseService {
       } catch (error) {
         String errorMsg = 'Failed to refresh data: $error';
         _addErrorToAllControllers(errorMsg);
-        throw error;
+        rethrow;
       }
     }
   }
