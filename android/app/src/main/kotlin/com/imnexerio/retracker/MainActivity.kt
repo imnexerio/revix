@@ -6,8 +6,11 @@ import io.flutter.plugin.common.MethodChannel
 import android.content.Intent
 import android.os.Bundle
 
+
+
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.imnexerio.retracker/widget_refresh"
+    private var screenOnReceiver: ScreenOnReceiver? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -35,10 +38,22 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Register screen on broadcast receiver
+        screenOnReceiver = ScreenOnReceiver.register(applicationContext)
+
         // Handle the widget refresh intent
         if (intent?.extras?.getBoolean("widget_refresh") == true) {
             // We need to keep the app in the background
             // The HomeWidget plugin will handle the actual data refresh
         }
+    }
+
+    override fun onDestroy() {
+        // Unregister the receiver when activity is destroyed
+        screenOnReceiver?.let {
+            applicationContext.unregisterReceiver(it)
+            screenOnReceiver = null
+        }
+        super.onDestroy()
     }
 }
