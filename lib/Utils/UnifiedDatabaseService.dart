@@ -319,11 +319,11 @@ class CombinedDatabaseService {
   }
 
   // Method to manually update the widget with cached data
-  Future<void> updateWidgetWithCachedData() async {
-    if (_cachedCategorizedData != null && _auth.currentUser != null) {
-      await HomeWidgetService.updateWidgetData(_cachedCategorizedData!['today'] ?? []);
-    }
-  }
+  // Future<void> updateWidgetWithCachedData() async {
+  //   if (_cachedCategorizedData != null && _auth.currentUser != null) {
+  //     await HomeWidgetService.updateWidgetData(_cachedCategorizedData!['today'] ?? []);
+  //   }
+  // }
 
   // Helper to add the same error to all controllers
   void _addErrorToAllControllers(String errorMsg) {

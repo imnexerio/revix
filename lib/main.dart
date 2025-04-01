@@ -8,13 +8,11 @@ import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'AI/ChatPage.dart';
 import 'HomePage/HomePage.dart';
-import 'HomeWidget/HomeWidgetManager.dart';
 import 'SchedulePage/TodayPage.dart';
 import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
-import 'Utils/UnifiedDatabaseService.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -26,10 +24,10 @@ void main() async {
   await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
 
   // Initialize the database service
-  CombinedDatabaseService().initialize();
+  // CombinedDatabaseService().initialize();
 
   // Initialize the home widget service
-  await HomeWidgetService.initialize();
+  // await HomeWidgetService.initialize();
 
   runApp(
     MultiProvider(
@@ -59,7 +57,7 @@ class _MyAppState extends State<MyApp> {
 
     // Ensure widget data is updated when app starts
     // if (FirebaseAuth.instance.currentUser != null) {
-      CombinedDatabaseService().updateWidgetWithCachedData();
+    //   CombinedDatabaseService().updateWidgetWithCachedData();
     // }
   }
 
