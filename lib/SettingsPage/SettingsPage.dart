@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// import '../HomeWidget/HomeWidgetManager.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
 import '../Utils/UnifiedDatabaseService.dart';
@@ -55,8 +54,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   void initState() {
     super.initState();
 
-    // First load cached data (will display immediately if available)
-    // Then fetch updated profile data in the background
     final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
     profileProvider.loadProfileImage(context);
     profileProvider.loadDisplayName();

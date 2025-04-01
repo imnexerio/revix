@@ -1,16 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/foundation.dart';
 import 'package:retracker/Utils/platform_utils.dart';
-
 import '../HomeWidget/HomeWidgetManager.dart';
 
-/// CombinedDatabaseService combines the functionality of UnifiedDatabaseService and SubjectDataProvider
-/// and handles home widget data updates automatically
 class CombinedDatabaseService {
-  // Singleton pattern implementation
   static final CombinedDatabaseService _instance = CombinedDatabaseService._internal();
 
   factory CombinedDatabaseService() {
@@ -18,7 +12,6 @@ class CombinedDatabaseService {
   }
 
   CombinedDatabaseService._internal() {
-    // Initialize auth listener when the service is first created
     _auth.authStateChanges().listen((User? user) {
       _cleanupCurrentListener();
       if (user != null) {
@@ -29,15 +22,12 @@ class CombinedDatabaseService {
     });
   }
 
-  // Firebase instances
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseDatabase _database = FirebaseDatabase.instance;
 
-  // Database reference and subscription
   DatabaseReference? _databaseRef;
   StreamSubscription<DatabaseEvent>? _databaseSubscription;
 
-  // Stream controllers for different data views
   final StreamController<Map<String, List<Map<String, dynamic>>>> _categorizedRecordsController =
   StreamController<Map<String, List<Map<String, dynamic>>>>.broadcast();
 
@@ -50,7 +40,6 @@ class CombinedDatabaseService {
   final StreamController<dynamic> _rawDataController =
   StreamController<dynamic>.broadcast();
 
-  // Expose streams that components can listen to
   Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
       _categorizedRecordsController.stream;
 
@@ -63,12 +52,10 @@ class CombinedDatabaseService {
   Stream<dynamic> get rawDataStream =>
       _rawDataController.stream;
 
-  // Cached data for faster access
   Map<String, dynamic>? _cachedSubjectsData;
   dynamic _cachedRawData;
   Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;
 
-  // Initialize the service (can be called manually or automatically via auth state)
   void initialize() {
     User? user = _auth.currentUser;
     if (user == null) {
@@ -79,26 +66,18 @@ class CombinedDatabaseService {
     _initialize(user.uid);
   }
 
-  // Internal initialization with user ID
   void _initialize(String uid) {
     _databaseRef = _database.ref('users/$uid/user_data');
-
-    // Enable offline persistence
-    // _databaseRef!.keepSynced(true);
-
-    // Set up single database listener
     _setupDatabaseListener();
   }
 
   void _setupDatabaseListener() {
-    // Cancel existing subscription if any
     _databaseSubscription?.cancel();
 
     if (_databaseRef == null) return;
 
     _databaseSubscription = _databaseRef!.onValue.listen((event) {
       if (!event.snapshot.exists) {
-        // Send empty data to all streams
         Map<String, List<Map<String, dynamic>>> emptyData = {
           'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
         };
@@ -108,12 +87,9 @@ class CombinedDatabaseService {
         _subjectsController.add({'subjects': [], 'subjectCodes': {}});
         _rawDataController.add(null);
 
-        // Update widget with empty today records
         _updateHomeWidget([]);
         return;
       }
-
-      // Process snapshot data once and distribute to all streams
       _processSnapshot(event.snapshot);
 
     }, onError: (error) {
@@ -122,10 +98,8 @@ class CombinedDatabaseService {
     });
   }
 
-  // Process snapshot data efficiently for all streams
   void _processSnapshot(DataSnapshot snapshot) {
     if (!snapshot.exists) {
-      // Send empty data to all streams
       Map<String, List<Map<String, dynamic>>> emptyData = {
         'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
       };
@@ -135,28 +109,22 @@ class CombinedDatabaseService {
       _subjectsController.add({'subjects': [], 'subjectCodes': {}});
       _rawDataController.add(null);
 
-      // Update widget with empty today records
       _updateHomeWidget([]);
       return;
     }
 
-    // Get the raw data
     Map<Object?, Object?> rawData = snapshot.value as Map<Object?, Object?>;
 
-    // Cache and broadcast raw data
     _cachedRawData = rawData;
     _rawDataController.add(_cachedRawData);
 
-    // Process for categorized view
     Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(rawData);
     _cachedCategorizedData = categorizedData;
     _categorizedRecordsController.add(categorizedData);
 
-    // Process for all records view
     List<Map<String, dynamic>> allRecords = _processAllRecords(rawData);
     _allRecordsController.add({'allRecords': allRecords});
 
-    // Process for subjects view (formerly SubjectDataProvider)
     _processSubjectsData(rawData);
 
     if (PlatformUtils.instance.isAndroid) {
@@ -164,12 +132,10 @@ class CombinedDatabaseService {
     }
   }
 
-  // Update the home widget with today's records
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords) {
       HomeWidgetService.updateWidgetData(todayRecords);
   }
 
-  // Process subjects data for the subjects stream
   void _processSubjectsData(Map<Object?, Object?> rawData) {
     List<String> subjects = rawData.keys
         .map((key) => key.toString())
@@ -192,22 +158,18 @@ class CombinedDatabaseService {
     _subjectsController.add(_cachedSubjectsData!);
   }
 
-  // Method for categorized data processing
   Map<String, List<Map<String, dynamic>>> _processCategorizedData(Map<Object?, Object?> rawData) {
-    // Calculate dates on-the-fly
     final DateTime today = DateTime.now();
     final String todayStr = today.toIso8601String().split('T')[0];
     final String nextDayStr = today.add(const Duration(days: 1)).toIso8601String().split('T')[0];
     final DateTime next7Days = today.add(const Duration(days: 7));
 
-    // Pre-allocate lists
     List<Map<String, dynamic>> todayRecords = [];
     List<Map<String, dynamic>> missedRecords = [];
     List<Map<String, dynamic>> nextDayRecords = [];
     List<Map<String, dynamic>> next7DaysRecords = [];
     List<Map<String, dynamic>> todayAddedRecords = [];
 
-    // Process records
     rawData.forEach((subjectKey, subjectValue) {
       if (subjectValue is! Map) return;
 
@@ -221,10 +183,8 @@ class CombinedDatabaseService {
           final dateInitiated = recordValue['initiated_on'];
           final status = recordValue['status'];
 
-          // Early filtering - skip disabled records
           if (dateScheduled == null || status != 'Enabled') return;
 
-          // Create record map
           final Map<String, dynamic> record = {
             'subject': subjectKey.toString(),
             'subject_code': codeKey.toString(),
@@ -245,10 +205,7 @@ class CombinedDatabaseService {
             'only_once': recordValue['only_once'],
           };
 
-          // Parse date only once
           final scheduledDateStr = dateScheduled.toString().split('T')[0];
-
-          // Categorize
           if (scheduledDateStr == todayStr) {
             todayRecords.add(record);
           } else if (scheduledDateStr.compareTo(todayStr) < 0) {
@@ -277,7 +234,6 @@ class CombinedDatabaseService {
     };
   }
 
-  // Method for all records processing
   List<Map<String, dynamic>> _processAllRecords(Map<Object?, Object?> rawData) {
     List<Map<String, dynamic>> allRecords = [];
 
@@ -304,7 +260,6 @@ class CombinedDatabaseService {
     return allRecords;
   }
 
-  // Force refresh of the data
   Future<void> forceDataReprocessing() async {
     if (_databaseRef != null) {
       try {
@@ -319,14 +274,7 @@ class CombinedDatabaseService {
     }
   }
 
-  // Method to manually update the widget with cached data
-  // Future<void> updateWidgetWithCachedData() async {
-  //   if (_cachedCategorizedData != null && _auth.currentUser != null) {
-  //     await HomeWidgetService.updateWidgetData(_cachedCategorizedData!['today'] ?? []);
-  //   }
-  // }
 
-  // Helper to add the same error to all controllers
   void _addErrorToAllControllers(String errorMsg) {
     _categorizedRecordsController.addError(errorMsg);
     _allRecordsController.addError(errorMsg);
@@ -334,7 +282,6 @@ class CombinedDatabaseService {
     _rawDataController.addError(errorMsg);
   }
 
-  // Reset state when user logs out
   void _resetState() {
     _cachedSubjectsData = null;
     _cachedRawData = null;
@@ -342,18 +289,15 @@ class CombinedDatabaseService {
     _databaseRef = null;
   }
 
-  // Clean up current listener to prevent memory leaks
   void _cleanupCurrentListener() {
     _databaseSubscription?.cancel();
     _databaseSubscription = null;
   }
 
-  // Stop listening to database updates
   void stopListening() {
     _cleanupCurrentListener();
   }
 
-  // Clean up resources
   void dispose() {
     stopListening();
     _categorizedRecordsController.close();
@@ -362,15 +306,12 @@ class CombinedDatabaseService {
     _rawDataController.close();
   }
 
-  // Getter for the database reference
   DatabaseReference? get databaseRef => _databaseRef;
 
-  // SubjectDataProvider compatibility methods
   Map<String, dynamic>? get currentSubjectsData => _cachedSubjectsData;
   dynamic get currentRawData => _cachedRawData;
   Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _cachedCategorizedData;
 
-  // Get schedule data as string (for compatibility)
   String getScheduleData() {
     if (_cachedRawData != null) {
       return _cachedRawData.toString();
@@ -378,7 +319,6 @@ class CombinedDatabaseService {
     return 'No schedule data available';
   }
 
-  // Manual fetch method (for compatibility)
   Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
     if (_cachedSubjectsData != null) {
       return _cachedSubjectsData!;
@@ -389,10 +329,8 @@ class CombinedDatabaseService {
       throw Exception('No authenticated user');
     }
 
-    // Force a refresh from the database
     await forceDataReprocessing();
 
-    // If we still don't have cached data, return empty result
     if (_cachedSubjectsData == null) {
       return {'subjects': [], 'subjectCodes': {}};
     }
@@ -400,7 +338,6 @@ class CombinedDatabaseService {
     return _cachedSubjectsData!;
   }
 
-  // Fetch only raw data (for compatibility)
   Future<dynamic> fetchRawData() async {
     if (_cachedRawData != null) {
       return _cachedRawData;
@@ -411,25 +348,20 @@ class CombinedDatabaseService {
       throw Exception('No authenticated user');
     }
 
-    // Force a refresh from the database
     await forceDataReprocessing();
 
     return _cachedRawData;
   }
 }
 
-
-// Backward compatibility functions from SubjectDataProvider
 Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
   return await CombinedDatabaseService().fetchSubjectsAndCodes();
 }
 
-// Get the subjects stream directly
 Stream<Map<String, dynamic>> getSubjectsStream() {
   return CombinedDatabaseService().subjectsStream;
 }
 
-// Backward compatibility class that uses the CombinedDatabaseService internally
 class SubjectDataProvider {
   static final SubjectDataProvider _instance = SubjectDataProvider._internal();
 
@@ -441,7 +373,6 @@ class SubjectDataProvider {
 
   SubjectDataProvider._internal();
 
-  // Forward all method calls to the CombinedDatabaseService
   Stream<Map<String, dynamic>> get subjectsStream => _service.subjectsStream;
   Stream<dynamic> get rawDataStream => _service.rawDataStream;
   Map<String, dynamic>? get currentData => _service.currentSubjectsData;
@@ -453,7 +384,6 @@ class SubjectDataProvider {
   void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
 }
 
-// Backward compatibility class that uses the CombinedDatabaseService internally
 class UnifiedDatabaseService {
   static final UnifiedDatabaseService _instance = UnifiedDatabaseService._internal();
 
@@ -465,7 +395,6 @@ class UnifiedDatabaseService {
 
   UnifiedDatabaseService._internal();
 
-  // Forward all method calls to the CombinedDatabaseService
   Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
       _service.categorizedRecordsStream;
 
