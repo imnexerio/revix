@@ -1,9 +1,15 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
+import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/customSnackBar_error.dart';
 import 'AboutPage.dart';
 import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
@@ -91,28 +97,46 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
 
   Future<void> _logout(BuildContext context) async {
-    // Add a subtle animation before logout
-    _animationController.reverse().then((_) async {
+    try {
+      await _animationController.reverse();
+      final databaseService = CombinedDatabaseService();
+      databaseService.stopListening();
+      await FirebaseAuth.instance.signOut();
+      await HomeWidgetService.updateWidgetData([]);
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove('isLoggedIn');
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            var begin = const Offset(0.0, 1.0);
-            var end = Offset.zero;
-            var curve = Curves.easeInOutCubic;
-            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-            return SlideTransition(
-              position: animation.drive(tween),
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
-    });
+      await prefs.clear();
+
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              var begin = const Offset(0.0, 1.0);
+              var end = Offset.zero;
+              var curve = Curves.easeInOutCubic;
+              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+              return SlideTransition(
+                position: animation.drive(tween),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      }
+    } catch (e) {
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          customSnackBar_error(
+            context: context,
+            message: 'Error during logout: $e',
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _refreshProfile() async {
