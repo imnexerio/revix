@@ -92,10 +92,11 @@ internal fun updateAppWidget(
     val jsonData = sharedPreferences.getString("todayRecords", "[]")
     val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
     val lastUpdated = sharedPreferences.getLong("lastUpdated", 0L)
+    val jsonArray = JSONArray(jsonData)
+    val count = jsonArray.length()
 
     try {
-        val jsonArray = JSONArray(jsonData)
-        val count = jsonArray.length()
+
 
         views.setTextViewText(R.id.title_text, "Today's Schedule (${count})")
 
@@ -109,11 +110,11 @@ internal fun updateAppWidget(
         if (lastUpdated > 0) {
             val dateFormat = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             val lastUpdateTime = dateFormat.format(java.util.Date(lastUpdated))
-            views.setTextViewText(R.id.title_text, "Today's Schedule (${count}) • ${lastUpdateTime}")
+            views.setTextViewText(R.id.title_text, "${count} @ ${lastUpdateTime}")
         }
     } catch (e: JSONException) {
-        e.printStackTrace()
-        views.setTextViewText(R.id.title_text, "Today's Schedule (0)")
+//        e.printStackTrace()
+        views.setTextViewText(R.id.title_text, "${count} @ ${e.message}")
     }
 
     // Set up the refresh button click with a unique request code for each widget
