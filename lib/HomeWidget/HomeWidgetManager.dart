@@ -51,10 +51,10 @@ class HomeWidgetService {
       // Request widget update
       await _updateWidget();
 
-      debugPrint('Widget data updated successfully with ${todayRecords.length} records');
-      debugPrint('Login status updated: $isLoggedIn');
+      // debugPrint('Widget data updated successfully with ${todayRecords.length} records');
+      // debugPrint('Login status updated: $isLoggedIn');
     } catch (e) {
-      debugPrint('Error updating widget data: $e');
+      // debugPrint('Error updating widget data: $e');
     }
   }
 
@@ -83,6 +83,6 @@ class HomeWidgetService {
     final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
     await _updateWidget();
-    debugPrint('Login status updated: $isLoggedIn');
+    // debugPrint('Login status updated: $isLoggedIn');
   }
 }
