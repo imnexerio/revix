@@ -13,10 +13,12 @@ import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
+import 'Utils/platform_utils.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PlatformUtils.init();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;

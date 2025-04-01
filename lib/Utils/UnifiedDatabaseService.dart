@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
+import 'package:retracker/Utils/platform_utils.dart';
 
 import '../HomeWidget/HomeWidgetManager.dart';
 
@@ -156,16 +159,14 @@ class CombinedDatabaseService {
     // Process for subjects view (formerly SubjectDataProvider)
     _processSubjectsData(rawData);
 
-    // Update home widget with today's records
-    _updateHomeWidget(categorizedData['today'] ?? []);
+    if (PlatformUtils.instance.isAndroid) {
+      _updateHomeWidget(categorizedData['today'] ?? []);
+    }
   }
 
   // Update the home widget with today's records
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords) {
-    // Only update if user is logged in
-    if (_auth.currentUser != null) {
       HomeWidgetService.updateWidgetData(todayRecords);
-    }
   }
 
   // Process subjects data for the subjects stream
@@ -416,6 +417,7 @@ class CombinedDatabaseService {
     return _cachedRawData;
   }
 }
+
 
 // Backward compatibility functions from SubjectDataProvider
 Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
