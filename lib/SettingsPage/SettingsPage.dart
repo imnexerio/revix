@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// import '../HomeWidget/HomeWidgetManager.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
+import '../Utils/platform_utils.dart';
 import 'AboutPage.dart';
 import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
@@ -99,14 +101,15 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       final databaseService = CombinedDatabaseService();
       databaseService.stopListening();
 
-      // Update widget data with empty list before signing out
-      await HomeWidgetService.updateWidgetData([]);
+      if (PlatformUtils.instance.isAndroid) {
+        await HomeWidgetService.updateWidgetData([]);
+      }
 
-      // Sign out from Firebase
       await FirebaseAuth.instance.signOut();
 
-      // Update login status in widget after signout
-      await HomeWidgetService.updateLoginStatus();
+      if (PlatformUtils.instance.isAndroid) {
+        await HomeWidgetService.updateLoginStatus();
+      }
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
