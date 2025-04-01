@@ -1,5 +1,6 @@
 package com.imnexerio.retracker
 
+import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -14,7 +15,14 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "refreshCompleted") {
-                // Notify widgets that refresh is complete
+                // Notify widgets that refresh is complete with timestamp
+                val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                if (!sharedPreferences.contains("lastUpdated")) {
+                    val editor = sharedPreferences.edit()
+                    editor.putLong("lastUpdated", System.currentTimeMillis())
+                    editor.apply()
+                }
+
                 TodayWidget.updateWidgets(this)
                 result.success(true)
             } else if (call.method == "manualRefresh") {

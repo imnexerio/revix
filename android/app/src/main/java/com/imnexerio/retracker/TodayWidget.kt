@@ -21,6 +21,15 @@ class TodayWidget : AppWidgetProvider() {
                 ComponentName(context, TodayWidget::class.java)
             )
 
+            // Force a full update for each widget
+            for (appWidgetId in appWidgetIds) {
+                updateAppWidget(context, appWidgetManager, appWidgetId)
+            }
+
+            // Ensure data changes for the ListView are notified
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
+
+            // Send a broadcast to update all widgets
             val updateIntent = Intent(context, TodayWidget::class.java)
             updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
             updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)

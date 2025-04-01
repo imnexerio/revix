@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../Utils/UnifiedDatabaseService.dart';
@@ -53,6 +54,12 @@ class HomeWidgetService {
         jsonEncode(formattedData),
       );
 
+      // Add timestamp to update the "last updated" time in widget
+      await HomeWidget.saveWidgetData(
+        'lastUpdated',
+        DateTime.now().millisecondsSinceEpoch,
+      );
+
       // Request widget update
       await _updateWidget();
     } catch (e) {
@@ -76,6 +83,14 @@ class HomeWidgetService {
       androidName: 'TodayWidget',
       iOSName: 'TodayWidget',
     );
+
+    // Notify the native side that data was updated from Flutter
+    var platform = MethodChannel('com.imnexerio.retracker/widget_refresh');
+    try {
+      await platform.invokeMethod('refreshCompleted');
+    } catch (e) {
+      // Channel might not be initialized yet, which is fine
+    }
   }
 
   static Future<void> updateLoginStatus() async {
