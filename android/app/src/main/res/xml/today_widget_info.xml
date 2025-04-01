@@ -8,7 +8,7 @@
     android:previewImage="@mipmap/ic_launcher"
     android:previewLayout="@layout/today_widget"
     android:resizeMode="horizontal|vertical"
-    android:targetCellWidth="4"
-    android:targetCellHeight="4"
+    android:targetCellWidth="1"
+    android:targetCellHeight="1"
     android:updatePeriodMillis="86400000"
     android:widgetCategory="home_screen" />

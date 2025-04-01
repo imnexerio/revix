@@ -1,6 +1,7 @@
 // Add this in your main.dart or in a dedicated widget_service.dart file
 
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -9,18 +10,38 @@ import '../Utils/UnifiedDatabaseService.dart';
 class HomeWidgetService {
   static const String appGroupId = 'HomeWidgetPreferences';
   static const String todayRecordsKey = 'todayRecords';
+  static bool _isInitialized = false;
 
   // Initialize the service and setup listeners
   static Future<void> initialize() async {
-    // Register for callbacks when widget is updated
+    if (_isInitialized) return;
+
+// Register for callbacks when widget is updated
     HomeWidget.setAppGroupId(appGroupId);
 
-    // Listen for widget launched app
+// Listen for widget launched app
     HomeWidget.widgetClicked.listen(_widgetClicked);
 
-    // Initial data update
-    await updateWidgetData();
+// Only update widget data if user is logged in
+    if (FirebaseAuth.instance.currentUser != null) {
+      await updateWidgetData();
+    } else {
+// For first installation with no login, provide empty data to widget
+      await HomeWidget.saveWidgetData(
+        todayRecordsKey,
+        jsonEncode([]),
+      );
+      await HomeWidget.updateWidget(
+        name: 'TodayWidget',
+        androidName: 'TodayWidget',
+        iOSName: 'TodayWidget',
+      );
+    }
+
+    _isInitialized = true;
   }
+
+
 
   // Handle widget click events
   static void _widgetClicked(Uri? uri) {
