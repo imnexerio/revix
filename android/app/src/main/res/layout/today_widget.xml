@@ -4,10 +4,22 @@
     android:padding="16dp"
     android:background="@color/white">
 
+    <TextView
+        android:id="@+id/title_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Today's Schedule"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/text"
+        android:gravity="center"
+        />
+
     <ListView
         android:id="@+id/widget_listview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/title_text"
         android:divider="@color/divider"
         android:dividerHeight="1dp" />
 
@@ -15,6 +27,7 @@
         android:id="@+id/empty_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/title_text"
         android:gravity="center"
         android:text="No tasks for today enjoy your day"
         android:textSize="16sp"
