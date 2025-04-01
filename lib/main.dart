@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:retracker/AddLectureForm.dart';
 import 'package:retracker/DetailsPage/DetailsPage.dart';
@@ -8,11 +9,13 @@ import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'AI/ChatPage.dart';
 import 'HomePage/HomePage.dart';
+import 'HomeWidget/HomeWidgetManager.dart';
 import 'SchedulePage/TodayPage.dart';
 import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
+import 'Utils/UnifiedDatabaseService.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -22,6 +25,11 @@ void main() async {
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
   await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
+
+  await HomeWidgetService.initialize();
+
+  // Setup periodic widget updates
+  setupWidgetUpdates();
 
   runApp(
     MultiProvider(
@@ -34,11 +42,48 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+void setupWidgetUpdates() {
+  // Listen to app lifecycle changes to update widget when app comes to foreground
+  WidgetsBinding.instance.addObserver(AppLifecycleObserver());
+
+  // Also set up HomeWidget callbacks
+  HomeWidget.widgetClicked.listen((_) {
+    // Refresh widget data when widget is clicked
+    HomeWidgetService.refreshWidgetData();
+  });
+}
+
+// Observer to update widget when app is resumed
+class AppLifecycleObserver extends WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      HomeWidgetService.refreshWidgetData();
+    }
+  }
+}
+
+class MyApp extends StatefulWidget {
   final bool isLoggedIn;
   final SharedPreferences prefs;
 
   const MyApp({Key? key, required this.isLoggedIn, required this.prefs}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen to data changes from CombinedDatabaseService
+    CombinedDatabaseService().categorizedRecordsStream.listen((_) {
+      // Update widget whenever data changes
+      HomeWidgetService.refreshWidgetData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +98,7 @@ class MyApp extends StatelessWidget {
           initialRoute: '/',
           routes: {
             '/': (context) => const SplashScreen(),
-            '/home': (context) => isLoggedIn ? const MyHomePage() : LoginPage(),
+            '/home': (context) => widget.isLoggedIn ? const MyHomePage() : LoginPage(),
           },
         );
       },
