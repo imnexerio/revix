@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+import '../HomeWidget/HomeWidgetManager.dart';
+
 /// CombinedDatabaseService combines the functionality of UnifiedDatabaseService and SubjectDataProvider
-/// into a single, efficient service that maintains only one Firebase listener.
+/// and handles home widget data updates automatically
 class CombinedDatabaseService {
   // Singleton pattern implementation
   static final CombinedDatabaseService _instance = CombinedDatabaseService._internal();
@@ -61,6 +63,7 @@ class CombinedDatabaseService {
   // Cached data for faster access
   Map<String, dynamic>? _cachedSubjectsData;
   dynamic _cachedRawData;
+  Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;
 
   // Initialize the service (can be called manually or automatically via auth state)
   void initialize() {
@@ -93,12 +96,17 @@ class CombinedDatabaseService {
     _databaseSubscription = _databaseRef!.onValue.listen((event) {
       if (!event.snapshot.exists) {
         // Send empty data to all streams
-        _categorizedRecordsController.add({
+        Map<String, List<Map<String, dynamic>>> emptyData = {
           'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
-        });
+        };
+        _cachedCategorizedData = emptyData;
+        _categorizedRecordsController.add(emptyData);
         _allRecordsController.add({'allRecords': []});
         _subjectsController.add({'subjects': [], 'subjectCodes': {}});
         _rawDataController.add(null);
+
+        // Update widget with empty today records
+        _updateHomeWidget([]);
         return;
       }
 
@@ -115,12 +123,17 @@ class CombinedDatabaseService {
   void _processSnapshot(DataSnapshot snapshot) {
     if (!snapshot.exists) {
       // Send empty data to all streams
-      _categorizedRecordsController.add({
+      Map<String, List<Map<String, dynamic>>> emptyData = {
         'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
-      });
+      };
+      _cachedCategorizedData = emptyData;
+      _categorizedRecordsController.add(emptyData);
       _allRecordsController.add({'allRecords': []});
       _subjectsController.add({'subjects': [], 'subjectCodes': {}});
       _rawDataController.add(null);
+
+      // Update widget with empty today records
+      _updateHomeWidget([]);
       return;
     }
 
@@ -133,6 +146,7 @@ class CombinedDatabaseService {
 
     // Process for categorized view
     Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(rawData);
+    _cachedCategorizedData = categorizedData;
     _categorizedRecordsController.add(categorizedData);
 
     // Process for all records view
@@ -141,6 +155,17 @@ class CombinedDatabaseService {
 
     // Process for subjects view (formerly SubjectDataProvider)
     _processSubjectsData(rawData);
+
+    // Update home widget with today's records
+    _updateHomeWidget(categorizedData['today'] ?? []);
+  }
+
+  // Update the home widget with today's records
+  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords) {
+    // Only update if user is logged in
+    if (_auth.currentUser != null) {
+      HomeWidgetService.updateWidgetData(todayRecords);
+    }
   }
 
   // Process subjects data for the subjects stream
@@ -293,6 +318,13 @@ class CombinedDatabaseService {
     }
   }
 
+  // Method to manually update the widget with cached data
+  Future<void> updateWidgetWithCachedData() async {
+    if (_cachedCategorizedData != null && _auth.currentUser != null) {
+      await HomeWidgetService.updateWidgetData(_cachedCategorizedData!['today'] ?? []);
+    }
+  }
+
   // Helper to add the same error to all controllers
   void _addErrorToAllControllers(String errorMsg) {
     _categorizedRecordsController.addError(errorMsg);
@@ -305,6 +337,7 @@ class CombinedDatabaseService {
   void _resetState() {
     _cachedSubjectsData = null;
     _cachedRawData = null;
+    _cachedCategorizedData = null;
     _databaseRef = null;
   }
 
@@ -334,6 +367,7 @@ class CombinedDatabaseService {
   // SubjectDataProvider compatibility methods
   Map<String, dynamic>? get currentSubjectsData => _cachedSubjectsData;
   dynamic get currentRawData => _cachedRawData;
+  Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _cachedCategorizedData;
 
   // Get schedule data as string (for compatibility)
   String getScheduleData() {

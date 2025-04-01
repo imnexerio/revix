@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:retracker/AddLectureForm.dart';
 import 'package:retracker/DetailsPage/DetailsPage.dart';
@@ -26,10 +25,11 @@ void main() async {
   ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
   await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
 
-  await HomeWidgetService.initialize();
+  // Initialize the database service
+  CombinedDatabaseService().initialize();
 
-  // Setup periodic widget updates
-  setupWidgetUpdates();
+  // Initialize the home widget service
+  await HomeWidgetService.initialize();
 
   runApp(
     MultiProvider(
@@ -40,27 +40,6 @@ void main() async {
       child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
     ),
   );
-}
-
-void setupWidgetUpdates() {
-  // Listen to app lifecycle changes to update widget when app comes to foreground
-  WidgetsBinding.instance.addObserver(AppLifecycleObserver());
-
-  // Also set up HomeWidget callbacks
-  HomeWidget.widgetClicked.listen((_) {
-    // Refresh widget data when widget is clicked
-    HomeWidgetService.refreshWidgetData();
-  });
-}
-
-// Observer to update widget when app is resumed
-class AppLifecycleObserver extends WidgetsBindingObserver {
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      HomeWidgetService.refreshWidgetData();
-    }
-  }
 }
 
 class MyApp extends StatefulWidget {
@@ -78,11 +57,10 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    // Listen to data changes from CombinedDatabaseService
-    CombinedDatabaseService().categorizedRecordsStream.listen((_) {
-      // Update widget whenever data changes
-      HomeWidgetService.refreshWidgetData();
-    });
+    // Ensure widget data is updated when app starts
+    // if (FirebaseAuth.instance.currentUser != null) {
+      CombinedDatabaseService().updateWidgetWithCachedData();
+    // }
   }
 
   @override

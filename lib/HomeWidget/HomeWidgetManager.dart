@@ -3,67 +3,33 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter/material.dart';
 
-import '../Utils/UnifiedDatabaseService.dart';
-
 class HomeWidgetService {
   static const String appGroupId = 'HomeWidgetPreferences';
   static const String todayRecordsKey = 'todayRecords';
   static bool _isInitialized = false;
 
-  // Initialize the service and setup listeners
+  // Initialize the service
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-// Register for callbacks when widget is updated
+    // Register app group for the widget
     HomeWidget.setAppGroupId(appGroupId);
 
-// Listen for widget launched app
-    HomeWidget.widgetClicked.listen(_widgetClicked);
-
-// Only update widget data if user is logged in
-    if (FirebaseAuth.instance.currentUser != null) {
-      await updateWidgetData();
-    } else {
-// For first installation with no login, provide empty data to widget
+    // For first installation with no login, provide empty data to widget
+    if (FirebaseAuth.instance.currentUser == null) {
       await HomeWidget.saveWidgetData(
         todayRecordsKey,
         jsonEncode([]),
       );
-      await HomeWidget.updateWidget(
-        name: 'TodayWidget',
-        androidName: 'TodayWidget',
-        iOSName: 'TodayWidget',
-      );
+      await _updateWidget();
     }
 
     _isInitialized = true;
   }
 
-
-
-  // Handle widget click events
-  static void _widgetClicked(Uri? uri) {
-    // Handle widget taps here - e.g., navigate to a specific page
-    debugPrint('Widget clicked with data: $uri');
-    refreshWidgetData();
-  }
-
-  // Update widget with today's records data
-  static Future<void> updateWidgetData() async {
+  // Update widget with provided data
+  static Future<void> updateWidgetData(List<Map<String, dynamic>> todayRecords) async {
     try {
-      // Get the database service
-      final databaseService = CombinedDatabaseService();
-
-      // Try to get cached data first or force refresh
-      var cachedData = databaseService.currentRawData;
-      if (cachedData == null) {
-        await databaseService.forceDataReprocessing();
-      }
-
-      // Get today's records from the service
-      final categorizedData = await databaseService.categorizedRecordsStream.first;
-      final todayRecords = categorizedData['today'] ?? [];
-
       // Format today's records for the widget
       final formattedData = _formatTodayRecords(todayRecords);
 
@@ -74,11 +40,7 @@ class HomeWidgetService {
       );
 
       // Request widget update
-      await HomeWidget.updateWidget(
-        name: 'TodayWidget',
-        androidName: 'TodayWidget',
-        iOSName: 'TodayWidget',
-      );
+      await _updateWidget();
 
       debugPrint('Widget data updated successfully with ${todayRecords.length} records');
     } catch (e) {
@@ -97,8 +59,12 @@ class HomeWidgetService {
     }).toList();
   }
 
-  // Call this whenever data changes or at regular intervals
-  static Future<void> refreshWidgetData() async {
-    await updateWidgetData();
+  // Helper method to update widget
+  static Future<void> _updateWidget() async {
+    await HomeWidget.updateWidget(
+      name: 'TodayWidget',
+      androidName: 'TodayWidget',
+      iOSName: 'TodayWidget',
+    );
   }
 }
