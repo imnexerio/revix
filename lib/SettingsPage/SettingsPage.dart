@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,8 +98,15 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       await _animationController.reverse();
       final databaseService = CombinedDatabaseService();
       databaseService.stopListening();
-      await FirebaseAuth.instance.signOut();
+
+      // Update widget data with empty list before signing out
       await HomeWidgetService.updateWidgetData([]);
+
+      // Sign out from Firebase
+      await FirebaseAuth.instance.signOut();
+
+      // Update login status in widget after signout
+      await HomeWidgetService.updateLoginStatus();
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
@@ -127,7 +131,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         );
       }
     } catch (e) {
-
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           customSnackBar_error(

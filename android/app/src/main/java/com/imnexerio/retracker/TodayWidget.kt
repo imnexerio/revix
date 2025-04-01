@@ -45,6 +45,30 @@ internal fun updateAppWidget(
     // Create remote views
     val views = RemoteViews(context.packageName, R.layout.today_widget)
 
+    // Get data from shared preferences to determine if user is logged in
+    val sharedPreferences = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+    val jsonData = sharedPreferences.getString("todayRecords", "[]")
+    val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
+
+    // Parse data to get count
+    try {
+        val jsonArray = JSONArray(jsonData)
+        val count = jsonArray.length()
+
+        // Update title with count
+        views.setTextViewText(R.id.title_text, "Today's Schedule (${count})")
+
+        // Set appropriate empty view message
+        if (!isLoggedIn) {
+            views.setTextViewText(R.id.empty_view, "Please login to view your schedule")
+        } else {
+            views.setTextViewText(R.id.empty_view, "No tasks for today, enjoy your day")
+        }
+    } catch (e: JSONException) {
+        e.printStackTrace()
+        views.setTextViewText(R.id.title_text, "Today's Schedule (0)")
+    }
+
     // Set up the intent for the ListView adapter service
     val intent = Intent(context, WidgetListViewService::class.java)
     views.setRemoteAdapter(R.id.widget_listview, intent)
