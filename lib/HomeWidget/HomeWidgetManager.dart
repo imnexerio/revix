@@ -1,5 +1,3 @@
-// Add this in your main.dart or in a dedicated widget_service.dart file
-
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:home_widget/home_widget.dart';
@@ -47,6 +45,7 @@ class HomeWidgetService {
   static void _widgetClicked(Uri? uri) {
     // Handle widget taps here - e.g., navigate to a specific page
     debugPrint('Widget clicked with data: $uri');
+    refreshWidgetData();
   }
 
   // Update widget with today's records data
