@@ -31,7 +31,6 @@
         android:gravity="center"
         android:text="No tasks for today enjoy your day"
         android:textSize="16sp"
-        android:textColor="@color/text"
-        android:visibility="gone" />
+        android:textColor="@color/text" />
 
 </RelativeLayout>
