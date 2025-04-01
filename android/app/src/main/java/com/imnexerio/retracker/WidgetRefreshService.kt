@@ -15,22 +15,27 @@ import org.json.JSONArray
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import android.os.Handler
+import android.os.Looper
 
 class WidgetRefreshService : Service() {
+    private val handler = Handler(Looper.getMainLooper())
+
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        fetchDataAndUpdateWidget()
-        return START_NOT_STICKY
+        // Ensure the service runs even if killed by the system
+        fetchDataAndUpdateWidget(startId)
+        return START_STICKY
     }
 
-    private fun fetchDataAndUpdateWidget() {
+    private fun fetchDataAndUpdateWidget(startId: Int) {
         val firebaseAuth = FirebaseAuth.getInstance()
         if (firebaseAuth.currentUser == null) {
             updateWidgetWithLoginStatus(false)
-            stopSelf()
+            stopSelfWithDelay(startId)
             return
         }
 
@@ -42,7 +47,7 @@ class WidgetRefreshService : Service() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (!snapshot.exists()) {
                     updateWidgetWithEmptyData(true)
-                    stopSelf()
+                    stopSelfWithDelay(startId)
                     return
                 }
 
@@ -55,14 +60,21 @@ class WidgetRefreshService : Service() {
                     updateWidgetWithEmptyData(true)
                 }
 
-                stopSelf()
+                stopSelfWithDelay(startId)
             }
 
             override fun onCancelled(error: DatabaseError) {
                 updateWidgetWithEmptyData(true)
-                stopSelf()
+                stopSelfWithDelay(startId)
             }
         })
+    }
+
+    // Add a small delay before stopping the service to ensure updates are processed
+    private fun stopSelfWithDelay(startId: Int) {
+        handler.postDelayed({
+            stopSelf(startId)
+        }, 1000) // 1 second delay
     }
 
     private fun processCategorizedData(rawData: Map<*, *>): List<Map<String, String>> {
@@ -106,6 +118,7 @@ class WidgetRefreshService : Service() {
         val editor = sharedPreferences.edit()
         editor.putString("todayRecords", JSONArray(todayRecords).toString())
         editor.putBoolean("isLoggedIn", isLoggedIn)
+        editor.putLong("lastUpdated", System.currentTimeMillis())
         editor.apply()
 
         updateWidgets()
@@ -116,6 +129,7 @@ class WidgetRefreshService : Service() {
         val editor = sharedPreferences.edit()
         editor.putString("todayRecords", "[]")
         editor.putBoolean("isLoggedIn", isLoggedIn)
+        editor.putLong("lastUpdated", System.currentTimeMillis())
         editor.apply()
 
         updateWidgets()
@@ -128,20 +142,24 @@ class WidgetRefreshService : Service() {
         if (!isLoggedIn) {
             editor.putString("todayRecords", "[]")
         }
+        editor.putLong("lastUpdated", System.currentTimeMillis())
         editor.apply()
 
         updateWidgets()
     }
 
     private fun updateWidgets() {
+        // Force update all widgets
+        TodayWidget.updateWidgets(this)
+
+        // Also explicitly notify data changes for the ListView
         val appWidgetManager = AppWidgetManager.getInstance(this)
         val appWidgetIds = appWidgetManager.getAppWidgetIds(
             ComponentName(this, TodayWidget::class.java)
         )
 
-        val updateIntent = Intent(this, TodayWidget::class.java)
-        updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-        updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-        sendBroadcast(updateIntent)
+        for (appWidgetId in appWidgetIds) {
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_listview)
+        }
     }
 }

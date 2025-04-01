@@ -6,18 +6,26 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.os.Bundle
 import android.widget.RemoteViews
-import android.widget.RemoteViewsService
 import org.json.JSONArray
 import org.json.JSONException
-import org.json.JSONObject
-import android.content.SharedPreferences
 
 class TodayWidget : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "com.imnexerio.retracker.ACTION_REFRESH"
+
+        // Add a method to force widget update from anywhere in the app
+        fun updateWidgets(context: Context) {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                ComponentName(context, TodayWidget::class.java)
+            )
+
+            val updateIntent = Intent(context, TodayWidget::class.java)
+            updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+            updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+            context.sendBroadcast(updateIntent)
+        }
     }
 
     override fun onUpdate(
@@ -31,34 +39,39 @@ class TodayWidget : AppWidgetProvider() {
     }
 
     override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
+        // Initial refresh when widget is first added
+        val serviceIntent = Intent(context, WidgetRefreshService::class.java)
+        context.startService(serviceIntent)
     }
 
     override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
+        // Cleanup if needed
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
 
         if (intent.action == ACTION_REFRESH) {
-            // Launch the background service to fetch data
+            // Use foreground service for Android 8+ to ensure reliable execution
             val serviceIntent = Intent(context, WidgetRefreshService::class.java)
             context.startService(serviceIntent)
 
-            // Update all widgets
+            // Update the refresh button to show it's working
+            val views = RemoteViews(context.packageName, R.layout.today_widget)
+            views.setTextViewText(R.id.title_text, "Refreshing...")
+
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(
                 ComponentName(context, TodayWidget::class.java)
             )
 
+            // Update each widget
             for (appWidgetId in appWidgetIds) {
-                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_listview)
+                appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
             }
         }
     }
 }
-
 internal fun updateAppWidget(
     context: Context,
     appWidgetManager: AppWidgetManager,
@@ -69,6 +82,7 @@ internal fun updateAppWidget(
     val sharedPreferences = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
     val jsonData = sharedPreferences.getString("todayRecords", "[]")
     val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
+    val lastUpdated = sharedPreferences.getLong("lastUpdated", 0L)
 
     try {
         val jsonArray = JSONArray(jsonData)
@@ -81,111 +95,40 @@ internal fun updateAppWidget(
         } else {
             views.setTextViewText(R.id.empty_view, "No tasks for today, enjoy your day")
         }
+
+        // Add last updated timestamp if available
+        if (lastUpdated > 0) {
+            val dateFormat = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+            val lastUpdateTime = dateFormat.format(java.util.Date(lastUpdated))
+            views.setTextViewText(R.id.title_text, "Today's Schedule (${count}) • ${lastUpdateTime}")
+        }
     } catch (e: JSONException) {
         e.printStackTrace()
         views.setTextViewText(R.id.title_text, "Today's Schedule (0)")
     }
 
-    // Set up the refresh button click
+    // Set up the refresh button click with a unique request code for each widget
     val refreshIntent = Intent(context, TodayWidget::class.java)
     refreshIntent.action = TodayWidget.ACTION_REFRESH
+
+    // Use a unique request code based on widget ID and current time to avoid PendingIntent caching issues
+    val requestCode = appWidgetId + System.currentTimeMillis().toInt()
+
     val refreshPendingIntent = PendingIntent.getBroadcast(
         context,
-        0,
+        requestCode,
         refreshIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
     views.setOnClickPendingIntent(R.id.refresh_button, refreshPendingIntent)
 
     val intent = Intent(context, WidgetListViewService::class.java)
+    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+    intent.data = android.net.Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME))
+
     views.setRemoteAdapter(R.id.widget_listview, intent)
     views.setEmptyView(R.id.widget_listview, R.id.empty_view)
+
     appWidgetManager.updateAppWidget(appWidgetId, views)
     appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_listview)
-}
-class WidgetListViewService : RemoteViewsService() {
-    override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        return WidgetListViewFactory(this.applicationContext)
-    }
-}
-
-
-class WidgetListViewFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
-    private val todayRecords = ArrayList<Map<String, String>>()
-
-    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(
-        "HomeWidgetPreferences", Context.MODE_PRIVATE)
-
-    override fun onDataSetChanged() {
-        todayRecords.clear()
-
-        try {
-            val jsonData = sharedPreferences.getString("todayRecords", "[]")
-
-            if (jsonData != null && jsonData.isNotEmpty() && jsonData != "[]") {
-                val jsonArray = JSONArray(jsonData)
-
-                for (i in 0 until jsonArray.length()) {
-                    val jsonObject = jsonArray.getJSONObject(i)
-                    val record = mapOf(
-                        "subject" to jsonObject.optString("subject", ""),
-                        "subject_code" to jsonObject.optString("subject_code", ""),
-                        "lecture_no" to jsonObject.optString("lecture_no", "")
-                    )
-                    todayRecords.add(record)
-                }
-            }
-        } catch (e: JSONException) {
-            e.printStackTrace()
-        }
-    }
-
-
-    override fun onCreate() {
-        // Initialize if needed
-    }
-
-
-    override fun onDestroy() {
-        todayRecords.clear()
-    }
-
-    override fun getCount(): Int {
-        return todayRecords.size
-    }
-
-    override fun getViewAt(position: Int): RemoteViews {
-        if (position >= todayRecords.size) {
-            return RemoteViews(context.packageName, R.layout.widget_list_item)
-        }
-
-        val record = todayRecords[position]
-        val rv = RemoteViews(context.packageName, R.layout.widget_list_item)
-
-        rv.setTextViewText(R.id.item_subject, record["subject"])
-        rv.setTextViewText(R.id.item_subject_code, record["subject_code"])
-        rv.setTextViewText(R.id.item_lecture_no, record["lecture_no"])
-
-        val fillInIntent = Intent()
-        fillInIntent.putExtra("position", position)
-        rv.setOnClickFillInIntent(R.id.item_subject, fillInIntent)
-
-        return rv
-    }
-
-    override fun getLoadingView(): RemoteViews? {
-        return null
-    }
-
-    override fun getViewTypeCount(): Int {
-        return 1
-    }
-
-    override fun getItemId(position: Int): Long {
-        return position.toLong()
-    }
-
-    override fun hasStableIds(): Boolean {
-        return true
-    }
 }

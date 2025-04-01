@@ -6,11 +6,8 @@ import io.flutter.plugin.common.MethodChannel
 import android.content.Intent
 import android.os.Bundle
 
-
-
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.imnexerio.retracker/widget_refresh"
-    private var screenOnReceiver: ScreenOnReceiver? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -18,16 +15,12 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "refreshCompleted") {
                 // Notify widgets that refresh is complete
-                val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                    android.content.ComponentName(this, TodayWidget::class.java)
-                )
-
-                val intent = Intent(this, TodayWidget::class.java)
-                intent.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                intent.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-                sendBroadcast(intent)
-
+                TodayWidget.updateWidgets(this)
+                result.success(true)
+            } else if (call.method == "manualRefresh") {
+                // Trigger manual refresh from Flutter side
+                val serviceIntent = Intent(this, WidgetRefreshService::class.java)
+                startService(serviceIntent)
                 result.success(true)
             } else {
                 result.notImplemented()
@@ -38,8 +31,7 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Register screen on broadcast receiver
-        screenOnReceiver = ScreenOnReceiver.register(applicationContext)
+        // No longer registering the screen on receiver
 
         // Handle the widget refresh intent
         if (intent?.extras?.getBoolean("widget_refresh") == true) {
@@ -49,11 +41,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
-        // Unregister the receiver when activity is destroyed
-        screenOnReceiver?.let {
-            applicationContext.unregisterReceiver(it)
-            screenOnReceiver = null
-        }
+        // No need to unregister the receiver anymore
         super.onDestroy()
     }
 }
