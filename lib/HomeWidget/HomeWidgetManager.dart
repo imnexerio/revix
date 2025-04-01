@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:home_widget/home_widget.dart';
 
+import '../Utils/UnifiedDatabaseService.dart';
+
 class HomeWidgetService {
   static const String appGroupId = 'HomeWidgetPreferences';
   static const String todayRecordsKey = 'todayRecords';
@@ -12,6 +14,9 @@ class HomeWidgetService {
     if (_isInitialized) return;
 
     HomeWidget.setAppGroupId(appGroupId);
+
+    // Set up widget background callback handling
+    HomeWidget.registerInteractivityCallback(backgroundCallback);
 
     final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
@@ -25,6 +30,15 @@ class HomeWidgetService {
     }
 
     _isInitialized = true;
+  }
+
+  // This callback will be called when the widget triggers a refresh
+  @pragma('vm:entry-point')
+  static Future<void> backgroundCallback(Uri? uri) async {
+    if (uri?.host == 'widget_refresh') {
+      // Force data refresh from database service
+      await CombinedDatabaseService().forceDataReprocessing();
+    }
   }
 
   static Future<void> updateWidgetData(List<Map<String, dynamic>> todayRecords) async {
@@ -45,6 +59,7 @@ class HomeWidgetService {
       // debugPrint('Error updating widget data: $e');
     }
   }
+
   static List<Map<String, String>> _formatTodayRecords(List<Map<String, dynamic>> records) {
     return records.map((record) {
       return {
@@ -69,4 +84,21 @@ class HomeWidgetService {
     await _updateWidget();
     // debugPrint('Login status updated: $isLoggedIn');
   }
+  static Future<void> refreshWidgetFromExternal() async {
+    await initialize();
+    final User? user = FirebaseAuth.instance.currentUser;
+    final bool isLoggedIn = user != null;
+
+    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+
+    if (!isLoggedIn) {
+      await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
+      await _updateWidget();
+      return;
+    }
+
+    // The actual refresh will happen in the Kotlin service
+    await _updateWidget();
+  }
+
 }

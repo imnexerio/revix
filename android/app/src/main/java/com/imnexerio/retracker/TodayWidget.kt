@@ -1,7 +1,9 @@
 package com.imnexerio.retracker
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -14,6 +16,10 @@ import org.json.JSONObject
 import android.content.SharedPreferences
 
 class TodayWidget : AppWidgetProvider() {
+    companion object {
+        const val ACTION_REFRESH = "com.imnexerio.retracker.ACTION_REFRESH"
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -30,6 +36,26 @@ class TodayWidget : AppWidgetProvider() {
 
     override fun onDisabled(context: Context) {
         // Enter relevant functionality for when the last widget is disabled
+    }
+
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+
+        if (intent.action == ACTION_REFRESH) {
+            // Launch the background service to fetch data
+            val serviceIntent = Intent(context, WidgetRefreshService::class.java)
+            context.startService(serviceIntent)
+
+            // Update all widgets
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                ComponentName(context, TodayWidget::class.java)
+            )
+
+            for (appWidgetId in appWidgetIds) {
+                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_listview)
+            }
+        }
     }
 }
 
@@ -60,13 +86,23 @@ internal fun updateAppWidget(
         views.setTextViewText(R.id.title_text, "Today's Schedule (0)")
     }
 
+    // Set up the refresh button click
+    val refreshIntent = Intent(context, TodayWidget::class.java)
+    refreshIntent.action = TodayWidget.ACTION_REFRESH
+    val refreshPendingIntent = PendingIntent.getBroadcast(
+        context,
+        0,
+        refreshIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    views.setOnClickPendingIntent(R.id.refresh_button, refreshPendingIntent)
+
     val intent = Intent(context, WidgetListViewService::class.java)
     views.setRemoteAdapter(R.id.widget_listview, intent)
     views.setEmptyView(R.id.widget_listview, R.id.empty_view)
     appWidgetManager.updateAppWidget(appWidgetId, views)
     appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_listview)
 }
-
 class WidgetListViewService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
         return WidgetListViewFactory(this.applicationContext)
