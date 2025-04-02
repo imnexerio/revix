@@ -23,11 +23,12 @@
             android:gravity="center"/>
 
         <ImageView
+            android:id="@+id/add_record_button"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_gravity="end"
-            android:src="@drawable/baseline_refresh_24"
-            android:contentDescription="Refresh"/>
+            android:src="@drawable/baseline_add_24"
+            android:contentDescription="AddRecord"/>
     </LinearLayout>
 
     <ListView
