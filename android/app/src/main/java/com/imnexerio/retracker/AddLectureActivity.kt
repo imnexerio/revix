@@ -9,7 +9,6 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-import io.flutter.Log
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -48,6 +47,11 @@ class AddLectureActivity : AppCompatActivity() {
     private var dateScheduled = ""
     private var noRevision = 0
 
+    // Custom data
+    private var trackingTypes = mutableListOf<String>()
+    private var frequencies = mutableMapOf<String, List<Int>>()
+    private var frequencyNames = mutableListOf<String>()
+
     // Database reference
     private lateinit var database: FirebaseDatabase
     private lateinit var auth: FirebaseAuth
@@ -65,10 +69,9 @@ class AddLectureActivity : AppCompatActivity() {
 
         // Set up initial data
         setInitialDates()
-        loadSubjectsAndCodes()
 
-        // Set up listeners
-        setupListeners()
+        // Load custom data first, then proceed to load subjects
+        loadCustomData()
     }
 
     private fun initializeViews() {
@@ -96,25 +99,81 @@ class AddLectureActivity : AppCompatActivity() {
         addNewCategoryLayout.visibility = View.GONE
         addNewSubCategoryLayout.visibility = View.GONE
         reminderTimeEditText.setText("All Day")
+    }
 
-        // Set up lecture type spinner
-        ArrayAdapter.createFromResource(
-            this,
-            R.array.lecture_types,
-            android.R.layout.simple_spinner_item
-        ).also { adapter ->
+    private fun loadCustomData() {
+        // Show a loading indicator if needed
+
+        // Fetch tracking types
+        FetchTrackingTypesUtils.fetchTrackingTypes { types ->
+            trackingTypes.clear()
+            trackingTypes.addAll(types)
+
+            // Update UI with tracking types
+            updateLectureTypeSpinner()
+
+            // Fetch frequencies next
+            FetchFrequenciesUtils.fetchFrequencies { frequenciesMap ->
+                frequencies.clear()
+                frequencies.putAll(frequenciesMap)
+
+                // Get frequency names for spinner
+                frequencyNames.clear()
+                frequencyNames.addAll(FetchFrequenciesUtils.getFrequencyNames(frequenciesMap))
+
+                // Update UI with frequencies
+                updateRevisionFrequencySpinner()
+
+                // Now load subjects
+                loadSubjectsAndCodes()
+            }
+        }
+    }
+
+    private fun updateLectureTypeSpinner() {
+        runOnUiThread {
+            val adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                trackingTypes
+            )
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             lectureTypeSpinner.adapter = adapter
-        }
 
-        // Set up revision frequency spinner
-        ArrayAdapter.createFromResource(
-            this,
-            R.array.revision_frequencies,
-            android.R.layout.simple_spinner_item
-        ).also { adapter ->
+            // Set up listener
+            lectureTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    lectureType = parent?.getItemAtPosition(position).toString()
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    // Do nothing
+                }
+            }
+        }
+    }
+
+    private fun updateRevisionFrequencySpinner() {
+        runOnUiThread {
+            val adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                frequencyNames
+            )
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             revisionFrequencySpinner.adapter = adapter
+
+            // Set up listener
+            revisionFrequencySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    revisionFrequency = parent?.getItemAtPosition(position).toString()
+                    updateScheduledDate()
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    // Do nothing
+                }
+            }
         }
     }
 
@@ -149,29 +208,6 @@ class AddLectureActivity : AppCompatActivity() {
                     addNewSubCategoryLayout.visibility = View.GONE
                     selectedSubjectCode = selectedItem
                 }
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
-            }
-        }
-
-        // Lecture type spinner
-        lectureTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                lectureType = parent?.getItemAtPosition(position).toString()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
-            }
-        }
-
-        // Revision frequency spinner
-        revisionFrequencySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                revisionFrequency = parent?.getItemAtPosition(position).toString()
-                updateScheduledDate()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -273,6 +309,9 @@ class AddLectureActivity : AppCompatActivity() {
                     selectedSubject = subjects[0]
                     updateSubCategorySpinner()
                 }
+
+                // Set up all listeners after data is loaded
+                setupListeners()
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -316,8 +355,7 @@ class AddLectureActivity : AppCompatActivity() {
         todayDate = dateFormat.format(initialDate.time)
         initiationDateEditText.setText(todayDate)
 
-        // Set scheduled date
-        updateScheduledDate()
+        // We'll set scheduled date after loading frequency data
     }
 
     private fun updateScheduledDate() {
@@ -335,18 +373,14 @@ class AddLectureActivity : AppCompatActivity() {
     }
 
     private fun calculateNextRevisionDate(startDate: Date): Date {
-        // Simple implementation - in a real app, use your custom frequency logic
         val calendar = Calendar.getInstance()
         calendar.time = startDate
 
-        when (revisionFrequency) {
-            "Daily" -> calendar.add(Calendar.DAY_OF_YEAR, 1)
-            "Weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
-            "Biweekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 2)
-            "Monthly" -> calendar.add(Calendar.MONTH, 1)
-            "Default" -> calendar.add(Calendar.DAY_OF_YEAR, 1) // Default to daily
-            else -> calendar.add(Calendar.DAY_OF_YEAR, 1)
-        }
+        // Use the selected frequency to determine the next date
+        val frequencyDays = frequencies[revisionFrequency]?.firstOrNull() ?: 1
+
+        // Add the number of days from the frequency list
+        calendar.add(Calendar.DAY_OF_YEAR, frequencyDays)
 
         return calendar.time
     }
@@ -446,8 +480,6 @@ class AddLectureActivity : AppCompatActivity() {
             val initiatedOn = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
                 .format(Calendar.getInstance().time)
 
-
-
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             dateFormat.isLenient = false
 
@@ -490,8 +522,6 @@ class AddLectureActivity : AppCompatActivity() {
                 }
 
         } catch (e: Exception) {
-            println("Erdfror: ${e.message}")
-            Log.i("AddLectureActivity", "Esbdfhsdgrror: ${e.message}")
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
