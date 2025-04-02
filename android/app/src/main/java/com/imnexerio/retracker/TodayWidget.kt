@@ -61,7 +61,7 @@ class TodayWidget : AppWidgetProvider() {
 
                 // Update the refresh button to show it's working
                 val views = RemoteViews(context.packageName, R.layout.today_widget)
-                views.setTextViewText(R.id.title_text, "Refreshing...")
+                views.setTextViewText(R.id.title_text_n_refresh, "Refreshing...")
 
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(
@@ -118,7 +118,7 @@ internal fun updateAppWidget(
     val count = jsonArray.length()
 
     try {
-        views.setTextViewText(R.id.title_text, "Today's Schedule (${count})")
+        views.setTextViewText(R.id.title_text_n_refresh, "Today's Schedule (${count})")
 
         if (!isLoggedIn) {
             views.setTextViewText(R.id.empty_view, "Please login to view your schedule")
@@ -130,10 +130,10 @@ internal fun updateAppWidget(
         if (lastUpdated > 0) {
             val dateFormat = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             val lastUpdateTime = dateFormat.format(java.util.Date(lastUpdated))
-            views.setTextViewText(R.id.title_text, "${count} @ ${lastUpdateTime}")
+            views.setTextViewText(R.id.title_text_n_refresh, "${count} @ ${lastUpdateTime}")
         }
     } catch (e: JSONException) {
-        views.setTextViewText(R.id.title_text, "${count} @ ${e.message}")
+        views.setTextViewText(R.id.title_text_n_refresh, "${count} @ ${e.message}")
     }
 
     // Set up the refresh button click
@@ -146,7 +146,7 @@ internal fun updateAppWidget(
         refreshIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
-    views.setOnClickPendingIntent(R.id.refresh_button, refreshPendingIntent)
+    views.setOnClickPendingIntent(R.id.title_text_n_refresh, refreshPendingIntent)
 
     // Set up ListView and its adapter
     val intent = Intent(context, WidgetListViewService::class.java)
