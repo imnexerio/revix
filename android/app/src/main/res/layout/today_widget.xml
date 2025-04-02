@@ -34,7 +34,10 @@
         android:layout_height="match_parent"
         android:layout_below="@id/refresh_button"
         android:divider="@color/divider"
-        android:dividerHeight="1dp" />
+        android:dividerHeight="1dp"
+        android:background="@drawable/rounded_background"
+        android:clipToPadding="false"
+        android:padding="2dp"/>
 
     <TextView
         android:id="@+id/empty_view"
