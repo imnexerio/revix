@@ -169,7 +169,7 @@ class RecordUpdateService : Service() {
                 FirebaseDatabase.getInstance().getReference(recordPath)
                     .updateChildren(updatedValues)
                     .addOnSuccessListener {
-                        Toast.makeText(applicationContext, "Record updated successfully!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(applicationContext, "Record updated successfully! , scheduled for $nextRevisionDate", Toast.LENGTH_SHORT).show()
                         refreshWidgets(startId)
                     }
                     .addOnFailureListener { e ->

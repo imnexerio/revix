@@ -503,7 +503,7 @@ class AddLectureActivity : AppCompatActivity() {
             // Save to Firebase
             ref.setValue(recordData)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Record added successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Record added successfully, scheduled for $dateScheduled", Toast.LENGTH_SHORT).show()
 
                     // Refresh the widget
                     val intent = Intent(this, TodayWidget::class.java)
