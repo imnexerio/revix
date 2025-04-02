@@ -9,6 +9,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.imnexerio.retracker.utils.RevisionScheduler
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -365,26 +366,19 @@ class AddLectureActivity : AppCompatActivity() {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val initialDate = dateFormat.parse(todayDate) ?: Calendar.getInstance().time
 
-            // Calculate next revision date based on frequency
-            val nextDate = calculateNextRevisionDate(initialDate)
-            dateScheduled = dateFormat.format(nextDate)
-            scheduledDateEditText.setText(dateScheduled)
+            // Use the utility class to calculate next revision date
+            RevisionScheduler.calculateNextRevisionDate(
+                this,
+                revisionFrequency,
+                0, // Initial revision
+                initialDate
+            ) { calculatedDate ->
+                dateScheduled = calculatedDate
+                scheduledDateEditText.setText(dateScheduled)
+            }
         } catch (e: Exception) {
             Toast.makeText(this, "Error setting date: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun calculateNextRevisionDate(startDate: Date): Date {
-        val calendar = Calendar.getInstance()
-        calendar.time = startDate
-
-        // Use the selected frequency to determine the next date
-        val frequencyDays = frequencies[revisionFrequency]?.firstOrNull() ?: 1
-
-        // Add the number of days from the frequency list
-        calendar.add(Calendar.DAY_OF_YEAR, frequencyDays)
-
-        return calendar.time
     }
 
     private fun showTimePicker() {
