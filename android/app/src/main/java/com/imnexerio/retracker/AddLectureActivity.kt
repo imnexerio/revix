@@ -311,7 +311,6 @@ class AddLectureActivity : AppCompatActivity() {
     }
 
     private fun setInitialDates() {
-        // Set today's date
         val initialDate = Calendar.getInstance()
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         todayDate = dateFormat.format(initialDate.time)
@@ -447,12 +446,14 @@ class AddLectureActivity : AppCompatActivity() {
             val initiatedOn = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
                 .format(Calendar.getInstance().time)
 
-            // Check if initiated date is before today
-            val initiatedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                .parse(todayDate)
-            val today = Calendar.getInstance().time
 
-            if (initiatedDate != null && initiatedDate.before(today)) {
+
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            dateFormat.isLenient = false
+
+            val currentDate = dateFormat.parse(dateFormat.format(Date()))
+            val initiatedDate = dateFormat.parse(todayDate)
+            if (initiatedDate != null && initiatedDate.before(currentDate)) {
                 noRevision = -1
             }
 
