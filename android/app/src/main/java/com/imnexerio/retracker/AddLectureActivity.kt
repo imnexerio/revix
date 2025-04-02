@@ -9,6 +9,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import io.flutter.Log
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -443,7 +444,7 @@ class AddLectureActivity : AppCompatActivity() {
                 .child(selectedSubjectCode)
                 .child(title)
 
-            val initiatedOn = SimpleDateFormat("yyyy-MM-ddTHH:mm", Locale.getDefault())
+            val initiatedOn = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
                 .format(Calendar.getInstance().time)
 
             // Check if initiated date is before today
@@ -488,6 +489,8 @@ class AddLectureActivity : AppCompatActivity() {
                 }
 
         } catch (e: Exception) {
+            println("Erdfror: ${e.message}")
+            Log.i("AddLectureActivity", "Esbdfhsdgrror: ${e.message}")
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
