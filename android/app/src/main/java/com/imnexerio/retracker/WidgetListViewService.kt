@@ -8,14 +8,12 @@ import org.json.JSONArray
 import org.json.JSONException
 import android.content.SharedPreferences
 
-
 class WidgetListViewService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
         return WidgetListViewFactory(this.applicationContext)
     }
 }
 
-// 1. First, modify WidgetListViewFactory to set up click handling
 class WidgetListViewFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
     private val todayRecords = ArrayList<Map<String, String>>()
 
@@ -65,18 +63,15 @@ class WidgetListViewFactory(private val context: Context) : RemoteViewsService.R
         rv.setTextViewText(R.id.item_subject_code, record["subject_code"])
         rv.setTextViewText(R.id.item_lecture_no, record["lecture_no"])
 
-        // Create an intent with the record data for handling click
         val fillInIntent = Intent()
         fillInIntent.putExtra("subject", record["subject"])
         fillInIntent.putExtra("subject_code", record["subject_code"])
         fillInIntent.putExtra("lecture_no", record["lecture_no"])
-        // Set the intent for the entire item layout
         rv.setOnClickFillInIntent(R.id.list_item_container, fillInIntent)
 
         return rv
     }
 
-    // Other methods remain unchanged
     override fun onCreate() {}
     override fun onDestroy() { todayRecords.clear() }
     override fun getCount(): Int { return todayRecords.size }

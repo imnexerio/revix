@@ -3,7 +3,6 @@
     android:layout_height="match_parent"
     android:padding="10dp"
     android:background="@color/white">
-
     <LinearLayout
         android:id="@+id/title_layout"
         android:layout_marginEnd="8dp"
@@ -11,7 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-
         <TextView
             android:id="@+id/title_text_n_refresh"
             android:layout_width="0dp"
@@ -21,7 +19,6 @@
             android:textStyle="bold"
             android:textColor="@color/text"
             android:gravity="center"/>
-
         <ImageView
             android:id="@+id/add_record_button"
             android:layout_width="24dp"
@@ -30,7 +27,6 @@
             android:src="@drawable/baseline_add_24"
             android:contentDescription="AddRecord"/>
     </LinearLayout>
-
     <ListView
         android:layout_marginTop="8dp"
         android:id="@+id/widget_listview"
@@ -40,7 +36,6 @@
         android:divider="@color/divider"
         android:dividerHeight="1dp"
         android:padding="2dp"/>
-
     <TextView
         android:layout_marginTop="8dp"
         android:id="@+id/empty_view"
@@ -51,5 +46,4 @@
         android:text="No tasks for today enjoy your day"
         android:textSize="16sp"
         android:textColor="@color/text" />
-
 </RelativeLayout>

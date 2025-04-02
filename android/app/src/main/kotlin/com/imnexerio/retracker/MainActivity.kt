@@ -15,7 +15,6 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "refreshCompleted") {
-                // Notify widgets that refresh is complete with timestamp
                 val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
                 if (!sharedPreferences.contains("lastUpdated")) {
                     val editor = sharedPreferences.edit()
@@ -38,18 +37,12 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // No longer registering the screen on receiver
-
-        // Handle the widget refresh intent
         if (intent?.extras?.getBoolean("widget_refresh") == true) {
-            // We need to keep the app in the background
-            // The HomeWidget plugin will handle the actual data refresh
+
         }
     }
 
     override fun onDestroy() {
-        // No need to unregister the receiver anymore
         super.onDestroy()
     }
 }
