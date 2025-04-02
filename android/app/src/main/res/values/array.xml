@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="lecture_types">
+        <item>Lectures</item>
+        <item>Assignments</item>
+        <item>Labs</item>
+        <item>Tests</item>
+        <item>Exams</item>
+        <item>Projects</item>
+        <item>Others</item>
+    </string-array>
+
+    <string-array name="revision_frequencies">
+        <item>Default</item>
+        <item>Daily</item>
+        <item>Weekly</item>
+        <item>Biweekly</item>
+        <item>Monthly</item>
+        <item>Custom</item>
+    </string-array>
+</resources>
