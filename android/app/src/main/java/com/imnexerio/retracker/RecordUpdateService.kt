@@ -11,6 +11,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.imnexerio.retracker.utils.RevisionScheduler
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -111,9 +112,17 @@ class RecordUpdateService : Service() {
             val scheduledDate = (details["date_scheduled"] as? String)?.let {
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it)
             } ?: Date()
+            // Get revision frequency and revision count
+            val revisionFrequency = details["revision_frequency"].toString()
+            val noRevision = (details["no_revision"] as? Number)?.toInt() ?: 0
 
             // Calculate next revision date
-            calculateNextRevisionDate( details, scheduledDate) { nextRevisionDate ->
+            RevisionScheduler.calculateNextRevisionDate(
+                applicationContext,
+                revisionFrequency,
+                noRevision+1,
+                scheduledDate
+            ) { nextRevisionDate ->
                 // Create updated values map
                 val updatedValues = HashMap<String, Any>()
 
@@ -177,71 +186,6 @@ class RecordUpdateService : Service() {
         }
     }
 
-    private fun calculateNextRevisionDate(
-        details: Map<*, *>,
-        scheduledDate: Date,
-        callback: (String) -> Unit
-    ) {
-        val userId = FirebaseAuth.getInstance().currentUser!!.uid
-        val frequencyPath = "users/$userId/profile_data/custom_frequencies"
-        val frequency = details["revision_frequency"] as? String ?: "Default"
-        var noRevision = (details["no_revision"] as? Number)?.toInt() ?: 0
-        noRevision += 1 // Increment for the next revision
-
-        FirebaseDatabase.getInstance().getReference(frequencyPath)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    try {
-                        if (snapshot.exists() && snapshot.hasChild(frequency)) {
-                            // Get the frequency data - this is the key change
-                            val customFrequencyData = snapshot.child(frequency).getValue()
-                            val intervals = ArrayList<Int>()
-
-                            // Handle different possible data formats
-                            when (customFrequencyData) {
-                                is List<*> -> {
-                                    // Handle as a list like in original code
-                                    customFrequencyData.forEach { item ->
-                                        (item as? Number)?.toInt()?.let { intervals.add(it) }
-                                    }
-                                }
-                                is String -> {
-                                    // Handle as comma-separated string like in Dart code
-                                    customFrequencyData.split(",").forEach { item ->
-                                        item.trim().toIntOrNull()?.let { intervals.add(it) }
-                                    }
-                                }
-                            }
-
-                            if (intervals.isNotEmpty()) {
-                                // Use same indexing logic as Dart
-                                val nextInterval = if (noRevision < intervals.size) intervals[noRevision] else intervals.last()
-
-                                val calendar = Calendar.getInstance()
-                                calendar.time = scheduledDate
-                                calendar.add(Calendar.DAY_OF_YEAR, nextInterval)
-
-                                val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
-                                callback(nextDate)
-                                return
-                            }
-                        }
-
-                        // If no valid frequency found, mimic Dart behavior by returning the original date
-                        val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(scheduledDate)
-                        callback(nextDate)
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        Toast.makeText(applicationContext, "Error parsing custom frequency: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Toast.makeText(applicationContext, "Database error: ${error.message}", Toast.LENGTH_SHORT).show()
-                }
-            })
-    }
 
     private fun refreshWidgets(startId: Int) {
         // Refresh widgets to show updated data
