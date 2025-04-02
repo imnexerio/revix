@@ -8,12 +8,14 @@ import org.json.JSONArray
 import org.json.JSONException
 import android.content.SharedPreferences
 
+
 class WidgetListViewService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
         return WidgetListViewFactory(this.applicationContext)
     }
 }
 
+// 1. First, modify WidgetListViewFactory to set up click handling
 class WidgetListViewFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
     private val todayRecords = ArrayList<Map<String, String>>()
 
@@ -51,18 +53,6 @@ class WidgetListViewFactory(private val context: Context) : RemoteViewsService.R
         }
     }
 
-    override fun onCreate() {
-        // Initialize if needed
-    }
-
-    override fun onDestroy() {
-        todayRecords.clear()
-    }
-
-    override fun getCount(): Int {
-        return todayRecords.size
-    }
-
     override fun getViewAt(position: Int): RemoteViews {
         if (position >= todayRecords.size) {
             return RemoteViews(context.packageName, R.layout.widget_list_item)
@@ -75,26 +65,24 @@ class WidgetListViewFactory(private val context: Context) : RemoteViewsService.R
         rv.setTextViewText(R.id.item_subject_code, record["subject_code"])
         rv.setTextViewText(R.id.item_lecture_no, record["lecture_no"])
 
+        // Create an intent with the record data for handling click
         val fillInIntent = Intent()
-        fillInIntent.putExtra("position", position)
-        rv.setOnClickFillInIntent(R.id.item_subject, fillInIntent)
+        fillInIntent.putExtra("subject", record["subject"])
+        fillInIntent.putExtra("subject_code", record["subject_code"])
+        fillInIntent.putExtra("lecture_no", record["lecture_no"])
+        // Set the intent for the entire item layout
+        rv.setOnClickFillInIntent(R.id.list_item_container, fillInIntent)
 
         return rv
     }
 
-    override fun getLoadingView(): RemoteViews? {
-        return null
-    }
-
-    override fun getViewTypeCount(): Int {
-        return 1
-    }
-
-    override fun getItemId(position: Int): Long {
-        return position.toLong()
-    }
-
-    override fun hasStableIds(): Boolean {
-        return true
-    }
+    // Other methods remain unchanged
+    override fun onCreate() {}
+    override fun onDestroy() { todayRecords.clear() }
+    override fun getCount(): Int { return todayRecords.size }
+    override fun getLoadingView(): RemoteViews? { return null }
+    override fun getViewTypeCount(): Int { return 1 }
+    override fun getItemId(position: Int): Long { return position.toLong() }
+    override fun hasStableIds(): Boolean { return true }
 }
+
