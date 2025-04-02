@@ -1,7 +1,7 @@
 <resources>
     <color name="white">#FFFAFAFA</color>
     <color name="text">#FF000000</color>
-    <color name="divider">#FFABDFE7</color>
-    <color name="MarkAsDone">#80F6F2</color>
+    <color name="divider">#84D4E0</color>
+    <color name="MarkAsDone">#2CA29E</color>
     <color name="WidgetBackground">#EBE9E9</color>
 </resources>

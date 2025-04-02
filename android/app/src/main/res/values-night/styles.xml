@@ -18,11 +18,15 @@
 
     <style name="DialogWithCenteredTitle" parent="Theme.AppCompat.Dialog">
         <item name="android:windowTitleStyle">@style/DialogWindowTitle</item>
+        <item name="android:background">@color/WidgetBackground</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="colorAccent">@color/divider</item>
     </style>
 
     <style name="DialogWindowTitle">
         <item name="android:gravity">center</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/divider</item>
     </style>
 </resources>
