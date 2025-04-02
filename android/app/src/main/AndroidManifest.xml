@@ -60,12 +60,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Add this inside your application tag -->
         <activity
             android:name=".AddLectureActivity"
             android:exported="false"
-            android:label="Add New Record"
-            android:theme="@style/Theme.AppCompat.Light.Dialog"
+            android:label="Add New Record(reTracker)"
+            android:theme="@style/DialogWithCenteredTitle"
             android:windowSoftInputMode="adjustResize">
         </activity>
 
