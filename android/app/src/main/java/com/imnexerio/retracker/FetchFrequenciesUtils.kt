@@ -15,7 +15,7 @@ class FetchFrequenciesUtils {
         fun fetchFrequencies(callback: (Map<String, List<Int>>) -> Unit) {
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             if (uid == null) {
-                callback(getDefaultFrequencies())
+//                callback(getDefaultFrequencies())
                 return
             }
 
@@ -44,14 +44,14 @@ class FetchFrequenciesUtils {
                             }
                         } catch (e: Exception) {
                             // Return default values if there's an error parsing
-                            callback(getDefaultFrequencies())
+//                            callback(getDefaultFrequencies())
                             return
                         }
                     }
 
                     // If no data was found, provide defaults
                     if (data.isEmpty()) {
-                        callback(getDefaultFrequencies())
+//                        callback(getDefaultFrequencies())
                     } else {
                         callback(data)
                     }
@@ -59,7 +59,7 @@ class FetchFrequenciesUtils {
 
                 override fun onCancelled(error: DatabaseError) {
                     // Return default values on error
-                    callback(getDefaultFrequencies())
+//                    callback(getDefaultFrequencies())
                 }
             })
         }
@@ -71,15 +71,6 @@ class FetchFrequenciesUtils {
             }
         }
 
-        // Default frequencies if Firebase data is not available
-        private fun getDefaultFrequencies(): Map<String, List<Int>> {
-            return mapOf(
-                "Daily" to listOf(1),
-                "Weekly" to listOf(1, 7),
-                "Default" to listOf(1, 4, 7, 15, 30, 60),
-                "Monthly" to listOf(30)
-            )
-        }
 
         // Utility function to get a list of frequency names
         fun getFrequencyNames(frequenciesMap: Map<String, List<Int>>): List<String> {

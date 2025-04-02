@@ -35,21 +35,17 @@ class FetchTrackingTypesUtils {
                         } catch (e: Exception) {
                             // Fallback if structure is different
                             // Provide default values
-                            data.addAll(listOf("Lectures", "Handouts", "Others"))
+//                            data.addAll(listOf("Lectures", "Handouts", "Others"))
                         }
                     }
 
-                    // If no data was found, provide defaults
-                    if (data.isEmpty()) {
-                        data.addAll(listOf("Lectures", "Handouts", "Others"))
-                    }
 
                     callback(data)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
                     // Return default values on error
-                    callback(listOf("Lectures", "Handouts", "Others"))
+//                    callback(listOf("Lectures", "Handouts", "Others"))
                 }
             })
         }

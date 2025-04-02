@@ -185,6 +185,8 @@ class AddLectureActivity : AppCompatActivity() {
                 if (selectedItem == "Add New Category") {
                     addNewCategoryLayout.visibility = View.VISIBLE
                     subCategorySpinner.visibility = View.GONE
+                    // Show subcategory input field when adding a new category
+                    addNewSubCategoryLayout.visibility = View.VISIBLE
                 } else {
                     addNewCategoryLayout.visibility = View.GONE
                     subCategorySpinner.visibility = View.VISIBLE
