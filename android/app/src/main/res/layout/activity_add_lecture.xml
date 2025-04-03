@@ -151,7 +151,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Lecture Type"
+                    android:text="Select Type"
                     android:textSize="14sp"
                     android:layout_marginBottom="4dp"/>
 
@@ -194,7 +194,7 @@
                         android:id="@+id/title_edit_text"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:hint="Enter lecture title"
+                        android:hint="Enter title"
                         android:paddingHorizontal="12dp"
                         android:background="@drawable/edit_text_border"
                         android:inputType="text" />
