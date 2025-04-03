@@ -476,12 +476,18 @@ class AddLectureActivity : AppCompatActivity() {
             val initiatedOn = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
                 .format(Calendar.getInstance().time)
 
+
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             dateFormat.isLenient = false
 
-            val currentDate = dateFormat.parse(dateFormat.format(Date()))
+            val currentDateStr = dateFormat.format(Date())
+            val currentDate = dateFormat.parse(currentDateStr)
+
             val initiatedDate = dateFormat.parse(todayDate)
             if (initiatedDate != null && initiatedDate.before(currentDate)) {
+                noRevision = -1
+            } else if (initiatedDate != null && initiatedDate.after(currentDate)) {
+                // This handles future dates
                 noRevision = -1
             }
 
