@@ -22,8 +22,8 @@
         <item name="android:textColor">@color/text</item>
         <item name="colorAccent">@color/divider</item>
         <item name="android:windowIsFloating">true</item>
-        <item name="android:windowMinWidthMajor">90%</item>
-        <item name="android:windowMinWidthMinor">90%</item>
+        <item name="android:windowMinWidthMajor">100%</item>
+        <item name="android:windowMinWidthMinor">100%</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowElevation">24dp</item>
         <item name="dialogCornerRadius">16dp</item>
@@ -32,7 +32,7 @@
     <style name="DialogWindowTitle">
         <item name="android:gravity">center</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">24sp</item>
         <item name="android:textColor">@color/divider</item>
     </style>
 </resources>
