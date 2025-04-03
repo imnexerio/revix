@@ -91,6 +91,7 @@ class WidgetRefreshService : Service() {
                                 val dateScheduled = recordValue["date_scheduled"]?.toString()
                                 val status = recordValue["status"]?.toString()
                                 val reminder_time = recordValue["reminder_time"]?.toString()
+                                val revision_frequency = recordValue["date_scheduled"]?.toString()
 
                                 if (dateScheduled != null && status == "Enabled") {
                                     val scheduledDateStr = dateScheduled.split("T")[0]
@@ -100,7 +101,8 @@ class WidgetRefreshService : Service() {
                                                 "subject" to subjectKey.toString(),
                                                 "subject_code" to codeKey.toString(),
                                                 "lecture_no" to recordKey.toString(),
-                                                "reminder_time" to reminder_time.toString()
+                                                "reminder_time" to reminder_time.toString(),
+                                                "date_scheduled" to revision_frequency.toString()
                                             )
                                         )
                                     }
