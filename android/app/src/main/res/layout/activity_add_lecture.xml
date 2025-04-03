@@ -276,6 +276,7 @@
 
                 <!-- Revision Frequency -->
                 <TextView
+                    android:id="@+id/revision_frequency_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Revision Frequency"
@@ -303,6 +304,7 @@
 
                 <!-- Scheduled Date -->
                 <TextView
+                    android:id="@+id/scheduled_date_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="First Reminder Date"

@@ -32,6 +32,8 @@ class AddLectureActivity : AppCompatActivity() {
     private lateinit var descriptionEditText: EditText
     private lateinit var noRepetitionSwitch: Switch
     private lateinit var saveButton: Button
+    private lateinit var revisionFrequencyText: TextView
+    private lateinit var firstReminderDate: TextView
     private lateinit var cancelButton: Button
 
     // Data
@@ -91,6 +93,8 @@ class AddLectureActivity : AppCompatActivity() {
         descriptionEditText = findViewById(R.id.description_edit_text)
         noRepetitionSwitch = findViewById(R.id.no_repetition_switch)
         saveButton = findViewById(R.id.save_button)
+        revisionFrequencyText = findViewById(R.id.revision_frequency_text)
+        firstReminderDate = findViewById(R.id.scheduled_date_text)
         cancelButton = findViewById(R.id.cancel_button)
 
         // Set up initial states
@@ -250,9 +254,13 @@ class AddLectureActivity : AppCompatActivity() {
             if (isChecked) {
                 revisionFrequencySpinner.visibility = View.GONE
                 scheduledDateEditText.visibility = View.GONE
+                revisionFrequencyText.visibility = View.GONE
+                firstReminderDate.visibility = View.GONE
             } else {
                 revisionFrequencySpinner.visibility = View.VISIBLE
                 scheduledDateEditText.visibility = View.VISIBLE
+                revisionFrequencyText.visibility = View.VISIBLE
+                firstReminderDate.visibility = View.VISIBLE
             }
         }
 
