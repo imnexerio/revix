@@ -73,6 +73,7 @@ class HomeWidgetService {
         'subject': (record['subject'] ?? '').toString(),
         'subject_code': (record['subject_code'] ?? '').toString(),
         'lecture_no': (record['lecture_no'] ?? '').toString(),
+        'reminder_time': (record['reminder_time'] ?? '').toString(),
       };
     }).toList();
   }
