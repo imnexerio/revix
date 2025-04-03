@@ -40,7 +40,8 @@ class WidgetListViewFactory(private val context: Context) : RemoteViewsService.R
                             "subject_code" to jsonObject.optString("subject_code", ""),
                             "lecture_no" to jsonObject.optString("lecture_no", ""),
                             "reminder_time" to jsonObject.optString("reminder_time", ""),
-                            "date_scheduled" to jsonObject.optString("date_scheduled", "")
+                            "date_scheduled" to jsonObject.optString("date_scheduled", ""),
+                            "revision_frequency" to jsonObject.optString("revision_frequency", "")
                         )
                         todayRecords.add(record)
                     } catch (e: Exception) {
@@ -66,6 +67,7 @@ class WidgetListViewFactory(private val context: Context) : RemoteViewsService.R
         rv.setTextViewText(R.id.item_lecture_no, record["lecture_no"])
         rv.setTextViewText(R.id.item_reminder_time, record["reminder_time"])
         rv.setTextViewText(R.id.item_reminder_date, record["date_scheduled"])
+        rv.setTextViewText(R.id.item_reminder_frequency, record["revision_frequency"])
 
         val fillInIntent = Intent()
         fillInIntent.putExtra("subject", record["subject"])
@@ -73,6 +75,7 @@ class WidgetListViewFactory(private val context: Context) : RemoteViewsService.R
         fillInIntent.putExtra("lecture_no", record["lecture_no"])
         fillInIntent.putExtra("reminder_time", record["reminder_time"])
         fillInIntent.putExtra("date_scheduled", record["date_scheduled"])
+        fillInIntent.putExtra("revision_frequency", record["revision_frequency"])
         rv.setOnClickFillInIntent(R.id.list_item_container, fillInIntent)
 
         return rv

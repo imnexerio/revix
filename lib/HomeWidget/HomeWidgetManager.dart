@@ -75,6 +75,7 @@ class HomeWidgetService {
         'lecture_no': (record['lecture_no'] ?? '').toString(),
         'reminder_time': (record['reminder_time'] ?? '').toString(),
         'date_scheduled': (record['date_scheduled'] ?? '').toString(),
+        'revision_frequency': (record['revision_frequency'] ?? '').toString(),
       };
     }).toList();
   }
