@@ -7,13 +7,16 @@
     android:padding="8dp"
     android:background="@drawable/rounded_background">
     <ImageView
+        android:id="@+id/mark_as_done"
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:layout_gravity="center_vertical"
         android:src="@drawable/baseline_radio_button_unchecked_24"
         android:layout_marginEnd="10dp"
         android:layout_marginStart="10dp"
-        android:contentDescription="Mark as done"/>
+        android:contentDescription="Mark as done"
+        android:clickable="true"
+        android:focusable="true"/>
         <LinearLayout
             android:id="@+id/checkbox_layout"
             android:layout_width="wrap_content"

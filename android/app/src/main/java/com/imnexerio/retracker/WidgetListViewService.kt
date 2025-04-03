@@ -76,7 +76,9 @@ class WidgetListViewFactory(private val context: Context) : RemoteViewsService.R
         fillInIntent.putExtra("reminder_time", record["reminder_time"])
         fillInIntent.putExtra("date_scheduled", record["date_scheduled"])
         fillInIntent.putExtra("revision_frequency", record["revision_frequency"])
-        rv.setOnClickFillInIntent(R.id.list_item_container, fillInIntent)
+
+        // Change this line to set the click intent on mark_as_done instead of list_item_container
+        rv.setOnClickFillInIntent(R.id.mark_as_done, fillInIntent)
 
         return rv
     }
