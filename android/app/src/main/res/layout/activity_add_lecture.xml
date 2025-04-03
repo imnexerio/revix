@@ -39,7 +39,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <Spinner
@@ -72,7 +72,7 @@
                         android:layout_marginBottom="12dp"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="2dp"
-                        app:cardBackgroundColor="#F5F5F5"
+                        
                         app:contentPadding="0dp">
 
                         <EditText
@@ -100,7 +100,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <Spinner
@@ -133,7 +133,7 @@
                         android:layout_marginBottom="12dp"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="2dp"
-                        app:cardBackgroundColor="#F5F5F5"
+                        
                         app:contentPadding="0dp">
 
                         <EditText
@@ -161,7 +161,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <Spinner
@@ -187,7 +187,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <EditText
@@ -214,7 +214,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <LinearLayout
@@ -259,7 +259,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <EditText
@@ -289,7 +289,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <Spinner
@@ -316,7 +316,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <EditText
@@ -345,7 +345,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F5F5"
+                    
                     app:contentPadding="0dp">
 
                     <EditText
@@ -419,7 +419,7 @@
                         android:backgroundTint="@color/divider"
                         android:shadowColor="@color/divider"
                         android:layout_marginStart="8dp"
-                        android:textColor="#FFFFFF" />
+                         />
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>
