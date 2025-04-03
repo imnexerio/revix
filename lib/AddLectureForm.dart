@@ -25,7 +25,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
   String _lectureNo = '';
   String _description = '';
   String _revisionFrequency = 'Default';
-  bool isEnabled = true;
   bool onlyOnce = false;
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
@@ -118,7 +117,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'no_revision': no_revision,
         'revision_frequency': _revisionFrequency,
         'only_once': onlyOnce? 1 : 0,
-        'status': isEnabled ? 'Enabled' : 'Disabled',
+        'status': 'Enabled',
       });
 
       // Show success message
@@ -585,15 +584,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Status', style: Theme.of(context).textTheme.titleMedium),
-                        Switch(
-                          value: isEnabled,
-                          onChanged: (bool newValue) {
-                            setState(() {
-                              isEnabled = newValue;
-                            });
-                          },
-                        ),
                         Text('No Repetition', style: Theme.of(context).textTheme.titleMedium),
                         Switch(
                           value: onlyOnce,

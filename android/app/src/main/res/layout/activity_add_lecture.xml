@@ -366,30 +366,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:layout_marginVertical="8dp">
-
-                    <!-- Status switch group -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="start|center_vertical"
-                        android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Status"
-                            android:layout_gravity="center_vertical" />
-
-                        <Switch
-                            android:id="@+id/status_switch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="true"
-                            android:minWidth="48dp" />
-                    </LinearLayout>
-
                     <!-- No Repetition switch group -->
                     <LinearLayout
                         android:layout_width="match_parent"

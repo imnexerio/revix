@@ -30,7 +30,6 @@ class AddLectureActivity : AppCompatActivity() {
     private lateinit var revisionFrequencySpinner: Spinner
     private lateinit var scheduledDateEditText: EditText
     private lateinit var descriptionEditText: EditText
-    private lateinit var statusSwitch: Switch
     private lateinit var noRepetitionSwitch: Switch
     private lateinit var saveButton: Button
     private lateinit var cancelButton: Button
@@ -42,7 +41,6 @@ class AddLectureActivity : AppCompatActivity() {
     private var selectedSubjectCode = ""
     private var lectureType = "Lectures"
     private var revisionFrequency = "Default"
-    private var isEnabled = true
     private var onlyOnce = false
     private var todayDate = ""
     private var dateScheduled = ""
@@ -91,7 +89,6 @@ class AddLectureActivity : AppCompatActivity() {
         revisionFrequencySpinner = findViewById(R.id.revision_frequency_spinner)
         scheduledDateEditText = findViewById(R.id.scheduled_date_edit_text)
         descriptionEditText = findViewById(R.id.description_edit_text)
-        statusSwitch = findViewById(R.id.status_switch)
         noRepetitionSwitch = findViewById(R.id.no_repetition_switch)
         saveButton = findViewById(R.id.save_button)
         cancelButton = findViewById(R.id.cancel_button)
@@ -246,11 +243,6 @@ class AddLectureActivity : AppCompatActivity() {
             showDatePicker(scheduledDateEditText) { date ->
                 dateScheduled = date
             }
-        }
-
-        // Switches
-        statusSwitch.setOnCheckedChangeListener { _, isChecked ->
-            isEnabled = isChecked
         }
 
         noRepetitionSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -498,7 +490,7 @@ class AddLectureActivity : AppCompatActivity() {
             recordData["no_revision"] = noRevision
             recordData["revision_frequency"] = revisionFrequency
             recordData["only_once"] = if (onlyOnce) 1 else 0
-            recordData["status"] = if (isEnabled) "Enabled" else "Disabled"
+            recordData["status"] = "Enabled"
 
             // Save to Firebase
             ref.setValue(recordData)
