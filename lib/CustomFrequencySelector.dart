@@ -459,9 +459,9 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
-          color: colorScheme.primary,
+          color: _showMonthSelection ? colorScheme.primary : Colors.transparent,
           border: Border.all(
-            color: colorScheme.primary,
+            color: _showMonthSelection ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5),
             width: 1,
           ),
         ),
@@ -470,7 +470,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
               ? "Select months to repeat on $dayText"
               : "Repeat on $dayText in ${selectedCount} months",
           style: TextStyle(
-            color: colorScheme.onPrimary,
+            color: _showMonthSelection ? colorScheme.onPrimary : colorScheme.onSurface.withOpacity(0.8),
             fontSize: 16,
             fontStyle: FontStyle.italic,
           ),
