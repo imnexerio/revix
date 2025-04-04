@@ -167,11 +167,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
       return;
     }
 
-    // Create revision data map that will be passed to the calculation function
-    Map<String, dynamic> revisionData = {
-      'frequency': _revisionFrequency,
-    };
-
     // For custom frequency, add the custom parameters
     if (_revisionFrequency == 'Custom' && _customFrequencyParams.isNotEmpty) {
       // Use custom parameters to calculate the next date
