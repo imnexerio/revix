@@ -173,21 +173,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
     // For custom frequency, add the custom parameters
     if (_revisionFrequency == 'Custom') {
-      revisionData['custom_params'] = _customFrequencyParams;
 
-      // Calculate next date using the DateNextRevision class
-      DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
-        DateTime.parse(todayDate),
-        _revisionFrequency,
-        0,
-        revisionData: revisionData,
-      );
-
-      setState(() {
-        dateScheduled = initialDate.toIso8601String().split('T')[0];
-        _scheduleddateController.text = dateScheduled;
-      });
-      return;
     }
 
     // For standard frequencies
@@ -195,7 +181,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
       DateTime.parse(todayDate),
       _revisionFrequency,
       0,
-      revisionData: revisionData,
     );
 
     setState(() {
@@ -762,7 +747,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                 DateTime.parse(todayDate),
                                 _revisionFrequency,
                                 0,
-                                revisionData: revisionData,
                               );
 
                               DateTime? pickedDate = await showDatePicker(
