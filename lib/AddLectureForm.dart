@@ -114,7 +114,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
         no_revision = -1;
         _revisionFrequency = 'Unspecified';
         dateScheduled = 'Unspecified';
-        _duration =1 as String;
+        _durationData = {
+          "type": "forever",
+          "numberOfTimes": null,
+          "endDate": null
+        };
+
       }else{
       if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate))) {
         no_revision = -1;
