@@ -22,25 +22,77 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   String _frequencyType = 'week'; // Default to weekly
   List<bool> _selectedDaysOfWeek = List.filled(7, false);
 
+  // Date variables
+  late DateTime _currentDate;
+  late int _currentDayOfMonth;
+  late String _currentMonth;
+  late String _currentDayOfWeek;
+  late int _currentWeekOfMonth;
+
   // Monthly options
   String _monthlyOption = 'day'; // 'day' or 'weekday'
-  int _selectedDayOfMonth = 4; // Default to 4th day
-  int _selectedWeekOfMonth = 1; // Default to 1st week
-  String _selectedDayOfWeek = 'Friday'; // Default to Friday
+  late int _selectedDayOfMonth; // Will be set to current day
+  late int _selectedWeekOfMonth; // Will be set to current week
+  late String _selectedDayOfWeek; // Will be set to current day of week
 
   // Yearly options
   String _yearlyOption = 'day'; // 'day' or 'weekday'
-  int _selectedMonthDay = 4; // Default to 4th day
-  String _selectedMonth = 'Apr'; // Default to April
-  int _selectedWeekOfYear = 1; // Default to 1st week
-  String _selectedDayOfWeekForYear = 'Friday'; // Default to Friday
+  late int _selectedMonthDay; // Will be set to current day
+  late String _selectedMonth; // Will be set to current month
+  late int _selectedWeekOfYear; // Will be set to current week
+  late String _selectedDayOfWeekForYear; // Will be set to current day of week
 
   @override
   void initState() {
     super.initState();
+    _initializeCurrentDateValues();
     _loadInitialParams();
-    // Set Friday as selected by default
-    _selectedDaysOfWeek[5] = true;
+
+    // Set current day of week as selected by default
+    int currentWeekday = _currentDate.weekday % 7; // Convert to 0-6 range where 0 is Sunday
+    _selectedDaysOfWeek = List.filled(7, false);
+    _selectedDaysOfWeek[currentWeekday] = true;
+  }
+
+  void _initializeCurrentDateValues() {
+    _currentDate = DateTime.now();
+    _currentDayOfMonth = _currentDate.day;
+    _currentMonth = _getMonthAbbreviation(_currentDate.month);
+    _currentDayOfWeek = _getDayOfWeekName(_currentDate.weekday);
+    _currentWeekOfMonth = (_currentDate.day / 7).ceil();
+
+    // Initialize the selector values with current date
+    _selectedDayOfMonth = _currentDayOfMonth;
+    _selectedMonthDay = _currentDayOfMonth;
+    _selectedMonth = _currentMonth;
+    _selectedDayOfWeek = _currentDayOfWeek;
+    _selectedDayOfWeekForYear = _currentDayOfWeek;
+    _selectedWeekOfMonth = _currentWeekOfMonth;
+    _selectedWeekOfYear = _currentWeekOfMonth;
+  }
+
+  String _getMonthAbbreviation(int month) {
+    const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return monthAbbreviations[month - 1];
+  }
+
+  String _getDayOfWeekName(int weekday) {
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return dayNames[weekday - 1];
+  }
+
+  // Get ordinal suffix (st, nd, rd, th) for a number
+  String _getOrdinalSuffix(int number) {
+    if (number >= 11 && number <= 13) {
+      return 'th';
+    }
+
+    switch (number % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
   }
 
   void _loadInitialParams() {
@@ -58,17 +110,17 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         case 'month':
           _monthController.text = (widget.initialParams['value'] ?? 1).toString();
           _monthlyOption = widget.initialParams['monthlyOption'] ?? 'day';
-          _selectedDayOfMonth = widget.initialParams['dayOfMonth'] ?? 4;
-          _selectedWeekOfMonth = widget.initialParams['weekOfMonth'] ?? 1;
-          _selectedDayOfWeek = widget.initialParams['dayOfWeek'] ?? 'Friday';
+          _selectedDayOfMonth = widget.initialParams['dayOfMonth'] ?? _currentDayOfMonth;
+          _selectedWeekOfMonth = widget.initialParams['weekOfMonth'] ?? _currentWeekOfMonth;
+          _selectedDayOfWeek = widget.initialParams['dayOfWeek'] ?? _currentDayOfWeek;
           break;
         case 'year':
           _yearController.text = (widget.initialParams['value'] ?? 1).toString();
           _yearlyOption = widget.initialParams['yearlyOption'] ?? 'day';
-          _selectedMonthDay = widget.initialParams['monthDay'] ?? 4;
-          _selectedMonth = widget.initialParams['month'] ?? 'Apr';
-          _selectedWeekOfYear = widget.initialParams['weekOfYear'] ?? 1;
-          _selectedDayOfWeekForYear = widget.initialParams['dayOfWeekForYear'] ?? 'Friday';
+          _selectedMonthDay = widget.initialParams['monthDay'] ?? _currentDayOfMonth;
+          _selectedMonth = widget.initialParams['month'] ?? _currentMonth;
+          _selectedWeekOfYear = widget.initialParams['weekOfYear'] ?? _currentWeekOfMonth;
+          _selectedDayOfWeekForYear = widget.initialParams['dayOfWeekForYear'] ?? _currentDayOfWeek;
           break;
       }
 
@@ -136,12 +188,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildDayCircle('S', 0, colorScheme.error),
+                            _buildDayCircle('S', 0, colorScheme.onSurface),
                             _buildDayCircle('M', 1, colorScheme.onSurface),
                             _buildDayCircle('T', 2, colorScheme.onSurface),
                             _buildDayCircle('W', 3, colorScheme.onSurface),
                             _buildDayCircle('T', 4, colorScheme.onSurface),
-                            _buildDayCircle('F', 5, colorScheme.primary),
+                            _buildDayCircle('F', 5, colorScheme.onSurface),
                             _buildDayCircle('S', 6, colorScheme.onSurface),
                           ],
                         ),
@@ -166,12 +218,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                           children: [
                             // Day of month option
                             _buildOptionButton(
-                              "Repeat on the 4th",
-                              _monthlyOption == 'day' && _selectedDayOfMonth == 4,
+                              "Repeat on the ${_selectedDayOfMonth}${_getOrdinalSuffix(_selectedDayOfMonth)}",
+                              _monthlyOption == 'day',
                                   () {
                                 setState(() {
                                   _monthlyOption = 'day';
-                                  _selectedDayOfMonth = 4;
+                                  _selectedDayOfMonth = _currentDayOfMonth;
                                 });
                               },
                             ),
@@ -180,13 +232,13 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                             // Specific day of week option
                             _buildOptionButton(
-                              "Repeat on the 1st Friday",
-                              _monthlyOption == 'weekday' && _selectedWeekOfMonth == 1 && _selectedDayOfWeek == 'Friday',
+                              "Repeat on the ${_selectedWeekOfMonth}${_getOrdinalSuffix(_selectedWeekOfMonth)} $_selectedDayOfWeek",
+                              _monthlyOption == 'weekday',
                                   () {
                                 setState(() {
                                   _monthlyOption = 'weekday';
-                                  _selectedWeekOfMonth = 1;
-                                  _selectedDayOfWeek = 'Friday';
+                                  _selectedWeekOfMonth = _currentWeekOfMonth;
+                                  _selectedDayOfWeek = _currentDayOfWeek;
                                 });
                               },
                             ),
@@ -213,13 +265,13 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                           children: [
                             // Specific day of month/year option
                             _buildOptionButton(
-                              "Repeat on 4th Apr",
-                              _yearlyOption == 'day' && _selectedMonthDay == 4 && _selectedMonth == 'Apr',
+                              "Repeat on ${_selectedMonthDay}${_getOrdinalSuffix(_selectedMonthDay)} $_selectedMonth",
+                              _yearlyOption == 'day',
                                   () {
                                 setState(() {
                                   _yearlyOption = 'day';
-                                  _selectedMonthDay = 4;
-                                  _selectedMonth = 'Apr';
+                                  _selectedMonthDay = _currentDayOfMonth;
+                                  _selectedMonth = _currentMonth;
                                 });
                               },
                             ),
@@ -228,15 +280,14 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                             // Specific day/week of month option
                             _buildOptionButton(
-                              "Repeat on the 1st Friday of Apr",
-                              _yearlyOption == 'weekday' && _selectedWeekOfYear == 1 &&
-                                  _selectedDayOfWeekForYear == 'Friday' && _selectedMonth == 'Apr',
+                              "Repeat on the ${_selectedWeekOfYear}${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear of $_selectedMonth",
+                              _yearlyOption == 'weekday',
                                   () {
                                 setState(() {
                                   _yearlyOption = 'weekday';
-                                  _selectedWeekOfYear = 1;
-                                  _selectedDayOfWeekForYear = 'Friday';
-                                  _selectedMonth = 'Apr';
+                                  _selectedWeekOfYear = _currentWeekOfMonth;
+                                  _selectedDayOfWeekForYear = _currentDayOfWeek;
+                                  _selectedMonth = _currentMonth;
                                 });
                               },
                             ),
