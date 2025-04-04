@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 class CustomFrequencySelector extends StatefulWidget {
   final Map<String, dynamic> initialParams;
-
   const CustomFrequencySelector({
     Key? key,
     this.initialParams = const {},
@@ -19,28 +18,28 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   final TextEditingController _monthController = TextEditingController(text: '1');
   final TextEditingController _yearController = TextEditingController(text: '1');
 
-  String _frequencyType = 'week'; // Default to weekly
+  String _frequencyType = 'week';
   List<bool> _selectedDaysOfWeek = List.filled(7, false);
 
-  // Date variables
   late DateTime _currentDate;
   late int _currentDayOfMonth;
   late String _currentMonth;
   late String _currentDayOfWeek;
   late int _currentWeekOfMonth;
 
-  // Monthly options
-  String _monthlyOption = 'day'; // 'day' or 'weekday'
-  late int _selectedDayOfMonth; // Will be set to current day
-  late int _selectedWeekOfMonth; // Will be set to current week
-  late String _selectedDayOfWeek; // Will be set to current day of week
+  String _monthlyOption = 'day';
+  late int _selectedDayOfMonth;
+  late int _selectedWeekOfMonth;
+  late String _selectedDayOfWeek;
 
-  // Yearly options
-  String _yearlyOption = 'day'; // 'day' or 'weekday'
-  late int _selectedMonthDay; // Will be set to current day
-  late String _selectedMonth; // Will be set to current month
-  late int _selectedWeekOfYear; // Will be set to current week
-  late String _selectedDayOfWeekForYear; // Will be set to current day of week
+
+  String _yearlyOption = 'day';
+  late int _selectedMonthDay;
+  late String _selectedMonth;
+  late int _selectedWeekOfYear;
+  late String _selectedDayOfWeekForYear;
+  List<bool> _selectedMonths = List.filled(12, false);
+  bool _showMonthSelection = false;
 
   @override
   void initState() {
@@ -48,10 +47,11 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     _initializeCurrentDateValues();
     _loadInitialParams();
 
-    // Set current day of week as selected by default
-    int currentWeekday = _currentDate.weekday % 7; // Convert to 0-6 range where 0 is Sunday
+    int currentWeekday = _currentDate.weekday % 7;
     _selectedDaysOfWeek = List.filled(7, false);
     _selectedDaysOfWeek[currentWeekday] = true;
+    _selectedMonths = List.filled(12, false);
+    _selectedMonths[_currentDate.month - 1] = true;
   }
 
   void _initializeCurrentDateValues() {
@@ -61,7 +61,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     _currentDayOfWeek = _getDayOfWeekName(_currentDate.weekday);
     _currentWeekOfMonth = (_currentDate.day / 7).ceil();
 
-    // Initialize the selector values with current date
     _selectedDayOfMonth = _currentDayOfMonth;
     _selectedMonthDay = _currentDayOfMonth;
     _selectedMonth = _currentMonth;
@@ -81,7 +80,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     return dayNames[weekday - 1];
   }
 
-  // Get ordinal suffix (st, nd, rd, th) for a number
   String _getOrdinalSuffix(int number) {
     if (number >= 11 && number <= 13) {
       return 'th';
@@ -99,7 +97,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     if (widget.initialParams.isNotEmpty) {
       _frequencyType = widget.initialParams['frequencyType'] ?? 'week';
 
-      // Load the appropriate controller value
       switch (_frequencyType) {
         case 'day':
           _dayController.text = (widget.initialParams['value'] ?? 1).toString();
@@ -121,6 +118,9 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
           _selectedMonth = widget.initialParams['month'] ?? _currentMonth;
           _selectedWeekOfYear = widget.initialParams['weekOfYear'] ?? _currentWeekOfMonth;
           _selectedDayOfWeekForYear = widget.initialParams['dayOfWeekForYear'] ?? _currentDayOfWeek;
+          if (widget.initialParams['selectedMonths'] != null) {
+            _selectedMonths = List<bool>.from(widget.initialParams['selectedMonths']);
+          }
           break;
       }
 
@@ -143,7 +143,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
             width: 40,
@@ -163,7 +162,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                   children: [
                     const SizedBox(height: 20),
 
-                    // Day Option
                     _buildFrequencyOption(
                       'day',
                       'Every',
@@ -173,7 +171,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                     Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 40),
 
-                    // Week Option
                     _buildFrequencyOption(
                       'week',
                       'Every',
@@ -181,7 +178,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       _weekController,
                     ),
 
-                    // Days of week selector - only visible when week is selected
                     if (_frequencyType == 'week')
                       Padding(
                         padding: const EdgeInsets.only(top: 16.0, left: 60.0),
@@ -201,7 +197,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                     Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 40),
 
-                    // Month Option
                     _buildFrequencyOption(
                       'month',
                       'Every',
@@ -209,14 +204,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       _monthController,
                     ),
 
-                    // Monthly additional options
                     if (_frequencyType == 'month')
                       Padding(
                         padding: const EdgeInsets.only(top: 16.0, left: 60.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Day of month option
                             _buildOptionButton(
                               "Repeat on the ${_selectedDayOfMonth}${_getOrdinalSuffix(_selectedDayOfMonth)}",
                               _monthlyOption == 'day',
@@ -230,7 +223,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                             const SizedBox(height: 12),
 
-                            // Specific day of week option
                             _buildOptionButton(
                               "Repeat on the ${_selectedWeekOfMonth}${_getOrdinalSuffix(_selectedWeekOfMonth)} $_selectedDayOfWeek",
                               _monthlyOption == 'weekday',
@@ -248,7 +240,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                     Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 40),
 
-                    // Year Option
                     _buildFrequencyOption(
                       'year',
                       'Every',
@@ -256,14 +247,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       _yearController,
                     ),
 
-                    // Yearly additional options
                     if (_frequencyType == 'year')
                       Padding(
                         padding: const EdgeInsets.only(top: 16.0, left: 60.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Specific day of month/year option
                             _buildOptionButton(
                               "Repeat on ${_selectedMonthDay}${_getOrdinalSuffix(_selectedMonthDay)} $_selectedMonth",
                               _yearlyOption == 'day',
@@ -278,7 +267,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                             const SizedBox(height: 12),
 
-                            // Specific day/week of month option
                             _buildOptionButton(
                               "Repeat on the ${_selectedWeekOfYear}${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear of $_selectedMonth",
                               _yearlyOption == 'weekday',
@@ -291,6 +279,13 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                                 });
                               },
                             ),
+
+                            const SizedBox(height: 12),
+
+                            _buildMonthSelectionButton(colorScheme),
+
+                            if (_showMonthSelection)
+                              _buildMonthSelectionGrid(colorScheme),
                           ],
                         ),
                       ),
@@ -302,7 +297,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
             ),
           ),
 
-          // Bottom buttons
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -321,7 +315,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Create custom frequency data
                       TextEditingController activeController;
                       switch (_frequencyType) {
                         case 'day':
@@ -345,7 +338,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                         'value': int.tryParse(activeController.text) ?? 1,
                       };
 
-                      // Add additional data based on frequency type
                       if (_frequencyType == 'week') {
                         customData['daysOfWeek'] = _selectedDaysOfWeek;
                       } else if (_frequencyType == 'month') {
@@ -359,6 +351,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       } else if (_frequencyType == 'year') {
                         customData['yearlyOption'] = _yearlyOption;
                         customData['month'] = _selectedMonth;
+                        customData['selectedMonths'] = _selectedMonths;
                         if (_yearlyOption == 'day') {
                           customData['monthDay'] = _selectedMonthDay;
                         } else {
@@ -367,7 +360,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                         }
                       }
 
-                      // Pass the data back
                       Navigator.of(context).pop(customData);
                     },
                     style: ElevatedButton.styleFrom(
@@ -379,6 +371,101 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonthSelectionButton(ColorScheme colorScheme) {
+    final int selectedCount = _selectedMonths.where((isSelected) => isSelected).length;
+    final String dayText = _yearlyOption == 'day'
+        ? "${_selectedMonthDay}${_getOrdinalSuffix(_selectedMonthDay)} day"
+        : "the ${_selectedWeekOfYear}${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear";
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showMonthSelection = !_showMonthSelection;
+        });
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(25),
+          color: colorScheme.primary,
+          border: Border.all(
+            color: colorScheme.primary,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          selectedCount == 1
+              ? "Select months to repeat on $dayText"
+              : "Repeat on $dayText in ${selectedCount} months",
+          style: TextStyle(
+            color: colorScheme.onPrimary,
+            fontSize: 16,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthSelectionGrid(ColorScheme colorScheme) {
+    const List<String> monthsAbbrv = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEPT', 'OCT', 'NOV', 'DEC'];
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      child: Column(
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              childAspectRatio: 1,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: 12,
+            itemBuilder: (context, index) {
+              final bool isSelected = _selectedMonths[index];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedMonths[index] = !_selectedMonths[index];
+                    if (_selectedMonths.where((isSelected) => isSelected).length == 1 &&
+                        _selectedMonths[index]) {
+                      _selectedMonth = _getMonthAbbreviation(index + 1);
+                    }
+                  });
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? colorScheme.primary : Colors.transparent,
+                    border: Border.all(
+                      color: isSelected ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      monthsAbbrv[index],
+                      style: TextStyle(
+                        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 16,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -397,7 +484,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
     return Row(
       children: [
-        // Radio button
         GestureDetector(
           onTap: () {
             setState(() {
@@ -431,7 +517,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         ),
         const SizedBox(width: 15),
 
-        // Text and input
         Text(
           prefix,
           style: TextStyle(
