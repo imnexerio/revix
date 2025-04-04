@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:retracker/Utils/date_utils.dart';
 import 'package:retracker/widgets/LectureTypeDropdown.dart';
+import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'CustomFrequencySelector.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/UnifiedDatabaseService.dart';
@@ -687,48 +688,31 @@ class _AddLectureFormState extends State<AddLectureForm> {
     children: [
     Row(
     children: [
-    Expanded(
-    child: DropdownButtonFormField<String>(
-    value: _revisionFrequency,
-    decoration: const InputDecoration(
-    labelText: 'Review Frequency',
-    border: InputBorder.none,
-    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    ),
-    isExpanded: true,
-    items: [
-    // Will be populated from RevisionFrequencyDropdown
-    DropdownMenuItem<String>(
-    value: 'Default',
-    child: Text('Default'),
-    ),
-    DropdownMenuItem<String>(
-    value: 'Custom',
-    child: Text('Custom'),
-    ),
-    DropdownMenuItem<String>(
-    value: 'No Repetition',
-    child: Text('No Repetition'),
-    ),
-    ],
-    onChanged: (String? newValue) {
-    setState(() {
-    _revisionFrequency = newValue!;
+      // Replace your current implementation with this:
 
-    // If custom is selected, show custom options
-    if (newValue == 'Custom') {
-    _showCustomFrequencySelector();
-    } else {
-    // Clear custom parameters if not using custom
-    _customFrequencyParams = {};
-    }
+      Expanded(
+        child: RevisionFrequencyDropdown(
+          revisionFrequency: _revisionFrequency,
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _revisionFrequency = newValue;
 
-    // Update scheduled date based on frequency
-    _setScheduledDate();
-    });
-    },
-    ),
-    ),
+                // If custom is selected, show custom options
+                if (newValue == 'Custom') {
+                  _showCustomFrequencySelector();
+                } else {
+                  // Clear custom parameters if not using custom
+                  _customFrequencyParams = {};
+                }
+
+                // Update scheduled date based on frequency
+                _setScheduledDate();
+              });
+            }
+          },
+        ),
+      ),
     // Add "No Repetition" option as a toggle button
     Material(
     color: Colors.transparent,

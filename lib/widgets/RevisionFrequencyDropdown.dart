@@ -73,6 +73,35 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
       );
     }).toList();
 
+    // Add Custom option
+    items.add(
+      DropdownMenuItem<String>(
+        value: 'Custom',
+        child: Text(
+          'Custom',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+
+    // Add No Repetition option
+    items.add(
+      DropdownMenuItem<String>(
+        value: 'No Repetition',
+        child: Text(
+          'No Repetition',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+
+    // Add New option
     items.add(
       DropdownMenuItem<String>(
         value: 'Add New',
