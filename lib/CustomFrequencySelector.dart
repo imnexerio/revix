@@ -488,12 +488,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         children: [
           GridView.builder(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              childAspectRatio: 1,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 6, // Increased from 4 to 6 (more items per row)
+              childAspectRatio: 1.2, // Adjusted to make cells slightly wider than tall
+              crossAxisSpacing: 8, // Reduced spacing
+              mainAxisSpacing: 8, // Reduced spacing
             ),
             itemCount: 12,
             itemBuilder: (context, index) {
@@ -509,6 +509,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                   });
                 },
                 child: Container(
+                  padding: const EdgeInsets.all(2), // Add some inner padding
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isSelected ? colorScheme.primary : Colors.transparent,
@@ -523,7 +524,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       style: TextStyle(
                         color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 16,
+                        fontSize: 12, // Reduced font size from 16 to 12
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -536,7 +537,6 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
       ),
     );
   }
-
   Widget _buildFrequencyOption(
       String type,
       String prefix,
