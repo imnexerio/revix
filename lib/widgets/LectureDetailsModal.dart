@@ -749,10 +749,18 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     ),
                     const SizedBox(height: 8),
                     RevisionFrequencyDropdown(
-                      revisionFrequency: revisionFrequency,
-                      onChanged: (String? newValue) {
+                      revisionFrequency: {'type': 'predefined', 'value': revisionFrequency},
+                      onChanged: (Map<String, dynamic> newValue) {
                         setState(() {
-                          revisionFrequency = newValue!;
+                          if (newValue['type'] == 'predefined') {
+                            revisionFrequency = newValue['value'];
+                          } else if (newValue['type'] == 'none') {
+                            revisionFrequency = 'No Repetition';
+                          } else if (newValue['type'] == 'custom') {
+                            // Handle custom frequency
+                            revisionFrequency = 'Custom';
+                            // You might want to store the custom frequency data somewhere
+                          }
                         });
                       },
                     ),
