@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-
 class CustomFrequencySelector extends StatefulWidget {
   final Map<String, dynamic> initialParams;
+
   const CustomFrequencySelector({
     Key? key,
     this.initialParams = const {},
@@ -21,6 +21,11 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   String _frequencyType = 'week';
   List<bool> _selectedDaysOfWeek = List.filled(7, false);
 
+  // For date selection
+  List<int> _selectedDates = [];
+  bool _showDateSelection = false;
+
+  // Date variables
   late DateTime _currentDate;
   late int _currentDayOfMonth;
   late String _currentMonth;
@@ -68,6 +73,9 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     _selectedDayOfWeekForYear = _currentDayOfWeek;
     _selectedWeekOfMonth = _currentWeekOfMonth;
     _selectedWeekOfYear = _currentWeekOfMonth;
+
+    // Initialize with current date selected
+    _selectedDates = [_currentDayOfMonth];
   }
 
   String _getMonthAbbreviation(int month) {
@@ -80,6 +88,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     return dayNames[weekday - 1];
   }
 
+  // Get ordinal suffix (st, nd, rd, th) for a number
   String _getOrdinalSuffix(int number) {
     if (number >= 11 && number <= 13) {
       return 'th';
@@ -110,6 +119,11 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
           _selectedDayOfMonth = widget.initialParams['dayOfMonth'] ?? _currentDayOfMonth;
           _selectedWeekOfMonth = widget.initialParams['weekOfMonth'] ?? _currentWeekOfMonth;
           _selectedDayOfWeek = widget.initialParams['dayOfWeek'] ?? _currentDayOfWeek;
+
+          // Load selected dates if monthlyOption is 'dates'
+          if (_monthlyOption == 'dates' && widget.initialParams['selectedDates'] != null) {
+            _selectedDates = List<int>.from(widget.initialParams['selectedDates']);
+          }
           break;
         case 'year':
           _yearController.text = (widget.initialParams['value'] ?? 1).toString();
@@ -130,6 +144,16 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     }
   }
 
+  void _toggleDateSelection(int date) {
+    setState(() {
+      if (_selectedDates.contains(date)) {
+        _selectedDates.remove(date);
+      } else {
+        _selectedDates.add(date);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -143,6 +167,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Handle bar
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
             width: 40,
@@ -162,6 +187,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                   children: [
                     const SizedBox(height: 20),
 
+                    // Day Option
                     _buildFrequencyOption(
                       'day',
                       'Every',
@@ -171,6 +197,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                     Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 40),
 
+                    // Week Option
                     _buildFrequencyOption(
                       'week',
                       'Every',
@@ -178,6 +205,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       _weekController,
                     ),
 
+                    // Days of week selector - only visible when week is selected
                     if (_frequencyType == 'week')
                       Padding(
                         padding: const EdgeInsets.only(top: 16.0, left: 60.0),
@@ -197,6 +225,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                     Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 40),
 
+                    // Month Option
                     _buildFrequencyOption(
                       'month',
                       'Every',
@@ -204,12 +233,14 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       _monthController,
                     ),
 
+                    // Monthly additional options
                     if (_frequencyType == 'month')
                       Padding(
                         padding: const EdgeInsets.only(top: 16.0, left: 60.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Day of month option
                             _buildOptionButton(
                               "Repeat on the ${_selectedDayOfMonth}${_getOrdinalSuffix(_selectedDayOfMonth)}",
                               _monthlyOption == 'day',
@@ -217,12 +248,14 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                                 setState(() {
                                   _monthlyOption = 'day';
                                   _selectedDayOfMonth = _currentDayOfMonth;
+                                  _showDateSelection = false;
                                 });
                               },
                             ),
 
                             const SizedBox(height: 12),
 
+                            // Specific day of week option
                             _buildOptionButton(
                               "Repeat on the ${_selectedWeekOfMonth}${_getOrdinalSuffix(_selectedWeekOfMonth)} $_selectedDayOfWeek",
                               _monthlyOption == 'weekday',
@@ -231,15 +264,38 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                                   _monthlyOption = 'weekday';
                                   _selectedWeekOfMonth = _currentWeekOfMonth;
                                   _selectedDayOfWeek = _currentDayOfWeek;
+                                  _showDateSelection = false;
                                 });
                               },
                             ),
+
+                            const SizedBox(height: 12),
+
+                            // Select dates option - NEW
+                            _buildOptionButton(
+                              "Select dates to repeat",
+                              _monthlyOption == 'dates',
+                                  () {
+                                setState(() {
+                                  _monthlyOption = 'dates';
+                                  _showDateSelection = true;
+                                });
+                              },
+                            ),
+
+                            // Date selector grid - NEW
+                            if (_showDateSelection)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 20.0),
+                                child: _buildDateSelectionGrid(colorScheme),
+                              ),
                           ],
                         ),
                       ),
 
                     Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 40),
 
+                    // Year Option
                     _buildFrequencyOption(
                       'year',
                       'Every',
@@ -247,12 +303,14 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       _yearController,
                     ),
 
+                    // Yearly additional options
                     if (_frequencyType == 'year')
                       Padding(
                         padding: const EdgeInsets.only(top: 16.0, left: 60.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Specific day of month/year option
                             _buildOptionButton(
                               "Repeat on ${_selectedMonthDay}${_getOrdinalSuffix(_selectedMonthDay)} $_selectedMonth",
                               _yearlyOption == 'day',
@@ -267,6 +325,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                             const SizedBox(height: 12),
 
+                            // Specific day/week of month option
                             _buildOptionButton(
                               "Repeat on the ${_selectedWeekOfYear}${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear of $_selectedMonth",
                               _yearlyOption == 'weekday',
@@ -297,6 +356,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
             ),
           ),
 
+          // Bottom buttons
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -315,6 +375,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
+                      // Create custom frequency data
                       TextEditingController activeController;
                       switch (_frequencyType) {
                         case 'day':
@@ -338,15 +399,18 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                         'value': int.tryParse(activeController.text) ?? 1,
                       };
 
+                      // Add additional data based on frequency type
                       if (_frequencyType == 'week') {
                         customData['daysOfWeek'] = _selectedDaysOfWeek;
                       } else if (_frequencyType == 'month') {
                         customData['monthlyOption'] = _monthlyOption;
                         if (_monthlyOption == 'day') {
                           customData['dayOfMonth'] = _selectedDayOfMonth;
-                        } else {
+                        } else if (_monthlyOption == 'weekday') {
                           customData['weekOfMonth'] = _selectedWeekOfMonth;
                           customData['dayOfWeek'] = _selectedDayOfWeek;
+                        } else if (_monthlyOption == 'dates') {
+                          customData['selectedDates'] = _selectedDates;
                         }
                       } else if (_frequencyType == 'year') {
                         customData['yearlyOption'] = _yearlyOption;
@@ -360,6 +424,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                         }
                       }
 
+                      // Pass the data back
                       Navigator.of(context).pop(customData);
                     },
                     style: ElevatedButton.styleFrom(
@@ -484,6 +549,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
     return Row(
       children: [
+        // Radio button
         GestureDetector(
           onTap: () {
             setState(() {
@@ -517,6 +583,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         ),
         const SizedBox(width: 15),
 
+        // Text and input
         Text(
           prefix,
           style: TextStyle(
@@ -619,6 +686,70 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
             color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface.withOpacity(0.8),
             fontSize: 16,
             fontStyle: FontStyle.italic,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // New method for date selection grid
+  Widget _buildDateSelectionGrid(ColorScheme colorScheme) {
+    // Calculate the days in the current month
+    int daysInMonth = DateTime(_currentDate.year, _currentDate.month + 1, 0).day;
+
+    // Create a list of all days in the month
+    List<int> allDays = List.generate(daysInMonth, (index) => index + 1);
+
+    // Split into rows of 7 days
+    List<List<int>> rows = [];
+    for (int i = 0; i < allDays.length; i += 7) {
+      rows.add(allDays.sublist(i, i + 7 > allDays.length ? allDays.length : i + 7));
+    }
+
+    return Column(
+      children: [
+        ...rows.map((rowDays) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ...rowDays.map((day) => _buildDateCircle(day, colorScheme)),
+                // Add empty spacers if row has less than 7 items
+                ...List.generate(7 - rowDays.length, (index) => SizedBox(width: 32))
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // New method for individual date circles
+  Widget _buildDateCircle(int day, ColorScheme colorScheme) {
+    final bool isSelected = _selectedDates.contains(day);
+
+    return GestureDetector(
+      onTap: () => _toggleDateSelection(day),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? colorScheme.primary : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            day.toString(),
+            style: TextStyle(
+              color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 16,
+            ),
           ),
         ),
       ),
