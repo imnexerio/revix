@@ -28,7 +28,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
   String _lectureNo = '';
   String _description = '';
   String _revisionFrequency = 'Default';
-  // Removed onlyOnce boolean flag
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
   String dateScheduled = '';
@@ -159,7 +158,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
   }
 
   Future<void> _setScheduledDate() async {
-    print('todaydate: $todayDate');
     if (todayDate == 'Unspecified') {
       setState(() {
         dateScheduled = 'Unspecified';
@@ -601,7 +599,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
 
                       // Initiation Date Field
-Container(
+                      Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
@@ -654,10 +652,12 @@ Container(
                                       final now = DateTime.now();
                                       todayDate = now.toIso8601String().split('T')[0];
                                       _initiationdateController.text = todayDate;
+                                      _revisionFrequency =  'Default'; // Reset revision frequency
                                     } else {
                                       // Set to "Unspecified"
                                       _initiationdateController.text = 'Unspecified';
                                       todayDate = 'Unspecified'; // Clear the actual date
+                                      _revisionFrequency= 'No Repetition'; // Reset revision frequency
                                     }
                                     _setScheduledDate(); // Update the scheduled date
                                   });
@@ -685,6 +685,7 @@ Container(
                       ),
 
                       // Revision Frequency options
+                      if(todayDate != 'Unspecified')
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
