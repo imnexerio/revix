@@ -126,11 +126,6 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
       builder: (BuildContext context, BoxConstraints constraints) {
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Theme.of(context).cardColor,
-            border: Border.all(color: Theme.of(context).dividerColor),
-          ),
           child: ButtonTheme(
             alignedDropdown: true,
             child: DropdownButtonFormField<String>(
