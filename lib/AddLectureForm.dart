@@ -6,6 +6,7 @@ import 'package:retracker/Utils/date_utils.dart';
 import 'package:retracker/widgets/LectureTypeDropdown.dart';
 import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'CustomFrequencySelector.dart';
+import 'RecordForm/CalculateCustomNextDate.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/UnifiedDatabaseService.dart';
 import 'Utils/customSnackBar_error.dart';
@@ -172,8 +173,15 @@ class _AddLectureFormState extends State<AddLectureForm> {
     };
 
     // For custom frequency, add the custom parameters
-    if (_revisionFrequency == 'Custom') {
-
+    if (_revisionFrequency == 'Custom' && _customFrequencyParams.isNotEmpty) {
+      // Use custom parameters to calculate the next date
+      DateTime initialDate = DateTime.parse(todayDate);
+      DateTime nextDate = CalculateCustomNextDate.calculateCustomNextDate(initialDate, _customFrequencyParams);
+      setState(() {
+        dateScheduled = nextDate.toIso8601String().split('T')[0];
+        _scheduleddateController.text = dateScheduled;
+      });
+      return; // Skip the standard calculation
     }
 
     // For standard frequencies
