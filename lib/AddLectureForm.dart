@@ -28,11 +28,18 @@ class _AddLectureFormState extends State<AddLectureForm> {
   String _lectureNo = '';
   String _description = '';
   String _revisionFrequency = 'Default';
+  String _duration = 'Forever';
   List<String> _subjects = [];
   Map<String, List<String>> _subjectCodes = {};
   String dateScheduled = '';
   String todayDate = '';
   int no_revision = 0;
+  Map<String, dynamic> _durationData = {
+    "type": "forever",
+    "numberOfTimes": null,
+    "endDate": null
+  };
+
 
   // Custom frequency parameters
   Map<String, dynamic> _customFrequencyParams = {};
@@ -107,6 +114,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         no_revision = -1;
         _revisionFrequency = 'Unspecified';
         dateScheduled = 'Unspecified';
+        _duration =1 as String;
       }else{
       if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate))) {
         no_revision = -1;
@@ -135,6 +143,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'revision_frequency': _revisionFrequency,
         'revision_data': revisionData,  // Store all revision-related data here
         'status': 'Enabled',
+        'duration': _durationData,
       });
 
       // Show success message
@@ -274,6 +283,28 @@ class _AddLectureFormState extends State<AddLectureForm> {
       });
     }
   }
+  Future<void> _showDurationSelector() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (BuildContext context) {
+        return CustomFrequencySelector(
+          initialParams: _customFrequencyParams,
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _customFrequencyParams = result;
+        _setScheduledDate(); // Update scheduled date based on new frequency
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -823,6 +854,132 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             },
                           ),
                         ),
+
+                      if(todayDate != 'Unspecified')
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: Theme.of(context).cardColor,
+                            border: Border.all(color: Theme.of(context).dividerColor),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      value: _duration,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Duration',
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      ),
+                                      isExpanded: true,
+                                      items: const [
+                                        DropdownMenuItem<String>(
+                                          value: 'Forever',
+                                          child: Text('Forever'),
+                                        ),
+                                        DropdownMenuItem<String>(
+                                          value: 'Specific Number of Times',
+                                          child: Text('Specific Number of Times'),
+                                        ),
+                                        DropdownMenuItem<String>(
+                                          value: 'Until',
+                                          child: Text('Until'),
+                                        ),
+                                      ],
+                                      onChanged: (String? newValue) {
+                                        if(newValue != null) {
+                                          setState(() {
+                                            _duration = newValue;
+                                            if (_duration == 'Forever') {
+                                              _durationData = {
+                                                "type": "forever",
+                                                "numberOfTimes": null,
+                                                "endDate": null
+                                              };
+                                            }
+                                            else if (_duration == 'Specific Number of Times') {
+                                              // Show a dialog or bottom sheet to enter the number of times
+                                              showDialog(
+                                                context: context,
+                                                builder: (BuildContext context) {
+                                                  return AlertDialog(
+                                                    title: const Text('Enter Number of Times'),
+                                                    content: TextFormField(
+                                                      keyboardType: TextInputType.number,
+                                                      decoration: const InputDecoration(
+                                                        labelText: 'Number of Times',
+                                                      ),
+                                                      onChanged: (value) {
+                                                        setState(() {
+                                                          int? parsedValue = int.tryParse(value);
+                                                          if (parsedValue != null) {
+                                                            _durationData = {
+                                                              "type": "specificTimes",
+                                                              "numberOfTimes": parsedValue,
+                                                              "endDate": null
+                                                            };
+                                                          }
+                                                        });
+                                                      },
+                                                    ),
+                                                    actions: <Widget>[
+                                                      TextButton(
+                                                        child: const Text('OK'),
+                                                        onPressed: () {
+                                                          Navigator.of(context).pop();
+                                                        },
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                            }
+                                            else if (_duration == 'Until') {
+                                              // Show a date picker to select the end date
+                                              showDatePicker(
+                                                context: context,
+                                                initialDate: DateTime.now(),
+                                                firstDate: DateTime.now(),
+                                                lastDate: DateTime(2101),
+                                              ).then((pickedDate) {
+                                                if (pickedDate != null) {
+                                                  setState(() {
+                                                    _durationData = {
+                                                      "type": "until",
+                                                      "numberOfTimes": null,
+                                                      "endDate": pickedDate.toIso8601String().split('T')[0]
+                                                    };
+                                                  });
+                                                }
+                                              });
+                                            }
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Custom frequency description (if selected)
+                              if (_revisionFrequency == 'Custom' && _customFrequencyParams.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    _getCustomFrequencyDescription(),
+                                    style: TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: Theme.of(context).colorScheme.secondary,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
 
                       // Description Field
                       Container(
