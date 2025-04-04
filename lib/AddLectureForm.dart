@@ -108,9 +108,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
         no_revision = -1;
       }
 
-      // Determine if it's a one-time event by checking if revisionFrequency is 'No Repetition'
-      bool isOneTime = _revisionFrequency == 'No Repetition';
-
       // Create a map to store all revision parameters including custom ones
       Map<String, dynamic> revisionData = {
         'frequency': _revisionFrequency,
@@ -133,7 +130,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'no_revision': no_revision,
         'revision_frequency': _revisionFrequency,
         'revision_data': revisionData,  // Store all revision-related data here
-        'only_once': isOneTime ? 1 : 0,  // Still keep for backward compatibility
         'status': 'Enabled',
       });
 
