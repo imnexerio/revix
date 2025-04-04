@@ -855,7 +855,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           ),
                         ),
 
-                      if(todayDate != 'Unspecified')
+                      if(_revisionFrequency != 'No Repetition')
                         Container(
                           margin: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(

@@ -275,11 +275,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
                           int missedRevision = (widget.details['missed_revision'] as num).toInt();
                           DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
-                          String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                            scheduledDate,
-                            revisionFrequency,
-                            noRevision + 1,
-                          )).toIso8601String().split('T')[0];
 
                           if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                             missedRevision += 1;
@@ -298,6 +293,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           if (widget.details['no_revision'] < 0) {
                             datesRevised = [];
                           }
+
+                          String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                            scheduledDate,
+                            revisionFrequency,
+                            noRevision + 1,
+                          )).toIso8601String().split('T')[0];
 
                           await UpdateRecords(
                             widget.selectedSubject,
