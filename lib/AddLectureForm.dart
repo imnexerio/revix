@@ -104,9 +104,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
           .child(_lectureNo);
 
       String initiated_on = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+      if (todayDate == 'Unspecified') {
+        no_revision = -1;
+        _revisionFrequency = 'Unspecified';
+        dateScheduled = 'Unspecified';
+      }else{
       if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate))) {
         no_revision = -1;
-      }
+      }}
 
       // Create a map to store all revision parameters including custom ones
       Map<String, dynamic> revisionData = {
@@ -154,38 +159,48 @@ class _AddLectureFormState extends State<AddLectureForm> {
   }
 
   Future<void> _setScheduledDate() async {
-    // If it's no repetition, don't calculate next date
-    if (_revisionFrequency == 'No Repetition') {
+    print('todaydate: $todayDate');
+    if (todayDate == 'Unspecified') {
       setState(() {
-        dateScheduled = todayDate;
+        dateScheduled = 'Unspecified';
         _scheduleddateController.text = dateScheduled;
       });
-      return;
     }
+    else {
+      // If it's no repetition, don't calculate next date
+      if (_revisionFrequency == 'No Repetition') {
+        setState(() {
+          dateScheduled = todayDate;
+          _scheduleddateController.text = dateScheduled;
+        });
+        return;
+      }
 
-    // For custom frequency, add the custom parameters
-    if (_revisionFrequency == 'Custom' && _customFrequencyParams.isNotEmpty) {
-      // Use custom parameters to calculate the next date
-      DateTime initialDate = DateTime.parse(todayDate);
-      DateTime nextDate = CalculateCustomNextDate.calculateCustomNextDate(initialDate, _customFrequencyParams);
+      // For custom frequency, add the custom parameters
+      if (_revisionFrequency == 'Custom' && _customFrequencyParams.isNotEmpty) {
+        // Use custom parameters to calculate the next date
+        DateTime initialDate = DateTime.parse(todayDate);
+        DateTime nextDate = CalculateCustomNextDate.calculateCustomNextDate(
+            initialDate, _customFrequencyParams);
+        setState(() {
+          dateScheduled = nextDate.toIso8601String().split('T')[0];
+          _scheduleddateController.text = dateScheduled;
+        });
+        return; // Skip the standard calculation
+      }
+
+      // For standard frequencies
+      DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
+        DateTime.parse(todayDate),
+        _revisionFrequency,
+        0,
+      );
+
       setState(() {
-        dateScheduled = nextDate.toIso8601String().split('T')[0];
+        dateScheduled = initialDate.toIso8601String().split('T')[0];
         _scheduleddateController.text = dateScheduled;
       });
-      return; // Skip the standard calculation
     }
-
-    // For standard frequencies
-    DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
-      DateTime.parse(todayDate),
-      _revisionFrequency,
-      0,
-    );
-
-    setState(() {
-      dateScheduled = initialDate.toIso8601String().split('T')[0];
-      _scheduleddateController.text = dateScheduled;
-    });
   }
 
   String _getCustomFrequencyDescription() {
@@ -586,42 +601,86 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
 
                       // Initiation Date Field
-                      Container(
+Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(context).cardColor,
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
-                        child: TextFormField(
-                          controller: _initiationdateController,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Select Initiation Date',
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          onTap: () async {
-                            DateTime? pickedDate = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime(2101),
-                            );
-                            if (pickedDate != null) {
-                              setState(() {
-                                todayDate = pickedDate.toIso8601String().split('T')[0];
-                                _initiationdateController.text = todayDate; // Update the controller
-                                _setScheduledDate(); // Update the scheduled date
-                              });
-                            }
-                          },
-                          validator: (value) {
-                            if (todayDate.isEmpty) {
-                              return 'Please select a date';
-                            }
-                            return null;
-                          },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _initiationdateController,
+                                readOnly: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Select Initiation Date',
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                                onTap: () async {
+                                  DateTime? pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: DateTime.now(),
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime(2101),
+                                  );
+                                  if (pickedDate != null) {
+                                    setState(() {
+                                      todayDate = pickedDate.toIso8601String().split('T')[0];
+                                      _initiationdateController.text = todayDate; // Update the controller
+                                      _setScheduledDate(); // Update the scheduled date
+                                    });
+                                  }
+                                },
+                                validator: (value) {
+                                  if (todayDate.isEmpty && _initiationdateController.text != 'Unspecified') {
+                                    return 'Please select a date';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            // "Unspecified" toggle button
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () {
+                                  setState(() {
+                                    if (_initiationdateController.text == 'Unspecified') {
+                                      // If already "Unspecified", set to today's date
+                                      final now = DateTime.now();
+                                      todayDate = now.toIso8601String().split('T')[0];
+                                      _initiationdateController.text = todayDate;
+                                    } else {
+                                      // Set to "Unspecified"
+                                      _initiationdateController.text = 'Unspecified';
+                                      todayDate = 'Unspecified'; // Clear the actual date
+                                    }
+                                    _setScheduledDate(); // Update the scheduled date
+                                  });
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _initiationdateController.text == 'Unspecified'
+                                            ? Icons.check_box
+                                            : Icons.check_box_outline_blank,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Text('Unspecified'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
