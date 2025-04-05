@@ -337,7 +337,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                               if (widget.details['revision_frequency'] == 'Custom') {
 
                                 Map<String, dynamic> revisionData = extractRevisionData(widget.details);
-                                print('revisionData: $revisionData');
+                                // print('revisionData: $revisionData');
                                 DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
                                     DateTime.parse(widget.details['date_scheduled']),
                                     revisionData
@@ -383,7 +383,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           if (Navigator.canPop(context)) {
                             Navigator.pop(context);
                           }
-                          print('Error marking as done: $e');
+                          // print('Error marking as done: $e');
                           ScaffoldMessenger.of(context).showSnackBar(
                             customSnackBar_error(
                               context: context,
@@ -803,7 +803,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                             // If custom is selected, show custom options
                             if (newValue == 'Custom') {
-                              print('extractRevisionData: ${extractRevisionData(widget.details)}');
+                              // print('extractRevisionData: ${extractRevisionData(widget.details)}');
                               showCustomFrequencySelector();
                             } else {
                               // Clear custom parameters if not using custom
@@ -873,8 +873,18 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   }
 
   Future<void> showCustomFrequencySelector() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    // Get the actual custom params from the nested structure
+    Map<String, dynamic> initialParams = {};
 
+    if (widget.details['revision_data'] != null &&
+        widget.details['revision_data']['custom_params'] != null) {
+      initialParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+    }
+
+    // For debugging
+    // print('Passing initialParams to CustomFrequencySelector: $initialParams');
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -882,7 +892,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       ),
       builder: (BuildContext context) {
         return CustomFrequencySelector(
-          initialParams: extractRevisionData(widget.details)
+          initialParams: initialParams,
         );
       },
     );
@@ -890,6 +900,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     if (result != null) {
       setState(() {
         customFrequencyParams = result;
+        // Update the nested structure too
+        if (widget.details['revision_data'] == null) {
+          widget.details['revision_data'] = {};
+        }
+        widget.details['revision_data']['custom_params'] = result;
       });
     }
   }

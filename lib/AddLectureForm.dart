@@ -134,6 +134,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       if (_customFrequencyParams.isNotEmpty) {
         revisionData['custom_params'] = _customFrequencyParams;
       }
+      print(_customFrequencyParams);
 
       await ref.set({
         'initiated_on': initiated_on,
@@ -229,15 +230,13 @@ class _AddLectureFormState extends State<AddLectureForm> {
       case 'day':
         description += value == 1 ? 'day' : 'days';
         break;
-
       case 'week':
         description += value == 1 ? 'week' : 'weeks';
 
         // If we have days of week selected, add them
         if (_customFrequencyParams['daysOfWeek'] != null) {
           List<bool> daysOfWeek = List<bool>.from(_customFrequencyParams['daysOfWeek']);
-          // Correct order for UI display: Sunday first (index 0)
-          List<String> dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          List<String> dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
           List<String> selectedDays = [];
 
           for (int i = 0; i < daysOfWeek.length; i++) {
@@ -247,102 +246,25 @@ class _AddLectureFormState extends State<AddLectureForm> {
           }
 
           if (selectedDays.isNotEmpty) {
-            description += ' on ${selectedDays.join(', ')}';
+            description += ' on ' + selectedDays.join(', ');
           }
         }
         break;
-
       case 'month':
         description += value == 1 ? 'month' : 'months';
 
-        String monthlyOption = _customFrequencyParams['monthlyOption'] ?? 'day';
-
-        if (monthlyOption == 'day') {
-          int dayOfMonth = _customFrequencyParams['dayOfMonth'] ?? 1;
-          String ordinalSuffix = _getOrdinalSuffix(dayOfMonth);
-          description += ' on the $dayOfMonth$ordinalSuffix';
-        }
-        else if (monthlyOption == 'weekday') {
-          int weekOfMonth = _customFrequencyParams['weekOfMonth'] ?? 1;
-          String dayOfWeek = _customFrequencyParams['dayOfWeek'] ?? 'Monday';
-          String ordinalSuffix = _getOrdinalSuffix(weekOfMonth);
-          description += ' on the $weekOfMonth$ordinalSuffix $dayOfWeek';
-        }
-        else if (monthlyOption == 'dates') {
-          if (_customFrequencyParams['selectedDates'] != null) {
-            List<int> selectedDates = List<int>.from(_customFrequencyParams['selectedDates']);
-            selectedDates.sort();
-            if (selectedDates.isNotEmpty) {
-              if (selectedDates.length == 1) {
-                description += ' on day ${selectedDates[0]}';
-              } else {
-                List<String> datesWithOrdinals = selectedDates
-                    .map((date) => '$date${_getOrdinalSuffix(date)}')
-                    .toList();
-                description += ' on days ${datesWithOrdinals.join(', ')}';
-              }
-            }
-          }
+        // If day of month is specified, add it
+        if (_customFrequencyParams['dayOfMonth'] != null) {
+          int dayOfMonth = _customFrequencyParams['dayOfMonth'];
+          description += ' on day $dayOfMonth';
         }
         break;
-
       case 'year':
         description += value == 1 ? 'year' : 'years';
-
-        String yearlyOption = _customFrequencyParams['yearlyOption'] ?? 'day';
-
-        if (_customFrequencyParams['selectedMonths'] != null) {
-          List<bool> selectedMonths = List<bool>.from(_customFrequencyParams['selectedMonths']);
-          List<String> monthsAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          List<String> selectedMonthNames = [];
-
-          for (int i = 0; i < selectedMonths.length; i++) {
-            if (selectedMonths[i]) {
-              selectedMonthNames.add(monthsAbbr[i]);
-            }
-          }
-
-          if (selectedMonthNames.isNotEmpty) {
-            if (selectedMonthNames.length == 1) {
-              description += ' in ${selectedMonthNames[0]}';
-            } else {
-              description += ' in ${selectedMonthNames.join(', ')}';
-            }
-          }
-        } else {
-          String month = _customFrequencyParams['month'] ?? 'Jan';
-          description += ' in $month';
-        }
-
-        if (yearlyOption == 'day') {
-          int monthDay = _customFrequencyParams['monthDay'] ?? 1;
-          String ordinalSuffix = _getOrdinalSuffix(monthDay);
-          description += ' on the $monthDay$ordinalSuffix';
-        } else if (yearlyOption == 'weekday') {
-          int weekOfYear = _customFrequencyParams['weekOfYear'] ?? 1;
-          String dayOfWeekForYear = _customFrequencyParams['dayOfWeekForYear'] ?? 'Monday';
-          String ordinalSuffix = _getOrdinalSuffix(weekOfYear);
-          description += ' on the $weekOfYear$ordinalSuffix $dayOfWeekForYear';
-        }
         break;
     }
 
     return description;
-  }
-
-  // Helper method for ordinal suffixes
-  String _getOrdinalSuffix(int number) {
-    if (number >= 11 && number <= 13) {
-      return 'th';
-    }
-
-    switch (number % 10) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
-    }
   }
 
   // Function to show custom frequency selection bottom sheet
