@@ -269,10 +269,11 @@ class _AddLectureFormState extends State<AddLectureForm> {
   // Function to show custom frequency selection bottom sheet
   Future<void> _showCustomFrequencySelector() async {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
+
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
         return CustomFrequencySelector(

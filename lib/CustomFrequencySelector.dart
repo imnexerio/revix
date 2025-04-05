@@ -164,6 +164,9 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
       ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.60,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
