@@ -22,6 +22,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   final TextEditingController _initiationdateController = TextEditingController();
   final TextEditingController _scheduleddateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   String _selectedSubject = 'DEFAULT_VALUE';
   String _selectedSubjectCode = '';
   String _lectureType = 'Lectures';
@@ -975,6 +976,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
                         child: TextFormField(
+                          controller: _descriptionController,
                           decoration: const InputDecoration(
                             labelText: 'Description',
                             border: InputBorder.none,
