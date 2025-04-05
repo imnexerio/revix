@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../RecordForm/CalculateCustomNextDate.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
@@ -31,6 +32,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late int noRevision;
   late TextEditingController _descriptionController;
   late String formattedTime;
+  String dateScheduled = '';
 
   @override
   void initState() {
@@ -272,6 +274,25 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             throw 'Cannot mark as done when the status is disabled';
                           }
 
+                          if (widget.details['date_learnt'] == 'Unspecified') {
+                            await moveToDeletedData(
+                                widget.selectedSubject,
+                                widget.selectedSubjectCode,
+                                widget.lectureNo,
+                                widget.details
+                            );
+
+                            Navigator.pop(context);
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              customSnackBar(
+                                context: context,
+                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
+                              ),
+                            );
+                            return;
+                          }
+
                           String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
                           int missedRevision = (widget.details['missed_revision'] as num).toInt();
                           DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
@@ -287,18 +308,39 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
                           datesRevised.add(dateRevised);
 
-                          if (widget.details['only_once'] != 0) {
-                            isEnabled = false;
-                          }
+
                           if (widget.details['no_revision'] < 0) {
                             datesRevised = [];
                           }
+                          if (widget.details['date_learnt'] =='Unspecified') {
+                            await moveToDeletedData(
+                              widget.selectedSubject,
+                              widget.selectedSubjectCode,
+                              widget.lectureNo,
+                              widget.details
+                            );
 
+                          }else{
+                            if (widget.details['revision_frequency']== 'No Repetition'){
+                              await moveToDeletedData(
+                                widget.selectedSubject,
+                                widget.selectedSubjectCode,
+                                widget.lectureNo,
+                                widget.details
+                              );
+                            }else{
+                              if (widget.details['revision_frequency'] == 'Custom') {
+                                String dateScheduled = CalculateCustomNextDate.calculateCustomNextDate(
+                                  DateTime.parse(widget.details['date_scheduled']),
+                                  widget.details['custom_params'],
+                                ) as String;
+                              } else {
                           String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
                             scheduledDate,
                             revisionFrequency,
                             noRevision + 1,
-                          )).toIso8601String().split('T')[0];
+                          )).toIso8601String().split('T')[0];}
+
 
                           await UpdateRecords(
                             widget.selectedSubject,
@@ -333,12 +375,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
                               ),
                             );
-                          }
+                          }}}
                         } catch (e) {
                           if (Navigator.canPop(context)) {
                             Navigator.pop(context);
                           }
-
+                          print('Error marking as done: $e');
                           ScaffoldMessenger.of(context).showSnackBar(
                             customSnackBar_error(
                               context: context,

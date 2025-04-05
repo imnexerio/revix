@@ -169,6 +169,7 @@ class CombinedDatabaseService {
     List<Map<String, dynamic>> nextDayRecords = [];
     List<Map<String, dynamic>> next7DaysRecords = [];
     List<Map<String, dynamic>> todayAddedRecords = [];
+    List<Map<String, dynamic>> noreminderdate = [];
 
     rawData.forEach((subjectKey, subjectValue) {
       if (subjectValue is! Map) return;
@@ -204,6 +205,11 @@ class CombinedDatabaseService {
             'status': recordValue['status'],
             'only_once': recordValue['only_once'],
           };
+
+          if (recordValue['date_learnt'] == 'Unspecified') {
+            noreminderdate.add(record);
+            return;
+          }
 
           final scheduledDateStr = dateScheduled.toString().split('T')[0];
           if (scheduledDateStr == todayStr) {
