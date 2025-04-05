@@ -204,6 +204,7 @@ class CombinedDatabaseService {
             'revision_frequency': recordValue['revision_frequency'],
             'status': recordValue['status'],
             'revision_data': recordValue['revision_data'] ?? [],
+            'duration': recordValue['duration'] ?? 0,
 
           };
 
