@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../CustomFrequencySelector.dart';
 import '../RecordForm/CalculateCustomNextDate.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
@@ -33,6 +34,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late TextEditingController _descriptionController;
   late String formattedTime;
   late String dateScheduled;
+  Map<String, dynamic> customFrequencyParams = {};
 
   @override
   void initState() {
@@ -51,6 +53,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     _descriptionController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -332,33 +335,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                               return;
                             }else{
                               if (widget.details['revision_frequency'] == 'Custom') {
-                                // First convert the LinkedMap to a proper Map<String, dynamic>
-                                Map<String, dynamic> revisionData = {};
 
-                                // Check if revision_data exists and has the necessary custom_params
-                                if (widget.details['revision_data'] != null) {
-                                  final rawData = widget.details['revision_data'];
-                                  revisionData['frequency'] = rawData['frequency'];
-
-                                  if (rawData['custom_params'] != null) {
-                                    Map<String, dynamic> customParams = {};
-                                    final rawCustomParams = rawData['custom_params'];
-
-                                    if (rawCustomParams['frequencyType'] != null) {
-                                      customParams['frequencyType'] = rawCustomParams['frequencyType'];
-                                    }
-
-                                    if (rawCustomParams['value'] != null) {
-                                      customParams['value'] = rawCustomParams['value'];
-                                    }
-
-                                    if (rawCustomParams['daysOfWeek'] != null) {
-                                      customParams['daysOfWeek'] = List<bool>.from(rawCustomParams['daysOfWeek']);
-                                    }
-
-                                    revisionData['custom_params'] = customParams;
-                                  }
-                                }
+                                Map<String, dynamic> revisionData = extractRevisionData(widget.details);
                                 print('revisionData: $revisionData');
                                 DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
                                     DateTime.parse(widget.details['date_scheduled']),
@@ -819,9 +797,21 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     RevisionFrequencyDropdown(
                       revisionFrequency: revisionFrequency,
                       onChanged: (String? newValue) {
-                        setState(() {
-                          revisionFrequency = newValue!;
-                        });
+                        if (newValue != null) {
+                          setState(() {
+                            revisionFrequency = newValue;
+
+                            // If custom is selected, show custom options
+                            if (newValue == 'Custom') {
+                              print('extractRevisionData: ${extractRevisionData(widget.details)}');
+                              showCustomFrequencySelector();
+                            } else {
+                              // Clear custom parameters if not using custom
+                              customFrequencyParams = {};
+                            }
+
+                          });
+                        }
                       },
                     ),
                   ],
@@ -880,6 +870,58 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     final DateTime parsedDate = DateTime.parse(date);
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
     return formatter.format(parsedDate);
+  }
+
+  Future<void> showCustomFrequencySelector() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return CustomFrequencySelector(
+          initialParams: extractRevisionData(widget.details)
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        customFrequencyParams = result;
+      });
+    }
+  }
+
+  Map<String, dynamic> extractRevisionData(Map<String, dynamic> details) {
+    Map<String, dynamic> revisionData = {};
+
+    if (details['revision_data'] != null) {
+      final rawData = details['revision_data'];
+      revisionData['frequency'] = rawData['frequency'];
+
+      if (rawData['custom_params'] != null) {
+        Map<String, dynamic> customParams = {};
+        final rawCustomParams = rawData['custom_params'];
+
+        if (rawCustomParams['frequencyType'] != null) {
+          customParams['frequencyType'] = rawCustomParams['frequencyType'];
+        }
+
+        if (rawCustomParams['value'] != null) {
+          customParams['value'] = rawCustomParams['value'];
+        }
+
+        if (rawCustomParams['daysOfWeek'] != null) {
+          customParams['daysOfWeek'] = List<bool>.from(rawCustomParams['daysOfWeek']);
+        }
+
+        revisionData['custom_params'] = customParams;
+      }
+    }
+
+    return revisionData;
   }
 
 }

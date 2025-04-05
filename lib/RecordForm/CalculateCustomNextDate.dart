@@ -13,7 +13,7 @@ class CalculateCustomNextDate {
     int value = customParams['value'] is int ? customParams['value'] : 1;
     DateTime nextDate = startDate;
 
-    print('Processing: frequencyType=$frequencyType, value=$value');
+    // print('Processing: frequencyType=$frequencyType, value=$value');
 
     switch (frequencyType) {
       case 'day':
