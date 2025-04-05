@@ -13,16 +13,16 @@ class CustomFrequencySelector extends StatefulWidget {
 }
 
 class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
-  final TextEditingController _dayController = TextEditingController(text: '1');
-  final TextEditingController _weekController = TextEditingController(text: '1');
-  final TextEditingController _monthController = TextEditingController(text: '1');
-  final TextEditingController _yearController = TextEditingController(text: '1');
+  late TextEditingController _dayController;
+  late TextEditingController _weekController;
+  late TextEditingController _monthController;
+  late TextEditingController _yearController;
 
-  String _frequencyType = 'week';
-  List<bool> _selectedDaysOfWeek = List.filled(7, false);
+  late String _frequencyType;
+  late List<bool> _selectedDaysOfWeek;
 
   // For date selection
-  List<int> _selectedDates = [];
+  late List<int> _selectedDates;
   bool _showDateSelection = false;
 
   // Date variables
@@ -32,50 +32,69 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   late String _currentDayOfWeek;
   late int _currentWeekOfMonth;
 
-  String _monthlyOption = 'day';
+  late String _monthlyOption;
   late int _selectedDayOfMonth;
   late int _selectedWeekOfMonth;
   late String _selectedDayOfWeek;
 
-
-  String _yearlyOption = 'day';
+  late String _yearlyOption;
   late int _selectedMonthDay;
   late String _selectedMonth;
   late int _selectedWeekOfYear;
   late String _selectedDayOfWeekForYear;
-  List<bool> _selectedMonths = List.filled(12, false);
+  late List<bool> _selectedMonths;
   bool _showMonthSelection = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeCurrentDateValues();
-    _loadInitialParams();
 
-    int currentWeekday = _currentDate.weekday % 7;
-    _selectedDaysOfWeek = List.filled(7, false);
-    _selectedDaysOfWeek[currentWeekday] = true;
-    _selectedMonths = List.filled(12, false);
-    _selectedMonths[_currentDate.month - 1] = true;
+    // Initialize with default values first
+    _initializeDefaultValues();
+
+    // Then load initial params (if any)
+    _loadInitialParams();
   }
 
-  void _initializeCurrentDateValues() {
+  void _initializeDefaultValues() {
     _currentDate = DateTime.now();
     _currentDayOfMonth = _currentDate.day;
     _currentMonth = _getMonthAbbreviation(_currentDate.month);
     _currentDayOfWeek = _getDayOfWeekName(_currentDate.weekday);
     _currentWeekOfMonth = (_currentDate.day / 7).ceil();
 
+    // Set default values
+    _frequencyType = 'week';
+
+    _dayController = TextEditingController(text: '1');
+    _weekController = TextEditingController(text: '1');
+    _monthController = TextEditingController(text: '1');
+    _yearController = TextEditingController(text: '1');
+
+    // Initialize week days
+    _selectedDaysOfWeek = List.filled(7, false);
+    int currentWeekday = _convertWeekdayToUIIndex(_currentDate.weekday);
+    _selectedDaysOfWeek[currentWeekday] = true;
+
+    // Initialize monthly options
+    _monthlyOption = 'day';
     _selectedDayOfMonth = _currentDayOfMonth;
+    _selectedWeekOfMonth = _currentWeekOfMonth;
+    _selectedDayOfWeek = _currentDayOfWeek;
+    _selectedDates = [_currentDayOfMonth];
+
+    // Initialize yearly options
+    _yearlyOption = 'day';
     _selectedMonthDay = _currentDayOfMonth;
     _selectedMonth = _currentMonth;
-    _selectedDayOfWeek = _currentDayOfWeek;
-    _selectedDayOfWeekForYear = _currentDayOfWeek;
-    _selectedWeekOfMonth = _currentWeekOfMonth;
     _selectedWeekOfYear = _currentWeekOfMonth;
+    _selectedDayOfWeekForYear = _currentDayOfWeek;
+    _selectedMonths = List.filled(12, false);
+    _selectedMonths[_currentDate.month - 1] = true;
+  }
 
-    // Initialize with current date selected
-    _selectedDates = [_currentDayOfMonth];
+  int _convertWeekdayToUIIndex(int dateTimeWeekday) {
+    return dateTimeWeekday % 7; // This maps 7 (Sunday) to 0, Monday to 1, etc.
   }
 
   String _getMonthAbbreviation(int month) {
@@ -84,6 +103,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   }
 
   String _getDayOfWeekName(int weekday) {
+    // For UI display - maps 1-7 (Monday-Sunday) to appropriate names
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return dayNames[weekday - 1];
   }
@@ -104,43 +124,69 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
   void _loadInitialParams() {
     if (widget.initialParams.isNotEmpty) {
-      _frequencyType = widget.initialParams['frequencyType'] ?? 'week';
+      // Set frequency type
+      setState(() {
+        _frequencyType = widget.initialParams['frequencyType'] ?? 'week';
 
-      switch (_frequencyType) {
-        case 'day':
-          _dayController.text = (widget.initialParams['value'] ?? 1).toString();
-          break;
-        case 'week':
-          _weekController.text = (widget.initialParams['value'] ?? 1).toString();
-          break;
-        case 'month':
-          _monthController.text = (widget.initialParams['value'] ?? 1).toString();
-          _monthlyOption = widget.initialParams['monthlyOption'] ?? 'day';
-          _selectedDayOfMonth = widget.initialParams['dayOfMonth'] ?? _currentDayOfMonth;
-          _selectedWeekOfMonth = widget.initialParams['weekOfMonth'] ?? _currentWeekOfMonth;
-          _selectedDayOfWeek = widget.initialParams['dayOfWeek'] ?? _currentDayOfWeek;
+        switch (_frequencyType) {
+          case 'day':
+            int value = widget.initialParams['value'] ?? 1;
+            _dayController.text = value.toString();
+            break;
+          case 'week':
+            int value = widget.initialParams['value'] ?? 1;
+            _weekController.text = value.toString();
 
-          // Load selected dates if monthlyOption is 'dates'
-          if (_monthlyOption == 'dates' && widget.initialParams['selectedDates'] != null) {
-            _selectedDates = List<int>.from(widget.initialParams['selectedDates']);
-          }
-          break;
-        case 'year':
-          _yearController.text = (widget.initialParams['value'] ?? 1).toString();
-          _yearlyOption = widget.initialParams['yearlyOption'] ?? 'day';
-          _selectedMonthDay = widget.initialParams['monthDay'] ?? _currentDayOfMonth;
-          _selectedMonth = widget.initialParams['month'] ?? _currentMonth;
-          _selectedWeekOfYear = widget.initialParams['weekOfYear'] ?? _currentWeekOfMonth;
-          _selectedDayOfWeekForYear = widget.initialParams['dayOfWeekForYear'] ?? _currentDayOfWeek;
-          if (widget.initialParams['selectedMonths'] != null) {
-            _selectedMonths = List<bool>.from(widget.initialParams['selectedMonths']);
-          }
-          break;
-      }
+            // Load days of week selection
+            if (widget.initialParams['daysOfWeek'] != null) {
+              _selectedDaysOfWeek = List<bool>.from(widget.initialParams['daysOfWeek']);
+            }
+            break;
+          case 'month':
+            int value = widget.initialParams['value'] ?? 1;
+            _monthController.text = value.toString();
 
-      if (widget.initialParams['daysOfWeek'] != null) {
-        _selectedDaysOfWeek = List<bool>.from(widget.initialParams['daysOfWeek']);
-      }
+            // Load monthly options
+            _monthlyOption = widget.initialParams['monthlyOption'] ?? 'day';
+
+            if (_monthlyOption == 'day') {
+              _selectedDayOfMonth = widget.initialParams['dayOfMonth'] ?? _currentDayOfMonth;
+            } else if (_monthlyOption == 'weekday') {
+              _selectedWeekOfMonth = widget.initialParams['weekOfMonth'] ?? _currentWeekOfMonth;
+              _selectedDayOfWeek = widget.initialParams['dayOfWeek'] ?? _currentDayOfWeek;
+            } else if (_monthlyOption == 'dates') {
+              if (widget.initialParams['selectedDates'] != null) {
+                _selectedDates = List<int>.from(widget.initialParams['selectedDates']);
+              }
+              _showDateSelection = true;
+            }
+            break;
+          case 'year':
+            int value = widget.initialParams['value'] ?? 1;
+            _yearController.text = value.toString();
+
+            // Load yearly options
+            _yearlyOption = widget.initialParams['yearlyOption'] ?? 'day';
+
+            if (_yearlyOption == 'day') {
+              _selectedMonthDay = widget.initialParams['monthDay'] ?? _currentDayOfMonth;
+            } else {
+              _selectedWeekOfYear = widget.initialParams['weekOfYear'] ?? _currentWeekOfMonth;
+              _selectedDayOfWeekForYear = widget.initialParams['dayOfWeekForYear'] ?? _currentDayOfWeek;
+            }
+
+            _selectedMonth = widget.initialParams['month'] ?? _currentMonth;
+
+            if (widget.initialParams['selectedMonths'] != null) {
+              _selectedMonths = List<bool>.from(widget.initialParams['selectedMonths']);
+              // If any months are selected, show month selection
+              if (_selectedMonths.contains(true)) {
+                _showMonthSelection = true;
+              }
+            }
+            break;
+        }
+      });
     }
   }
 
@@ -215,13 +261,14 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildDayCircle('S', 0, colorScheme.onSurface),
-                            _buildDayCircle('M', 1, colorScheme.onSurface),
-                            _buildDayCircle('T', 2, colorScheme.onSurface),
-                            _buildDayCircle('W', 3, colorScheme.onSurface),
-                            _buildDayCircle('T', 4, colorScheme.onSurface),
-                            _buildDayCircle('F', 5, colorScheme.onSurface),
-                            _buildDayCircle('S', 6, colorScheme.onSurface),
+                            // Order here should be Sunday first (as index 0)
+                            _buildDayCircle('S', 0, colorScheme.onSurface), // Sunday
+                            _buildDayCircle('M', 1, colorScheme.onSurface), // Monday
+                            _buildDayCircle('T', 2, colorScheme.onSurface), // Tuesday
+                            _buildDayCircle('W', 3, colorScheme.onSurface), // Wednesday
+                            _buildDayCircle('T', 4, colorScheme.onSurface), // Thursday
+                            _buildDayCircle('F', 5, colorScheme.onSurface), // Friday
+                            _buildDayCircle('S', 6, colorScheme.onSurface), // Saturday
                           ],
                         ),
                       ),
@@ -633,6 +680,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   }
 
   Widget _buildDayCircle(String day, int index, Color textColor) {
+    // Here index is 0-6 where 0 is Sunday and 6 is Saturday
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final bool isSelected = _selectedDaysOfWeek[index];
@@ -757,5 +805,14 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _dayController.dispose();
+    _weekController.dispose();
+    _monthController.dispose();
+    _yearController.dispose();
+    super.dispose();
   }
 }
