@@ -40,11 +40,30 @@ class RecordUpdateService : Service() {
             return START_NOT_STICKY
         }
 
-        handleRecordClick(subject, subjectCode, lectureNo, startId)
+        // Extract additional fields from intent
+        val extras = HashMap<String, String>()
+        intent.extras?.let { bundle ->
+            for (key in bundle.keySet()) {
+                if (key != "subject" && key != "subject_code" && key != "lecture_no") {
+                    val value = bundle.getString(key)
+                    if (value != null) {
+                        extras[key] = value
+                    }
+                }
+            }
+        }
+
+        handleRecordClick(subject, subjectCode, lectureNo, extras, startId)
         return START_STICKY
     }
 
-    private fun handleRecordClick(subject: String, subjectCode: String, lectureNo: String, startId: Int) {
+    private fun handleRecordClick(
+        subject: String,
+        subjectCode: String,
+        lectureNo: String,
+        extras: Map<String, String>,
+        startId: Int
+    ) {
         val firebaseAuth = FirebaseAuth.getInstance()
         if (firebaseAuth.currentUser == null) {
             Toast.makeText(this, "Please login to update records", Toast.LENGTH_SHORT).show()
@@ -85,7 +104,7 @@ class RecordUpdateService : Service() {
                         refreshWidgets(startId)
                     } else {
                         Toast.makeText(applicationContext, "Marking as done...", Toast.LENGTH_SHORT).show()
-                        updateRecord(details, subject, subjectCode, lectureNo, startId)
+                        updateRecord(details, subject, subjectCode, lectureNo, extras, startId)
                     }
                 } catch (e: Exception) {
                     Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -101,7 +120,14 @@ class RecordUpdateService : Service() {
         })
     }
 
-    private fun updateRecord(details: Map<*, *>, subject: String, subjectCode: String, lectureNo: String, startId: Int) {
+    private fun updateRecord(
+        details: Map<*, *>,
+        subject: String,
+        subjectCode: String,
+        lectureNo: String,
+        extras: Map<String, String>,
+        startId: Int
+    ) {
         try {
             // Get current date-time in the format needed
             val currentDateTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Date())
@@ -112,8 +138,11 @@ class RecordUpdateService : Service() {
             val scheduledDate = (details["date_scheduled"] as? String)?.let {
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it)
             } ?: Date()
+
             // Get revision frequency and revision count
-            val revisionFrequency = details["revision_frequency"].toString()
+            val revisionFrequency = details["revision_frequency"]?.toString() ?:
+            extras["revision_frequency"] ?: "daily"
+
             val noRevision = (details["no_revision"] as? Number)?.toInt() ?: 0
 
             // Calculate next revision date
@@ -152,12 +181,10 @@ class RecordUpdateService : Service() {
                 updatedValues["dates_revised"] = newDatesRevised
 
                 // Update no_revision
-                val noRevision = (details["no_revision"] as? Number)?.toInt() ?: 0
                 updatedValues["no_revision"] = noRevision + 1
 
                 // Update date_scheduled with next revision date
                 updatedValues["date_scheduled"] = nextRevisionDate
-
 
                 // Update the record in Firebase
                 val userId = FirebaseAuth.getInstance().currentUser!!.uid
@@ -165,7 +192,7 @@ class RecordUpdateService : Service() {
                 FirebaseDatabase.getInstance().getReference(recordPath)
                     .updateChildren(updatedValues)
                     .addOnSuccessListener {
-                        Toast.makeText(applicationContext, "Record updated successfully! , scheduled for $nextRevisionDate", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(applicationContext, "Record updated successfully! Scheduled for $nextRevisionDate", Toast.LENGTH_SHORT).show()
                         refreshWidgets(startId)
                     }
                     .addOnFailureListener { e ->
@@ -181,7 +208,6 @@ class RecordUpdateService : Service() {
             stopSelf(startId)
         }
     }
-
 
     private fun refreshWidgets(startId: Int) {
         // Refresh widgets to show updated data

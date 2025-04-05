@@ -99,7 +99,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       databaseService.stopListening();
 
       if (PlatformUtils.instance.isAndroid) {
-        await HomeWidgetService.updateWidgetData([]);
+        await HomeWidgetService.updateWidgetData([],[],[]);
       }
 
       await FirebaseAuth.instance.signOut();

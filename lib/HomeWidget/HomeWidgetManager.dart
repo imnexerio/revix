@@ -8,6 +8,8 @@ import '../Utils/UnifiedDatabaseService.dart';
 class HomeWidgetService {
   static const String appGroupId = 'HomeWidgetPreferences';
   static const String todayRecordsKey = 'todayRecords';
+  static const String missedRecordsKey = 'missedRecords';
+  static const String noReminderDateRecordsKey = 'noreminderdate';
   static const String isLoggedInKey = 'isLoggedIn';
   static bool _isInitialized = false;
 
@@ -23,10 +25,9 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
     if (!isLoggedIn) {
-      await HomeWidget.saveWidgetData(
-        todayRecordsKey,
-        jsonEncode([]),
-      );
+      await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
+      await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
+      await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
       await _updateWidget();
     }
 
@@ -42,16 +43,29 @@ class HomeWidgetService {
     }
   }
 
-  static Future<void> updateWidgetData(List<Map<String, dynamic>> todayRecords) async {
+  static Future<void> updateWidgetData(
+      List<Map<String, dynamic>> todayRecords,
+      List<Map<String, dynamic>> missedRecords,
+      List<Map<String, dynamic>> noReminderDateRecords,
+      ) async {
     try {
       final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
       await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
-      final formattedData = _formatTodayRecords(todayRecords);
-
+      // Format and save all three data categories
       await HomeWidget.saveWidgetData(
         todayRecordsKey,
-        jsonEncode(formattedData),
+        jsonEncode(_formatRecords(todayRecords)),
+      );
+
+      await HomeWidget.saveWidgetData(
+        missedRecordsKey,
+        jsonEncode(_formatRecords(missedRecords)),
+      );
+
+      await HomeWidget.saveWidgetData(
+        noReminderDateRecordsKey,
+        jsonEncode(_formatRecords(noReminderDateRecords)),
       );
 
       // Add timestamp to update the "last updated" time in widget
@@ -67,16 +81,18 @@ class HomeWidgetService {
     }
   }
 
-  static List<Map<String, String>> _formatTodayRecords(List<Map<String, dynamic>> records) {
+  static List<Map<String, dynamic>> _formatRecords(List<Map<String, dynamic>> records) {
     return records.map((record) {
-      return {
-        'subject': (record['subject'] ?? '').toString(),
-        'subject_code': (record['subject_code'] ?? '').toString(),
-        'lecture_no': (record['lecture_no'] ?? '').toString(),
-        'reminder_time': (record['reminder_time'] ?? '').toString(),
-        'date_scheduled': (record['date_scheduled'] ?? '').toString(),
-        'revision_frequency': (record['revision_frequency'] ?? '').toString(),
-      };
+      // Return the entire record with all fields
+      // This ensures future additions will be available without code changes
+      Map<String, dynamic> formattedRecord = {};
+
+      // Convert all values to strings for consistency
+      record.forEach((key, value) {
+        formattedRecord[key] = value?.toString() ?? '';
+      });
+
+      return formattedRecord;
     }).toList();
   }
 
@@ -102,6 +118,7 @@ class HomeWidgetService {
     await _updateWidget();
     // debugPrint('Login status updated: $isLoggedIn');
   }
+
   static Future<void> refreshWidgetFromExternal() async {
     await initialize();
     final User? user = FirebaseAuth.instance.currentUser;
@@ -111,6 +128,8 @@ class HomeWidgetService {
 
     if (!isLoggedIn) {
       await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
+      await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
+      await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
       await _updateWidget();
       return;
     }
@@ -118,5 +137,4 @@ class HomeWidgetService {
     // The actual refresh will happen in the Kotlin service
     await _updateWidget();
   }
-
 }

@@ -87,7 +87,7 @@ class CombinedDatabaseService {
         _subjectsController.add({'subjects': [], 'subjectCodes': {}});
         _rawDataController.add(null);
 
-        _updateHomeWidget([]);
+        _updateHomeWidget([], [], []);
         return;
       }
       _processSnapshot(event.snapshot);
@@ -109,7 +109,7 @@ class CombinedDatabaseService {
       _subjectsController.add({'subjects': [], 'subjectCodes': {}});
       _rawDataController.add(null);
 
-      _updateHomeWidget([]);
+      _updateHomeWidget([], [], []);
       return;
     }
 
@@ -128,12 +128,14 @@ class CombinedDatabaseService {
     _processSubjectsData(rawData);
 
     if (PlatformUtils.instance.isAndroid) {
-      _updateHomeWidget(categorizedData['today'] ?? []);
+      _updateHomeWidget(categorizedData['today'] ?? [],
+          categorizedData['missed'] ?? [],
+          categorizedData['noreminderdate'] ?? []);
     }
   }
 
-  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords) {
-      HomeWidgetService.updateWidgetData(todayRecords);
+  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
+      HomeWidgetService.updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
   }
 
   void _processSubjectsData(Map<Object?, Object?> rawData) {
