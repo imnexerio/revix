@@ -312,22 +312,24 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           if (widget.details['no_revision'] < 0) {
                             datesRevised = [];
                           }
-                          if (widget.details['date_learnt'] =='Unspecified') {
-                            await moveToDeletedData(
-                              widget.selectedSubject,
-                              widget.selectedSubjectCode,
-                              widget.lectureNo,
-                              widget.details
-                            );
 
-                          }else{
                             if (widget.details['revision_frequency']== 'No Repetition'){
                               await moveToDeletedData(
-                                widget.selectedSubject,
-                                widget.selectedSubjectCode,
-                                widget.lectureNo,
-                                widget.details
+                                  widget.selectedSubject,
+                                  widget.selectedSubjectCode,
+                                  widget.lectureNo,
+                                  widget.details
                               );
+
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                customSnackBar(
+                                  context: context,
+                                  message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
+                                ),
+                              );
+                              return;
                             }else{
                               if (widget.details['revision_frequency'] == 'Custom') {
                                 String dateScheduled = CalculateCustomNextDate.calculateCustomNextDate(
@@ -375,7 +377,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
                               ),
                             );
-                          }}}
+                          }}
                         } catch (e) {
                           if (Navigator.canPop(context)) {
                             Navigator.pop(context);
