@@ -32,7 +32,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late int noRevision;
   late TextEditingController _descriptionController;
   late String formattedTime;
-  String dateScheduled = '';
+  late String dateScheduled;
 
   @override
   void initState() {
@@ -359,6 +359,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                     revisionData['custom_params'] = customParams;
                                   }
                                 }
+                                print('revisionData: $revisionData');
                                 DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
                                     DateTime.parse(widget.details['date_scheduled']),
                                     revisionData

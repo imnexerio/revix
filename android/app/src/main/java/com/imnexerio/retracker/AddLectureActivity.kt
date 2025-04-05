@@ -503,7 +503,6 @@ class AddLectureActivity : AppCompatActivity() {
             recordData["missed_revision"] = 0
             recordData["no_revision"] = noRevision
             recordData["revision_frequency"] = revisionFrequency
-            recordData["only_once"] = if (onlyOnce) 1 else 0
             recordData["status"] = "Enabled"
 
             // Save to Firebase

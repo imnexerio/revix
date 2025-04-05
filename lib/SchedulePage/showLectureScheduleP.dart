@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../RecordForm/CalculateCustomNextDate.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
@@ -10,6 +11,7 @@ import 'RevisionGraph.dart';
 
 void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
   String description = details['description'] ?? '';
+  String dateScheduled = details['date_scheduled'] ?? '';
 
   showModalBottomSheet(
     context: context,
@@ -218,14 +220,28 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               },
                             );
 
+                            if (details['date_learnt'] == 'Unspecified') {
+                              await moveToDeletedData(
+                                  details['subject'],
+                                  details['subject_code'],
+                                  details['lecture_no'],
+                                  details
+                              );
+
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                customSnackBar(
+                                  context: context,
+                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} has been marked as done and moved to deleted data.',
+                                ),
+                              );
+                              return;
+                            }
+
                             String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
                             int missedRevision = (details['missed_revision'] as num).toInt();
                             DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
-                            String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                              scheduledDate,
-                              details['revision_frequency'],
-                              details['no_revision'] + 1,
-                            )).toIso8601String().split('T')[0];
 
                             if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
                               missedRevision += 1;
@@ -239,13 +255,69 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
                             datesRevised.add(dateRevised);
 
-                            if (details['only_once'] != 0) {
-                              details['status'] = 'Disabled';
-                            }
-
                             if (details['no_revision'] < 0) {
                               datesRevised = [];
                             }
+                            if (details['revision_frequency']== 'No Repetition'){
+                              await moveToDeletedData(
+                                  details['subject'],
+                                  details['subject_code'],
+                                  details['lecture_no'],
+                                  details
+                              );
+
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                customSnackBar(
+                                  context: context,
+                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} has been marked as done and moved to deleted data.',
+                                ),
+                              );
+                              return;
+                            }else{
+                              if (details['revision_frequency'] == 'Custom') {
+                                // First convert the LinkedMap to a proper Map<String, dynamic>
+                                print('details: $details');
+                                Map<String, dynamic> revisionData = {};
+
+                                // Check if revision_data exists and has the necessary custom_params
+                                if (details['revision_data'] != null) {
+                                  final rawData = details['revision_data'];
+                                  revisionData['frequency'] = rawData['frequency'];
+
+                                  if (rawData['custom_params'] != null) {
+                                    Map<String, dynamic> customParams = {};
+                                    final rawCustomParams = rawData['custom_params'];
+
+                                    if (rawCustomParams['frequencyType'] != null) {
+                                      customParams['frequencyType'] = rawCustomParams['frequencyType'];
+                                    }
+
+                                    if (rawCustomParams['value'] != null) {
+                                      customParams['value'] = rawCustomParams['value'];
+                                    }
+
+                                    if (rawCustomParams['daysOfWeek'] != null) {
+                                      customParams['daysOfWeek'] = List<bool>.from(rawCustomParams['daysOfWeek']);
+                                    }
+
+                                    revisionData['custom_params'] = customParams;
+                                  }
+                                }
+                                print('revisionData: $revisionData');
+                                DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+                                    DateTime.parse(details['date_scheduled']),
+                                    revisionData
+                                );
+                                dateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                              } else {
+                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                                  scheduledDate,
+                                  details['revision_frequency'],
+                                  details['no_revision'] + 1,
+                                )).toIso8601String().split('T')[0];
+                              }
 
 
                             await UpdateRecords(
@@ -267,14 +339,6 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             Navigator.pop(context);
                             Navigator.pop(context);
 
-                            if (details['only_once'] != 1) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                customSnackBar(
-                                  context: context,
-                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} done. Next schedule is on $dateScheduled.',
-                                ),
-                              );
-                            } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 customSnackBar(
                                   context: context,

@@ -203,7 +203,8 @@ class CombinedDatabaseService {
             'no_revision': recordValue['no_revision'],
             'revision_frequency': recordValue['revision_frequency'],
             'status': recordValue['status'],
-            'only_once': recordValue['only_once'],
+            'revision_data': recordValue['revision_data'] ?? [],
+
           };
 
           if (recordValue['date_learnt'] == 'Unspecified') {

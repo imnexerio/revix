@@ -158,10 +158,6 @@ class RecordUpdateService : Service() {
                 // Update date_scheduled with next revision date
                 updatedValues["date_scheduled"] = nextRevisionDate
 
-                // Handle only_once flag
-                if ((details["only_once"] as? Number)?.toInt() == 1) {
-                    updatedValues["status"] = "Disabled"
-                }
 
                 // Update the record in Firebase
                 val userId = FirebaseAuth.getInstance().currentUser!!.uid
