@@ -106,6 +106,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
       }
 
       // Add scheduled dates
+      if (details['date_learnt']!='Unspecified')
       if (details.containsKey('date_scheduled')) {
         final dateScheduledStr = details['date_scheduled'] as String;
         final dateScheduled = DateTime.parse(dateScheduledStr);

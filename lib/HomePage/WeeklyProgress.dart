@@ -47,6 +47,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     }
 
     // Process lecture date
+    if (dateLearnt!='Unspecified')
     if (dateLearnt != null) {
       DateTime lectureDate = DateTime.parse(dateLearnt);
       if (lectureDate.isAfter(startDate) && lectureDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
@@ -116,6 +117,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     }
 
     // Process scheduled date
+    if (dateLearnt!='Unspecified')
     if (dateScheduled != null) {
       DateTime scheduledDate = DateTime.parse(dateScheduled);
       if (scheduledDate.isAfter(startDate) && scheduledDate.isBefore(nextSunday.add(const Duration(days: 7)))) {
