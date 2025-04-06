@@ -335,15 +335,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     override fun onFrequencySelected(customData: HashMap<String, Any>) {
         // Store the custom frequency data
         customFrequencyData = customData
-        if (revisionFrequency == "Custom" && customFrequencyData != null) {
-            revisionData["frequency"] = "Custom"
-            revisionData["custom_params"] = customFrequencyData!!
-            recordData["revision_data"] = revisionData
-        } else {
-            // For non-custom frequencies, just store the frequency name
-            revisionData["frequency"] = revisionFrequency
-            recordData["revision_data"] = revisionData
-        }
+
         updateScheduledDate()
     }
 
@@ -577,6 +569,15 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     }
 
     private fun updateScheduledDate() {
+        if (revisionFrequency == "Custom" && customFrequencyData != null) {
+            revisionData["frequency"] = "Custom"
+            revisionData["custom_params"] = customFrequencyData!!
+            recordData["revision_data"] = revisionData
+        } else {
+            // For non-custom frequencies, just store the frequency name
+            revisionData["frequency"] = revisionFrequency
+            recordData["revision_data"] = revisionData
+        }
         try {
             if (todayDate == "Unspecified") {
                 scheduledDateEditText.setText("Unspecified")
