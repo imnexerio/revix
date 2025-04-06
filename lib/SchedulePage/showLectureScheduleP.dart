@@ -320,7 +320,8 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               }
 
 
-                            await UpdateRecords(
+
+                            await UpdateRecordsRevision(
                               details['subject'],
                               details['subject_code'],
                               details['lecture_no'],
@@ -331,9 +332,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               dateScheduled,
                               datesRevised,
                               missedRevision,
-                              datesMissedRevisions,
-                              details['revision_frequency'],
-                              details['status'],
+                              datesMissedRevisions
                             );
 
                             Navigator.pop(context);

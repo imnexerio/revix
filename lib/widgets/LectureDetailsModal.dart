@@ -350,6 +350,13 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   noRevision + 1,
                                 )).toIso8601String().split('T')[0];
                               }
+                              Map<String, dynamic> revisionData = {
+                                'frequency': revisionFrequency,
+                              };
+                              if(customFrequencyParams.isNotEmpty) {
+                                revisionData['custom_params'] = customFrequencyParams;
+                              }
+
 
 
                           await UpdateRecords(
@@ -366,6 +373,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             datesMissedRevisions,
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
+                            revisionData,
                           );
 
                           Navigator.pop(context);
@@ -445,6 +453,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                               DateTime.parse(widget.details['date_scheduled']).isBefore(DateTime.now())) {
                             dateScheduled = DateTime.now().toIso8601String().split('T')[0];
                           }
+                          Map<String, dynamic> revisionData = {
+                            'frequency': revisionFrequency,
+                          };
+                          if(customFrequencyParams.isNotEmpty) {
+                            revisionData['custom_params'] = customFrequencyParams;
+                          }
 
                           await UpdateRecords(
                             widget.selectedSubject,
@@ -460,6 +474,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             datesMissedRevisions,
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
+                            revisionData,
                           );
 
                           Navigator.pop(context);
@@ -900,11 +915,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     if (result != null) {
       setState(() {
         customFrequencyParams = result;
-        // Update the nested structure too
-        if (widget.details['revision_data'] == null) {
-          widget.details['revision_data'] = {};
-        }
-        widget.details['revision_data']['custom_params'] = result;
       });
     }
   }

@@ -135,7 +135,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       if (_customFrequencyParams.isNotEmpty) {
         revisionData['custom_params'] = _customFrequencyParams;
       }
-      print(_customFrequencyParams);
+      // print(_customFrequencyParams);
 
       await ref.set({
         'initiated_on': initiated_on,
