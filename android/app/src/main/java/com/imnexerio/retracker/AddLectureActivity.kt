@@ -595,6 +595,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     scheduledCalendar_.time = dateScheduled_ ?: Date()
                     val nextDate = calculateCustomNextDate(scheduledCalendar_, revisionData)
                     dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
+                    scheduledDateEditText.setText(dateScheduled)
                     return
                 }else{
                     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -636,8 +637,25 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         timePickerDialog.show()
     }
 
+    // Replace your current showDatePicker method with this improved version
     private fun showDatePicker(editText: EditText, onDateSelected: (String) -> Unit) {
         val calendar = Calendar.getInstance()
+
+        // Try to parse the current date from the EditText if it's not "Unspecified"
+        val currentText = editText.text.toString()
+        if (currentText != "Unspecified") {
+            try {
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val parsedDate = dateFormat.parse(currentText)
+                if (parsedDate != null) {
+                    calendar.time = parsedDate
+                }
+            } catch (e: Exception) {
+                // If parsing fails, use current date (calendar is already initialized to now)
+//                Log.e("AddLectureActivity", "Error parsing date: ${e.message}")
+            }
+        }
+
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH)
         val day = calendar.get(Calendar.DAY_OF_MONTH)
