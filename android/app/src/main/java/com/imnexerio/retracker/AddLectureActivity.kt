@@ -64,6 +64,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private var trackingTypes = mutableListOf<String>()
     private var frequencies = mutableMapOf<String, List<Int>>()
     private var frequencyNames = mutableListOf<String>()
+    private var customFrequencyData: HashMap<String, Any>? = null
 
     // Database reference
     private lateinit var database: FirebaseDatabase
@@ -321,9 +322,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-
-    // Declare this variable to store custom frequency data
-    private var customFrequencyData: HashMap<String, Any>? = null
 
     private fun openCustomFrequencySelector() {
         // Create the custom frequency selector with any existing custom frequency data
