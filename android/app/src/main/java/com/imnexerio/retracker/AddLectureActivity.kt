@@ -698,7 +698,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             val initiatedOn = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
                 .format(Calendar.getInstance().time)
 
-
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             dateFormat.isLenient = false
 
@@ -727,6 +726,20 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             recordData["revision_frequency"] = revisionFrequency
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
+
+            // Add revision_data field with proper structure
+            val revisionData = HashMap<String, Any>()
+
+            // Handle custom frequency data if available
+            if (revisionFrequency == "Custom" && customFrequencyData != null) {
+                revisionData["frequency"] = "Custom"
+                revisionData["custom_params"] = customFrequencyData!!
+                recordData["revision_data"] = revisionData
+            } else {
+                // For non-custom frequencies, just store the frequency name
+                revisionData["frequency"] = revisionFrequency
+                recordData["revision_data"] = revisionData
+            }
 
             // Save to Firebase
             ref.setValue(recordData)
