@@ -6,7 +6,6 @@ import kotlin.collections.ArrayList
 class CalculateCustomNextDate {
     companion object {
         fun calculateCustomNextDate(startDate: Calendar, params: Map<String, Any?>): Calendar {
-            println("data got: startdate=$startDate, parms=$params")
             // Extract custom_params if nested
             val customParams = if (params.containsKey("custom_params")) {
                 @Suppress("UNCHECKED_CAST")
