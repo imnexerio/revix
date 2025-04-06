@@ -16,7 +16,8 @@ Future<void> UpdateRecords(
     List<String> datesMissedRevisions,
     String revisionFrequency,
     String status,
-    Map<String, dynamic> revisionData
+    Map<String, dynamic> revisionData,
+    Map<String, dynamic> durationData
     ) async {
   // Get the currently authenticated user
   User? user = FirebaseAuth.instance.currentUser;
@@ -46,6 +47,7 @@ Future<void> UpdateRecords(
     'dates_revised': datesRevised,
     'description': description,
     'revision_data': revisionData,
+    'duration': durationData,
   });
 }
 

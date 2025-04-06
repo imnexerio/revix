@@ -35,6 +35,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late String formattedTime;
   late String dateScheduled;
   Map<String, dynamic> customFrequencyParams = {};
+  String duration = 'Forever';
+  Map<String, dynamic> durationData = {
+    "type": "forever",
+    "numberOfTimes": null,
+    "endDate": null
+  };
 
   @override
   void initState() {
@@ -153,7 +159,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
           ),
 
-          // Details sections
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -374,6 +379,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
                             revisionData,
+                            durationData
                           );
 
                           Navigator.pop(context);
@@ -475,6 +481,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
                             revisionData,
+                            durationData
                           );
 
                           Navigator.pop(context);
@@ -793,76 +800,185 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Review Frequency",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    RevisionFrequencyDropdown(
-                      revisionFrequency: revisionFrequency,
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            revisionFrequency = newValue;
+          const SizedBox(height: 8),
+          // Wrap the RevisionFrequencyDropdown in a Container with styling
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).cardColor,
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: RevisionFrequencyDropdown(
+              revisionFrequency: revisionFrequency,
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    revisionFrequency = newValue;
 
-                            // If custom is selected, show custom options
-                            if (newValue == 'Custom') {
-                              // print('extractRevisionData: ${extractRevisionData(widget.details)}');
-                              showCustomFrequencySelector();
-                            } else {
-                              // Clear custom parameters if not using custom
-                              customFrequencyParams = {};
-                            }
-
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                    // If custom is selected, show custom options
+                    if (newValue == 'Custom') {
+                      // print('extractRevisionData: ${extractRevisionData(widget.details)}');
+                      showCustomFrequencySelector();
+                    } else {
+                      customFrequencyParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+                    }
+                  });
+                }
+              },
+            ),
           ),
 
           const SizedBox(height: 20),
 
+          // Duration section
+          Text(
+            "Duration",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).cardColor,
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: duration,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem<String>(
+                  value: 'Forever',
+                  child: Text('Forever'),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'Specific Number of Times',
+                  child: Text('Specific Number of Times'),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'Until',
+                  child: Text('Until'),
+                ),
+              ],
+              onChanged: (String? newValue) {
+                if(newValue != null) {
+                  setState(() {
+                    duration = newValue;
+                    if (duration == 'Forever') {
+                      durationData = {
+                        "type": "forever",
+                        "numberOfTimes": null,
+                        "endDate": null
+                      };
+                    }
+                    else if (duration == 'Specific Number of Times') {
+                      // Show a dialog or bottom sheet to enter the number of times
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Enter Number of Times'),
+                            content: TextFormField(
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Number of Times',
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  int? parsedValue = int.tryParse(value);
+                                  if (parsedValue != null) {
+                                    durationData = {
+                                      "type": "specificTimes",
+                                      "numberOfTimes": parsedValue,
+                                      "endDate": null
+                                    };
+                                  }
+                                });
+                              },
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('OK'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }
+                    else if (duration == 'Until') {
+                      // Show a date picker to select the end date
+                      showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2101),
+                      ).then((pickedDate) {
+                        if (pickedDate != null) {
+                          setState(() {
+                            durationData = {
+                              "type": "until",
+                              "numberOfTimes": null,
+                              "endDate": pickedDate.toIso8601String().split('T')[0]
+                            };
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
+              },
+            ),
+          ),
+
+          // Custom frequency description (if selected)
+          if (revisionFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              // child: Text(
+              //   getCustomFrequencyDescription(),
+              //   style: TextStyle(
+              //     fontStyle: FontStyle.italic,
+              //     color: Theme.of(context).colorScheme.secondary,
+              //   ),
+              // ),
+            ),
+
+          const SizedBox(height: 20),
+
           // Status toggle
+          Text(
+            "Status",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Status",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isEnabled
-                          ? "This lecture is enabled for future revisions"
-                          : "This lecture is disabled and won't appear in revisions",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  isEnabled
+                      ? "This lecture is enabled for future revisions"
+                      : "This lecture is disabled and won't appear in revisions",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
               ),
               Switch(
