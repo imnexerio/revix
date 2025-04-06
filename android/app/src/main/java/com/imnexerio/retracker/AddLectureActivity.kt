@@ -61,7 +61,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         put("endDate", null)
     }
 
-    // Custom data
+
     private var trackingTypes = mutableListOf<String>()
     private var frequencies = mutableMapOf<String, List<Int>>()
     private var frequencyNames = mutableListOf<String>()
@@ -87,7 +87,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // Set up initial data
         setInitialDates()
 
-        // Load custom data first, then proceed to load subjects
         loadCustomData()
     }
 
@@ -328,7 +327,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
 
     private fun openCustomFrequencySelector() {
-        println("Custom frequency data openCustomFrequencySelector: $customFrequencyData")
         val dialog = CustomFrequencySelector.newInstance(customFrequencyData)
         dialog.show(supportFragmentManager, "CustomFrequencySelector")
     }
@@ -346,7 +344,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             revisionData["frequency"] = revisionFrequency
             recordData["revision_data"] = revisionData
         }
-        println("Custom frequency data onFrequencySelected: $customFrequencyData")
         updateScheduledDate()
     }
 
@@ -748,11 +745,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             recordData["revision_frequency"] = revisionFrequency
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
-
-
-            // Handle custom frequency data if available
-            println("Custom frequency data saverecord: $customFrequencyData")
-
 
             // Save to Firebase
             ref.setValue(recordData)
