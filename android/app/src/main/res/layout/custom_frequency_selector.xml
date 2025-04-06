@@ -137,16 +137,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginHorizontal="45dp"
                 android:layout_marginTop="20dp"
                 android:visibility="visible">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Repeat on"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="15dp"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -280,7 +272,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginHorizontal="45dp"
                 android:layout_marginTop="20dp"
                 android:visibility="gone">
 
@@ -385,7 +376,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginHorizontal="45dp"
                 android:layout_marginTop="20dp"
                 android:visibility="gone">
 
