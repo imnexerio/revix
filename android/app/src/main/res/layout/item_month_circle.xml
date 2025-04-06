@@ -1,0 +1,8 @@
+<!-- res/layout/item_month_circle.xml -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="60dp"
+    android:layout_height="40dp"
+    android:gravity="center"
+    android:textSize="14sp"
+    android:layout_margin="4dp"
+    android:background="@drawable/circle_unselected" />

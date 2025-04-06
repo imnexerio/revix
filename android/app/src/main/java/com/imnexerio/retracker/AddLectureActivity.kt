@@ -13,8 +13,7 @@ import com.imnexerio.retracker.utils.RevisionScheduler
 import java.text.SimpleDateFormat
 import java.util.*
 
-class AddLectureActivity : AppCompatActivity() {
-
+class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
     // Form elements
     private lateinit var categorySpinner: Spinner
     private lateinit var addNewCategoryLayout: LinearLayout
@@ -122,6 +121,7 @@ class AddLectureActivity : AppCompatActivity() {
                 // Get frequency names for spinner
                 frequencyNames.clear()
                 frequencyNames.addAll(FetchFrequenciesUtils.getFrequencyNames(frequenciesMap))
+                frequencyNames.add("Custom")
 
                 // Update UI with frequencies
                 updateRevisionFrequencySpinner()
@@ -155,6 +155,7 @@ class AddLectureActivity : AppCompatActivity() {
         }
     }
 
+    // Update the revisionFrequencySpinner onItemSelected listener
     private fun updateRevisionFrequencySpinner() {
         runOnUiThread {
             val adapter = ArrayAdapter(
@@ -169,7 +170,12 @@ class AddLectureActivity : AppCompatActivity() {
             revisionFrequencySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                     revisionFrequency = parent?.getItemAtPosition(position).toString()
-                    updateScheduledDate()
+
+                    if (revisionFrequency == "Custom") {
+                        openCustomFrequencySelector()
+                    } else {
+                        updateScheduledDate()
+                    }
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -178,6 +184,91 @@ class AddLectureActivity : AppCompatActivity() {
             }
         }
     }
+
+
+    // Declare this variable to store custom frequency data
+    private var customFrequencyData: HashMap<String, Any>? = null
+
+    private fun openCustomFrequencySelector() {
+        // Create the custom frequency selector with any existing custom frequency data
+        val initialParams = customFrequencyData ?: HashMap()
+        val dialog = CustomFrequencySelector.newInstance(initialParams)
+        dialog.show(supportFragmentManager, "CustomFrequencySelector")
+    }
+
+    // Add the onFrequencySelected implementation to the main class
+    override fun onFrequencySelected(customData: HashMap<String, Any>) {
+        // Store the custom frequency data
+        customFrequencyData = customData
+
+        // Update the UI to show custom frequency is selected
+        // You might want to update the spinner text or add an indicator
+
+        // Update scheduled date based on custom frequency
+        updateScheduledDateWithCustomFrequency(customData)
+    }
+
+    // Move the updateScheduledDateWithCustomFrequency method to the main class
+    private fun updateScheduledDateWithCustomFrequency(customData: HashMap<String, Any>) {
+        val frequencyType = customData["frequencyType"] as String
+        val value = customData["value"] as Int
+
+        // Get the base date from which we'll calculate the next date
+        val baseDate = getBaseDateForCalculation() // This would be your initiation date
+        val nextDate = Calendar.getInstance()
+        nextDate.time = baseDate
+
+        when (frequencyType) {
+            "day" -> {
+                nextDate.add(Calendar.DAY_OF_MONTH, value)
+            }
+            "week" -> {
+                val daysOfWeek = customData["daysOfWeek"] as List<Boolean>
+                // Logic to find next occurrence based on selected days of week
+                // This is more complex and would need detailed implementation
+                nextDate.add(Calendar.WEEK_OF_YEAR, value)
+            }
+            "month" -> {
+                val monthlyOption = customData["monthlyOption"] as String
+                when (monthlyOption) {
+                    "day" -> {
+                        val dayOfMonth = customData["dayOfMonth"] as Int
+                        nextDate.add(Calendar.MONTH, value)
+                        nextDate.set(Calendar.DAY_OF_MONTH, Math.min(dayOfMonth, nextDate.getActualMaximum(Calendar.DAY_OF_MONTH)))
+                    }
+                    "weekday" -> {
+                        // Logic for nth weekday of month
+                        nextDate.add(Calendar.MONTH, value)
+                    }
+                    "dates" -> {
+                        // Logic for specific dates
+                        nextDate.add(Calendar.MONTH, value)
+                    }
+                }
+            }
+            "year" -> {
+                // Logic for yearly recurrence
+                nextDate.add(Calendar.YEAR, value)
+            }
+        }
+
+        // Format and set the scheduled date
+        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        scheduledDateEditText.setText(formatter.format(nextDate.time))
+    }
+
+    // Move the getBaseDateForCalculation method to the main class
+    private fun getBaseDateForCalculation(): Date {
+        // Parse the initiation date or use current date if not available
+        try {
+            val initiationDateText = initiationDateEditText.text.toString()
+            val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            return formatter.parse(initiationDateText) ?: Date()
+        } catch (e: Exception) {
+            return Date()
+        }
+    }
+
 
     private fun setupListeners() {
         // Category spinner

@@ -2,6 +2,8 @@
     <color name="white">#FFFAFAFA</color>
     <color name="text">#FF000000</color>
     <color name="divider">#84D4E0</color>
-    <color name="MarkAsDone">#2CA29E</color>
+    <color name="MarkAsDone">#41D1CD</color>
     <color name="WidgetBackground">#EBE9E9</color>
+    <color name="colorOnPrimary">#32C6DC</color>
+
 </resources>
