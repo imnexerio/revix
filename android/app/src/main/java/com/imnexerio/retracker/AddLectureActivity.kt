@@ -15,8 +15,6 @@ import com.google.firebase.database.*
 import com.imnexerio.retracker.CalculateCustomNextDate.Companion.calculateCustomNextDate
 import com.imnexerio.retracker.utils.RevisionScheduler
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
@@ -67,12 +65,13 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private var trackingTypes = mutableListOf<String>()
     private var frequencies = mutableMapOf<String, List<Int>>()
     private var frequencyNames = mutableListOf<String>()
-    private var customFrequencyData: HashMap<String, Any>? = null
+    private var customFrequencyData: HashMap<String, Any> = HashMap()
 
     // Database reference
     private lateinit var database: FirebaseDatabase
     private lateinit var auth: FirebaseAuth
     private var revisionData: MutableMap<String, Any?> = mutableMapOf()
+    val recordData = HashMap<String, Any>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -329,9 +328,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
 
     private fun openCustomFrequencySelector() {
-        // Create the custom frequency selector with any existing custom frequency data
-        val initialParams = customFrequencyData ?: HashMap()
-        val dialog = CustomFrequencySelector.newInstance(initialParams)
+        println("Custom frequency data openCustomFrequencySelector: $customFrequencyData")
+        val dialog = CustomFrequencySelector.newInstance(customFrequencyData)
         dialog.show(supportFragmentManager, "CustomFrequencySelector")
     }
 
@@ -339,73 +337,17 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     override fun onFrequencySelected(customData: HashMap<String, Any>) {
         // Store the custom frequency data
         customFrequencyData = customData
-
-        // Update the UI to show custom frequency is selected
-        // You might want to update the spinner text or add an indicator
-
-        // Update scheduled date based on custom frequency
-        updateScheduledDateWithCustomFrequency(customData)
-    }
-
-    // Move the updateScheduledDateWithCustomFrequency method to the main class
-    private fun updateScheduledDateWithCustomFrequency(customData: HashMap<String, Any>) {
-        val frequencyType = customData["frequencyType"] as String
-        val value = customData["value"] as Int
-
-        // Get the base date from which we'll calculate the next date
-        val baseDate = getBaseDateForCalculation() // This would be your initiation date
-        val nextDate = Calendar.getInstance()
-        nextDate.time = baseDate
-
-        when (frequencyType) {
-            "day" -> {
-                nextDate.add(Calendar.DAY_OF_MONTH, value)
-            }
-            "week" -> {
-                val daysOfWeek = customData["daysOfWeek"] as List<Boolean>
-                // Logic to find next occurrence based on selected days of week
-                // This is more complex and would need detailed implementation
-                nextDate.add(Calendar.WEEK_OF_YEAR, value)
-            }
-            "month" -> {
-                val monthlyOption = customData["monthlyOption"] as String
-                when (monthlyOption) {
-                    "day" -> {
-                        val dayOfMonth = customData["dayOfMonth"] as Int
-                        nextDate.add(Calendar.MONTH, value)
-                        nextDate.set(Calendar.DAY_OF_MONTH, Math.min(dayOfMonth, nextDate.getActualMaximum(Calendar.DAY_OF_MONTH)))
-                    }
-                    "weekday" -> {
-                        // Logic for nth weekday of month
-                        nextDate.add(Calendar.MONTH, value)
-                    }
-                    "dates" -> {
-                        // Logic for specific dates
-                        nextDate.add(Calendar.MONTH, value)
-                    }
-                }
-            }
-            "year" -> {
-                // Logic for yearly recurrence
-                nextDate.add(Calendar.YEAR, value)
-            }
+        if (revisionFrequency == "Custom" && customFrequencyData != null) {
+            revisionData["frequency"] = "Custom"
+            revisionData["custom_params"] = customFrequencyData!!
+            recordData["revision_data"] = revisionData
+        } else {
+            // For non-custom frequencies, just store the frequency name
+            revisionData["frequency"] = revisionFrequency
+            recordData["revision_data"] = revisionData
         }
-
-        // Format and set the scheduled date
-        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        scheduledDateEditText.setText(formatter.format(nextDate.time))
-    }
-
-    // Move the getBaseDateForCalculation method to the main class
-    private fun getBaseDateForCalculation(): Date {
-        // Parse the initiation date or use current date if not available
-        try {
-            val initiationDateText = initiationDateEditText.text.toString()
-            val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            return formatter.parse(initiationDateText) ?: Date()
-        } catch (e: Exception) {
-            return Date()
-        }
+        println("Custom frequency data onFrequencySelected: $customFrequencyData")
+        updateScheduledDate()
     }
 
 
@@ -651,11 +593,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     return
                 }
                 if(revisionFrequency== "Custom"){
-                    print("data got:")
                     val dateScheduled_ = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayDate)
                     val scheduledCalendar_ = Calendar.getInstance()
                     scheduledCalendar_.time = dateScheduled_ ?: Date()
-                    dateScheduled = calculateCustomNextDate(scheduledCalendar_, customFrequencyData!!).toString()
+                    val nextDate = calculateCustomNextDate(scheduledCalendar_, revisionData)
+                    dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
                     return
                 }else{
                     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -794,7 +736,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 }
             }
 
-            val recordData = HashMap<String, Any>()
             recordData["initiated_on"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Calendar.getInstance().time)
             recordData["reminder_time"] = reminderTime
             recordData["lecture_type"] = lectureType
@@ -810,15 +751,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
 
             // Handle custom frequency data if available
-            if (revisionFrequency == "Custom" && customFrequencyData != null) {
-                revisionData["frequency"] = "Custom"
-                revisionData["custom_params"] = customFrequencyData!!
-                recordData["revision_data"] = revisionData
-            } else {
-                // For non-custom frequencies, just store the frequency name
-                revisionData["frequency"] = revisionFrequency
-                recordData["revision_data"] = revisionData
-            }
+            println("Custom frequency data saverecord: $customFrequencyData")
+
 
             // Save to Firebase
             ref.setValue(recordData)
