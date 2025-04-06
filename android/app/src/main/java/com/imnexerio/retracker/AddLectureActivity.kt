@@ -9,6 +9,7 @@ import android.text.InputType
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.imnexerio.retracker.utils.RevisionScheduler
@@ -16,7 +17,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
-    // Form elements
     private lateinit var categorySpinner: Spinner
     private lateinit var addNewCategoryLayout: LinearLayout
     private lateinit var newCategoryEditText: EditText
@@ -28,7 +28,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private lateinit var reminderTimeEditText: EditText
     private lateinit var allDayCheckBox: CheckBox
     private lateinit var initiationDateEditText: EditText
+    private lateinit var initiationDateCheckbox: CheckBox // New checkbox
     private lateinit var revisionFrequencySpinner: Spinner
+    private lateinit var reviewFrequencyCheckbox: CheckBox // New checkbox
     private lateinit var scheduledDateEditText: EditText
     private lateinit var durationSpinner: Spinner
     private lateinit var descriptionEditText: EditText
@@ -37,6 +39,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private lateinit var firstReminderDate: TextView
     private lateinit var reminderDurationText: TextView
     private lateinit var cancelButton: Button
+    private lateinit var revision_FrequencyCard: CardView
 
     // Data
     private var subjects = mutableListOf<String>()
@@ -97,7 +100,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         reminderTimeEditText = findViewById(R.id.reminder_time_edit_text)
         allDayCheckBox = findViewById(R.id.all_day_checkbox)
         initiationDateEditText = findViewById(R.id.initiation_date_edit_text)
+        initiationDateCheckbox = findViewById(R.id.initiation_date_checkbox) // Initialize new checkbox
         revisionFrequencySpinner = findViewById(R.id.revision_frequency_spinner)
+        reviewFrequencyCheckbox = findViewById(R.id.review_frequency_checkbox) // Initialize new checkbox
         scheduledDateEditText = findViewById(R.id.scheduled_date_edit_text)
         durationSpinner = findViewById(R.id.duration_spinner)
         descriptionEditText = findViewById(R.id.description_edit_text)
@@ -106,12 +111,17 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         firstReminderDate = findViewById(R.id.scheduled_date_text)
         reminderDurationText = findViewById(R.id.reminder_duration_text)
         cancelButton = findViewById(R.id.cancel_button)
+        revision_FrequencyCard = findViewById(R.id.revision_frequency_card)
 
         // Set up initial states
         addNewCategoryLayout.visibility = View.GONE
         addNewSubCategoryLayout.visibility = View.GONE
         reminderTimeEditText.setText("All Day")
         setupDurationSpinner()
+
+        // Set up checkboxes initial state
+        updateInitiationDateVisibility(initiationDateCheckbox.isChecked)
+        updateReviewFrequencyVisibility(reviewFrequencyCheckbox.isChecked)
     }
 
     private fun loadCustomData() {
@@ -450,6 +460,16 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             }
         }
 
+        // Initiation date checkbox
+        initiationDateCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            updateInitiationDateVisibility(isChecked)
+        }
+
+        // Review frequency checkbox
+        reviewFrequencyCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            updateReviewFrequencyVisibility(isChecked)
+        }
+
         // Date pickers
         initiationDateEditText.setOnClickListener {
             showDatePicker(initiationDateEditText) { date ->
@@ -472,6 +492,47 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
         cancelButton.setOnClickListener {
             finish()
+        }
+    }
+
+    // Handle UI visibility changes for the initiation date checkbox
+    private fun updateInitiationDateVisibility(isUnspecified: Boolean) {
+        if (isUnspecified) {
+            // Hide all revision-related fields
+            revisionFrequencyText.visibility = View.GONE
+            revisionFrequencySpinner.visibility = View.GONE
+            reviewFrequencyCheckbox.visibility = View.GONE
+            firstReminderDate.visibility = View.GONE
+            scheduledDateEditText.visibility = View.GONE
+            reminderDurationText.visibility = View.GONE
+            durationSpinner.visibility = View.GONE
+            revision_FrequencyCard.visibility = View.GONE
+        } else {
+            // Show revision frequency field
+            revisionFrequencyText.visibility = View.VISIBLE
+            revisionFrequencySpinner.visibility = View.VISIBLE
+            reviewFrequencyCheckbox.visibility = View.VISIBLE
+
+            // Update review frequency visibility based on its checkbox state
+            updateReviewFrequencyVisibility(reviewFrequencyCheckbox.isChecked)
+            revision_FrequencyCard.visibility = View.VISIBLE
+        }
+    }
+
+    // Handle UI visibility changes for the review frequency checkbox
+    private fun updateReviewFrequencyVisibility(isNoRepetition: Boolean) {
+        if (isNoRepetition) {
+            // Hide revision-related fields but keep the frequency spinner
+            firstReminderDate.visibility = View.GONE
+            scheduledDateEditText.visibility = View.GONE
+            reminderDurationText.visibility = View.GONE
+            durationSpinner.visibility = View.GONE
+        } else {
+            // Show all revision-related fields
+            firstReminderDate.visibility = View.VISIBLE
+            scheduledDateEditText.visibility = View.VISIBLE
+            reminderDurationText.visibility = View.VISIBLE
+            durationSpinner.visibility = View.VISIBLE
         }
     }
 
@@ -677,18 +738,36 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             val initiatedOn = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
                 .format(Calendar.getInstance().time)
 
+            // Handle date values based on checkboxes
+            val isUnspecifiedInitiationDate = initiationDateCheckbox.isChecked
+            val isNoRepetition = reviewFrequencyCheckbox.isChecked
+
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             dateFormat.isLenient = false
 
-            val currentDateStr = dateFormat.format(Date())
-            val currentDate = dateFormat.parse(currentDateStr)
+            // Set date values based on checkbox states
+            val dateLearnt = if (isUnspecifiedInitiationDate) "Unspecified" else todayDate
+            val dateScheduledValue = if (isUnspecifiedInitiationDate || isNoRepetition) "Unspecified" else dateScheduled
+            val revisionFrequencyValue = when {
+                isUnspecifiedInitiationDate -> "Unspecified"
+                isNoRepetition -> "No Repetition"
+                else -> revisionFrequency
+            }
 
-            val initiatedDate = dateFormat.parse(todayDate)
-            if (initiatedDate != null && initiatedDate.before(currentDate)) {
+            // Set noRevision value based on checkboxes
+            if (isUnspecifiedInitiationDate) {
                 noRevision = -1
-            } else if (initiatedDate != null && initiatedDate.after(currentDate)) {
-                // This handles future dates
-                noRevision = -1
+            } else if (isNoRepetition) {
+                noRevision = 0
+            } else {
+                val currentDateStr = dateFormat.format(Date())
+                val currentDate = dateFormat.parse(currentDateStr)
+                val initiatedDate = dateFormat.parse(todayDate)
+                if (initiatedDate != null && initiatedDate.before(currentDate)) {
+                    noRevision = -1
+                } else if (initiatedDate != null && initiatedDate.after(currentDate)) {
+                    noRevision = -1
+                }
             }
 
             // Create the record data
@@ -696,13 +775,13 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             recordData["initiated_on"] = initiatedOn
             recordData["reminder_time"] = reminderTime
             recordData["lecture_type"] = lectureType
-            recordData["date_learnt"] = todayDate
+            recordData["date_learnt"] = dateLearnt
             recordData["date_revised"] = initiatedOn
-            recordData["date_scheduled"] = dateScheduled
+            recordData["date_scheduled"] = dateScheduledValue
             recordData["description"] = description
             recordData["missed_revision"] = 0
             recordData["no_revision"] = noRevision
-            recordData["revision_frequency"] = revisionFrequency
+            recordData["revision_frequency"] = revisionFrequencyValue
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
 
@@ -710,20 +789,27 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             val revisionData = HashMap<String, Any>()
 
             // Handle custom frequency data if available
-            if (revisionFrequency == "Custom" && customFrequencyData != null) {
+            if (revisionFrequencyValue == "Custom" && customFrequencyData != null) {
                 revisionData["frequency"] = "Custom"
                 revisionData["custom_params"] = customFrequencyData!!
                 recordData["revision_data"] = revisionData
             } else {
                 // For non-custom frequencies, just store the frequency name
-                revisionData["frequency"] = revisionFrequency
+                revisionData["frequency"] = revisionFrequencyValue
                 recordData["revision_data"] = revisionData
             }
 
             // Save to Firebase
             ref.setValue(recordData)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Record added successfully, scheduled for $dateScheduled", Toast.LENGTH_SHORT).show()
+                    val successMessage = if (isUnspecifiedInitiationDate) {
+                        "Record added successfully with unspecified initiation date"
+                    } else if (isNoRepetition) {
+                        "Record added successfully with no repetition"
+                    } else {
+                        "Record added successfully, scheduled for $dateScheduled"
+                    }
+                    Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show()
 
                     // Refresh the widget
                     val intent = Intent(this, TodayWidget::class.java)
