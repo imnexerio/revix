@@ -32,7 +32,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private lateinit var scheduledDateEditText: EditText
     private lateinit var durationSpinner: Spinner
     private lateinit var descriptionEditText: EditText
-    private lateinit var noRepetitionSwitch: Switch
     private lateinit var saveButton: Button
     private lateinit var revisionFrequencyText: TextView
     private lateinit var firstReminderDate: TextView
@@ -46,7 +45,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private var selectedSubjectCode = ""
     private var lectureType = "Lectures"
     private var revisionFrequency = "Default"
-    private var onlyOnce = false
     private var todayDate = ""
     private var dateScheduled = ""
     private var noRevision = 0
@@ -103,7 +101,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         scheduledDateEditText = findViewById(R.id.scheduled_date_edit_text)
         durationSpinner = findViewById(R.id.duration_spinner)
         descriptionEditText = findViewById(R.id.description_edit_text)
-        noRepetitionSwitch = findViewById(R.id.no_repetition_switch)
         saveButton = findViewById(R.id.save_button)
         revisionFrequencyText = findViewById(R.id.revision_frequency_text)
         firstReminderDate = findViewById(R.id.scheduled_date_text)
@@ -467,24 +464,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             }
         }
 
-        noRepetitionSwitch.setOnCheckedChangeListener { _, isChecked ->
-            onlyOnce = isChecked
-            if (isChecked) {
-                revisionFrequencySpinner.visibility = View.GONE
-                durationSpinner.visibility = View.GONE
-                scheduledDateEditText.visibility = View.GONE
-                revisionFrequencyText.visibility = View.GONE
-                firstReminderDate.visibility = View.GONE
-                reminderDurationText.visibility = View.GONE
-            } else {
-                revisionFrequencySpinner.visibility = View.VISIBLE
-                durationSpinner.visibility = View.VISIBLE
-                scheduledDateEditText.visibility = View.VISIBLE
-                revisionFrequencyText.visibility = View.VISIBLE
-                firstReminderDate.visibility = View.VISIBLE
-                reminderDurationText.visibility = View.VISIBLE
-            }
-        }
 
         // Buttons
         saveButton.setOnClickListener {

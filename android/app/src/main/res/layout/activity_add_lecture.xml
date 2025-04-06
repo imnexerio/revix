@@ -259,19 +259,34 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="2dp"
-                    
                     app:contentPadding="0dp">
 
-                    <EditText
-                        android:id="@+id/initiation_date_edit_text"
+                    <LinearLayout
+                        android:background="@drawable/edit_text_border"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:hint="Select date"
-                        android:paddingHorizontal="12dp"
-                        android:drawableEnd="@drawable/ic_calendar"
-                        android:background="@drawable/edit_text_border"
-                        android:focusable="false"
-                        android:clickable="true" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <EditText
+                            android:id="@+id/initiation_date_edit_text"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:hint="Set time"
+                            android:paddingHorizontal="12dp"
+                            android:background="@drawable/edit_text_border"
+                            android:focusable="false"
+                            android:clickable="true" />
+
+                        <CheckBox
+                            android:id="@+id/initiation_date_checkbox"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Unspecified"
+                            android:checked="true"
+                            android:paddingHorizontal="8dp" />
+
+                    </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
                 <!-- Revision Frequency -->
@@ -293,13 +308,32 @@
                     
                     app:contentPadding="0dp">
 
-                    <Spinner
-                        android:id="@+id/revision_frequency_spinner"
+                    <LinearLayout
+                        android:background="@drawable/edit_text_border"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:paddingHorizontal="12dp"
-                        android:background="@drawable/spinner_border"
-                        android:spinnerMode="dropdown" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <Spinner
+                            android:id="@+id/revision_frequency_spinner"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:paddingHorizontal="12dp"
+                            android:background="@drawable/spinner_border"
+                            android:spinnerMode="dropdown" />
+
+                        <CheckBox
+                            android:id="@+id/review_frequency_checkbox"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="No Repetition"
+                            android:checked="true"
+                            android:paddingHorizontal="8dp" />
+                    </LinearLayout>
+
+
                 </androidx.cardview.widget.CardView>
 
                 <!-- Scheduled Date -->
@@ -388,35 +422,6 @@
                         android:minLines="3"
                         android:gravity="top" />
                 </androidx.cardview.widget.CardView>
-
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginVertical="8dp">
-                    <!-- No Repetition switch group -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="start|center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="No Repetition"
-                            android:layout_gravity="center_vertical" />
-
-                        <Switch
-                            android:id="@+id/no_repetition_switch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="false"
-                            android:minWidth="48dp" />
-                    </LinearLayout>
-                </LinearLayout>
 
                 <!-- Button Row -->
                 <LinearLayout
