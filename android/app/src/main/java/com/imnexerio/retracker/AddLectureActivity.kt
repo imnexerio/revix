@@ -120,8 +120,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         setupDurationSpinner()
 
         // Set up checkboxes initial state
-        updateInitiationDateVisibility(initiationDateCheckbox.isChecked)
-        updateReviewFrequencyVisibility(reviewFrequencyCheckbox.isChecked)
+        // Set initial checkbox states
+        initiationDateCheckbox.isChecked = false
+        reviewFrequencyCheckbox.isChecked = false
     }
 
     private fun loadCustomData() {
@@ -144,6 +145,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 frequencyNames.clear()
                 frequencyNames.addAll(FetchFrequenciesUtils.getFrequencyNames(frequenciesMap))
                 frequencyNames.add("Custom")
+                frequencyNames.add("No Repetition")
 
                 // Update UI with frequencies
                 updateRevisionFrequencySpinner()
@@ -495,9 +497,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    // Handle UI visibility changes for the initiation date checkbox
     private fun updateInitiationDateVisibility(isUnspecified: Boolean) {
         if (isUnspecified) {
+            // Update text field to show "Unspecified"
+            initiationDateEditText.setText("Unspecified")
+
             // Hide all revision-related fields
             revisionFrequencyText.visibility = View.GONE
             revisionFrequencySpinner.visibility = View.GONE
@@ -508,6 +512,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             durationSpinner.visibility = View.GONE
             revision_FrequencyCard.visibility = View.GONE
         } else {
+            // Restore the date or set to current date
+            setInitialDates() // This will update initiationDateEditText with today's date
+
             // Show revision frequency field
             revisionFrequencyText.visibility = View.VISIBLE
             revisionFrequencySpinner.visibility = View.VISIBLE
@@ -519,15 +526,19 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    // Handle UI visibility changes for the review frequency checkbox
     private fun updateReviewFrequencyVisibility(isNoRepetition: Boolean) {
         if (isNoRepetition) {
+            revisionFrequencySpinner.setSelection(frequencyNames.size -1) // Select "No Repetition"
+
             // Hide revision-related fields but keep the frequency spinner
             firstReminderDate.visibility = View.GONE
             scheduledDateEditText.visibility = View.GONE
             reminderDurationText.visibility = View.GONE
             durationSpinner.visibility = View.GONE
         } else {
+            // Restore normal text
+            revisionFrequencyText.text = "Revision Frequency"
+
             // Show all revision-related fields
             firstReminderDate.visibility = View.VISIBLE
             scheduledDateEditText.visibility = View.VISIBLE
