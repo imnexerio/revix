@@ -12,8 +12,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.imnexerio.retracker.CalculateCustomNextDate.Companion.calculateCustomNextDate
 import com.imnexerio.retracker.utils.RevisionScheduler
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
@@ -69,6 +72,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     // Database reference
     private lateinit var database: FirebaseDatabase
     private lateinit var auth: FirebaseAuth
+    private var revisionData: MutableMap<String, Any?> = mutableMapOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -311,8 +315,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     if (revisionFrequency == "Custom") {
                         openCustomFrequencySelector()
                     } else {
-                        updateScheduledDate()
+//                        customFrequencyData = null // Reset custom data if not using custom frequency
                     }
+                    updateScheduledDate()
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -634,18 +639,39 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
     private fun updateScheduledDate() {
         try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val initialDate = dateFormat.parse(todayDate) ?: Calendar.getInstance().time
+            if (todayDate == "Unspecified") {
+                scheduledDateEditText.setText("Unspecified")
+                dateScheduled = "Unspecified"
+                return
+            }
+            else{
+                if(revisionFrequency== "No Repetition"){
+                    scheduledDateEditText.setText("Unspecified")
+                    dateScheduled = "Unspecified"
+                    return
+                }
+                if(revisionFrequency== "Custom"){
+                    print("data got:")
+                    val dateScheduled_ = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayDate)
+                    val scheduledCalendar_ = Calendar.getInstance()
+                    scheduledCalendar_.time = dateScheduled_ ?: Date()
+                    dateScheduled = calculateCustomNextDate(scheduledCalendar_, customFrequencyData!!).toString()
+                    return
+                }else{
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val initialDate = dateFormat.parse(todayDate) ?: Calendar.getInstance().time
 
-            // Use the utility class to calculate next revision date
-            RevisionScheduler.calculateNextRevisionDate(
-                this,
-                revisionFrequency,
-                0, // Initial revision
-                initialDate
-            ) { calculatedDate ->
-                dateScheduled = calculatedDate
-                scheduledDateEditText.setText(dateScheduled)
+                    // Use the utility class to calculate next revision date
+                    RevisionScheduler.calculateNextRevisionDate(
+                        this,
+                        revisionFrequency,
+                        0, // Initial revision
+                        initialDate
+                    ) { calculatedDate ->
+                        dateScheduled = calculatedDate
+                        scheduledDateEditText.setText(dateScheduled)
+                    }
+                }
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Error setting date: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -744,8 +770,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 .child(selectedSubjectCode)
                 .child(title)
 
-            val initiatedOn = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
-                .format(Calendar.getInstance().time)
 
             // Handle date values based on checkboxes
             val isUnspecifiedInitiationDate = initiationDateCheckbox.isChecked
@@ -754,20 +778,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             dateFormat.isLenient = false
 
-            // Set date values based on checkbox states
-            val dateLearnt = if (isUnspecifiedInitiationDate) "Unspecified" else todayDate
-            val dateScheduledValue = if (isUnspecifiedInitiationDate || isNoRepetition) "Unspecified" else dateScheduled
-            val revisionFrequencyValue = when {
-                isUnspecifiedInitiationDate -> "Unspecified"
-                isNoRepetition -> "No Repetition"
-                else -> revisionFrequency
-            }
-
             // Set noRevision value based on checkboxes
             if (isUnspecifiedInitiationDate) {
                 noRevision = -1
             } else if (isNoRepetition) {
-                noRevision = 0
+                noRevision = -1
             } else {
                 val currentDateStr = dateFormat.format(Date())
                 val currentDate = dateFormat.parse(currentDateStr)
@@ -779,32 +794,29 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 }
             }
 
-            // Create the record data
             val recordData = HashMap<String, Any>()
-            recordData["initiated_on"] = initiatedOn
+            recordData["initiated_on"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Calendar.getInstance().time)
             recordData["reminder_time"] = reminderTime
             recordData["lecture_type"] = lectureType
-            recordData["date_learnt"] = dateLearnt
-            recordData["date_revised"] = initiatedOn
-            recordData["date_scheduled"] = dateScheduledValue
+            recordData["date_learnt"] = todayDate
+            recordData["date_revised"] = todayDate
+            recordData["date_scheduled"] = dateScheduled
             recordData["description"] = description
             recordData["missed_revision"] = 0
             recordData["no_revision"] = noRevision
-            recordData["revision_frequency"] = revisionFrequencyValue
+            recordData["revision_frequency"] = revisionFrequency
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
 
-            // Add revision_data field with proper structure
-            val revisionData = HashMap<String, Any>()
 
             // Handle custom frequency data if available
-            if (revisionFrequencyValue == "Custom" && customFrequencyData != null) {
+            if (revisionFrequency == "Custom" && customFrequencyData != null) {
                 revisionData["frequency"] = "Custom"
                 revisionData["custom_params"] = customFrequencyData!!
                 recordData["revision_data"] = revisionData
             } else {
                 // For non-custom frequencies, just store the frequency name
-                revisionData["frequency"] = revisionFrequencyValue
+                revisionData["frequency"] = revisionFrequency
                 recordData["revision_data"] = revisionData
             }
 
