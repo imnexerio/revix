@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:retracker/Utils/date_utils.dart';
 import 'package:retracker/widgets/LectureTypeDropdown.dart';
@@ -892,31 +893,63 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                               showDialog(
                                                 context: context,
                                                 builder: (BuildContext context) {
+                                                  final controller = TextEditingController(
+                                                      text: _durationData["numberOfTimes"]?.toString() ?? ''
+                                                  );
+
                                                   return AlertDialog(
                                                     title: const Text('Enter Number of Times'),
                                                     content: TextFormField(
+                                                      controller: controller,
                                                       keyboardType: TextInputType.number,
                                                       decoration: const InputDecoration(
                                                         labelText: 'Number of Times',
+                                                        hintText: 'Enter a value ≥ 1',
                                                       ),
-                                                      onChanged: (value) {
-                                                        setState(() {
-                                                          int? parsedValue = int.tryParse(value);
-                                                          if (parsedValue != null) {
-                                                            _durationData = {
-                                                              "type": "specificTimes",
-                                                              "numberOfTimes": parsedValue,
-                                                              "endDate": null
-                                                            };
-                                                          }
-                                                        });
+                                                      inputFormatters: [
+                                                        FilteringTextInputFormatter.digitsOnly,
+                                                      ],
+                                                      validator: (value) {
+                                                        if (value == null || value.isEmpty) {
+                                                          return 'Please enter a value';
+                                                        }
+                                                        final number = int.tryParse(value);
+                                                        if (number == null || number < 1) {
+                                                          return 'Value must be at least 1';
+                                                        }
+                                                        return null;
                                                       },
+                                                      autovalidateMode: AutovalidateMode.onUserInteraction,
                                                     ),
                                                     actions: <Widget>[
                                                       TextButton(
-                                                        child: const Text('OK'),
+                                                        child: const Text('CANCEL'),
                                                         onPressed: () {
                                                           Navigator.of(context).pop();
+                                                        },
+                                                      ),
+                                                      TextButton(
+                                                        child: const Text('OK'),
+                                                        onPressed: () {
+                                                          int? parsedValue = int.tryParse(controller.text);
+                                                          if (parsedValue != null && parsedValue >= 1) {
+                                                            setState(() {
+                                                              _durationData = {
+                                                                "type": "specificTimes",
+                                                                "numberOfTimes": parsedValue,
+                                                                "endDate": null
+                                                              };
+                                                            });
+                                                            Navigator.of(context).pop();
+                                                          } else {
+                                                            // Show error feedback
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              const SnackBar(
+                                                                content: Text('Please enter a valid number (minimum 1)'),
+                                                                duration: Duration(seconds: 2),
+                                                              ),
+                                                            );
+                                                          }
                                                         },
                                                       ),
                                                     ],
