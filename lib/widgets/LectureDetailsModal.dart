@@ -52,6 +52,14 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
+    customFrequencyParams= Map<String, dynamic>.from(
+      widget.details['revision_data']['custom_params'] ?? {},
+    );
+    durationData = {
+      "type": widget.details['duration']['type'],
+      "numberOfTimes": widget.details['duration']['numberOfTimes'],
+      "endDate": widget.details['duration']['endDate'],
+    };
   }
 
   @override
