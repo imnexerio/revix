@@ -79,7 +79,7 @@ class CombinedDatabaseService {
     _databaseSubscription = _databaseRef!.onValue.listen((event) {
       if (!event.snapshot.exists) {
         Map<String, List<Map<String, dynamic>>> emptyData = {
-          'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
+          'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': [], 'noreminderdate': []
         };
         _cachedCategorizedData = emptyData;
         _categorizedRecordsController.add(emptyData);
@@ -101,7 +101,7 @@ class CombinedDatabaseService {
   void _processSnapshot(DataSnapshot snapshot) {
     if (!snapshot.exists) {
       Map<String, List<Map<String, dynamic>>> emptyData = {
-        'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': []
+        'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': [], 'noreminderdate': []
       };
       _cachedCategorizedData = emptyData;
       _categorizedRecordsController.add(emptyData);
@@ -218,14 +218,14 @@ class CombinedDatabaseService {
           final scheduledDateStr = dateScheduled.toString().split('T')[0];
           if (scheduledDateStr == todayStr) {
             todayRecords.add(record);
-          } else if (scheduledDateStr.compareTo(todayStr) < 0) {
+          }if (scheduledDateStr.compareTo(todayStr) < 0) {
             missedRecords.add(record);
-          } else if (dateInitiated != null &&
+          }if (dateInitiated != null &&
               dateInitiated.toString().split('T')[0] == todayStr) {
             todayAddedRecords.add(record);
-          } else if (scheduledDateStr == nextDayStr) {
+          }if (scheduledDateStr == nextDayStr) {
             nextDayRecords.add(record);
-          } else {
+          }else {
             final scheduledDate = DateTime.parse(dateScheduled.toString());
             if (scheduledDate.isAfter(today) && scheduledDate.isBefore(next7Days)) {
               next7DaysRecords.add(record);
@@ -241,6 +241,7 @@ class CombinedDatabaseService {
       'nextDay': nextDayRecords,
       'next7Days': next7DaysRecords,
       'todayAdded': todayAddedRecords,
+      'noreminderdate': noreminderdate,
     };
   }
 

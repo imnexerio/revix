@@ -82,7 +82,8 @@ class _TodayPageState extends State<TodayPage> {
         data['missed']!.isEmpty &&
         data['nextDay']!.isEmpty &&
         data['next7Days']!.isEmpty &&
-        data['todayAdded']!.isEmpty;
+        data['todayAdded']!.isEmpty &&
+        data['noreminderdate']!.isEmpty;
   }
 
   Widget _buildEmptyState() {
@@ -140,6 +141,12 @@ class _TodayPageState extends State<TodayPage> {
             ScheduleTable(
               initialRecords: data['next7Days']!,
               title: 'Next 7 Days Schedule (${data['next7Days']!.length})',
+              onSelect: (context, record) => showLectureScheduleP(context, record),
+            ),
+          if (data['noreminderdate']!.isNotEmpty)
+            ScheduleTable(
+              initialRecords: data['noreminderdate']!,
+              title: 'No Reminder Date (${data['noreminderdate']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
         ],
