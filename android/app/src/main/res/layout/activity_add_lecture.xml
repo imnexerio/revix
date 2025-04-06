@@ -333,6 +333,33 @@
                         android:clickable="true" />
                 </androidx.cardview.widget.CardView>
 
+                <TextView
+                    android:id="@+id/reminder_duration_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reminder duration"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/duration_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+
+                    app:contentPadding="0dp">
+
+                    <Spinner
+                        android:id="@+id/duration_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:paddingHorizontal="12dp"
+                        android:background="@drawable/spinner_border"
+                        android:spinnerMode="dropdown" />
+                </androidx.cardview.widget.CardView>
+
                 <!-- Description -->
                 <TextView
                     android:layout_width="wrap_content"

@@ -1,9 +1,11 @@
 package com.imnexerio.retracker
 
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -28,11 +30,13 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private lateinit var initiationDateEditText: EditText
     private lateinit var revisionFrequencySpinner: Spinner
     private lateinit var scheduledDateEditText: EditText
+    private lateinit var durationSpinner: Spinner
     private lateinit var descriptionEditText: EditText
     private lateinit var noRepetitionSwitch: Switch
     private lateinit var saveButton: Button
     private lateinit var revisionFrequencyText: TextView
     private lateinit var firstReminderDate: TextView
+    private lateinit var reminderDurationText: TextView
     private lateinit var cancelButton: Button
 
     // Data
@@ -46,6 +50,14 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private var todayDate = ""
     private var dateScheduled = ""
     private var noRevision = 0
+
+    private var duration = "Forever"
+    private val durationOptions = listOf("Forever", "Specific Number of Times", "Until")
+    private val durationData = HashMap<String, Any?>().apply {
+        put("type", "forever")
+        put("numberOfTimes", null)
+        put("endDate", null)
+    }
 
     // Custom data
     private var trackingTypes = mutableListOf<String>()
@@ -89,17 +101,20 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         initiationDateEditText = findViewById(R.id.initiation_date_edit_text)
         revisionFrequencySpinner = findViewById(R.id.revision_frequency_spinner)
         scheduledDateEditText = findViewById(R.id.scheduled_date_edit_text)
+        durationSpinner = findViewById(R.id.duration_spinner)
         descriptionEditText = findViewById(R.id.description_edit_text)
         noRepetitionSwitch = findViewById(R.id.no_repetition_switch)
         saveButton = findViewById(R.id.save_button)
         revisionFrequencyText = findViewById(R.id.revision_frequency_text)
         firstReminderDate = findViewById(R.id.scheduled_date_text)
+        reminderDurationText = findViewById(R.id.reminder_duration_text)
         cancelButton = findViewById(R.id.cancel_button)
 
         // Set up initial states
         addNewCategoryLayout.visibility = View.GONE
         addNewSubCategoryLayout.visibility = View.GONE
         reminderTimeEditText.setText("All Day")
+        setupDurationSpinner()
     }
 
     private fun loadCustomData() {
@@ -155,7 +170,119 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    // Update the revisionFrequencySpinner onItemSelected listener
+    private fun setupDurationSpinner() {
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            durationOptions
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        durationSpinner.adapter = adapter
+
+        durationSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                duration = durationOptions[position]
+
+                when (duration) {
+                    "Forever" -> {
+                        durationData["type"] = "forever"
+                        durationData["numberOfTimes"] = null
+                        durationData["endDate"] = null
+                    }
+                    "Specific Number of Times" -> {
+                        showNumberOfTimesDialog()
+                    }
+                    "Until" -> {
+                        showEndDatePicker()
+                    }
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
+            }
+        }
+    }
+    private fun showNumberOfTimesDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Enter Number of Times")
+
+        // Set up the input
+        val input = EditText(this)
+        input.inputType = InputType.TYPE_CLASS_NUMBER
+        input.hint = "Enter a value ≥ 1"
+
+        // Pre-fill with existing value if any
+        val existingValue = durationData["numberOfTimes"]
+        if (existingValue != null) {
+            input.setText(existingValue.toString())
+        }
+
+        builder.setView(input)
+
+        // Set up the buttons
+        builder.setPositiveButton("OK") { _, _ ->
+            val inputValue = input.text.toString()
+            val parsedValue = inputValue.toIntOrNull()
+
+            if (parsedValue != null && parsedValue >= 1) {
+                durationData["type"] = "specificTimes"
+                durationData["numberOfTimes"] = parsedValue
+                durationData["endDate"] = null
+            } else {
+                // Show error feedback
+                Toast.makeText(
+                    this,
+                    "Please enter a valid number (minimum 1)",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                // Reset to "Forever" if invalid input
+                durationSpinner.setSelection(0)
+            }
+        }
+
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.cancel()
+            // Reset to previous selection or "Forever"
+            durationSpinner.setSelection(0)
+        }
+
+        builder.show()
+    }
+
+    // Add this method to handle the "Until" option
+    private fun showEndDatePicker() {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = DatePickerDialog(
+            this,
+            { _, selectedYear, selectedMonth, selectedDay ->
+                val selectedDate = Calendar.getInstance()
+                selectedDate.set(selectedYear, selectedMonth, selectedDay)
+
+                // Format the date as YYYY-MM-DD to match the Flutter app
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val formattedDate = dateFormat.format(selectedDate.time)
+
+                durationData["type"] = "until"
+                durationData["numberOfTimes"] = null
+                durationData["endDate"] = formattedDate
+            },
+            year,
+            month,
+            day
+        )
+
+        // Set minimum date to today
+        datePickerDialog.datePicker.minDate = calendar.timeInMillis
+
+        datePickerDialog.show()
+    }
+
     private fun updateRevisionFrequencySpinner() {
         runOnUiThread {
             val adapter = ArrayAdapter(
@@ -344,14 +471,18 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             onlyOnce = isChecked
             if (isChecked) {
                 revisionFrequencySpinner.visibility = View.GONE
+                durationSpinner.visibility = View.GONE
                 scheduledDateEditText.visibility = View.GONE
                 revisionFrequencyText.visibility = View.GONE
                 firstReminderDate.visibility = View.GONE
+                reminderDurationText.visibility = View.GONE
             } else {
                 revisionFrequencySpinner.visibility = View.VISIBLE
+                durationSpinner.visibility = View.VISIBLE
                 scheduledDateEditText.visibility = View.VISIBLE
                 revisionFrequencyText.visibility = View.VISIBLE
                 firstReminderDate.visibility = View.VISIBLE
+                reminderDurationText.visibility = View.VISIBLE
             }
         }
 
@@ -595,6 +726,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             recordData["no_revision"] = noRevision
             recordData["revision_frequency"] = revisionFrequency
             recordData["status"] = "Enabled"
+            recordData["duration"] = durationData
 
             // Save to Firebase
             ref.setValue(recordData)
