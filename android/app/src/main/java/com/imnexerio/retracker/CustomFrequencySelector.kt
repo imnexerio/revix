@@ -81,14 +81,8 @@ class CustomFrequencySelector : DialogFragment() {
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        initializeDefaultValues()
-        setupControllers()
-        loadInitialParams()
-        setupListeners()
-    }
 
+    // Add this call at the end of initializeDefaultValues() method
     private fun initializeDefaultValues() {
         currentDate = Calendar.getInstance()
         currentDayOfMonth = currentDate.get(Calendar.DAY_OF_MONTH)
@@ -114,6 +108,23 @@ class CustomFrequencySelector : DialogFragment() {
         selectedDayOfWeekForYear = currentDayOfWeek
         selectedMonths = MutableList(12) { false }
         selectedMonths[currentDate.get(Calendar.MONTH)] = true
+
+        // Add this line to update UI with the initial selection
+        updateWeekdaySelectionUI()
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initializeDefaultValues()
+        setupControllers()
+        loadInitialParams()
+        setupListeners()
+
+        // Update all UI components to match current selections
+        updateFrequencyTypeUI()
+        updateWeekdaySelectionUI()
+        updateMonthlyOptionsUI()
+        updateYearlyOptionsUI()
     }
 
     private fun setupControllers() {
@@ -163,6 +174,7 @@ class CustomFrequencySelector : DialogFragment() {
         }
     }
 
+
     private fun loadInitialParams() {
         if (initialParams.isNotEmpty()) {
             frequencyType = initialParams["frequencyType"] as? String ?: "week"
@@ -179,7 +191,6 @@ class CustomFrequencySelector : DialogFragment() {
                         selectedDaysOfWeek = (initialParams["daysOfWeek"] as? List<Boolean>)?.toMutableList()
                             ?: MutableList(7) { false }
                     }
-                    updateWeekdaySelectionUI()
                 }
                 "month" -> {
                     val value = initialParams["value"] as? Int ?: 1
@@ -198,7 +209,6 @@ class CustomFrequencySelector : DialogFragment() {
                         }
                         showDateSelection = true
                     }
-                    updateMonthlyOptionsUI()
                 }
                 "year" -> {
                     val value = initialParams["value"] as? Int ?: 1
@@ -221,14 +231,13 @@ class CustomFrequencySelector : DialogFragment() {
                             showMonthSelection = true
                         }
                     }
-                    updateYearlyOptionsUI()
                 }
             }
-
-            // Update UI based on selected frequency type
-            updateFrequencyTypeUI()
         }
+        // Always update UI regardless of whether initialParams is empty
     }
+
+
 
     private fun updateFrequencyTypeUI() {
         // Update radio buttons
@@ -268,9 +277,10 @@ class CustomFrequencySelector : DialogFragment() {
         updateOptionButtonStyles()
 
         // Update date selection visibility
-        binding.dateSelectionGrid.visibility = if (showDateSelection && monthlyOption == "dates") View.VISIBLE else View.GONE
+        binding.dateSelectionGrid.visibility = if (monthlyOption == "dates") View.VISIBLE else View.GONE
 
-        if (showDateSelection && monthlyOption == "dates") {
+        // Always refresh the grid when in dates mode
+        if (monthlyOption == "dates") {
             refreshDateSelectionGrid()
         }
     }
@@ -285,12 +295,11 @@ class CustomFrequencySelector : DialogFragment() {
 
         updateYearlyOptionButtonStyles()
 
-        // Update month selection visibility
+        // Always show month selection grid when requested
         binding.monthSelectionGrid.visibility = if (showMonthSelection) View.VISIBLE else View.GONE
 
-        if (showMonthSelection) {
-            refreshMonthSelectionGrid()
-        }
+        // Always refresh the month grid
+        refreshMonthSelectionGrid()
 
         // Update month selection button text
         updateMonthSelectionButtonText()
@@ -354,10 +363,18 @@ class CustomFrequencySelector : DialogFragment() {
         val daysInMonth = getLastDayOfMonth(currentDate.get(Calendar.YEAR), currentDate.get(Calendar.MONTH))
         val inflater = LayoutInflater.from(requireContext())
 
+        // Ensure we have at least the current day in the selectedDates if empty
+        if (selectedDates.isEmpty()) {
+            selectedDates.add(currentDayOfMonth)
+        }
+
         for (day in 1..daysInMonth) {
             val dateCircle = inflater.inflate(R.layout.item_date_circle, binding.dateSelectionGrid, false) as TextView
             dateCircle.text = day.toString()
-            dateCircle.isSelected = selectedDates.contains(day)
+            val isSelected = selectedDates.contains(day)
+            dateCircle.isSelected = isSelected
+
+            // Apply styling based on selection state
             updateDateCircleAppearance(dateCircle, day)
 
             dateCircle.setOnClickListener {
@@ -385,10 +402,19 @@ class CustomFrequencySelector : DialogFragment() {
         val monthNames = arrayOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEPT", "OCT", "NOV", "DEC")
         val inflater = LayoutInflater.from(requireContext())
 
+        // Ensure we have at least the current month selected if none are selected
+        val hasAnyMonthSelected = selectedMonths.contains(true)
+        if (!hasAnyMonthSelected) {
+            val currentMonthIndex = currentDate.get(Calendar.MONTH)
+            selectedMonths[currentMonthIndex] = true
+        }
+
         for (i in 0 until 12) {
             val monthCircle = inflater.inflate(R.layout.item_month_circle, binding.monthSelectionGrid, false) as TextView
             monthCircle.text = monthNames[i]
             monthCircle.isSelected = selectedMonths[i]
+
+            // Apply styling based on selection state
             updateMonthCircleAppearance(monthCircle, i)
 
             monthCircle.setOnClickListener {
@@ -440,16 +466,30 @@ class CustomFrequencySelector : DialogFragment() {
         binding.radioMonthOption.setOnClickListener { updateFrequencyType("month") }
         binding.radioYearOption.setOnClickListener { updateFrequencyType("year") }
 
-        // Weekday selection
+
+        // In setupListeners method:
+
+// Weekday selection
         val weekdayViews = listOf(
             binding.daySunday, binding.dayMonday, binding.dayTuesday,
             binding.dayWednesday, binding.dayThursday, binding.dayFriday, binding.daySaturday
         )
 
+        if (!selectedDaysOfWeek.contains(true)) {
+            val currentWeekday = convertWeekdayToUIIndex(currentDate.get(Calendar.DAY_OF_WEEK))
+            selectedDaysOfWeek[currentWeekday] = true
+        }
+
         for (i in weekdayViews.indices) {
             weekdayViews[i].setOnClickListener {
                 selectedDaysOfWeek[i] = !selectedDaysOfWeek[i]
                 updateDayCircleAppearance(weekdayViews[i], selectedDaysOfWeek[i])
+
+                // If no weekday is selected, re-select the one that was just deselected
+                if (!selectedDaysOfWeek.contains(true)) {
+                    selectedDaysOfWeek[i] = true
+                    updateDayCircleAppearance(weekdayViews[i], true)
+                }
             }
         }
 
