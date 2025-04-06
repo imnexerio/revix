@@ -52,7 +52,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
-    customFrequencyParams= Map<String, dynamic>.from(
+    customFrequencyParams = Map<String, dynamic>.from(
       widget.details['revision_data']['custom_params'] ?? {},
     );
     durationData = {
@@ -60,6 +60,15 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       "numberOfTimes": widget.details['duration']['numberOfTimes'],
       "endDate": widget.details['duration']['endDate'],
     };
+
+    // Set the correct duration display value based on durationData
+    if (durationData["type"] == "forever") {
+      duration = "Forever";
+    } else if (durationData["type"] == "specificTimes") {
+      duration = "Specific Number of Times";
+    } else if (durationData["type"] == "until") {
+      duration = "Until";
+    }
   }
 
   @override
@@ -857,97 +866,131 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
               color: Theme.of(context).cardColor,
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
-            child: DropdownButtonFormField<String>(
-              value: duration,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem<String>(
-                  value: 'Forever',
-                  child: Text('Forever'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Specific Number of Times',
-                  child: Text('Specific Number of Times'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Until',
-                  child: Text('Until'),
-                ),
-              ],
-              onChanged: (String? newValue) {
-                if(newValue != null) {
-                  setState(() {
-                    duration = newValue;
-                    if (duration == 'Forever') {
-                      durationData = {
-                        "type": "forever",
-                        "numberOfTimes": null,
-                        "endDate": null
-                      };
-                    }
-                    else if (duration == 'Specific Number of Times') {
-                      // Show a dialog or bottom sheet to enter the number of times
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text('Enter Number of Times'),
-                            content: TextFormField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Number of Times',
-                              ),
-                              onChanged: (value) {
-                                setState(() {
-                                  int? parsedValue = int.tryParse(value);
-                                  if (parsedValue != null) {
-                                    durationData = {
-                                      "type": "specificTimes",
-                                      "numberOfTimes": parsedValue,
-                                      "endDate": null
-                                    };
-                                  }
-                                });
-                              },
-                            ),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text('OK'),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: duration,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  isExpanded: true,
+                  items: const [
+                    DropdownMenuItem<String>(
+                      value: 'Forever',
+                      child: Text('Forever'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Specific Number of Times',
+                      child: Text('Specific Number of Times'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Until',
+                      child: Text('Until'),
+                    ),
+                  ],
+                  onChanged: (String? newValue) {
+                    if(newValue != null) {
+                      setState(() {
+                        duration = newValue;
+                        if (duration == 'Forever') {
+                          durationData = {
+                            "type": "forever",
+                            "numberOfTimes": null,
+                            "endDate": null
+                          };
+                        }
+                        else if (duration == 'Specific Number of Times') {
+                          // Show a dialog or bottom sheet to enter the number of times
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              final controller = TextEditingController(
+                                text: durationData["numberOfTimes"]?.toString() ?? ''
+                              );
+
+                              return AlertDialog(
+                                title: const Text('Enter Number of Times'),
+                                content: TextFormField(
+                                  controller: controller,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Number of Times',
+                                  ),
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('CANCEL'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                  TextButton(
+                                    child: const Text('OK'),
+                                    onPressed: () {
+                                      int? parsedValue = int.tryParse(controller.text);
+                                      if (parsedValue != null) {
+                                        setState(() {
+                                          durationData = {
+                                            "type": "specificTimes",
+                                            "numberOfTimes": parsedValue,
+                                            "endDate": null
+                                          };
+                                        });
+                                      }
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
                           );
-                        },
-                      );
-                    }
-                    else if (duration == 'Until') {
-                      // Show a date picker to select the end date
-                      showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime(2101),
-                      ).then((pickedDate) {
-                        if (pickedDate != null) {
-                          setState(() {
-                            durationData = {
-                              "type": "until",
-                              "numberOfTimes": null,
-                              "endDate": pickedDate.toIso8601String().split('T')[0]
-                            };
+                        }
+                        else if (duration == 'Until') {
+                          // Show a date picker to select the end date
+                          final initialDate = durationData["endDate"] != null
+                              ? DateTime.parse(durationData["endDate"])
+                              : DateTime.now();
+
+                          showDatePicker(
+                            context: context,
+                            initialDate: initialDate.isAfter(DateTime.now()) ? initialDate : DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                          ).then((pickedDate) {
+                            if (pickedDate != null) {
+                              setState(() {
+                                durationData = {
+                                  "type": "until",
+                                  "numberOfTimes": null,
+                                  "endDate": pickedDate.toIso8601String().split('T')[0]
+                                };
+                              });
+                            }
                           });
                         }
                       });
                     }
-                  });
-                }
-              },
+                  },
+                ),
+                // Show additional information about the selected duration
+                if (durationData["numberOfTimes"] != null || durationData["endDate"] != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Text(
+                      durationData["numberOfTimes"] != null
+                          ? "Will repeat ${durationData["numberOfTimes"]} times"
+                          : durationData["endDate"] != null
+                              ? "Will repeat until ${durationData["endDate"]}"
+                              : "",
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
 
