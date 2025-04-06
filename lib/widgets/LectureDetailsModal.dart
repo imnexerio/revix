@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../CustomFrequencySelector.dart';
 import '../RecordForm/CalculateCustomNextDate.dart';
@@ -917,7 +918,22 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Number of Times',
+                                    hintText: 'Enter a value ≥ 1',
                                   ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a value';
+                                    }
+                                    final number = int.tryParse(value);
+                                    if (number == null || number < 1) {
+                                      return 'Value must be at least 1';
+                                    }
+                                    return null;
+                                  },
+                                  autovalidateMode: AutovalidateMode.onUserInteraction,
                                 ),
                                 actions: <Widget>[
                                   TextButton(
@@ -930,7 +946,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                     child: const Text('OK'),
                                     onPressed: () {
                                       int? parsedValue = int.tryParse(controller.text);
-                                      if (parsedValue != null) {
+                                      if (parsedValue != null && parsedValue >= 1) {
                                         setState(() {
                                           durationData = {
                                             "type": "specificTimes",
@@ -938,8 +954,16 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                             "endDate": null
                                           };
                                         });
+                                        Navigator.of(context).pop();
+                                      } else {
+                                        // Show error feedback
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Please enter a valid number (minimum 1)'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
                                       }
-                                      Navigator.of(context).pop();
                                     },
                                   ),
                                 ],
