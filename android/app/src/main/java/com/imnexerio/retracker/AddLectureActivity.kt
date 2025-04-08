@@ -581,13 +581,13 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         try {
             if (todayDate == "Unspecified") {
                 scheduledDateEditText.setText("Unspecified")
-                dateScheduled = "Unspecified"
+                dateScheduled = todayDate
                 return
             }
             else{
                 if(revisionFrequency== "No Repetition"){
                     scheduledDateEditText.setText("Unspecified")
-                    dateScheduled = "Unspecified"
+                    dateScheduled = todayDate
                     return
                 }
                 if(revisionFrequency== "Custom"){
