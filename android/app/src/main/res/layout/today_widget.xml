@@ -15,7 +15,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_gravity="start"
-            android:src="@drawable/baseline_refresh_24"
+            android:src="@drawable/baseline_today_24"
             android:contentDescription="Refresh"/>
         <TextView
             android:id="@+id/title_text_n_refresh"
