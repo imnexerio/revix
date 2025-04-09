@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CustomFrequencySelector extends StatefulWidget {
   final Map<String, dynamic> initialParams;
@@ -162,7 +163,10 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   void _toggleDateSelection(int date) {
     setState(() {
       if (_selectedDates.contains(date)) {
-        _selectedDates.remove(date);
+        // Only remove if it's not the last selected date
+        if (_selectedDates.length > 1) {
+          _selectedDates.remove(date);
+        }
       } else {
         _selectedDates.add(date);
       }
@@ -384,7 +388,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                       }
                       Map<String, dynamic> customData = {
                         'frequencyType': _frequencyType,
-                        'value': int.tryParse(activeController.text) ?? 1,
+                        'value': validateNumericInput(activeController.text),
                       };
                       if (_frequencyType == 'week') {
                         customData['daysOfWeek'] = _selectedDaysOfWeek;
@@ -482,13 +486,18 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
             itemCount: 12,
             itemBuilder: (context, index) {
               final bool isSelected = _selectedMonths[index];
+              final bool isLastSelected = isSelected && _selectedMonths.where((selected) => selected).length == 1;
+
               return GestureDetector(
                 onTap: () {
                   setState(() {
-                    _selectedMonths[index] = !_selectedMonths[index];
-                    if (_selectedMonths.where((isSelected) => isSelected).length == 1 &&
-                        _selectedMonths[index]) {
-                      _selectedMonth = _getMonthAbbreviation(index + 1);
+                    // Don't allow deselection if it's the last selected month
+                    if (!isLastSelected) {
+                      _selectedMonths[index] = !_selectedMonths[index];
+                      if (_selectedMonths.where((isSelected) => isSelected).length == 1 &&
+                          _selectedMonths[index]) {
+                        _selectedMonth = _getMonthAbbreviation(index + 1);
+                      }
                     }
                   });
                 },
@@ -521,6 +530,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
       ),
     );
   }
+
   Widget _buildFrequencyOption(
       String type,
       String prefix,
@@ -580,6 +590,16 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
             enabled: isSelected,
             controller: controller,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              TextInputFormatter.withFunction((oldValue, newValue) {
+                final int? value = int.tryParse(newValue.text);
+                if (value == null || value < 1) {
+                  return oldValue.text.isEmpty ? TextEditingValue(text: "1") : oldValue;
+                }
+                return newValue;
+              }),
+            ],
             style: TextStyle(
               color: colorScheme.onSurface,
               fontSize: 22,
@@ -614,12 +634,15 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final bool isSelected = _selectedDaysOfWeek[index];
+    final bool isLastSelectedDay = isSelected && _selectedDaysOfWeek.where((day) => day).length == 1;
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedDaysOfWeek[index] = !_selectedDaysOfWeek[index];
-        });
+        if (!isLastSelectedDay) {
+          setState(() {
+            _selectedDaysOfWeek[index] = !_selectedDaysOfWeek[index];
+          });
+        }
       },
       child: Container(
         width: 32,
@@ -735,5 +758,10 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     _monthController.dispose();
     _yearController.dispose();
     super.dispose();
+  }
+
+  int validateNumericInput(String text) {
+    final value = int.tryParse(text) ?? 1;
+    return value < 1 ? 1 : value;
   }
 }
