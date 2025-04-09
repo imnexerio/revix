@@ -123,7 +123,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         };
 
       }else{
-      if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate))) {
+      if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
         no_revision = -1;
       }}
 
@@ -143,7 +143,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'reminder_time': _timeController.text,
         'lecture_type': _lectureType,
         'date_learnt': todayDate,
-        'date_revised': initiated_on,
+        'date_revised': todayDate,
         'date_scheduled': dateScheduled,
         'description': _description,
         'missed_revision': 0,

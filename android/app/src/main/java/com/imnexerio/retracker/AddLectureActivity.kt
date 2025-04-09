@@ -399,27 +399,48 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // Initiation date checkbox
         initiationDateCheckbox.setOnCheckedChangeListener { _, isChecked ->
             updateInitiationDateVisibility(isChecked)
+
+            // Fix: When initiation date is unspecified, automatically check "No Repetition"
+            if (isChecked) {
+                reviewFrequencyCheckbox.isChecked = true
+                todayDate = "Unspecified"
+            } else {
+                // Restore the date when unchecked
+                setInitialDates()
+                // Don't automatically uncheck review frequency
+            }
+
+            // Update scheduled date based on new settings
+            updateScheduledDate()
         }
 
         // Review frequency checkbox
         reviewFrequencyCheckbox.setOnCheckedChangeListener { _, isChecked ->
             updateReviewFrequencyVisibility(isChecked)
+
+            // Update the scheduled date based on new frequency settings
+            updateScheduledDate()
         }
 
         // Date pickers
         initiationDateEditText.setOnClickListener {
-            showDatePicker(initiationDateEditText) { date ->
-                todayDate = date
-                updateScheduledDate()
+            // Only show date picker if not unspecified
+            if (!initiationDateCheckbox.isChecked) {
+                showDatePicker(initiationDateEditText) { date ->
+                    todayDate = date
+                    updateScheduledDate()
+                }
             }
         }
 
         scheduledDateEditText.setOnClickListener {
-            showDatePicker(scheduledDateEditText) { date ->
-                dateScheduled = date
+            // Only show date picker if neither unspecified nor no repetition
+            if (!initiationDateCheckbox.isChecked && !reviewFrequencyCheckbox.isChecked) {
+                showDatePicker(scheduledDateEditText) { date ->
+                    dateScheduled = date
+                }
             }
         }
-
 
         // Buttons
         saveButton.setOnClickListener {
@@ -435,6 +456,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         if (isUnspecified) {
             // Update text field to show "Unspecified"
             initiationDateEditText.setText("Unspecified")
+            todayDate = "Unspecified"
 
             // Hide all revision-related fields
             revisionFrequencyText.visibility = View.GONE
@@ -445,6 +467,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             reminderDurationText.visibility = View.GONE
             durationSpinner.visibility = View.GONE
             revision_FrequencyCard.visibility = View.GONE
+
+            // Force "No Repetition" when unspecified
+            revisionFrequency = "No Repetition"
         } else {
             // Restore the date or set to current date
             setInitialDates() // This will update initiationDateEditText with today's date
@@ -462,7 +487,17 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
     private fun updateReviewFrequencyVisibility(isNoRepetition: Boolean) {
         if (isNoRepetition) {
-            revisionFrequencySpinner.setSelection(frequencyNames.size -1) // Select "No Repetition"
+            // Find the index of "No Repetition" in frequency names
+            val noRepetitionIndex = frequencyNames.indexOf("No Repetition")
+            if (noRepetitionIndex >= 0) {
+                revisionFrequencySpinner.setSelection(noRepetitionIndex)
+            } else {
+                // Fallback to last item if not found
+                revisionFrequencySpinner.setSelection(frequencyNames.size - 1)
+            }
+
+            // Set the revision frequency directly
+            revisionFrequency = "No Repetition"
 
             // Hide revision-related fields but keep the frequency spinner
             firstReminderDate.visibility = View.GONE
@@ -478,6 +513,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             scheduledDateEditText.visibility = View.VISIBLE
             reminderDurationText.visibility = View.VISIBLE
             durationSpinner.visibility = View.VISIBLE
+
+            // Let the spinner selection determine the frequency
+            revisionFrequency = revisionFrequencySpinner.selectedItem.toString()
         }
     }
 
@@ -569,55 +607,65 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     }
 
     private fun updateScheduledDate() {
-        if (revisionFrequency == "Custom" && customFrequencyData != null) {
+        // Check if initiation date is unspecified
+        if (todayDate == "Unspecified" || initiationDateCheckbox.isChecked) {
+            scheduledDateEditText.setText("Unspecified")
+            dateScheduled = "Unspecified"
+            return
+        }
+
+        // Check if no repetition is selected
+        if (revisionFrequency == "No Repetition" || reviewFrequencyCheckbox.isChecked) {
+            scheduledDateEditText.setText(todayDate) // Use initiation date for no repetition
+            dateScheduled = todayDate
+            return
+        }
+
+        // Set up revision data for different frequencies
+        if (revisionFrequency == "Custom" && customFrequencyData.isNotEmpty()) {
             revisionData["frequency"] = "Custom"
-            revisionData["custom_params"] = customFrequencyData!!
+            revisionData["custom_params"] = customFrequencyData
             recordData["revision_data"] = revisionData
+
+            try {
+                val dateScheduled_ = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayDate)
+                val scheduledCalendar_ = Calendar.getInstance()
+                scheduledCalendar_.time = dateScheduled_ ?: Date()
+                val nextDate = calculateCustomNextDate(scheduledCalendar_, revisionData)
+                dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
+                scheduledDateEditText.setText(dateScheduled)
+            } catch (e: Exception) {
+//                Log.e("AddLectureActivity", "Error calculating custom date: ${e.message}")
+                // Fallback to today's date if calculation fails
+                dateScheduled = todayDate
+                scheduledDateEditText.setText(dateScheduled)
+            }
         } else {
-            // For non-custom frequencies, just store the frequency name
+            // For standard frequencies
             revisionData["frequency"] = revisionFrequency
             recordData["revision_data"] = revisionData
-        }
-        try {
-            if (todayDate == "Unspecified") {
-                scheduledDateEditText.setText("Unspecified")
-                dateScheduled = todayDate
-                return
-            }
-            else{
-                if(revisionFrequency== "No Repetition"){
-                    scheduledDateEditText.setText("Unspecified")
-                    dateScheduled = todayDate
-                    return
-                }
-                if(revisionFrequency== "Custom"){
-                    val dateScheduled_ = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayDate)
-                    val scheduledCalendar_ = Calendar.getInstance()
-                    scheduledCalendar_.time = dateScheduled_ ?: Date()
-                    val nextDate = calculateCustomNextDate(scheduledCalendar_, revisionData)
-                    dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
-                    scheduledDateEditText.setText(dateScheduled)
-                    return
-                }else{
-                    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                    val initialDate = dateFormat.parse(todayDate) ?: Calendar.getInstance().time
 
-                    // Use the utility class to calculate next revision date
-                    RevisionScheduler.calculateNextRevisionDate(
-                        this,
-                        revisionFrequency,
-                        0, // Initial revision
-                        initialDate
-                    ) { calculatedDate ->
-                        dateScheduled = calculatedDate
-                        scheduledDateEditText.setText(dateScheduled)
-                    }
+            try {
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val initialDate = dateFormat.parse(todayDate) ?: Calendar.getInstance().time
+
+                // Use the utility class to calculate next revision date
+                RevisionScheduler.calculateNextRevisionDate(
+                    this,
+                    revisionFrequency,
+                    0, // Initial revision
+                    initialDate
+                ) { calculatedDate ->
+                    dateScheduled = calculatedDate
+                    scheduledDateEditText.setText(dateScheduled)
                 }
+            } catch (e: Exception) {
+//                Log.e("AddLectureActivity", "Error setting date: ${e.message}")
+                Toast.makeText(this, "Error setting date: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error setting date: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     private fun showTimePicker() {
         val calendar = Calendar.getInstance()
@@ -728,30 +776,46 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 .child(selectedSubjectCode)
                 .child(title)
 
-
             // Handle date values based on checkboxes
             val isUnspecifiedInitiationDate = initiationDateCheckbox.isChecked
             val isNoRepetition = reviewFrequencyCheckbox.isChecked
 
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            dateFormat.isLenient = false
-
-            // Set noRevision value based on checkboxes
+            // Fix 2: Set correct values based on checkbox states
             if (isUnspecifiedInitiationDate) {
+                todayDate = "Unspecified"
+                dateScheduled = "Unspecified"
                 noRevision = -1
+                revisionFrequency = "No Repetition"
             } else if (isNoRepetition) {
+                dateScheduled = todayDate // Use initiation date as scheduled date for no repetition
                 noRevision = -1
+                revisionFrequency = "No Repetition"
             } else {
-                val currentDateStr = dateFormat.format(Date())
-                val currentDate = dateFormat.parse(currentDateStr)
-                val initiatedDate = dateFormat.parse(todayDate)
-                if (initiatedDate != null && initiatedDate.before(currentDate)) {
-                    noRevision = -1
-                } else if (initiatedDate != null && initiatedDate.after(currentDate)) {
-                    noRevision = -1
+                // If not unspecified or no repetition, check dates for validity
+                try {
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    dateFormat.isLenient = false
+
+                    val currentDateStr = dateFormat.format(Date())
+                    val currentDate = dateFormat.parse(currentDateStr)
+                    val initiatedDate = dateFormat.parse(todayDate)
+
+                    if (initiatedDate != null) {
+                        if (initiatedDate.before(currentDate) || initiatedDate.after(currentDate)) {
+                            // If initiated date is not today, disable revision
+                            noRevision = -1
+                        } else {
+                            // It's today, enable revision
+                            noRevision = 0
+                        }
+                    }
+                } catch (e: Exception) {
+//                    Log.e("AddLectureActivity", "Date parsing error: ${e.message}")
+                    noRevision = 0 // Default fallback
                 }
             }
 
+            // Fix 3: Set recordData values based on the current state
             recordData["initiated_on"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Calendar.getInstance().time)
             recordData["reminder_time"] = reminderTime
             recordData["lecture_type"] = lectureType
@@ -764,6 +828,21 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             recordData["revision_frequency"] = revisionFrequency
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
+
+            // If we have custom frequency data and it's not "Unspecified" or "No Repetition"
+            if (revisionFrequency == "Custom" && !isUnspecifiedInitiationDate && !isNoRepetition) {
+                revisionData["frequency"] = "Custom"
+                revisionData["custom_params"] = customFrequencyData
+                recordData["revision_data"] = revisionData
+            } else if (!isUnspecifiedInitiationDate && !isNoRepetition) {
+                // For standard frequencies
+                revisionData["frequency"] = revisionFrequency
+                recordData["revision_data"] = revisionData
+            } else {
+                // For "Unspecified" or "No Repetition", set minimal revision data
+                revisionData["frequency"] = "No Repetition"
+                recordData["revision_data"] = revisionData
+            }
 
             // Save to Firebase
             ref.setValue(recordData)
