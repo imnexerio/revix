@@ -20,7 +20,7 @@ class CalculateCustomNextDate {
             val nextDate = Calendar.getInstance()
             nextDate.timeInMillis = startDate.timeInMillis
 
-            println("Processing: frequencyType=$frequencyType, value=$value")
+//            println("Processing: frequencyType=$frequencyType, value=$value")
 
             when (frequencyType) {
                 "day" -> {
