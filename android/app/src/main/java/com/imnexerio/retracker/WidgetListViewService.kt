@@ -56,6 +56,7 @@ class WidgetListViewFactory(
         if (jsonData != null && jsonData.isNotEmpty() && jsonData != "[]") {
             try {
                 val jsonArray = JSONArray(jsonData)
+                val tempRecords = ArrayList<Map<String, String>>()
 
                 for (i in 0 until jsonArray.length()) {
                     try {
@@ -81,12 +82,27 @@ class WidgetListViewFactory(
                         }
 
                         if (hasAllEssentialFields) {
-                            recordsList.add(record)
+                            tempRecords.add(record)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }
+
+                // Sort the records based on reminder_time, subject, subject_code, and lecture_no
+                tempRecords.sortWith(compareBy<Map<String, String>> { map ->
+                    val reminderTime = map["reminder_time"] ?: ""
+                    when {
+                        reminderTime.isEmpty() -> "99:99" // Empty times go last
+                        reminderTime == "All Day" -> "99:98" // "All Day" goes last (but before empty times)
+                        else -> reminderTime // Regular times are compared normally
+                    }
+                }.thenBy { it["subject"] ?: "" }
+                    .thenBy { it["subject_code"] ?: "" }
+                    .thenBy { it["lecture_no"] ?: "" })
+
+                // Add all sorted records to the final list
+                recordsList.addAll(tempRecords)
             } catch (e: JSONException) {
                 e.printStackTrace()
             }
