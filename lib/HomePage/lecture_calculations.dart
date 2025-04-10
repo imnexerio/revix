@@ -4,7 +4,7 @@ int calculateMonthlyLectures(List<Map<String, dynamic>> records, Map<String, Set
   Set<String> selectedLectureTypes = selectedTrackingTypesMap['lecture'] ?? {};
 
   return records.where((record) {
-    if (record['details']['date_learnt'] == null) return false;
+    if (record['details']['date_learnt'] == null || record['details']['date_learnt']=='Unspecified') return false;
     final dateLearnt = DateTime.parse(record['details']['date_learnt']);
     return (dateLearnt.isAfter(startOfMonth) || dateLearnt.isAtSameMomentAs(startOfMonth)) &&
         selectedLectureTypes.contains(record['details']['lecture_type']);
@@ -18,7 +18,7 @@ int calculateWeeklyLectures(List<Map<String, dynamic>> records, Map<String, Set<
   Set<String> selectedLectureTypes = selectedTrackingTypesMap['lecture'] ?? {};
 
   return records.where((record) {
-    if (record['details']['date_learnt'] == null) return false;
+    if (record['details']['date_learnt'] == null || record['details']['date_learnt']=='Unspecified') return false;
     final dateLearnt = DateTime.parse(record['details']['date_learnt']);
     return (dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay)) &&
         selectedLectureTypes.contains(record['details']['lecture_type']);
@@ -31,7 +31,7 @@ int calculateDailyLectures(List<Map<String, dynamic>> records, Map<String, Set<S
   Set<String> selectedLectureTypes = selectedTrackingTypesMap['lecture'] ?? {};
 
   return records.where((record) {
-    if (record['details']['date_learnt'] == null) return false;
+    if (record['details']['date_learnt'] == null || record['details']['date_learnt']=='Unspecified') return false;
     final dateLearnt = DateTime.parse(record['details']['date_learnt']);
     return (dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay)) &&
         selectedLectureTypes.contains(record['details']['lecture_type']);
