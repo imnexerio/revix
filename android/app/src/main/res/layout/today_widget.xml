@@ -50,7 +50,7 @@
         android:layout_height="match_parent"
         android:layout_below="@id/title_layout"
         android:gravity="center"
-        android:text="No tasks for today enjoy your day"
+        android:text="Please launch reTracker to setup widget"
         android:textSize="16sp"
         android:textColor="@color/text" />
 </RelativeLayout>
