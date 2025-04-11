@@ -1,18 +1,15 @@
 package com.imnexerio.retracker
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.imnexerio.retracker/widget_refresh"
     private lateinit var batteryOptManager: BatteryOptimizationManager
-    private var screenOnReceiver: BroadcastReceiver? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -48,40 +45,9 @@ class MainActivity : FlutterActivity() {
             batteryOptManager.showBatteryOptimizationDialog()
         }
 
-        // Register screen-on receiver dynamically to be safe
-        registerScreenOnReceiver()
-
         if (intent?.extras?.getBoolean("widget_refresh") == true) {
             // Handle any widget-initiated refresh
         }
     }
 
-    private fun registerScreenOnReceiver() {
-        // Only register if we have widgets and battery optimization is disabled
-        if (batteryOptManager.hasWidget() && batteryOptManager.isIgnoringBatteryOptimizations()) {
-            screenOnReceiver = ScreenOnReceiver()
-            val filter = IntentFilter().apply {
-                addAction(Intent.ACTION_SCREEN_ON)
-            }
-            registerReceiver(screenOnReceiver, filter)
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Check again when app comes to foreground, in case user changed permission
-        registerScreenOnReceiver()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // Unregister receiver to prevent leaks
-        screenOnReceiver?.let {
-            try {
-                unregisterReceiver(it)
-            } catch (e: Exception) {
-                // Receiver might not be registered
-            }
-        }
-    }
 }
