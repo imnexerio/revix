@@ -335,10 +335,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           datesRevised.add(dateRevised);
 
 
-                          if (widget.details['no_revision'] < 0) {
-                            datesRevised = [];
-                          }
-
                             if (widget.details['revision_frequency']== 'No Repetition'){
                               await moveToDeletedData(
                                   widget.selectedSubject,
@@ -380,6 +376,14 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                 revisionData['custom_params'] = customFrequencyParams;
                               }
 
+                              if (widget.details['no_revision'] < 0) {
+                                datesRevised = [];
+                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                                  DateTime.parse(dateRevised),
+                                  widget.details['revision_frequency'],
+                                  widget.details['no_revision'] + 1,
+                                )).toIso8601String().split('T')[0];
+                              }
 
 
                           await UpdateRecords(
