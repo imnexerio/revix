@@ -281,6 +281,9 @@ class RecordUpdateService : Service() {
         val datesRevised = details["dates_revised"] as? List<*> ?: listOf<String>()
         val newDatesRevised = ArrayList<String>(datesRevised.map { it.toString() })
         newDatesRevised.add(currentDateTime)
+        if(noRevision<1){
+            newDatesRevised.clear()
+        }
         updatedValues["dates_revised"] = newDatesRevised
 
         // Update no_revision
@@ -288,7 +291,6 @@ class RecordUpdateService : Service() {
 
         // Update date_scheduled with next revision date
         updatedValues["date_scheduled"] = nextRevisionDate
-
         // Update the record in Firebase
         val userId = FirebaseAuth.getInstance().currentUser!!.uid
         val recordPath = "users/$userId/user_data/$subject/$subjectCode/$lectureNo"
