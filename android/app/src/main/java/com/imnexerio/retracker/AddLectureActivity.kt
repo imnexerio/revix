@@ -714,7 +714,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 }
             } catch (e: Exception) {
                 // If parsing fails, use current date (calendar is already initialized to now)
-//                Log.e("AddLectureActivity", "Error parsing date: ${e.message}")
             }
         }
 
@@ -736,6 +735,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             month,
             day
         )
+
+        datePickerDialog.datePicker.minDate = Calendar.getInstance().timeInMillis
+
         datePickerDialog.show()
     }
 
