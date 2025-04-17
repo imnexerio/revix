@@ -649,18 +649,31 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val initialDate = dateFormat.parse(todayDate) ?: Calendar.getInstance().time
 
-                // Use the utility class to calculate next revision date
+                val currentCalendar = Calendar.getInstance()
+                val currentDate = dateFormat.parse(dateFormat.format(currentCalendar.time))
+
                 RevisionScheduler.calculateNextRevisionDate(
                     this,
                     revisionFrequency,
                     0, // Initial revision
                     initialDate
                 ) { calculatedDate ->
-                    dateScheduled = calculatedDate
-                    scheduledDateEditText.setText(dateScheduled)
+                    try {
+                        if (currentDate.before(initialDate)) {
+                            dateScheduled = todayDate
+                        } else {
+                            dateScheduled = calculatedDate
+                        }
+
+                        scheduledDateEditText.setText(dateScheduled)
+                    } catch (e: Exception) {
+                        dateScheduled = calculatedDate
+                        scheduledDateEditText.setText(dateScheduled)
+//                        e.printStackTrace()
+                    }
                 }
             } catch (e: Exception) {
-//                Log.e("AddLectureActivity", "Error setting date: ${e.message}")
+                // Log.e("AddLectureActivity", "Error setting date: ${e.message}")
                 Toast.makeText(this, "Error setting date: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
@@ -801,7 +814,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     val initiatedDate = dateFormat.parse(todayDate)
 
                     if (initiatedDate != null) {
-                        if (initiatedDate.before(currentDate) || initiatedDate.after(currentDate)) {
+                        if (initiatedDate.before(currentDate)) {
                             // If initiated date is not today, disable revision
                             noRevision = -1
                         } else {

@@ -41,6 +41,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     "numberOfTimes": null,
     "endDate": null
   };
+  String initiated_on = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
 
 
   // Custom frequency parameters
@@ -111,7 +112,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
           .child(_selectedSubjectCode)
           .child(_lectureNo);
 
-      String initiated_on = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+
       if (todayDate == 'Unspecified') {
         no_revision = -1;
         _revisionFrequency = 'Unspecified';
@@ -213,6 +214,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
       setState(() {
         dateScheduled = initialDate.toIso8601String().split('T')[0];
+        if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate))) {
+          dateScheduled= todayDate;
+        }
         _scheduleddateController.text = dateScheduled;
       });
     }
