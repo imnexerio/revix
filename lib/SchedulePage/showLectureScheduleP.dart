@@ -255,9 +255,6 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
                             datesRevised.add(dateRevised);
 
-                            if (details['no_revision'] < 0) {
-                              datesRevised = [];
-                            }
                             if (details['revision_frequency']== 'No Repetition'){
                               await moveToDeletedData(
                                   details['subject'],
@@ -278,7 +275,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             }else{
                               if (details['revision_frequency'] == 'Custom') {
                                 // First convert the LinkedMap to a proper Map<String, dynamic>
-                                print('details: $details');
+                                // print('details: $details');
                                 Map<String, dynamic> revisionData = {};
 
                                 // Check if revision_data exists and has the necessary custom_params
@@ -305,7 +302,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                                     revisionData['custom_params'] = customParams;
                                   }
                                 }
-                                print('revisionData: $revisionData');
+                                // print('revisionData: $revisionData');
                                 DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
                                     DateTime.parse(details['date_scheduled']),
                                     revisionData
@@ -314,6 +311,15 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               } else {
                                 dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
                                   scheduledDate,
+                                  details['revision_frequency'],
+                                  details['no_revision'] + 1,
+                                )).toIso8601String().split('T')[0];
+                              }
+
+                              if (details['no_revision'] < 0) {
+                                datesRevised = [];
+                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                                  DateTime.parse(dateRevised),  // Parse the string into a DateTime object
                                   details['revision_frequency'],
                                   details['no_revision'] + 1,
                                 )).toIso8601String().split('T')[0];
