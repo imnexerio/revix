@@ -339,8 +339,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 _getLectureValue(allRecords, _lectureViewType),
                 const Color(0xFF6C63FF),
                 _lectureViewType,
-                    () => _cycleViewType('lecture'),
-                    () => _showCustomizationSheet('lecture'),
+                    () => _cycleViewType(),
               ),
             ),
             const SizedBox(width: 16),
@@ -350,8 +349,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 _getRevisionValue(allRecords, _revisionViewType),
                 const Color(0xFFDA5656),
                 _revisionViewType,
-                    () => _cycleViewType('revision'),
-                    () => _showCustomizationSheet('revision'),
+                    () => _cycleViewType(),
               ),
             ),
           ],
@@ -365,8 +363,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 _getCompletionValue(allRecords, _completionViewType),
                 getCompletionColor(calculatePercentageCompletion(allRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
                 _completionViewType,
-                    () => _cycleViewType('completion'),
-                    () => _showCustomizationSheet('completion'),
+                    () => _cycleViewType(),
               ),
             ),
             const SizedBox(width: 16),
@@ -376,8 +373,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 _getMissedValue(allRecords, _missedViewType),
                 const Color(0xFF008CC4),
                 _missedViewType,
-                    () => _cycleViewType('missed'),
-                    () => _showCustomizationSheet('missed'),
+                    () => _cycleViewType(),
               ),
             ),
           ],
@@ -386,22 +382,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  void _cycleViewType(String type) {
+  void _cycleViewType() {
     setState(() {
-      switch (type) {
-        case 'lecture':
-          _lectureViewType = _getNextViewType(_lectureViewType);
-          break;
-        case 'revision':
-          _revisionViewType = _getNextViewType(_revisionViewType);
-          break;
-        case 'completion':
-          _completionViewType = _getNextViewType(_completionViewType);
-          break;
-        case 'missed':
-          _missedViewType = _getNextViewType(_missedViewType);
-          break;
-      }
+        _lectureViewType = _getNextViewType(_lectureViewType);
+        _revisionViewType = _getNextViewType(_revisionViewType);
+        _completionViewType = _getNextViewType(_completionViewType);
+        _missedViewType = _getNextViewType(_missedViewType);
     });
   }
 
@@ -489,8 +475,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             _getLectureValue(allRecords, _lectureViewType),
             const Color(0xFF6C63FF),
             _lectureViewType,
-                () => _cycleViewType('lecture'),
-                () => _showCustomizationSheet('lecture'),
+                () => _cycleViewType(),
           ),
         ),
         const SizedBox(width: 16),
@@ -500,8 +485,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             _getRevisionValue(allRecords, _revisionViewType),
             const Color(0xFFDA5656),
             _revisionViewType,
-                () => _cycleViewType('revision'),
-                () => _showCustomizationSheet('revision'),
+                () => _cycleViewType(),
           ),
         ),
         const SizedBox(width: 16),
@@ -511,8 +495,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             _getCompletionValue(allRecords, _completionViewType),
             getCompletionColor(calculatePercentageCompletion(allRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
             _completionViewType,
-                () => _cycleViewType('completion'),
-                () => _showCustomizationSheet('completion'),
+                () => _cycleViewType()
           ),
         ),
         const SizedBox(width: 16),
@@ -522,8 +505,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             _getMissedValue(allRecords, _missedViewType),
             const Color(0xFF008CC4),
             _missedViewType,
-                () => _cycleViewType('missed'),
-                () => _showCustomizationSheet('missed'),
+                () => _cycleViewType()
           ),
         ),
       ],
@@ -667,10 +649,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
 
-  Widget _buildStatCard(String title, String value, Color color, String viewType, Function() onTap, Function() onLongPress) {
+  Widget _buildStatCard(String title, String value, Color color, String viewType, Function() onTap) {
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onLongPress,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
