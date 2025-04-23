@@ -40,7 +40,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     'missed': {},
   };
 
-  int _customCompletionTarget = 200;
+  Map<String, int> _completionTargets = {};
+  int get _customCompletionTarget => _completionTargets[_selectedLectureType] ?? 200;
+
 
   Size? _previousSize;
 
@@ -94,11 +96,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
         DatabaseReference typesRef = FirebaseDatabase.instance
             .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
-        DatabaseReference targetRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/customCompletionTarget');
+        DatabaseReference targetsRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/completionTargets');
 
         DatabaseEvent typesEvent = await typesRef.once();
-        DatabaseEvent targetEvent = await targetRef.once();
+        DatabaseEvent targetsEvent = await targetsRef.once();
+
         if (typesEvent.snapshot.exists) {
           Map<dynamic, dynamic> data = typesEvent.snapshot.value as Map<dynamic, dynamic>;
 
@@ -112,9 +115,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           });
         }
 
-        if (targetEvent.snapshot.exists) {
+        if (targetsEvent.snapshot.exists) {
           setState(() {
-            _customCompletionTarget = int.parse(targetEvent.snapshot.value.toString());
+            Map<dynamic, dynamic> targetsData = targetsEvent.snapshot.value as Map<dynamic, dynamic>;
+            targetsData.forEach((lectureType, target) {
+              _completionTargets[lectureType.toString()] = int.parse(target.toString());
+            });
           });
         }
       }
@@ -238,16 +244,16 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                       builder: (BuildContext context) {
                                         return AlertDialog(
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          title: const Text(
-                                            'Set Target',
+                                          title: Text(
+                                            'Set Target for $_selectedLectureType',
                                             style: TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                           content: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              const Text(
-                                                'Enter your completion target:',
+                                              Text(
+                                                'Enter your completion target for $_selectedLectureType:',
                                               ),
                                               const SizedBox(height: 16),
                                               TextField(
@@ -289,9 +295,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                                   final int newTarget = int.parse(targetValue);
 
                                                   final profileService = ProfileDataService();
-                                                  await profileService.saveCompletionTarget(targetValue);
+                                                  await profileService.saveCompletionTarget(_selectedLectureType, targetValue);
                                                   setState(() {
-                                                    _customCompletionTarget = newTarget;
+                                                    _completionTargets[_selectedLectureType] = newTarget;
                                                   });
                                                 }
                                                 Navigator.of(context).pop();
@@ -416,7 +422,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               child: _buildStatCard(
                 "Completion Percentage",
                 _getCompletionValue(filteredRecords, _completionViewType),
-                getCompletionColor(calculatePercentageCompletion(filteredRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
+                getCompletionColor(calculatePercentageCompletion(filteredRecords, _customCompletionTarget)),
                 _completionViewType,
                     () => _cycleViewType(),
               ),
@@ -464,60 +470,60 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   String _getLectureValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalLectures(records, _selectedTrackingTypesMap).toString();
+        return calculateTotalLectures(records).toString();
       case 'Monthly':
-        return calculateMonthlyLectures(records, _selectedTrackingTypesMap).toString();
+        return calculateMonthlyLectures(records).toString();
       case 'Weekly':
-        return calculateWeeklyLectures(records, _selectedTrackingTypesMap).toString();
+        return calculateWeeklyLectures(records).toString();
       case 'Daily':
-        return calculateDailyLectures(records, _selectedTrackingTypesMap).toString();
+        return calculateDailyLectures(records).toString();
       default:
-        return calculateTotalLectures(records, _selectedTrackingTypesMap).toString();
+        return calculateTotalLectures(records).toString();
     }
   }
 
   String _getRevisionValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalRevisions(records, _selectedTrackingTypesMap).toString();
+        return calculateTotalRevisions(records).toString();
       case 'Monthly':
-        return calculateMonthlyRevisions(records, _selectedTrackingTypesMap).toString();
+        return calculateMonthlyRevisions(records).toString();
       case 'Weekly':
-        return calculateWeeklyRevisions(records, _selectedTrackingTypesMap).toString();
+        return calculateWeeklyRevisions(records).toString();
       case 'Daily':
-        return calculateDailyRevisions(records, _selectedTrackingTypesMap).toString();
+        return calculateDailyRevisions(records).toString();
       default:
-        return calculateTotalRevisions(records, _selectedTrackingTypesMap).toString();
+        return calculateTotalRevisions(records).toString();
     }
   }
 
   String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return "${calculatePercentageCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
       case 'Monthly':
-        return "${calculateMonthlyCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateMonthlyCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
       case 'Weekly':
-        return "${calculateWeeklyCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateWeeklyCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
       case 'Daily':
-        return "${calculateDailyCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateDailyCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
       default:
-        return "${calculatePercentageCompletion(records, _selectedTrackingTypesMap, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
     }
   }
 
   String _getMissedValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateMissedRevisions(records, _selectedTrackingTypesMap).toString();
+        return calculateMissedRevisions(records).toString();
       case 'Monthly':
-        return calculateMonthlyMissed(records, _selectedTrackingTypesMap).toString();
+        return calculateMonthlyMissed(records).toString();
       case 'Weekly':
-        return calculateWeeklyMissed(records, _selectedTrackingTypesMap).toString();
+        return calculateWeeklyMissed(records).toString();
       case 'Daily':
-        return calculateDailyMissed(records, _selectedTrackingTypesMap).toString();
+        return calculateDailyMissed(records).toString();
       default:
-        return calculateMissedRevisions(records, _selectedTrackingTypesMap).toString();
+        return calculateMissedRevisions(records).toString();
     }
   }
 
@@ -548,7 +554,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           child: _buildStatCard(
               "Completion Percentage",
               _getCompletionValue(filteredRecords, _completionViewType),
-              getCompletionColor(calculatePercentageCompletion(filteredRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
+              getCompletionColor(calculatePercentageCompletion(filteredRecords, _customCompletionTarget)),
               _completionViewType,
                   () => _cycleViewType()
           ),
@@ -640,11 +646,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-  double calculatePercentageCompletion(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap, int customCompletionTarget) {
-    Set<String> selectedCompletionTypes = selectedTrackingTypesMap['completion'] ?? {};
+  double calculatePercentageCompletion(List<Map<String, dynamic>> records, int customCompletionTarget) {
     int completedLectures = records.where((record) =>
-    record['details']['date_learnt'] != null &&
-        selectedCompletionTypes.contains(record['details']['lecture_type'])
+    record['details']['date_learnt'] != null
     ).length;
     double percentageCompletion = customCompletionTarget > 0
         ? (completedLectures / customCompletionTarget) * 100

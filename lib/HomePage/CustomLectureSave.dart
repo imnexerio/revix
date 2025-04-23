@@ -11,11 +11,29 @@ class ProfileDataService {
     return FirebaseDatabase.instance.ref('users/${currentUser!.uid}/profile_data/$path');
   }
 
-  DatabaseReference getCompletionTargetRef() {
-    return getUserProfileRef('home_page/customCompletionTarget');
+  DatabaseReference getCompletionTargetsRef() {
+    return getUserProfileRef('home_page/completionTargets');
   }
 
-  Future<void> saveCompletionTarget(String targetValue) async {
-    await getCompletionTargetRef().set(targetValue);
+  DatabaseReference getCompletionTargetForLectureTypeRef(String lectureType) {
+    return getCompletionTargetsRef().child(lectureType);
+  }
+
+  Future<void> saveCompletionTarget(String lectureType, String targetValue) async {
+    await getCompletionTargetForLectureTypeRef(lectureType).set(targetValue);
+  }
+
+  Future<Map<String, int>> getCompletionTargets() async {
+    final snapshot = await getCompletionTargetsRef().get();
+    Map<String, int> targets = {};
+
+    if (snapshot.exists) {
+      Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+      data.forEach((key, value) {
+        targets[key.toString()] = int.parse(value.toString());
+      });
+    }
+
+    return targets;
   }
 }
