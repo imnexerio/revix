@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';
 import 'CustomLectureSave.dart';
@@ -42,7 +43,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   Map<String, int> _completionTargets = {};
   int get _customCompletionTarget => _completionTargets[_selectedLectureType] ?? 200;
 
-
   Size? _previousSize;
 
   @override
@@ -53,8 +53,33 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     super.initState();
     _recordService.initialize();
     _recordsStream = _recordService.allRecordsStream;
+    _loadSavedPreferences();
     _fetchTrackingTypesAndTargetFromFirebase();
     _loadAvailableLectureTypes();
+  }
+
+  // Load saved preferences from SharedPreferences
+  Future<void> _loadSavedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      _lectureViewType = prefs.getString('lectureViewType') ?? 'Total';
+      _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
+      _completionViewType = prefs.getString('completionViewType') ?? 'Total';
+      _missedViewType = prefs.getString('missedViewType') ?? 'Total';
+      _selectedLectureType = prefs.getString('selectedLectureType') ?? 'Lectures';
+    });
+  }
+
+  // Save preferences to SharedPreferences
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('lectureViewType', _lectureViewType);
+    await prefs.setString('revisionViewType', _revisionViewType);
+    await prefs.setString('completionViewType', _completionViewType);
+    await prefs.setString('missedViewType', _missedViewType);
+    await prefs.setString('selectedLectureType', _selectedLectureType);
   }
 
   // New method to load available lecture types
@@ -85,6 +110,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       int nextIndex = (currentIndex + 1) % _availableLectureTypes.length;
       _selectedLectureType = _availableLectureTypes[nextIndex];
     });
+    _savePreferences(); // Save when lecture type changes
   }
 
   Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
@@ -448,6 +474,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       _completionViewType = _getNextViewType(_completionViewType);
       _missedViewType = _getNextViewType(_missedViewType);
     });
+    _savePreferences(); // Save when view type changes
   }
 
   String _getNextViewType(String currentType) {
