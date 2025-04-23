@@ -13,7 +13,7 @@ class WeeklyProgressData {
 }
 
 // Updated chart creation function
-BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
+BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records, String trackingType) {
   Map<int, WeeklyProgressData> weeklyData = {};
   DateTime now = DateTime.now();
 
@@ -38,7 +38,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     String? dateScheduled;
 
     if (record['details'] != null) {
-      if (record['details']['lecture_type'] == 'Lectures') {
+      if (record['details']['lecture_type'] == trackingType) {
         dateLearnt = record['details']['date_learnt'];
         datesRevised = record['details']['dates_revised'];
         datesMissedRevisions = record['details']['dates_missed_revisions'];

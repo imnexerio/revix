@@ -6,10 +6,11 @@ import '../SchedulePage/ProportionalRingPainter.dart';
 
 class StudyCalendar extends StatefulWidget {
   final List<Map<String, dynamic>> records;
-
+  final String trackingType;
   const StudyCalendar({
     Key? key,
     required this.records,
+    this.trackingType = '',
   }) : super(key: key);
 
   @override

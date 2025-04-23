@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'PieChartLegend.dart';
 import 'SubjectDistributionPlot.dart';
 
-Widget buildSubjectDistributionCard(Map<String, int> subjectDistribution, double cardPadding, BuildContext context) {
+Widget buildSubjectDistributionCard(Map<String, int> subjectDistribution, double cardPadding, BuildContext context, String trackingType) {
   // Get the screen width to calculate responsive sizes
   final screenWidth = MediaQuery.of(context).size.width;
 

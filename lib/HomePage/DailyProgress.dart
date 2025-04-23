@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-LineChartData createLineChartData(List<Map<String, dynamic>> records) {
+LineChartData createLineChartData(List<Map<String, dynamic>> records, String trackingType) {
   Map<String, int> lectureCounts = {};
   Map<String, int> revisionCounts = {};
 
@@ -16,13 +16,14 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
   for (var record in records) {
     String? dateLearnt = record['details']['date_learnt'];
     List<dynamic>? datesRevised = record['details']['dates_revised'];
+    String trackingTypeRecord = record['details']['lecture_type'];
     // print('record: $record');
 
     if (dateLearnt != null && lectureCounts.containsKey(dateLearnt)) {
       lectureCounts[dateLearnt] = lectureCounts[dateLearnt]! + 1;
     }
 
-    if (datesRevised != null) {
+    if (datesRevised != null && trackingTypeRecord == trackingType) {
       for (var dateRevised in datesRevised) {
         String dateRevisedStr = DateTime.parse(dateRevised).toIso8601String().split('T')[0];
         if (revisionCounts.containsKey(dateRevisedStr)) {

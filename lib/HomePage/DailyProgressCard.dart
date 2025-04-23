@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../SchedulePage/LegendItem.dart';
 import 'DailyProgress.dart';
 
-Widget buildDailyProgressCard(List<Map<String, dynamic>> allRecords, double cardPadding, BuildContext context) {
+Widget buildDailyProgressCard(List<Map<String, dynamic>> allRecords, double cardPadding, BuildContext context, String trackingType) {
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
@@ -33,7 +33,7 @@ Widget buildDailyProgressCard(List<Map<String, dynamic>> allRecords, double card
         SizedBox(
           height: 250,
           width: double.infinity,
-          child: LineChart(createLineChartData(allRecords)),
+          child: LineChart(createLineChartData(allRecords, trackingType)),
         ),
         const SizedBox(height: 24),
         const Row(

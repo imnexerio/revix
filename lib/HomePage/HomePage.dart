@@ -29,6 +29,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   String _revisionViewType = 'Total';
   String _completionViewType = 'Total';
   String _missedViewType = 'Total';
+
+  String _selectedLectureType = 'Lectures';
+  List<String> _availableLectureTypes = ['Lectures'];
+
   Map<String, Set<String>> _selectedTrackingTypesMap = {
     'lecture': {},
     'revision': {},
@@ -49,6 +53,37 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     _recordService.initialize();
     _recordsStream = _recordService.allRecordsStream;
     _fetchTrackingTypesAndTargetFromFirebase();
+    _loadAvailableLectureTypes();
+  }
+
+  // New method to load available lecture types
+  Future<void> _loadAvailableLectureTypes() async {
+    try {
+      final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
+      setState(() {
+        // Assuming the tracking types returned contain lecture types
+        _availableLectureTypes = trackingTypes;
+        if (_availableLectureTypes.isEmpty) {
+          _availableLectureTypes = ['Lectures']; // Fallback
+        }
+      });
+    } catch (e) {
+      // Handle error, keeping default
+      setState(() {
+        _availableLectureTypes = ['Lectures'];
+      });
+    }
+  }
+
+  // Cycle through available lecture types
+  void _cycleLectureType() {
+    if (_availableLectureTypes.isEmpty) return;
+
+    setState(() {
+      int currentIndex = _availableLectureTypes.indexOf(_selectedLectureType);
+      int nextIndex = (currentIndex + 1) % _availableLectureTypes.length;
+      _selectedLectureType = _availableLectureTypes[nextIndex];
+    });
   }
 
   Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
@@ -134,7 +169,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             }
 
             List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
-            Map<String, int> subjectDistribution = calculateSubjectDistribution(allRecords);
+
+            // Filter records based on the selected lecture type
+            List<Map<String, dynamic>> filteredRecords = allRecords.where((record) {
+              return record['details']['lecture_type'] == _selectedLectureType;
+            }).toList();
+
+            Map<String, int> subjectDistribution = calculateSubjectDistribution(filteredRecords);
 
             return CustomScrollView(
               key: const PageStorageKey('homeScrollView'),
@@ -163,12 +204,26 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Overview',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).textTheme.titleLarge?.color,
+                                // Make the Overview title clickable
+                                GestureDetector(
+                                  onTap: _cycleLectureType,
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'Overview: $_selectedLectureType',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).textTheme.titleLarge?.color,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.swap_horiz,
+                                        size: 16,
+                                        color: Theme.of(context).textTheme.titleLarge?.color,
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 IconButton(
@@ -254,11 +309,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                             const SizedBox(height: 16),
                             rebuildLayout
                                 ? screenWidth > 900
-                                ? _buildSingleRowStatsGrid(allRecords)
-                                : _buildTwoByTwoStatsGrid(allRecords)
+                                ? _buildSingleRowStatsGrid(filteredRecords)
+                                : _buildTwoByTwoStatsGrid(filteredRecords)
                                 : screenWidth > 900
-                                ? _buildSingleRowStatsGrid(allRecords)
-                                : _buildTwoByTwoStatsGrid(allRecords),
+                                ? _buildSingleRowStatsGrid(filteredRecords)
+                                : _buildTwoByTwoStatsGrid(filteredRecords),
                           ],
                         ),
                       ),
@@ -269,11 +324,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 SliverToBoxAdapter(
                   child: rebuildLayout
                       ? screenWidth > 900
-                      ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
-                      : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding)
+                      ? _buildTwoColumnLayout(filteredRecords, subjectDistribution, cardPadding)
+                      : _buildSingleColumnLayout(filteredRecords, subjectDistribution, cardPadding)
                       : screenWidth > 900
-                      ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
-                      : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding),
+                      ? _buildTwoColumnLayout(filteredRecords, subjectDistribution, cardPadding)
+                      : _buildSingleColumnLayout(filteredRecords, subjectDistribution, cardPadding),
                 ),
               ],
             );
@@ -328,7 +383,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  Widget _buildTwoByTwoStatsGrid(List<Map<String, dynamic>> allRecords) {
+  Widget _buildTwoByTwoStatsGrid(List<Map<String, dynamic>> filteredRecords) {
     return Column(
       children: [
         Row(
@@ -336,7 +391,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 'Initiatives',
-                _getLectureValue(allRecords, _lectureViewType),
+                _getLectureValue(filteredRecords, _lectureViewType),
                 const Color(0xFF6C63FF),
                 _lectureViewType,
                     () => _cycleViewType(),
@@ -346,7 +401,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 'Reviewed',
-                _getRevisionValue(allRecords, _revisionViewType),
+                _getRevisionValue(filteredRecords, _revisionViewType),
                 const Color(0xFFDA5656),
                 _revisionViewType,
                     () => _cycleViewType(),
@@ -360,8 +415,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 "Completion Percentage",
-                _getCompletionValue(allRecords, _completionViewType),
-                getCompletionColor(calculatePercentageCompletion(allRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
+                _getCompletionValue(filteredRecords, _completionViewType),
+                getCompletionColor(calculatePercentageCompletion(filteredRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
                 _completionViewType,
                     () => _cycleViewType(),
               ),
@@ -370,7 +425,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 "Missed",
-                _getMissedValue(allRecords, _missedViewType),
+                _getMissedValue(filteredRecords, _missedViewType),
                 const Color(0xFF008CC4),
                 _missedViewType,
                     () => _cycleViewType(),
@@ -384,10 +439,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
   void _cycleViewType() {
     setState(() {
-        _lectureViewType = _getNextViewType(_lectureViewType);
-        _revisionViewType = _getNextViewType(_revisionViewType);
-        _completionViewType = _getNextViewType(_completionViewType);
-        _missedViewType = _getNextViewType(_missedViewType);
+      _lectureViewType = _getNextViewType(_lectureViewType);
+      _revisionViewType = _getNextViewType(_revisionViewType);
+      _completionViewType = _getNextViewType(_completionViewType);
+      _missedViewType = _getNextViewType(_missedViewType);
     });
   }
 
@@ -466,13 +521,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-  Widget _buildSingleRowStatsGrid(List<Map<String, dynamic>> allRecords) {
+  Widget _buildSingleRowStatsGrid(List<Map<String, dynamic>> filteredRecords) {
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             'Initiatives',
-            _getLectureValue(allRecords, _lectureViewType),
+            _getLectureValue(filteredRecords, _lectureViewType),
             const Color(0xFF6C63FF),
             _lectureViewType,
                 () => _cycleViewType(),
@@ -482,7 +537,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         Expanded(
           child: _buildStatCard(
             'Reviewed',
-            _getRevisionValue(allRecords, _revisionViewType),
+            _getRevisionValue(filteredRecords, _revisionViewType),
             const Color(0xFFDA5656),
             _revisionViewType,
                 () => _cycleViewType(),
@@ -491,21 +546,21 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            "Completion Percentage",
-            _getCompletionValue(allRecords, _completionViewType),
-            getCompletionColor(calculatePercentageCompletion(allRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
-            _completionViewType,
-                () => _cycleViewType()
+              "Completion Percentage",
+              _getCompletionValue(filteredRecords, _completionViewType),
+              getCompletionColor(calculatePercentageCompletion(filteredRecords, _selectedTrackingTypesMap, _customCompletionTarget)),
+              _completionViewType,
+                  () => _cycleViewType()
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            "Missed",
-            _getMissedValue(allRecords, _missedViewType),
-            const Color(0xFF008CC4),
-            _missedViewType,
-                () => _cycleViewType()
+              "Missed",
+              _getMissedValue(filteredRecords, _missedViewType),
+              const Color(0xFF008CC4),
+              _missedViewType,
+                  () => _cycleViewType()
           ),
         ),
       ],
@@ -598,7 +653,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
   Widget _buildTwoColumnLayout(
-      List<Map<String, dynamic>> allRecords,
+      List<Map<String, dynamic>> filteredRecords,
       Map<String, int> subjectDistribution,
       double cardPadding) {
     return Row(
@@ -609,9 +664,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildDailyProgressCard(allRecords, cardPadding,context),
+              buildDailyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
               const SizedBox(height: 32),
-              buildSubjectDistributionCard(subjectDistribution, cardPadding,context),
+              buildSubjectDistributionCard(subjectDistribution, cardPadding, context, _selectedLectureType),
             ],
           ),
         ),
@@ -621,9 +676,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildWeeklyProgressCard(allRecords, cardPadding,context),
+              buildWeeklyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
               const SizedBox(height: 32),
-              buildProgressCalendarCard(allRecords, cardPadding,context),
+              buildProgressCalendarCard(filteredRecords, cardPadding, context, _selectedLectureType),
             ],
           ),
         ),
@@ -632,18 +687,18 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
   Widget _buildSingleColumnLayout(
-      List<Map<String, dynamic>> allRecords,
+      List<Map<String, dynamic>> filteredRecords,
       Map<String, int> subjectDistribution,
       double cardPadding) {
     return Column(
       children: [
-        buildDailyProgressCard(allRecords, cardPadding,context),
+        buildDailyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
         const SizedBox(height: 24),
-        buildWeeklyProgressCard(allRecords, cardPadding,context),
+        buildWeeklyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
         const SizedBox(height: 24),
-        buildProgressCalendarCard(allRecords, cardPadding,context),
+        buildProgressCalendarCard(filteredRecords, cardPadding, context, _selectedLectureType),
         const SizedBox(height: 24),
-        buildSubjectDistributionCard(subjectDistribution, cardPadding,context),
+        buildSubjectDistributionCard(subjectDistribution, cardPadding, context, _selectedLectureType),
       ],
     );
   }

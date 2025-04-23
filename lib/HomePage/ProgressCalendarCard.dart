@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'MonthlyCalender.dart';
 
-Widget buildProgressCalendarCard(List<Map<String, dynamic>> allRecords, double cardPadding, BuildContext context) {
+Widget buildProgressCalendarCard(List<Map<String, dynamic>> allRecords, double cardPadding, BuildContext context, String trackingType) {
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
@@ -33,6 +33,7 @@ Widget buildProgressCalendarCard(List<Map<String, dynamic>> allRecords, double c
           height: 750,
           child: StudyCalendar(
             records: allRecords,
+            trackingType: trackingType,
           ),
         ),
         const SizedBox(height: 16),
