@@ -132,11 +132,9 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
           customSnackBar_error(
             context: context,
             message: 'Error during logout: $e',
-          ),
         );
       }
     }

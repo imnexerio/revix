@@ -356,11 +356,9 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               Navigator.pop(context);
                             }
 
-                            ScaffoldMessenger.of(context).showSnackBar(
                               customSnackBar_error(
                                 context: context,
                                 message: 'Failed : ${e.toString()}',
-                              ),
                             );
                           }
                         },

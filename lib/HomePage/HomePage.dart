@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
+import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';
@@ -30,8 +31,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   String _completionViewType = 'Total';
   String _missedViewType = 'Total';
 
-  String _selectedLectureType = 'Lectures';
-  List<String> _availableLectureTypes = ['Lectures'];
+  String _selectedLectureType = 'All'; // Changed default to 'All'
+  List<String> _availableLectureTypes = ['All']; // Added 'All' instead of 'Lectures'
 
   Map<String, Set<String>> _selectedTrackingTypesMap = {
     'lecture': {},
@@ -67,7 +68,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
       _completionViewType = prefs.getString('completionViewType') ?? 'Total';
       _missedViewType = prefs.getString('missedViewType') ?? 'Total';
-      _selectedLectureType = prefs.getString('selectedLectureType') ?? 'Lectures';
+      _selectedLectureType = prefs.getString('selectedLectureType') ?? 'All'; // Changed default to 'All'
     });
   }
 
@@ -82,21 +83,23 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     await prefs.setString('selectedLectureType', _selectedLectureType);
   }
 
-  // New method to load available lecture types
+  // Modified method to load available lecture types
   Future<void> _loadAvailableLectureTypes() async {
     try {
       final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
       setState(() {
-        // Assuming the tracking types returned contain lecture types
-        _availableLectureTypes = trackingTypes;
-        if (_availableLectureTypes.isEmpty) {
-          _availableLectureTypes = ['Lectures']; // Fallback
+        // Ensure 'All' is always the first option and then add other tracking types
+        List<String> types = ['All']; // Start with 'All'
+        if (trackingTypes.isNotEmpty) {
+          // Add all types except 'All' if it already exists in trackingTypes
+          types.addAll(trackingTypes.where((type) => type != 'All'));
         }
+        _availableLectureTypes = types;
       });
     } catch (e) {
-      // Handle error, keeping default
+      // Handle error, keeping default with 'All'
       setState(() {
-        _availableLectureTypes = ['Lectures'];
+        _availableLectureTypes = ['All'];
       });
     }
   }
@@ -200,8 +203,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
             List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
 
-            // Filter records based on the selected lecture type
-            List<Map<String, dynamic>> filteredRecords = allRecords.where((record) {
+            List<Map<String, dynamic>> filteredRecords = _selectedLectureType == 'All'
+                ? allRecords
+                : allRecords.where((record) {
               return record['details']['lecture_type'] == _selectedLectureType;
             }).toList();
 
@@ -259,6 +263,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined),
                                   onPressed: () {
+                                    if (_selectedLectureType == 'All') {
+                                      customSnackBar_error(context: context, message: 'Cannot set target for combined view');
+                                      return;
+                                    }
+
                                     final TextEditingController textFieldController = TextEditingController(
                                       text: _customCompletionTarget.toString(),
                                     );
@@ -523,18 +532,41 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
   String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
+    // For 'All' type, calculate a weighted average across all lecture types
+    int target = _selectedLectureType == 'All' ? _calculateAverageCompletionTarget() : _customCompletionTarget;
+
     switch (viewType) {
       case 'Total':
-        return "${calculatePercentageCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, target).toStringAsFixed(1)}%";
       case 'Monthly':
-        return "${calculateMonthlyCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateMonthlyCompletion(records, target).toStringAsFixed(1)}%";
       case 'Weekly':
-        return "${calculateWeeklyCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateWeeklyCompletion(records, target).toStringAsFixed(1)}%";
       case 'Daily':
-        return "${calculateDailyCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateDailyCompletion(records, target).toStringAsFixed(1)}%";
       default:
-        return "${calculatePercentageCompletion(records, _customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, target).toStringAsFixed(1)}%";
     }
+  }
+
+  // Calculate weighted average target for 'All' view
+  int _calculateAverageCompletionTarget() {
+    if (_completionTargets.isEmpty) return 200;
+
+    int totalTarget = 0;
+    _completionTargets.forEach((type, target) {
+      if (type != 'All') { // Avoid using 'All' in the calculation
+        totalTarget += target;
+      }
+    });
+
+    // If no specific targets defined, return default
+    if (_completionTargets.length <= 1 && _completionTargets.containsKey('All')) {
+      return 200;
+    }
+
+    return _completionTargets.isEmpty ? 200 :
+    totalTarget ~/ (_completionTargets.length - (_completionTargets.containsKey('All') ? 1 : 0));
   }
 
   String _getMissedValue(List<Map<String, dynamic>> records, String viewType) {
@@ -579,7 +611,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           child: _buildStatCard(
               "Completion Percentage",
               _getCompletionValue(filteredRecords, _completionViewType),
-              getCompletionColor(calculatePercentageCompletion(filteredRecords, _customCompletionTarget)),
+              getCompletionColor(calculatePercentageCompletion(filteredRecords,
+                  _selectedLectureType == 'All' ? _calculateAverageCompletionTarget() : _customCompletionTarget)),
               _completionViewType,
                   () => _cycleViewType()
           ),

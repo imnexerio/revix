@@ -419,12 +419,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           if (Navigator.canPop(context)) {
                             Navigator.pop(context);
                           }
-                          // print('Error marking as done: $e');
-                          ScaffoldMessenger.of(context).showSnackBar(
                             customSnackBar_error(
                               context: context,
                               message: 'Failed to mark as done: ${e.toString()}',
-                            ),
                           );
                         }
                       },
@@ -520,11 +517,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             Navigator.pop(context);
                           }
 
-                          ScaffoldMessenger.of(context).showSnackBar(
                             customSnackBar_error(
                               context: context,
                               message: 'Update Failed: ${e.toString()}',
-                            ),
                           );
                         }
                       },

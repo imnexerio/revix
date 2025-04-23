@@ -48,11 +48,9 @@ Future<void> uploadProfilePicture(BuildContext context, XFile imageFile) async {
     // Update the profile picture in the UI
     // You may need to pass a callback to update the UI
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
       customSnackBar_error(
         context: context,
         message: 'Failed to upload profile picture',
-      ),
     );
   }
 }

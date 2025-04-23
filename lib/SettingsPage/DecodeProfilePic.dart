@@ -19,11 +19,9 @@ Future<Image?> decodeProfileImage(BuildContext context) async {
       }
     }
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
       customSnackBar_error(
         context: context,
         message: 'Error decoding profile picture: $e',
-      ),
     );
   }
   return Image.asset(defaultImagePath);

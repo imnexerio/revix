@@ -10,11 +10,9 @@ class UrlLauncher {
       try {
         await launchUrl(urlUri, webOnlyWindowName: '_blank');
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
           customSnackBar_error(
             context: context,
             message: 'Error launching URL: $e',
-          ),
         );
       }
     } else {
@@ -24,11 +22,9 @@ class UrlLauncher {
           throw Exception('Could not launch $url');
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
           customSnackBar_error(
             context: context,
             message: 'Error launching URL: $e',
-          ),
         );
       }
     }

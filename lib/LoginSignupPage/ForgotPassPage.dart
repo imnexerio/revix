@@ -80,11 +80,9 @@ class _ForgotPassPageState extends State<ForgotPassPage>
         _errorMessage = _getFirebaseErrorMessage(e.code);
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
         customSnackBar_error(
           context: context,
           message: 'An unexpected error occurred. Please try again.',
-        ),
       );
     } finally {
       if (mounted) {

@@ -276,12 +276,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
           );
         }
       } catch (e) {
-        // Handle errors and show an error message
-        ScaffoldMessenger.of(context).showSnackBar(
           customSnackBar_error(
             context: context,
             message: 'Failed to update profile: $e',
-          ),
         );
       } finally {
         // Reset loading state

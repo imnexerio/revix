@@ -89,11 +89,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
       // that's not constantly visible in the UI
 
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
         customSnackBar_error(
           context: context,
           message: 'Error loading subjects and codes: $e',
-        ),
       );
     }
   }
@@ -1071,11 +1069,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                     await UpdateRecords(context);
                                     Navigator.of(context).pop(); // Navigate after showing SnackBar
                                   } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
                                       customSnackBar_error(
                                         context: context,
                                         message: 'Failed to save record: $e',
-                                      ),
                                     );
                                   }
                                 }

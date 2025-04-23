@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-SnackBar customSnackBar_error({
+void customSnackBar_error({
   required BuildContext context,
   required String message,
   Color? backgroundColor,
@@ -8,21 +8,23 @@ SnackBar customSnackBar_error({
   SnackBarBehavior behavior = SnackBarBehavior.floating,
   ShapeBorder? shape,
 }) {
-  return SnackBar(
-    content: Row(
-      children: [
-        const Icon(Icons.error_outline_rounded, color: Colors.white),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(message),
-        ),
-      ],
-    ),
-    backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.error,
-    duration: duration,
-    behavior: behavior,
-    shape: shape ?? RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, color: Colors.white),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(message),
+          ),
+        ],
+      ),
+      backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.error,
+      duration: duration,
+      behavior: behavior,
+      shape: shape ?? RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
     ),
   );
 }
