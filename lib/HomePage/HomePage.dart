@@ -129,7 +129,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       _recordService.stopListening();
@@ -571,79 +570,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         ),
       ],
     );
-  }
-
-  Future<void> _showCustomizationSheet(String type) async {
-    final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
-    final TextEditingController controller = TextEditingController();
-
-    switch (type) {
-      case 'lecture':
-        controller.text = _customCompletionTarget.toString();
-        break;
-      case 'revision':
-        controller.text = _customCompletionTarget.toString();
-        break;
-      case 'completion':
-        controller.text = _customCompletionTarget.toString();
-        break;
-      case 'missed':
-        controller.text = _customCompletionTarget.toString();
-        break;
-    }
-
-    final result = await showModalBottomSheet<List<String>>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return CustomizationBottomSheet(
-          type: type,
-          typeTitle: _getTypeTitle(type),
-          trackingTypes: trackingTypes,
-          initialSelected: _selectedTrackingTypesMap[type]!,
-          controller: controller,
-        );
-      },
-    );
-    if (result != null) {
-      setState(() {
-        _selectedTrackingTypesMap[type] = result.toSet();
-      });
-      await _saveTrackingTypeToFirebase(type, result.toList());
-    }
-  }
-
-  Future<void> _saveTrackingTypeToFirebase(String type, List<String> selectedTypes) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final String uid = user.uid;
-        DatabaseReference typeRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes/$type');
-
-        // Update just this specific type
-        await typeRef.set(selectedTypes);
-      }
-    } catch (e) {
-    }
-  }
-
-  String _getTypeTitle(String type) {
-    switch (type) {
-      case 'lecture':
-        return 'Lectures';
-      case 'revision':
-        return 'Revisions';
-      case 'completion':
-        return 'Completion Target';
-      case 'missed':
-        return 'Missed Revisions';
-      default:
-        return '';
-    }
   }
 
   double calculatePercentageCompletion(List<Map<String, dynamic>> records, int customCompletionTarget) {
