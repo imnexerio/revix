@@ -6,7 +6,6 @@ import 'package:retracker/HomePage/revision_calculations.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';
 import 'CustomLectureSave.dart';
-import 'CustomizationBottomSheet.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
 import 'SubjectDistributionCard.dart';
