@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../SchedulePage/LegendItem.dart';
 import 'WeeklyProgress.dart';
 
-Widget buildWeeklyProgressCard(List<Map<String, dynamic>> allRecords, double cardPadding, BuildContext context, String trackingType) {
+Widget buildWeeklyProgressCard(List<Map<String, dynamic>> allRecords, double cardPadding, BuildContext context) {
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
@@ -33,7 +33,7 @@ Widget buildWeeklyProgressCard(List<Map<String, dynamic>> allRecords, double car
         SizedBox(
           height: 250,
           width: double.infinity,
-          child: BarChart(createBarChartWeeklyData(allRecords, trackingType)),
+          child: BarChart(createBarChartWeeklyData(allRecords)),
         ),
         const SizedBox(height: 16),
         buildLegend(),

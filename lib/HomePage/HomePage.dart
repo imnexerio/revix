@@ -664,9 +664,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildDailyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
+              buildDailyProgressCard(filteredRecords, cardPadding, context),
               const SizedBox(height: 32),
-              buildSubjectDistributionCard(subjectDistribution, cardPadding, context, _selectedLectureType),
+              buildSubjectDistributionCard(subjectDistribution, cardPadding, context),
             ],
           ),
         ),
@@ -676,9 +676,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildWeeklyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
+              buildWeeklyProgressCard(filteredRecords, cardPadding, context),
               const SizedBox(height: 32),
-              buildProgressCalendarCard(filteredRecords, cardPadding, context, _selectedLectureType),
+              buildProgressCalendarCard(filteredRecords, cardPadding, context),
             ],
           ),
         ),
@@ -692,13 +692,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       double cardPadding) {
     return Column(
       children: [
-        buildDailyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
+        buildDailyProgressCard(filteredRecords, cardPadding, context),
         const SizedBox(height: 24),
-        buildWeeklyProgressCard(filteredRecords, cardPadding, context, _selectedLectureType),
+        buildWeeklyProgressCard(filteredRecords, cardPadding, context),
         const SizedBox(height: 24),
-        buildProgressCalendarCard(filteredRecords, cardPadding, context, _selectedLectureType),
+        buildProgressCalendarCard(filteredRecords, cardPadding, context),
         const SizedBox(height: 24),
-        buildSubjectDistributionCard(subjectDistribution, cardPadding, context, _selectedLectureType),
+        buildSubjectDistributionCard(subjectDistribution, cardPadding, context),
       ],
     );
   }
