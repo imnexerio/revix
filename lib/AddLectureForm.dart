@@ -153,12 +153,10 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'duration': _durationData,
       });
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
+
         customSnackBar(
           context: context,
           message: 'Record added successfully',
-        ),
       );
     } catch (e) {
       throw Exception('Failed to save lecture: $e');

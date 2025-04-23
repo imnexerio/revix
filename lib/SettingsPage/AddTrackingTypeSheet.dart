@@ -133,11 +133,10 @@ void showAddtrackingTypeSheet(
                       titleController.clear();
                       Navigator.pop(context);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
                         customSnackBar(
                           context: context,
                           message: 'New tracking type added successfully',
-                        ),
+
                       );
 
                       onTypeAdded(); // Call the callback to refresh the dropdown

@@ -7,11 +7,10 @@ Future<void> sendVerificationEmail(BuildContext context) async {
     User? user = FirebaseAuth.instance.currentUser;
     await user?.sendEmailVerification();
 
-    ScaffoldMessenger.of(context).showSnackBar(
+
       customSnackBar(
         context: context,
         message: 'Verification email sent successfully after verification restart the app',
-      ),
     );
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(

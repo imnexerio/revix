@@ -310,11 +310,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                             Navigator.pop(context);
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
                               customSnackBar(
                                 context: context,
                                 message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
-                              ),
                             );
                             return;
                           }
@@ -345,11 +343,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                               Navigator.pop(context);
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
                                 customSnackBar(
                                   context: context,
                                   message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
-                                ),
                               );
                               return;
                             }else{
@@ -408,11 +404,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           Navigator.pop(context);
 
 
-                            ScaffoldMessenger.of(context).showSnackBar(
+
                               customSnackBar(
                                 context: context,
                                 message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
-                              ),
                             );
                           }
                         } catch (e) {
@@ -506,11 +501,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           Navigator.pop(context);
                           Navigator.pop(context);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
+
                             customSnackBar(
                               context: context,
                               message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
-                            ),
                           );
                         } catch (e) {
                           if (Navigator.canPop(context)) {

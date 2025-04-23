@@ -236,12 +236,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // Save form data
       _formKey.currentState!.save();
 
-      // Show a snackbar indicating the operation is in progress
-      ScaffoldMessenger.of(context).showSnackBar(
         customSnackBar(
           context: context,
           message: 'Updating Display Name',
-        ),
+
       );
 
       // Begin the async operation and update the loading state
@@ -268,11 +266,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
         // Show success message
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+
             customSnackBar(
               context: context,
               message: 'Display Name updated successfully',
-            ),
           );
         }
       } catch (e) {

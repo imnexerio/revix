@@ -90,11 +90,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                           await user.reauthenticateWithCredential(credential);
                           await user.updatePassword(_newPassword!);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
+
                             customSnackBar(
                               context: context,
                               message: 'Password updated successfully',
-                            ),
                           );
 
                           _newPasswordController.clear();

@@ -71,11 +71,11 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
                           );
                           await user.reauthenticateWithCredential(credential);
                           await user.verifyBeforeUpdateEmail(_newEmail!);
-                          ScaffoldMessenger.of(context).showSnackBar(
+
                             customSnackBar(
                               context: context,
                               message: 'Verification email sent to $_newEmail. Please verify it and Pull to refresh.',
-                            ),
+
                           );
 
                           _newEmailController.clear();

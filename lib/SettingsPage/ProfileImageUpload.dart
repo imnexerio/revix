@@ -38,11 +38,11 @@ Future<void> uploadProfilePicture(BuildContext context, XFile imageFile) async {
     DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
     await databaseRef.update({'profile_picture': base64String});
 
-    ScaffoldMessenger.of(context).showSnackBar(
+
       customSnackBar(
         context: context,
         message: 'Profile picture uploaded successfully',
-      ),
+
     );
 
     // Update the profile picture in the UI

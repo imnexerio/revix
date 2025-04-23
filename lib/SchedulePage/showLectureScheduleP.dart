@@ -230,11 +230,10 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
                               Navigator.pop(context);
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
+
                                 customSnackBar(
                                   context: context,
                                   message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} has been marked as done and moved to deleted data.',
-                                ),
                               );
                               return;
                             }
@@ -265,11 +264,10 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
                               Navigator.pop(context);
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
+
                                 customSnackBar(
                                   context: context,
                                   message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} has been marked as done and moved to deleted data.',
-                                ),
                               );
                               return;
                             }else{
@@ -344,11 +342,11 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             Navigator.pop(context);
                             Navigator.pop(context);
 
-                              ScaffoldMessenger.of(context).showSnackBar(
+
                                 customSnackBar(
                                   context: context,
                                   message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} done and scheduled for $dateScheduled',
-                                ),
+
                               );
                             }
                           } catch (e) {

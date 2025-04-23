@@ -165,11 +165,10 @@ void showAddFrequencySheet(
                       frequencyController.clear();
                       Navigator.pop(context);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
+
                         customSnackBar(
                           context: context,
                           message: 'New frequency added successfully',
-                        ),
                       );
 
                       onFrequencyAdded(); // Call the callback to refresh the dropdown

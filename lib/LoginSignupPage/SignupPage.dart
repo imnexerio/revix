@@ -135,11 +135,11 @@ class _SignupPageState extends State<SignupPage>
 
         await user.sendEmailVerification();
 
-        ScaffoldMessenger.of(context).showSnackBar(
+
           customSnackBar(
             context: context,
             message: 'Account created successfully. Please check your email for verification.',
-          ),
+
         );
 
         Navigator.pop(context);

@@ -147,11 +147,9 @@ class AboutPage extends StatelessWidget {
                     width: 200, // Set the desired width
                     child: FilledButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
                           customSnackBar(
                             context: context,
                             message: 'Thank you for using reTracker!',
-                          ),
                         );
 
                       },
