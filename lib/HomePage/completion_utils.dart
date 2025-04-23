@@ -3,8 +3,8 @@ double calculateMonthlyCompletion(List<Map<String, dynamic>> records,  int custo
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
 
-
   int completedLectures = records.where((record) {
+    if (record['details']['date_learnt'] == 'Unspecified') return false;
     if (record['details']['date_learnt'] == null) return false;
     final dateLearnt = DateTime.parse(record['details']['date_learnt']);
     return dateLearnt.isAfter(startOfMonth) || dateLearnt.isAtSameMomentAs(startOfMonth);
@@ -19,6 +19,7 @@ double calculateWeeklyCompletion(List<Map<String, dynamic>> records,  int custom
   final startOfDay = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
 
   int completedLectures = records.where((record) {
+    if (record['details']['date_learnt'] == 'Unspecified') return false;
     if (record['details']['date_learnt'] == null) return false;
     final dateLearnt = DateTime.parse(record['details']['date_learnt']);
     return dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay);
@@ -34,6 +35,7 @@ double calculateDailyCompletion(List<Map<String, dynamic>> records,  int customC
 
 
   int completedLectures = records.where((record) {
+    if (record['details']['date_learnt'] == 'Unspecified') return false;
     if (record['details']['date_learnt'] == null) return false;
     final dateLearnt = DateTime.parse(record['details']['date_learnt']);
     return dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay);
