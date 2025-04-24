@@ -532,8 +532,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
   String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
-    // For 'All' type, calculate a weighted average across all lecture types
-    int target = _selectedLectureType == 'All' ? _calculateAverageCompletionTarget() : _customCompletionTarget;
+    int target = _selectedLectureType == 'All' ? _calculateAllCompletionPercentage(records) : _customCompletionTarget;
 
     switch (viewType) {
       case 'Total':
@@ -549,24 +548,17 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-  // Calculate weighted average target for 'All' view
-  int _calculateAverageCompletionTarget() {
+  int _calculateAllCompletionPercentage(List<Map<String, dynamic>> records) {
     if (_completionTargets.isEmpty) return 200;
 
     int totalTarget = 0;
     _completionTargets.forEach((type, target) {
-      if (type != 'All') { // Avoid using 'All' in the calculation
+      if (type != 'All') {
         totalTarget += target;
       }
     });
 
-    // If no specific targets defined, return default
-    if (_completionTargets.length <= 1 && _completionTargets.containsKey('All')) {
-      return 200;
-    }
-
-    return _completionTargets.isEmpty ? 200 :
-    totalTarget ~/ (_completionTargets.length - (_completionTargets.containsKey('All') ? 1 : 0));
+    return totalTarget > 0 ? totalTarget : 200;
   }
 
   String _getMissedValue(List<Map<String, dynamic>> records, String viewType) {
@@ -612,7 +604,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               "Completion Percentage",
               _getCompletionValue(filteredRecords, _completionViewType),
               getCompletionColor(calculatePercentageCompletion(filteredRecords,
-                  _selectedLectureType == 'All' ? _calculateAverageCompletionTarget() : _customCompletionTarget)),
+                  _selectedLectureType == 'All' ? _calculateAllCompletionPercentage(filteredRecords) : _customCompletionTarget)),
               _completionViewType,
                   () => _cycleViewType()
           ),
