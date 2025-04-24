@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'PieChartLegend.dart';
 import 'SubjectDistributionPlot.dart';
 
-Widget buildSubjectDistributionCard(Map<String, int> subjectDistribution, double cardPadding, BuildContext context) {
+Widget buildSubjectDistributionCard(Map<String,
+    int> subjectDistribution,
+    double cardPadding,
+    BuildContext context,
+    {required Function() onTitleTap,required String selectedLectureType}) {
   // Get the screen width to calculate responsive sizes
   final screenWidth = MediaQuery.of(context).size.width;
 
@@ -33,12 +37,25 @@ Widget buildSubjectDistributionCard(Map<String, int> subjectDistribution, double
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Category Distribution',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).textTheme.titleLarge?.color,
+        GestureDetector(
+          onTap: onTitleTap,
+          child: Row(
+            children: [
+              Text(
+                'Subject Distribution: $selectedLectureType',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.swap_horiz,
+                size: 16,
+                color: Theme.of(context).textTheme.titleLarge?.color,
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),

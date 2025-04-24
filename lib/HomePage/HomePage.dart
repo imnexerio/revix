@@ -653,9 +653,21 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildDailyProgressCard(filteredRecords, cardPadding, context),
+              buildDailyProgressCard(
+                filteredRecords,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,  // Pass the callback function
+                selectedLectureType: _selectedLectureType,  // Pass the selected type
+              ),
               const SizedBox(height: 32),
-              buildSubjectDistributionCard(subjectDistribution, cardPadding, context),
+              buildSubjectDistributionCard(
+                subjectDistribution,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,
+                selectedLectureType: _selectedLectureType,
+              ),
             ],
           ),
         ),
@@ -665,9 +677,21 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildWeeklyProgressCard(filteredRecords, cardPadding, context),
+              buildWeeklyProgressCard(
+                filteredRecords,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,
+                selectedLectureType: _selectedLectureType,
+              ),
               const SizedBox(height: 32),
-              buildProgressCalendarCard(filteredRecords, cardPadding, context),
+              buildProgressCalendarCard(
+                filteredRecords,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,
+                selectedLectureType: _selectedLectureType,
+              ),
             ],
           ),
         ),
@@ -681,13 +705,37 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       double cardPadding) {
     return Column(
       children: [
-        buildDailyProgressCard(filteredRecords, cardPadding, context),
+        buildDailyProgressCard(
+          filteredRecords,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
         const SizedBox(height: 24),
-        buildWeeklyProgressCard(filteredRecords, cardPadding, context),
+        buildWeeklyProgressCard(
+          filteredRecords,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
         const SizedBox(height: 24),
-        buildProgressCalendarCard(filteredRecords, cardPadding, context),
+        buildProgressCalendarCard(
+          filteredRecords,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
         const SizedBox(height: 24),
-        buildSubjectDistributionCard(subjectDistribution, cardPadding, context),
+        buildSubjectDistributionCard(
+          subjectDistribution,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
       ],
     );
   }
