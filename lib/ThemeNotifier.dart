@@ -142,6 +142,13 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
 
   // Helper method to update theme based on system brightness
   void _updateThemeBasedOnSystemBrightness() {
+    // For custom theme, we need to handle it separately
+    if (_selectedThemeIndex == customThemeIndex && _customThemeColor != null) {
+      _applyCustomTheme(_customThemeColor!);
+      return;
+    }
+
+    // For standard themes
     final brightness = WidgetsBinding.instance.window.platformBrightness;
     _currentTheme = AppThemes.themes[_selectedThemeIndex * 2 +
         (brightness == Brightness.dark ? 1 : 0)];

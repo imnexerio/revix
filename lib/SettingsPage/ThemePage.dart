@@ -363,64 +363,6 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
                 _buildSliders(context, themeNotifier),
               ],
             ),
-
-          const SizedBox(height: 30),
-
-          // Apply Custom Theme Button
-          ElevatedButton(
-            onPressed: () {
-              final customColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
-
-              Future.microtask(() {
-                themeNotifier.setCustomTheme(customColor);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.white),
-                        SizedBox(width: 10),
-                        Text('Custom theme applied!'),
-                      ],
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    duration: const Duration(seconds: 2),
-                    margin: const EdgeInsets.all(16),
-                    elevation: 6,
-                  ),
-                );
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              minimumSize: const Size(double.infinity, 60),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              elevation: 4,
-              shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle_rounded, size: 24),
-                SizedBox(width: 12),
-                Text(
-                  'Apply Custom Theme',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
