@@ -7,6 +7,7 @@ import 'package:retracker/LoginSignupPage/LoginPage.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'AI/ChatPage.dart';
+import 'CustomThemeGenerator.dart';
 import 'HomePage/HomePage.dart';
 import 'SchedulePage/TodayPage.dart';
 import 'SettingsPage/ProfileProvider.dart';
@@ -22,8 +23,59 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
-  await themeNotifier.fetchCustomTheme();
+
+  // Load cached theme data from SharedPreferences
+  ThemeMode cachedThemeMode = ThemeMode.system;
+  int cachedThemeIndex = 0;
+  Color? cachedCustomColor;
+
+  // Load saved theme mode
+  final themeModeString = prefs.getString(ThemeNotifier.prefThemeMode);
+  if (themeModeString != null) {
+    cachedThemeMode = ThemeMode.values.firstWhere(
+            (e) => e.toString() == themeModeString,
+        orElse: () => ThemeMode.system
+    );
+  }
+
+  // Load saved theme index
+  cachedThemeIndex = prefs.getInt(ThemeNotifier.prefThemeIndex) ?? 0;
+
+  // Load custom theme color if exists
+  final customColorValue = prefs.getInt(ThemeNotifier.prefCustomThemeColor);
+  if (customColorValue != null) {
+    cachedCustomColor = Color(customColorValue);
+  }
+
+  // Initialize the correct theme based on cached data
+  ThemeData initialTheme;
+  if (cachedThemeIndex == ThemeNotifier.customThemeIndex && cachedCustomColor != null) {
+    // Apply custom theme
+    if (cachedThemeMode == ThemeMode.system) {
+      final brightness = WidgetsBinding.instance.window.platformBrightness;
+      initialTheme = brightness == Brightness.dark
+          ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
+          : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
+    } else {
+      initialTheme = cachedThemeMode == ThemeMode.dark
+          ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
+          : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
+    }
+  } else {
+    // Apply predefined theme
+    if (cachedThemeMode == ThemeMode.system) {
+      final brightness = WidgetsBinding.instance.window.platformBrightness;
+      initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+    } else {
+      initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (cachedThemeMode == ThemeMode.dark ? 1 : 0)];
+    }
+  }
+
+  // Create ThemeNotifier with the cached theme data
+  ThemeNotifier themeNotifier = ThemeNotifier(initialTheme, cachedThemeMode);
+
+  // Set the cached values directly (they'll be applied in the constructor)
+  themeNotifier.setInitialValues(cachedThemeIndex, cachedCustomColor);
 
   runApp(
     MultiProvider(
@@ -35,6 +87,7 @@ void main() async {
     ),
   );
 }
+
 
 class MyApp extends StatefulWidget {
   final bool isLoggedIn;

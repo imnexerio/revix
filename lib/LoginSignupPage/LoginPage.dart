@@ -110,7 +110,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
           // Fetch and apply the latest custom theme
           ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-          await themeNotifier.fetchCustomTheme();
+          await themeNotifier.fetchRemoteTheme();
 
           Navigator.pushReplacement(
             context,

@@ -24,7 +24,7 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
     super.initState();
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
-    Future.microtask(() => themeNotifier.fetchCustomTheme());
+    Future.microtask(() => themeNotifier.fetchRemoteTheme());
 
     _redValue = themeNotifier.customThemeColor?.red ?? 0;
     _greenValue = themeNotifier.customThemeColor?.green ?? 0;
