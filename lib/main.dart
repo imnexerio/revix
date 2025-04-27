@@ -23,13 +23,7 @@ void main() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   ThemeNotifier themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
-  await themeNotifier.fetchCustomTheme(); // Fetch and apply the latest custom theme
-
-  // Initialize the database service
-  // CombinedDatabaseService().initialize();
-
-  // Initialize the home widget service
-  // await HomeWidgetService.initialize();
+  await themeNotifier.fetchCustomTheme();
 
   runApp(
     MultiProvider(
@@ -56,11 +50,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-
-    // Ensure widget data is updated when app starts
-    // if (FirebaseAuth.instance.currentUser != null) {
-    //   CombinedDatabaseService().updateWidgetWithCachedData();
-    // }
   }
 
   @override
