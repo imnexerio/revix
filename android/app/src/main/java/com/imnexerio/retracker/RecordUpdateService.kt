@@ -108,8 +108,13 @@ class RecordUpdateService : Service() {
             // Complete this task
             finishTask(startId)
         } catch (e: Exception) {
-            Log.e("RecordUpdateService", "Error refreshing widgets: ${e.message}")
-            finishTask(startId)
+            // Handle any exceptions that occur during the refresh
+            Toast.makeText(this, "Error refreshing widgets: ${e.message}", Toast.LENGTH_SHORT).show()
+//            e.printStackTrace()
+
+            // Optionally log the error or take other actions
+//            Log.e("RecordUpdateService", "Error refreshing widgets: ${e.message}")
+//            finishTask(startId)
         }
     }
 
@@ -157,6 +162,7 @@ class RecordUpdateService : Service() {
                     if (revisedToday) {
                         // Already revised today, just refresh
                         Toast.makeText(applicationContext, "Already revised today. Refreshing data...", Toast.LENGTH_SHORT).show()
+                        clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
                         refreshWidgets(startId)
                     } else {
                         updateRecord(details, subject, subjectCode, lectureNo, extras, startId)
@@ -335,7 +341,7 @@ class RecordUpdateService : Service() {
         val datesRevised = details["dates_revised"] as? List<*> ?: listOf<String>()
         val newDatesRevised = ArrayList<String>(datesRevised.map { it.toString() })
         newDatesRevised.add(currentDateTime)
-        if(noRevision<1){
+        if(noRevision==-1){
             newDatesRevised.clear()
         }
         updatedValues["dates_revised"] = newDatesRevised
