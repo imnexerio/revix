@@ -122,9 +122,6 @@ class TodayWidget : AppWidgetProvider() {
                 }
 
                 context.startService(clickIntent)
-
-                // Show a temporary message
-                Toast.makeText(context, "Processing record: $subject > $subjectCode > $lectureNo", Toast.LENGTH_SHORT).show()
             }
             ACTION_ADD_RECORD -> {
                 // Launch the AddLectureActivity

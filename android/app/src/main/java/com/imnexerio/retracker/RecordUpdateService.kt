@@ -105,7 +105,6 @@ class RecordUpdateService : Service() {
                         Toast.makeText(applicationContext, "Already revised today. Refreshing data...", Toast.LENGTH_SHORT).show()
                         refreshWidgets(startId)
                     } else {
-                        Toast.makeText(applicationContext, "Marking as done...", Toast.LENGTH_SHORT).show()
                         updateRecord(details, subject, subjectCode, lectureNo, extras, startId)
                     }
                 } catch (e: Exception) {
