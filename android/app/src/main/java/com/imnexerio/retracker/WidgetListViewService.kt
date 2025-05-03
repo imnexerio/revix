@@ -111,7 +111,6 @@ class WidgetListViewFactory(
     }
 
     override fun getViewAt(position: Int): RemoteViews {
-        // Determine which record list to use based on the view type
         val records = when (viewType) {
             "missed" -> missedRecords
             "noreminder" -> noReminderDateRecords
@@ -148,24 +147,18 @@ class WidgetListViewFactory(
             rv.setTextViewText(R.id.item_reminder_frequency, record["revision_frequency"])
         }
 
-        // NEW CODE: Apply strikethrough if the item is being processed
-        if (isProcessing) {
-            rv.setInt(R.id.item_subject, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
-            rv.setInt(R.id.item_subject_code, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
-            rv.setInt(R.id.item_lecture_no, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
+        val normalFlags = Paint.ANTI_ALIAS_FLAG
+        val strikethroughFlags = Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG
 
-            if (record.containsKey("reminder_time")) {
-                rv.setInt(R.id.item_reminder_time, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
-            }
+        // Set the paint flags based on whether the item is being processed
+        rv.setInt(R.id.item_subject, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
+        rv.setInt(R.id.item_subject_code, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
+        rv.setInt(R.id.item_lecture_no, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
 
-            if (record.containsKey("date_scheduled")) {
-                rv.setInt(R.id.item_reminder_date, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
-            }
-
-            if (record.containsKey("revision_frequency")) {
-                rv.setInt(R.id.item_reminder_frequency, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
-            }
-        }
+        // Apply paint flags to the optional fields as well
+        rv.setInt(R.id.item_reminder_time, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
+        rv.setInt(R.id.item_reminder_date, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
+        rv.setInt(R.id.item_reminder_frequency, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
 
         // Create and fill the intent with all record data
         val fillInIntent = Intent()
@@ -178,7 +171,6 @@ class WidgetListViewFactory(
 
         return rv
     }
-
 
     override fun onCreate() {}
     override fun onDestroy() {
