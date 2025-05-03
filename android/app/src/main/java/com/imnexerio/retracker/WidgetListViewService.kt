@@ -7,6 +7,7 @@ import android.widget.RemoteViewsService
 import org.json.JSONArray
 import org.json.JSONException
 import android.content.SharedPreferences
+import android.graphics.Paint
 
 class WidgetListViewService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
@@ -124,6 +125,11 @@ class WidgetListViewFactory(
         val record = records[position]
         val rv = RemoteViews(context.packageName, R.layout.widget_list_item)
 
+        // NEW CODE: Check if this item is being processed
+        val processingItems = sharedPreferences.getStringSet(TodayWidget.PREF_PROCESSING_ITEMS, emptySet()) ?: emptySet()
+        val itemKey = "${record["subject"]}_${record["subject_code"]}_${record["lecture_no"]}"
+        val isProcessing = processingItems.contains(itemKey)
+
         // Set all the available fields to the corresponding TextViews
         rv.setTextViewText(R.id.item_subject, record["subject"])
         rv.setTextViewText(R.id.item_subject_code, record["subject_code"])
@@ -142,6 +148,25 @@ class WidgetListViewFactory(
             rv.setTextViewText(R.id.item_reminder_frequency, record["revision_frequency"])
         }
 
+        // NEW CODE: Apply strikethrough if the item is being processed
+        if (isProcessing) {
+            rv.setInt(R.id.item_subject, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
+            rv.setInt(R.id.item_subject_code, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
+            rv.setInt(R.id.item_lecture_no, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
+
+            if (record.containsKey("reminder_time")) {
+                rv.setInt(R.id.item_reminder_time, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
+            }
+
+            if (record.containsKey("date_scheduled")) {
+                rv.setInt(R.id.item_reminder_date, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
+            }
+
+            if (record.containsKey("revision_frequency")) {
+                rv.setInt(R.id.item_reminder_frequency, "setPaintFlags", Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG)
+            }
+        }
+
         // Create and fill the intent with all record data
         val fillInIntent = Intent()
         for ((key, value) in record) {
@@ -153,6 +178,7 @@ class WidgetListViewFactory(
 
         return rv
     }
+
 
     override fun onCreate() {}
     override fun onDestroy() {

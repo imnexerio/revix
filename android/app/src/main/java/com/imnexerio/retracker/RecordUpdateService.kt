@@ -1,6 +1,7 @@
 package com.imnexerio.retracker
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
@@ -297,10 +298,12 @@ class RecordUpdateService : Service() {
         FirebaseDatabase.getInstance().getReference(recordPath)
             .updateChildren(updatedValues)
             .addOnSuccessListener {
+                clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
                 Toast.makeText(applicationContext, "Record updated successfully! Scheduled for $nextRevisionDate", Toast.LENGTH_SHORT).show()
                 refreshWidgets(startId)
             }
             .addOnFailureListener { e ->
+                clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
                 Toast.makeText(applicationContext, "Update failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 refreshWidgets(startId)
                 stopSelf(startId)
@@ -344,16 +347,28 @@ class RecordUpdateService : Service() {
                 val originalRef = database.getReference("users/$userId/user_data/$subject/$subjectCode/$lectureNo")
                 originalRef.removeValue()
                     .addOnSuccessListener {
+                        clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
                         callback(true)
                     }
                     .addOnFailureListener {
+                        clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
                         callback(false)
                     }
             }
             .addOnFailureListener {
+                clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
                 callback(false)
             }
 
+    }
+
+    private fun clearProcessingState(subject: String, subjectCode: String, lectureNo: String) {
+        val prefs = applicationContext.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+        val processingItems = prefs.getStringSet(TodayWidget.PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
+        val itemKey = "${subject}_${subjectCode}_${lectureNo}"
+        val newProcessingItems = processingItems.toMutableSet()
+        newProcessingItems.remove(itemKey)
+        prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()
     }
 
     private fun refreshWidgets(startId: Int) {

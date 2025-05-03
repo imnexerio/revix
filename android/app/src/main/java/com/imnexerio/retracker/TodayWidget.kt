@@ -18,6 +18,7 @@ class TodayWidget : AppWidgetProvider() {
         const val ACTION_ITEM_CLICK = "com.imnexerio.retracker.ACTION_ITEM_CLICK"
         const val ACTION_ADD_RECORD = "com.imnexerio.retracker.ACTION_ADD_RECORD"
         const val ACTION_SWITCH_VIEW = "com.imnexerio.retracker.ACTION_SWITCH_VIEW"
+        const val PREF_PROCESSING_ITEMS = "widget_processing_items"
 
         private const val VIEW_TODAY = "today"
         private const val VIEW_MISSED = "missed"
@@ -85,6 +86,21 @@ class TodayWidget : AppWidgetProvider() {
                 val subject = intent.getStringExtra("subject") ?: ""
                 val subjectCode = intent.getStringExtra("subject_code") ?: ""
                 val lectureNo = intent.getStringExtra("lecture_no") ?: ""
+
+                // NEW CODE: Mark this item as being processed
+                val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                val processingItems = prefs.getStringSet(PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
+                val itemKey = "${subject}_${subjectCode}_${lectureNo}"
+                val newProcessingItems = processingItems.toMutableSet()
+                newProcessingItems.add(itemKey)
+                prefs.edit().putStringSet(PREF_PROCESSING_ITEMS, newProcessingItems).apply()
+
+                // Force update widget to show strikethrough
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                    ComponentName(context, TodayWidget::class.java)
+                )
+                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
 
                 // Start the service to handle the item click
                 val clickIntent = Intent(context, RecordUpdateService::class.java)
