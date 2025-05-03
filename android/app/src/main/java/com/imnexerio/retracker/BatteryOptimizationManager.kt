@@ -62,16 +62,17 @@ class BatteryOptimizationManager(private val context: Context) {
 
     fun showBatteryOptimizationDialog() {
         val dialog = AlertDialog.Builder(context, R.style.DialogWithCenteredTitle)
-            .setTitle("Keep Widget Updated")
-            .setMessage("For the widget to update reliably, please allow this app to run in the background by disabling battery optimization.")
-            .setPositiveButton("Settings") { _, _ ->
+            .setTitle("Enable Reliable Widget Updates")
+            .setMessage("To ensure the widget updates correctly when you interact with it, please allow battery optimization. This will not affect background performance.")
+            .setPositiveButton("Go to Settings") { _, _ ->
                 requestIgnoreBatteryOptimization()
             }
-            .setNegativeButton("Later") { _, _ ->
+            .setNegativeButton("Maybe Later") { _, _ ->
                 markAskedForPermission()
             }
             .create()
 
         dialog.show()
     }
+
 }
