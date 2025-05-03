@@ -17,15 +17,25 @@ import java.util.Calendar
 import java.util.Locale
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
+import java.util.concurrent.atomic.AtomicInteger
+
 
 class WidgetRefreshService : Service() {
     private val handler = Handler(Looper.getMainLooper())
+    private var activeTaskCount = AtomicInteger(0)
+    private val lock = Any()
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Track active task
+        synchronized(lock) {
+            activeTaskCount.incrementAndGet()
+        }
+
         // Ensure the service runs even if killed by the system
         fetchDataAndUpdateWidget(startId)
         return START_STICKY
@@ -35,7 +45,7 @@ class WidgetRefreshService : Service() {
         val firebaseAuth = FirebaseAuth.getInstance()
         if (firebaseAuth.currentUser == null) {
             updateWidgetWithLoginStatus(false)
-            stopSelfWithDelay(startId)
+            finishTask(startId)
             return
         }
 
@@ -47,7 +57,7 @@ class WidgetRefreshService : Service() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (!snapshot.exists()) {
                     updateWidgetWithEmptyData(true)
-                    stopSelfWithDelay(startId)
+                    finishTask(startId)
                     return
                 }
 
@@ -66,24 +76,34 @@ class WidgetRefreshService : Service() {
                     updateWidgetWithEmptyData(true)
                 }
 
-                stopSelfWithDelay(startId)
+                finishTask(startId)
             }
 
             override fun onCancelled(error: DatabaseError) {
                 updateWidgetWithEmptyData(true)
-                stopSelfWithDelay(startId)
+                finishTask(startId)
             }
         })
     }
 
-    // Add a small delay before stopping the service to ensure updates are processed
-    private fun stopSelfWithDelay(startId: Int) {
-        handler.postDelayed({
-            stopSelf(startId)
-        }, 1000) // 1 second delay
+    // Properly tracks task completion and stops service when all tasks are done
+    private fun finishTask(startId: Int) {
+        synchronized(lock) {
+            val remainingTasks = activeTaskCount.decrementAndGet()
+            if (remainingTasks <= 0) {
+                // Make sure we use a new handler to avoid timing issues
+                handler.post {
+                    handler.postDelayed({
+                        stopSelf()
+                    }, 1000)
+                }
+            } else {
+                // Only stop this specific task
+                stopSelf(startId)
+            }
+        }
     }
 
-    // Process data for Today's records
     private fun processTodayRecords(rawData: Map<*, *>): List<Map<String, String>> {
         val today = Calendar.getInstance()
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(today.time)
@@ -159,18 +179,18 @@ class WidgetRefreshService : Service() {
                                     // Check if the scheduled date is before today (missed)
                                     if (scheduledDateStr.compareTo(todayStr) < 0) {
                                         records.add(
-                                                mapOf(
-                                                    "subject" to subjectKey.toString(),
-                                                    "subject_code" to codeKey.toString(),
-                                                    "lecture_no" to recordKey.toString(),
-                                                    "reminder_time" to (reminderTime ?: "").toString(),
-                                                    "date_scheduled" to dateScheduled,
-                                                    "revision_frequency" to (revisionFrequency ?: "").toString(),
-                                                    "missed_revision" to missedRevision.toString()
-                                                )
+                                            mapOf(
+                                                "subject" to subjectKey.toString(),
+                                                "subject_code" to codeKey.toString(),
+                                                "lecture_no" to recordKey.toString(),
+                                                "reminder_time" to (reminderTime ?: "").toString(),
+                                                "date_scheduled" to dateScheduled,
+                                                "revision_frequency" to (revisionFrequency ?: "").toString(),
+                                                "missed_revision" to missedRevision.toString()
                                             )
-                                        }
+                                        )
                                     }
+                                }
                                 catch (e: Exception) {
                                     // Handle any parsing errors
 //                                    e.printStackTrace()
@@ -277,17 +297,21 @@ class WidgetRefreshService : Service() {
     }
 
     private fun updateWidgets() {
-        // Force update all widgets
-        TodayWidget.updateWidgets(this)
+        try {
+            val appWidgetManager = AppWidgetManager.getInstance(this)
+            val componentName = ComponentName(this, TodayWidget::class.java)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
 
-        // Also explicitly notify data changes for the ListView
-        val appWidgetManager = AppWidgetManager.getInstance(this)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(
-            ComponentName(this, TodayWidget::class.java)
-        )
-
-        for (appWidgetId in appWidgetIds) {
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_listview)
+            if (appWidgetIds.isEmpty()) {
+                return
+            }
+            val intent = Intent(this, TodayWidget::class.java).apply {
+                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+            }
+            sendBroadcast(intent)
+        } catch (e: Exception) {
+            Log.e("WidgetRefreshService", "Error updating widgets: ${e.message}")
         }
     }
 }

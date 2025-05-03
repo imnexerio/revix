@@ -1,11 +1,14 @@
 package com.imnexerio.retracker
 
 import android.app.Service
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -18,17 +21,25 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 
 class RecordUpdateService : Service() {
     private val handler = Handler(Looper.getMainLooper())
+    private var activeTaskCount = AtomicInteger(0)
+    private val lock = Any()
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Track active task
+        synchronized(lock) {
+            activeTaskCount.incrementAndGet()
+        }
+
         if (intent == null) {
-            stopSelf(startId)
+            finishTask(startId)
             return START_NOT_STICKY
         }
 
@@ -38,7 +49,7 @@ class RecordUpdateService : Service() {
 
         if (subject.isEmpty() || subjectCode.isEmpty() || lectureNo.isEmpty()) {
             Toast.makeText(this, "Invalid record information", Toast.LENGTH_SHORT).show()
-            stopSelf(startId)
+            finishTask(startId)
             return START_NOT_STICKY
         }
 
@@ -57,6 +68,49 @@ class RecordUpdateService : Service() {
 
         handleRecordClick(subject, subjectCode, lectureNo, extras, startId)
         return START_STICKY
+    }
+
+    private fun finishTask(startId: Int) {
+        synchronized(lock) {
+            val remainingTasks = activeTaskCount.decrementAndGet()
+            if (remainingTasks <= 0) {
+                // Make sure we use a new handler to avoid timing issues
+                handler.post {
+                    handler.postDelayed({
+                        stopSelf()
+                    }, 1000)
+                }
+            } else {
+                // Only stop this specific task
+                stopSelf(startId)
+            }
+        }
+    }
+
+    private fun refreshWidgets(startId: Int) {
+        try {
+            // Instead of direct widget updates, send a broadcast
+            val context = applicationContext
+            val intent = Intent(context, TodayWidget::class.java).apply {
+                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                    ComponentName(context, TodayWidget::class.java)
+                )
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+            }
+            context.sendBroadcast(intent)
+
+            // Start refresh service after handling our task
+            val refreshIntent = Intent(this, WidgetRefreshService::class.java)
+            startService(refreshIntent)
+
+            // Complete this task
+            finishTask(startId)
+        } catch (e: Exception) {
+            Log.e("RecordUpdateService", "Error refreshing widgets: ${e.message}")
+            finishTask(startId)
+        }
     }
 
     private fun handleRecordClick(
@@ -368,19 +422,5 @@ class RecordUpdateService : Service() {
         val newProcessingItems = processingItems.toMutableSet()
         newProcessingItems.remove(itemKey)
         prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()
-    }
-
-    private fun refreshWidgets(startId: Int) {
-        // Refresh widgets to show updated data
-        TodayWidget.updateWidgets(this)
-
-        // Trigger a refresh of the widget data
-        val refreshIntent = Intent(this, WidgetRefreshService::class.java)
-        startService(refreshIntent)
-
-        // Stop the service after a delay
-        handler.postDelayed({
-            stopSelf(startId)
-        }, 1000)
     }
 }
