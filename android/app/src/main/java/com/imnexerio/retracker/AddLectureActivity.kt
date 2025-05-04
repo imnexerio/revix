@@ -688,9 +688,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         val timePickerDialog = TimePickerDialog(
             this,
             { _, selectedHour, selectedMinute ->
+                allDayCheckBox.isChecked = false
                 val time = String.format("%02d:%02d", selectedHour, selectedMinute)
                 reminderTimeEditText.setText(time)
-                allDayCheckBox.isChecked = false
             },
             hour,
             minute,
