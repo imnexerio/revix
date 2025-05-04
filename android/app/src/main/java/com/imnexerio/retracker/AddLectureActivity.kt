@@ -335,7 +335,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     override fun onFrequencySelected(customData: HashMap<String, Any>) {
         // Store the custom frequency data
         customFrequencyData = customData
-
+        if (customFrequencyData.isEmpty() && revisionFrequency == "Custom") {
+            updateRevisionFrequencySpinner()
+        }
         updateScheduledDate()
     }
 

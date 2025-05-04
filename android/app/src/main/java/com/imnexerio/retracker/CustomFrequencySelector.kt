@@ -585,6 +585,8 @@ class CustomFrequencySelector : DialogFragment() {
 
         // Button handlers
         binding.cancelButton.setOnClickListener {
+            val emptyCustomData = hashMapOf<String, Any>()
+            listener?.onFrequencySelected(emptyCustomData)
             dismiss()
         }
 
