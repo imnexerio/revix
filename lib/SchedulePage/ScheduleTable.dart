@@ -173,10 +173,7 @@ class _ScheduleTable extends State<ScheduleTable>
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      elevation: 1,
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with expand/collapse control
@@ -199,7 +196,6 @@ class _ScheduleTable extends State<ScheduleTable>
                   Row(
                     children: [
                       if (isExpanded) _buildFilterButton(),
-                      const SizedBox(width: 8),
                       RotationTransition(
                         turns: _rotateAnimation,
                         child: const Icon(Icons.expand_more),
@@ -216,9 +212,6 @@ class _ScheduleTable extends State<ScheduleTable>
             sizeFactor: _expandAnimation,
             child: Column(
               children: [
-                const Divider(height: 1),
-                const SizedBox(height: 8),
-                // Animated grid for the cards
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final crossAxisCount = _calculateColumns(constraints.maxWidth);
@@ -281,7 +274,6 @@ class _ScheduleTable extends State<ScheduleTable>
             ),
           ),
         ],
-      ),
     );
   }
 
