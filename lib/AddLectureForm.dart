@@ -295,6 +295,11 @@ class _AddLectureFormState extends State<AddLectureForm> {
         _customFrequencyParams = result;
         _setScheduledDate(); // Update scheduled date based on new frequency
       });
+    } else {
+      setState(() { // Added setState here to update the UI
+        _revisionFrequency = 'Default';
+        _setScheduledDate(); // Update scheduled date based on the default frequency
+      });
     }
   }
 
