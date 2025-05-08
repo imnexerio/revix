@@ -1,33 +1,39 @@
 import 'package:flutter/material.dart';
-import 'sorting_utils.dart';
+
 import 'AnimatedCard.dart';
 
 class ScheduleTable extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;
   final String title;
   final Function(BuildContext, Map<String, dynamic>) onSelect;
+  final bool initiallyExpanded;
 
   const ScheduleTable({
     Key? key,
     required this.initialRecords,
     required this.title,
     required this.onSelect,
+    this.initiallyExpanded = true,
   }) : super(key: key);
 
   @override
-  _ScheduleTableState createState() => _ScheduleTableState();
+  _ScheduleTable createState() => _ScheduleTable();
 }
 
-class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProviderStateMixin {
+class _ScheduleTable extends State<ScheduleTable>
+    with SingleTickerProviderStateMixin {
   late List<Map<String, dynamic>> records;
   String? currentSortField;
   bool isAscending = true;
+  bool isExpanded = true;
 
   // Cache for sorted records to avoid unnecessary re-sorts
   final Map<String, List<Map<String, dynamic>>> _sortedRecordsCache = {};
 
   // Add animation controller
   late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+  late Animation<double> _rotateAnimation;
 
   // Memoized column count
   int? _cachedColumnCount;
@@ -37,6 +43,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
   void initState() {
     super.initState();
     records = List.from(widget.initialRecords);
+    isExpanded = widget.initiallyExpanded;
 
     // Set default sort field to reminder_time and ascending order
     currentSortField = 'reminder_time';
@@ -47,9 +54,26 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    // Start the animation immediately to show cards properly
-    _animationController.value = 1.0;
 
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+
+    _rotateAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Set initial animation state based on initiallyExpanded
+    if (isExpanded) {
+      _animationController.value = 1.0;
+    } else {
+      _animationController.value = 0.0;
+    }
 
     // Apply default sorting after initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,7 +106,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     }
   }
 
-// New method for refreshing without animation reset
+  // New method for refreshing without animation reset
   void _applyRefreshSorting(String field, bool ascending) {
     // Skip animation reset and directly apply sorting
     final sortedRecords = SortingUtils.sortRecords(
@@ -117,6 +141,17 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
     );
   }
 
+  void _toggleExpanded() {
+    setState(() {
+      isExpanded = !isExpanded;
+      if (isExpanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
+
   int _calculateColumns(double width) {
     // Use cached value if width hasn't changed
     if (_previousWidth == width && _cachedColumnCount != null) {
@@ -138,81 +173,115 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              _buildFilterButton(),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Animated grid for the cards
-        AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = _calculateColumns(constraints.maxWidth);
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    mainAxisExtent: 160,
-                  ),
-                  itemCount: records.length,
-                  itemBuilder: (context, index) {
-                    final record = records[index];
-                    final bool isCompleted = record['date_learnt'] != null &&
-                        record['date_learnt'].toString().isNotEmpty;
-
-                    final Animation<double> animation = Tween<double>(
-                      begin: 0.0,
-                      end: 1.0,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: Interval(
-                          (index / records.length) * 0.5,
-                          (index / records.length) * 0.5 + 0.5,
-                          curve: Curves.easeInOut,
-                        ),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      elevation: 1,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with expand/collapse control
+          InkWell(
+            onTap: _toggleExpanded,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      if (isExpanded) _buildFilterButton(),
+                      const SizedBox(width: 8),
+                      RotationTransition(
+                        turns: _rotateAnimation,
+                        child: const Icon(Icons.expand_more),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-                    // print('record : $record');
+          // Collapsible content
+          SizeTransition(
+            sizeFactor: _expandAnimation,
+            child: Column(
+              children: [
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                // Animated grid for the cards
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final crossAxisCount = _calculateColumns(constraints.maxWidth);
 
-                    return AnimatedCard(
-                      animation: animation,
-                      record: record,
-                      isCompleted: isCompleted,
-                      onSelect: widget.onSelect,
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        mainAxisExtent: 160,
+                      ),
+                      itemCount: records.length,
+                      itemBuilder: (context, index) {
+                        final record = records[index];
+                        final bool isCompleted = record['date_learnt'] != null &&
+                            record['date_learnt'].toString().isNotEmpty;
+
+                        final Animation<double> animation = Tween<double>(
+                          begin: 0.0,
+                          end: 1.0,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: _animationController,
+                            curve: Interval(
+                              (index / records.length) * 0.5,
+                              (index / records.length) * 0.5 + 0.5,
+                              curve: Curves.easeInOut,
+                            ),
+                          ),
+                        );
+
+                        return AnimatedCard(
+                          animation: animation,
+                          record: record,
+                          isCompleted: isCompleted,
+                          onSelect: widget.onSelect,
+                        );
+                      },
                     );
                   },
-                );
-              },
-            );
-          },
-        ),
-      ],
+                ),
+                if (records.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: Text(
+                        'No records available',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -241,7 +310,7 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: SizedBox(
-            height: 400, // Set height to 60% of screen height
+            height: 400,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -376,7 +445,53 @@ class _ScheduleTableState extends State<ScheduleTable> with SingleTickerProvider
       },
     );
   }
+}
 
+// Sorting utility function
+void applySorting({
+  required List<Map<String, dynamic>> records,
+  required String field,
+  required bool ascending,
+  required AnimationController animationController,
+  required Function(List<Map<String, dynamic>>) onSorted,
+  required Map<String, List<Map<String, dynamic>>> sortedRecordsCache,
+  required String? currentSortField,
+  required bool isAscending,
+}) {
+  // Check if sorting is needed
+  if (field == currentSortField && ascending == isAscending) {
+    // No change in sorting criteria
+    return;
+  }
+
+  // Try to get from cache first
+  final cacheKey = '$field-$ascending';
+  if (sortedRecordsCache.containsKey(cacheKey)) {
+    // Reset animation
+    animationController.reset();
+    // Apply the cached sorted records
+    onSorted(sortedRecordsCache[cacheKey]!);
+    // Start animation
+    animationController.forward();
+    return;
+  }
+
+  // Sort records
+  final sortedRecords = SortingUtils.sortRecords(
+    records: records,
+    field: field,
+    ascending: ascending,
+  );
+
+  // Cache the result
+  sortedRecordsCache[cacheKey] = sortedRecords;
+
+  // Reset animation
+  animationController.reset();
+  // Apply the sorted records
+  onSorted(sortedRecords);
+  // Start animation
+  animationController.forward();
 }
 
 class SortingUtils {
@@ -413,6 +528,7 @@ class SortingUtils {
     return sortedRecords;
   }
 }
+
 class _SortFieldBox extends StatelessWidget {
   final String label;
   final String field;
