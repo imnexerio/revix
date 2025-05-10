@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:retracker/SchedulePage/sorting_utils.dart';
-
 import 'AnimatedCard.dart';
 
 class ScheduleTable extends StatefulWidget {

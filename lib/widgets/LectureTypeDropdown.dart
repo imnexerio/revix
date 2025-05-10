@@ -48,6 +48,7 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
           : DropdownButtonFormField<String>(
         value: widget.lectureType,
         decoration: const InputDecoration(
+          labelText: 'Type',
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           border: InputBorder.none,
         ),
