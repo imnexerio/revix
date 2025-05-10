@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'AnimatedCard.dart';
 
 class ScheduleTable extends StatefulWidget {
@@ -42,11 +43,6 @@ class _ScheduleTable extends State<ScheduleTable>
   void initState() {
     super.initState();
     records = List.from(widget.initialRecords);
-    isExpanded = widget.initiallyExpanded;
-
-    // Set default sort field to reminder_time and ascending order
-    currentSortField = 'reminder_time';
-    isAscending = true;
 
     // Initialize animation controller
     _animationController = AnimationController(
@@ -67,17 +63,80 @@ class _ScheduleTable extends State<ScheduleTable>
       curve: Curves.easeInOut,
     ));
 
-    // Set initial animation state based on initiallyExpanded
-    if (isExpanded) {
-      _animationController.value = 1.0;
-    } else {
-      _animationController.value = 0.0;
-    }
+    // Load state from SharedPreferences
+    _loadPersistedState();
+  }
 
-    // Apply default sorting after initialization
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applySorting(currentSortField!, isAscending);
-    });
+  Future<void> _loadPersistedState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Create a unique key for this particular table based on its title
+      final String tableKey = 'schedule_table_${widget.title.replaceAll(RegExp(r'[^\w]'), '_')}';
+
+      setState(() {
+        // Load sort field (default to 'reminder_time' if not found)
+        currentSortField = prefs.getString('${tableKey}_sort_field') ?? 'reminder_time';
+
+        // Load sort direction (default to true/ascending if not found)
+        isAscending = prefs.getBool('${tableKey}_is_ascending') ?? true;
+
+        // Load expansion state (use widget.initiallyExpanded as fallback)
+        isExpanded = prefs.getBool('${tableKey}_is_expanded') ?? widget.initiallyExpanded;
+
+        // Set initial animation state based on loaded expansion state
+        if (isExpanded) {
+          _animationController.value = 1.0;
+        } else {
+          _animationController.value = 0.0;
+        }
+      });
+
+      // Apply default sorting after loading state
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applySorting(currentSortField!, isAscending);
+      });
+    } catch (e) {
+      // Fallback to defaults if there's an error loading preferences
+      setState(() {
+        currentSortField = 'reminder_time';
+        isAscending = true;
+        isExpanded = widget.initiallyExpanded;
+
+        // Set initial animation state
+        if (isExpanded) {
+          _animationController.value = 1.0;
+        } else {
+          _animationController.value = 0.0;
+        }
+      });
+
+      // Apply default sorting after initialization
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applySorting(currentSortField!, isAscending);
+      });
+    }
+  }
+
+  Future<void> _persistState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Create a unique key for this particular table based on its title
+      final String tableKey = 'schedule_table_${widget.title.replaceAll(RegExp(r'[^\w]'), '_')}';
+
+      // Save sort field
+      await prefs.setString('${tableKey}_sort_field', currentSortField ?? 'reminder_time');
+
+      // Save sort direction
+      await prefs.setBool('${tableKey}_is_ascending', isAscending);
+
+      // Save expansion state
+      await prefs.setBool('${tableKey}_is_expanded', isExpanded);
+    } catch (e) {
+      // Silently fail if we can't persist state
+      debugPrint('Error persisting ScheduleTable state: $e');
+    }
   }
 
   @override
@@ -133,6 +192,9 @@ class _ScheduleTable extends State<ScheduleTable>
           isAscending = ascending;
           records = sortedRecords;
         });
+
+        // Persist the state whenever sorting changes
+        _persistState();
       },
       sortedRecordsCache: _sortedRecordsCache,
       currentSortField: currentSortField,
@@ -148,6 +210,9 @@ class _ScheduleTable extends State<ScheduleTable>
       } else {
         _animationController.reverse();
       }
+
+      // Persist the expansion state
+      _persistState();
     });
   }
 
