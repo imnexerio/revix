@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:retracker/SchedulePage/sorting_utils.dart';
 
 import 'AnimatedCard.dart';
 
@@ -437,53 +438,6 @@ class _ScheduleTable extends State<ScheduleTable>
       },
     );
   }
-}
-
-// Sorting utility function
-void applySorting({
-  required List<Map<String, dynamic>> records,
-  required String field,
-  required bool ascending,
-  required AnimationController animationController,
-  required Function(List<Map<String, dynamic>>) onSorted,
-  required Map<String, List<Map<String, dynamic>>> sortedRecordsCache,
-  required String? currentSortField,
-  required bool isAscending,
-}) {
-  // Check if sorting is needed
-  if (field == currentSortField && ascending == isAscending) {
-    // No change in sorting criteria
-    return;
-  }
-
-  // Try to get from cache first
-  final cacheKey = '$field-$ascending';
-  if (sortedRecordsCache.containsKey(cacheKey)) {
-    // Reset animation
-    animationController.reset();
-    // Apply the cached sorted records
-    onSorted(sortedRecordsCache[cacheKey]!);
-    // Start animation
-    animationController.forward();
-    return;
-  }
-
-  // Sort records
-  final sortedRecords = SortingUtils.sortRecords(
-    records: records,
-    field: field,
-    ascending: ascending,
-  );
-
-  // Cache the result
-  sortedRecordsCache[cacheKey] = sortedRecords;
-
-  // Reset animation
-  animationController.reset();
-  // Apply the sorted records
-  onSorted(sortedRecords);
-  // Start animation
-  animationController.forward();
 }
 
 class SortingUtils {
