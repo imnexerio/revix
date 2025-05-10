@@ -26,6 +26,7 @@ class _ScheduleTable extends State<ScheduleTable>
   String? currentSortField;
   bool isAscending = true;
   bool isExpanded = true;
+  bool _prefsLoaded = false;
 
   // Cache for sorted records to avoid unnecessary re-sorts
   final Map<String, List<Map<String, dynamic>>> _sortedRecordsCache = {};
@@ -74,27 +75,35 @@ class _ScheduleTable extends State<ScheduleTable>
       // Create a unique key for this particular table based on its title
       final String tableKey = 'schedule_table_${widget.title.replaceAll(RegExp(r'[^\w]'), '_')}';
 
+      // Load sort field (default to 'reminder_time' if not found)
+      final loadedSortField = prefs.getString('${tableKey}_sort_field') ?? 'reminder_time';
+
+      // Load sort direction (default to true/ascending if not found)
+      final loadedAscending = prefs.getBool('${tableKey}_is_ascending') ?? true;
+
+      // Load expansion state (use widget.initiallyExpanded as fallback)
+      final loadedExpanded = prefs.getBool('${tableKey}_is_expanded') ?? widget.initiallyExpanded;
+
+      // Update state with loaded values
       setState(() {
-        // Load sort field (default to 'reminder_time' if not found)
-        currentSortField = prefs.getString('${tableKey}_sort_field') ?? 'reminder_time';
-
-        // Load sort direction (default to true/ascending if not found)
-        isAscending = prefs.getBool('${tableKey}_is_ascending') ?? true;
-
-        // Load expansion state (use widget.initiallyExpanded as fallback)
-        isExpanded = prefs.getBool('${tableKey}_is_expanded') ?? widget.initiallyExpanded;
-
-        // Set initial animation state based on loaded expansion state
-        if (isExpanded) {
-          _animationController.value = 1.0;
-        } else {
-          _animationController.value = 0.0;
-        }
+        currentSortField = loadedSortField;
+        isAscending = loadedAscending;
+        isExpanded = loadedExpanded;
+        _prefsLoaded = true; // Mark that prefs have been loaded
       });
 
-      // Apply default sorting after loading state
+      // Set animation controller based on expansion state
+      if (isExpanded) {
+        _animationController.value = 1.0;
+      } else {
+        _animationController.value = 0.0;
+      }
+
+      // Apply sorting after loading state
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _applySorting(currentSortField!, isAscending);
+        if (isExpanded) {
+          _applyRefreshSorting(currentSortField!, isAscending);
+        }
       });
     } catch (e) {
       // Fallback to defaults if there's an error loading preferences
@@ -102,18 +111,21 @@ class _ScheduleTable extends State<ScheduleTable>
         currentSortField = 'reminder_time';
         isAscending = true;
         isExpanded = widget.initiallyExpanded;
-
-        // Set initial animation state
-        if (isExpanded) {
-          _animationController.value = 1.0;
-        } else {
-          _animationController.value = 0.0;
-        }
+        _prefsLoaded = true;
       });
+
+      // Set initial animation state
+      if (isExpanded) {
+        _animationController.value = 1.0;
+      } else {
+        _animationController.value = 0.0;
+      }
 
       // Apply default sorting after initialization
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _applySorting(currentSortField!, isAscending);
+        if (isExpanded) {
+          _applyRefreshSorting(currentSortField!, isAscending);
+        }
       });
     }
   }
@@ -156,7 +168,7 @@ class _ScheduleTable extends State<ScheduleTable>
         _sortedRecordsCache.clear();
 
         // Reapply sorting if we had a sort field
-        if (currentSortField != null) {
+        if (currentSortField != null && _prefsLoaded) {
           // Apply sorting without resetting animation
           _applyRefreshSorting(currentSortField!, isAscending);
         }
@@ -250,6 +262,27 @@ class _ScheduleTable extends State<ScheduleTable>
 
   @override
   Widget build(BuildContext context) {
+    if (!_prefsLoaded) {
+      // Show a placeholder while preferences are loading
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const LinearProgressIndicator(),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -271,8 +304,8 @@ class _ScheduleTable extends State<ScheduleTable>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // Show current sort info
-                      if (currentSortField != null && isExpanded)
+                      // Always show current sort info, regardless of expansion state
+                      if (currentSortField != null)
                         Flexible(
                           child: Padding(
                             padding: const EdgeInsets.only(left: 8.0),
