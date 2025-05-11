@@ -436,8 +436,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                         isSelected: selectedField == 'reminder_time',
                         onTap: () {
                           setState(() => selectedField = 'reminder_time');
-                          // Update the state of the parent widget to recognize the sort field change
-                          this.setState(() => currentSortField = 'reminder_time');
+                          // Apply sorting immediately with current direction
+                          _applySorting(selectedField, isAscending);
+                          Navigator.pop(context);
                         },
                       ),
                       _SortFieldBox(
@@ -446,8 +447,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                         isSelected: selectedField == 'date_learnt',
                         onTap: () {
                           setState(() => selectedField = 'date_learnt');
-                          // Update the state of the parent widget to recognize the sort field change
-                          this.setState(() => currentSortField = 'date_learnt');
+                          // Apply sorting immediately with current direction
+                          _applySorting(selectedField, isAscending);
+                          Navigator.pop(context);
                         },
                       ),
                       _SortFieldBox(
@@ -456,8 +458,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                         isSelected: selectedField == 'date_revised',
                         onTap: () {
                           setState(() => selectedField = 'date_revised');
-                          // Update the state of the parent widget to recognize the sort field change
-                          this.setState(() => currentSortField = 'date_revised');
+                          // Apply sorting immediately with current direction
+                          _applySorting(selectedField, isAscending);
+                          Navigator.pop(context);
                         },
                       ),
                       _SortFieldBox(
@@ -466,8 +469,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                         isSelected: selectedField == 'missed_revision',
                         onTap: () {
                           setState(() => selectedField = 'missed_revision');
-                          // Update the state of the parent widget to recognize the sort field change
-                          this.setState(() => currentSortField = 'missed_revision');
+                          // Apply sorting immediately with current direction
+                          _applySorting(selectedField, isAscending);
+                          Navigator.pop(context);
                         },
                       ),
                       _SortFieldBox(
@@ -476,8 +480,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                         isSelected: selectedField == 'no_revision',
                         onTap: () {
                           setState(() => selectedField = 'no_revision');
-                          // Update the state of the parent widget to recognize the sort field change
-                          this.setState(() => currentSortField = 'no_revision');
+                          // Apply sorting immediately with current direction
+                          _applySorting(selectedField, isAscending);
+                          Navigator.pop(context);
                         },
                       ),
                       _SortFieldBox(
@@ -486,8 +491,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                         isSelected: selectedField == 'revision_frequency',
                         onTap: () {
                           setState(() => selectedField = 'revision_frequency');
-                          // Update the state of the parent widget to recognize the sort field change
-                          this.setState(() => currentSortField = 'revision_frequency');
+                          // Apply sorting immediately with current direction
+                          _applySorting(selectedField, isAscending);
+                          Navigator.pop(context);
                         },
                       ),
                     ],
