@@ -115,7 +115,7 @@ class _LectureBarState extends State<LectureBar> {
         builder: (context, constraints) {
           return ScheduleTableDetailP(
             initialRecords: formattedRecords,
-            title: '${widget.selectedSubject} - ${widget.selectedSubjectCode} Details',
+            title: '${widget.selectedSubject} - ${widget.selectedSubjectCode}',
             onSelect: (context, record) {
               String lectureNo = record['lecture_no'];
               _showLectureDetails(context, lectureNo, record);

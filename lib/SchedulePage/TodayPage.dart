@@ -116,13 +116,13 @@ class _TodayPageState extends State<TodayPage> {
           if (data['missed']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['missed']!,
-              title: 'Missed Schedule (${data['missed']!.length})',
+              title: 'Missed (${data['missed']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
           if (data['today']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['today']!,
-              title: 'Today\'s Schedule (${data['today']!.length})',
+              title: 'Today\'s (${data['today']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
           if (data['todayAdded']!.isNotEmpty)
@@ -134,19 +134,19 @@ class _TodayPageState extends State<TodayPage> {
           if (data['nextDay']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['nextDay']!,
-              title: 'Next Day Schedule (${data['nextDay']!.length})',
+              title: 'Next Day (${data['nextDay']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
           if (data['next7Days']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['next7Days']!,
-              title: 'Next 7 Days Schedule (${data['next7Days']!.length})',
+              title: 'Next Week (${data['next7Days']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
           if (data['noreminderdate']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['noreminderdate']!,
-              title: 'No Reminder Date (${data['noreminderdate']!.length})',
+              title: 'Unspecified Date (${data['noreminderdate']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
         ],
