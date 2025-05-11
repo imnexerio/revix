@@ -294,22 +294,23 @@ class _ScheduleTable extends State<ScheduleTable>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        widget.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                // Wrap the title in Flexible with overflow handling
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                // Separate row for filter and expand icons
                 Row(
+                  mainAxisSize: MainAxisSize.min, // Make sure this row takes minimum space
                   children: [
                     if (isExpanded) _buildFilterButton(),
+                    const SizedBox(width: 4), // Add some spacing
                     RotationTransition(
                       turns: _rotateAnimation,
                       child: const Icon(Icons.expand_more),
@@ -408,12 +409,15 @@ class _ScheduleTable extends State<ScheduleTable>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '(${_getSortFieldName(currentSortField!)} ${isAscending ? '↑' : '↓'})',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                '(${_getSortFieldName(currentSortField!)} ${isAscending ? '↑' : '↓'})',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 4),
