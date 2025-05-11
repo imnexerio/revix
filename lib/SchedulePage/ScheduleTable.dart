@@ -304,22 +304,6 @@ class _ScheduleTable extends State<ScheduleTable>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // Always show current sort info, regardless of expansion state
-                      if (currentSortField != null)
-                        Flexible(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Text(
-                              '(${_getSortFieldName(currentSortField!)} ${isAscending ? '↑' : '↓'})',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                fontStyle: FontStyle.italic,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -408,9 +392,8 @@ class _ScheduleTable extends State<ScheduleTable>
   }
 
   Widget _buildFilterButton() {
-    return IconButton(
-      icon: const Icon(Icons.filter_list, size: 16),
-      onPressed: () {
+    return InkWell(
+      onTap: (){
         showModalBottomSheet(
           context: context,
           shape: const RoundedRectangleBorder(
@@ -419,6 +402,25 @@ class _ScheduleTable extends State<ScheduleTable>
           builder: (context) => _buildSortingSheet(),
         );
       },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '(${_getSortFieldName(currentSortField!)} ${isAscending ? '↑' : '↓'})',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.filter_list, size: 16),
+          ],
+        ),
+      ),
     );
   }
 

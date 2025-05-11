@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'AnimatedCardDetailP.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScheduleTableDetailP extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;
@@ -38,7 +38,7 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
     super.initState();
     records = List.from(widget.initialRecords);
 
-    // Set default sort field to reminder_time and ascending order
+    // Set default values initially
     currentSortField = 'reminder_time';
     isAscending = true;
 
@@ -50,10 +50,29 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
     // Start the animation immediately to show cards properly
     _animationController.value = 1.0;
 
-    // Apply default sorting after initialization
+    // Load saved sorting preferences and apply sorting
+    _loadSortPreferences();
+  }
+
+  // Load sorting preferences from SharedPreferences
+  Future<void> _loadSortPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      currentSortField = prefs.getString('sortField') ?? 'reminder_time';
+      isAscending = prefs.getBool('isAscending') ?? true;
+    });
+
+    // Apply the loaded sorting after the UI is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applySorting(currentSortField!, isAscending);
     });
+  }
+
+  // Save sorting preferences to SharedPreferences
+  Future<void> _saveSortPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('sortField', currentSortField ?? 'reminder_time');
+    await prefs.setBool('isAscending', isAscending);
   }
 
   @override
@@ -92,6 +111,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
         isAscending = ascending;
         records = _sortedRecordsCache[cacheKey]!;
       });
+
+      // Save the preferences
+      _saveSortPreferences();
 
       // Animate cards
       _animationController.reset();
@@ -204,6 +226,9 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
       records = sortedRecords;
     });
 
+    // Save the preferences
+    _saveSortPreferences();
+
     // Start animation after sorting
     _animationController.forward();
   }
@@ -227,6 +252,19 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
     return columns;
   }
 
+  // Get the display name for the current sort field
+  String get currentSortFieldDisplayName {
+    switch (currentSortField) {
+      case 'reminder_time': return 'Reminder Time';
+      case 'date_learnt': return 'Date Initiated';
+      case 'date_revised': return 'Date Reviewed';
+      case 'missed_revision': return 'Overdue Reviews';
+      case 'no_revision': return 'Number of Reviews';
+      case 'revision_frequency': return 'Review Frequency';
+      default: return 'Unsorted';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -245,7 +283,21 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                _buildFilterButton(),
+                Row(
+                  children: [
+                    // Display the current sort field and direction
+                    if (currentSortField != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    _buildFilterButton(),
+                  ],
+                ),
               ],
             ),
           ),
@@ -307,9 +359,8 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
   }
 
   Widget _buildFilterButton() {
-    return IconButton(
-      icon: const Icon(Icons.filter_list, size: 16),
-      onPressed: () {
+    return InkWell(
+      onTap: () {
         showModalBottomSheet(
           context: context,
           shape: const RoundedRectangleBorder(
@@ -318,6 +369,25 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
           builder: (context) => _buildSortingSheet(),
         );
       },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '($currentSortFieldDisplayName ${isAscending ? '↑' : '↓'})',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.filter_list, size: 16),
+          ],
+        ),
+      ),
     );
   }
 
@@ -436,6 +506,7 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                             child: _OrderBox(
                               label: 'Ascending',
                               icon: Icons.arrow_upward,
+                              isSelected: isAscending,
                               onTap: () {
                                 _applySorting(selectedField, true);
                                 Navigator.pop(context);
@@ -447,6 +518,7 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                             child: _OrderBox(
                               label: 'Descending',
                               icon: Icons.arrow_downward,
+                              isSelected: !isAscending,
                               onTap: () {
                                 _applySorting(selectedField, false);
                                 Navigator.pop(context);
@@ -517,12 +589,14 @@ class _SortFieldBox extends StatelessWidget {
 class _OrderBox extends StatelessWidget {
   final String label;
   final IconData icon;
+  final bool isSelected;
   final VoidCallback onTap;
 
   const _OrderBox({
     required this.label,
     required this.icon,
     required this.onTap,
+    required this.isSelected,
   });
 
   @override
@@ -532,10 +606,15 @@ class _OrderBox extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+              : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            width: isSelected ? 1.5 : 1.0,
           ),
         ),
         child: Column(
@@ -550,6 +629,7 @@ class _OrderBox extends StatelessWidget {
               label,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.primary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],
