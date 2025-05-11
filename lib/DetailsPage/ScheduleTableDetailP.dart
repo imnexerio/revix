@@ -289,17 +289,8 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                 ),
                 Row(
                   children: [
-                    // Display the current sort field and direction
-                    if (currentSortField != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    const SizedBox(width: 8),
                     _buildFilterButton(),
+                    const SizedBox(width: 8),
                   ],
                 ),
               ],
