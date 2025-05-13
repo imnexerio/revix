@@ -1066,9 +1066,20 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   }
 
   String formatDate(String date) {
-    final DateTime parsedDate = DateTime.parse(date);
-    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
-    return formatter.format(parsedDate);
+    // Check if the date is a special case like "Unspecified" or empty
+    if (date == null || date == "Unspecified" || date.isEmpty) {
+      return "NA";
+    }
+
+    try {
+      final DateTime parsedDate = DateTime.parse(date);
+      final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+      return formatter.format(parsedDate);
+    } catch (e) {
+      // Handle any parsing errors gracefully
+      print("Error parsing date: $date, Error: $e");
+      return "Invalid Date";
+    }
   }
 
   Future<void> showCustomFrequencySelector() async {
