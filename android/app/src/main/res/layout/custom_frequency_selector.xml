@@ -442,9 +442,10 @@
             android:layout_weight="1"
             android:text="CANCEL"
             android:textSize="16sp"
-            android:backgroundTint="@color/WidgetBackground"
+            android:background="@drawable/rounded_cancel_button"
             android:textColor="@color/text"
-            android:layout_marginEnd="8dp"/>
+            android:layout_marginEnd="8dp"
+            android:elevation="2dp"/>
 
         <Button
             android:id="@+id/saveButton"
@@ -453,9 +454,10 @@
             android:layout_weight="1"
             android:text="SAVE"
             android:textSize="16sp"
-            android:backgroundTint="@color/MarkAsDone"
-            android:shadowColor="@color/MarkAsDone"
-            android:layout_marginStart="8dp"/>
+            android:background="@drawable/rounded_save_button"
+            android:textColor="@android:color/white"
+            android:layout_marginStart="8dp"
+            android:elevation="2dp"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

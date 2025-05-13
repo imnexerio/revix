@@ -439,8 +439,9 @@
                         android:textSize="16sp"
                         android:padding="12dp"
                         android:layout_marginEnd="8dp"
-                        android:backgroundTint="@color/WidgetBackground"
-                        android:textColor="@color/text" />
+                        android:background="@drawable/rounded_cancel_button"
+                        android:textColor="@color/text"
+                        android:elevation="2dp" />
 
                     <Button
                         android:id="@+id/save_button"
@@ -450,10 +451,10 @@
                         android:text="Save"
                         android:textSize="16sp"
                         android:padding="12dp"
-                        android:backgroundTint="@color/MarkAsDone"
-                        android:shadowColor="@color/MarkAsDone"
+                        android:background="@drawable/rounded_save_button"
+                        android:textColor="@android:color/white"
                         android:layout_marginStart="8dp"
-                         />
+                        android:elevation="2dp" />
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>
