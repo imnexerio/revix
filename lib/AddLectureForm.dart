@@ -113,7 +113,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
       if (todayDate == 'Unspecified') {
         no_revision = -1;
-        _revisionFrequency = 'Unspecified';
+        _revisionFrequency = 'No Repetition';
         dateScheduled = 'Unspecified';
         _durationData = {
           "type": "forever",
