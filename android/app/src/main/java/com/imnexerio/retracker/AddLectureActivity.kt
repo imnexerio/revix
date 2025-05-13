@@ -715,7 +715,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private fun showDatePicker(editText: EditText, onDateSelected: (String) -> Unit) {
         val calendar = Calendar.getInstance()
 
-        // Try to parse the current date from the EditText if it's not "Unspecified"
         val currentText = editText.text.toString()
         if (currentText != "Unspecified") {
             try {

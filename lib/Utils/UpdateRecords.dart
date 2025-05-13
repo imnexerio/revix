@@ -98,6 +98,7 @@ Future<void> UpdateRecordsRevision(
     List<String> datesRevised,
     int missedRevision,
     List<String> datesMissedRevisions,
+    String status,
     ) async {
   // Get the currently authenticated user
   User? user = FirebaseAuth.instance.currentUser;
@@ -124,5 +125,6 @@ Future<void> UpdateRecordsRevision(
     'dates_missed_revisions': datesMissedRevisions,
     'dates_revised': datesRevised,
     'description': description,
+    'status': status,
   });
 }

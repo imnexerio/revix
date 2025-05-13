@@ -380,6 +380,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   widget.details['no_revision'] + 1,
                                 )).toIso8601String().split('T')[0];
                               }
+                              Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(widget.details);
+                              updatedDetails['no_revision'] = noRevision+1;
+                              isEnabled = determineEnabledStatus(updatedDetails);
 
 
                           await UpdateRecords(
@@ -1142,6 +1145,47 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     }
 
     return revisionData;
+  }
+
+  bool determineEnabledStatus(Map<String, dynamic> details) {
+    // Default to the current status (convert from string to bool)
+    bool isEnabled = details['status'] == 'Enabled';
+
+    // Get the duration data with proper casting
+    Map<String, dynamic> durationData = {};
+    if (details['duration'] != null) {
+      // Cast the LinkedMap to Map<String, dynamic>
+      durationData = Map<String, dynamic>.from(details['duration'] as Map);
+    } else {
+      durationData = {'type': 'forever'};
+    }
+
+    String durationType = durationData['type'] as String? ?? 'forever';
+
+    // Check duration conditions
+    if (durationType == 'specificTimes') {
+      int? numberOfTimes = durationData['numberOfTimes'] as int?;
+      int currentRevisions = (details['no_revision'] as num?)?.toInt() ?? 0;
+
+      // Disable if we've reached or exceeded the specified number of revisions
+      if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
+        isEnabled = false;
+      }
+    }
+    else if (durationType == 'until') {
+      String? endDateStr = durationData['endDate'] as String?;
+      if (endDateStr != null) {
+        DateTime endDate = DateTime.parse(endDateStr);
+        DateTime today = DateTime.now();
+
+        // Compare only the date part (ignore time)
+        if (today.isAfter(DateTime(endDate.year, endDate.month, endDate.day))) {
+          isEnabled = false;
+        }
+      }
+    }
+
+    return isEnabled;
   }
 
 }
