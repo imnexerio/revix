@@ -438,7 +438,7 @@
                         android:text="Cancel"
                         android:textSize="16sp"
                         android:padding="12dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_margin="8dp"
                         android:background="@drawable/rounded_cancel_button"
                         android:textColor="@color/text"
                         android:elevation="2dp" />
@@ -453,7 +453,7 @@
                         android:padding="12dp"
                         android:background="@drawable/rounded_save_button"
                         android:textColor="@android:color/white"
-                        android:layout_marginStart="8dp"
+                        android:layout_margin="8dp"
                         android:elevation="2dp" />
                 </LinearLayout>
             </LinearLayout>

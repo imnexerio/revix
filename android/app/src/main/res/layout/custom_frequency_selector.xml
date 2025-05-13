@@ -445,7 +445,7 @@
             android:textSize="16sp"
             android:background="@drawable/rounded_cancel_button"
             android:textColor="@color/text"
-            android:layout_marginEnd="8dp"
+            android:layout_margin="8dp"
             android:elevation="2dp"/>
 
         <Button
@@ -457,7 +457,7 @@
             android:textSize="16sp"
             android:background="@drawable/rounded_save_button"
             android:textColor="@android:color/white"
-            android:layout_marginStart="8dp"
+            android:layout_margin="8dp"
             android:elevation="2dp"/>
     </LinearLayout>
 
