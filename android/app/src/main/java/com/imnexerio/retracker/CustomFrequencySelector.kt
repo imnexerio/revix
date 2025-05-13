@@ -336,7 +336,7 @@ class CustomFrequencySelector : DialogFragment() {
 
     private fun updateOptionButtonStyles() {
         val text = ContextCompat.getColor(requireContext(), R.color.text)
-        val unselectedTextColor = ContextCompat.getColor(requireContext(), R.color.MarkAsDone)
+        val unselectedTextColor = ContextCompat.getColor(requireContext(), R.color.colorOnPrimary)
 
         // Update Monthly Options
         updateOptionButtonStyle(binding.monthOptionDay, monthlyOption == "day", text, unselectedTextColor)
@@ -346,7 +346,7 @@ class CustomFrequencySelector : DialogFragment() {
 
     private fun updateYearlyOptionButtonStyles() {
         val text = ContextCompat.getColor(requireContext(), R.color.text)
-        val unselectedTextColor = ContextCompat.getColor(requireContext(), R.color.MarkAsDone)
+        val unselectedTextColor = ContextCompat.getColor(requireContext(), R.color.colorOnPrimary)
 
         // Update Yearly Options
         updateOptionButtonStyle(binding.yearOptionDay, yearlyOption == "day", text, unselectedTextColor)
@@ -372,7 +372,7 @@ class CustomFrequencySelector : DialogFragment() {
 
     private fun updateDayCircleAppearance(view: TextView, isSelected: Boolean) {
         val text = ContextCompat.getColor(requireContext(), R.color.text)
-        val divider = ContextCompat.getColor(requireContext(), R.color.MarkAsDone)
+        val divider = ContextCompat.getColor(requireContext(), R.color.colorOnPrimary)
 
         view.setBackgroundResource(if (isSelected) R.drawable.circle_selected else R.drawable.circle_unselected)
         view.setTextColor(if (isSelected) text else divider)
@@ -413,7 +413,7 @@ class CustomFrequencySelector : DialogFragment() {
     private fun updateDateCircleAppearance(view: TextView, day: Int) {
         val isSelected = selectedDates.contains(day)
         val text = ContextCompat.getColor(requireContext(), R.color.text)
-        val divider = ContextCompat.getColor(requireContext(), R.color.MarkAsDone)
+        val divider = ContextCompat.getColor(requireContext(), R.color.colorOnPrimary)
 
         view.setBackgroundResource(if (isSelected) R.drawable.circle_selected else R.drawable.circle_unselected)
         view.setTextColor(if (isSelected) text else divider)
@@ -456,7 +456,7 @@ class CustomFrequencySelector : DialogFragment() {
     private fun updateMonthCircleAppearance(view: TextView, monthIndex: Int) {
         val isSelected = selectedMonths[monthIndex]
         val text = ContextCompat.getColor(requireContext(), R.color.text)
-        val divider = ContextCompat.getColor(requireContext(), R.color.MarkAsDone)
+        val divider = ContextCompat.getColor(requireContext(), R.color.colorOnPrimary)
 
         view.setBackgroundResource(if (isSelected) R.drawable.circle_selected else R.drawable.circle_unselected)
         view.setTextColor(if (isSelected) text else divider)
