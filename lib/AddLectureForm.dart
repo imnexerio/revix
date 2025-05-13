@@ -983,6 +983,15 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                                       "endDate": pickedDate.toIso8601String().split('T')[0]
                                                     };
                                                   });
+                                                }else{
+                                                  setState(() {
+                                                    _duration= 'Forever';
+                                                    _durationData = {
+                                                      "type": "forever",
+                                                      "numberOfTimes": null,
+                                                      "endDate": null
+                                                    };
+                                                  });
                                                 }
                                               });
                                             }
