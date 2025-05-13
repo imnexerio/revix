@@ -380,7 +380,6 @@ class RecordUpdateService : Service() {
     }
 
     private fun determineEnabledStatus(details: Map<*, *>): Boolean {
-        Log.d("RecordUpdateService", "Determining enabled status for details: $details")
         var isEnabled = (details["status"] as? String) == "Enabled"
         val durationData = (details["duration"] as? Map<*, *>)?.let {
             it.mapKeys { entry -> entry.key.toString() }

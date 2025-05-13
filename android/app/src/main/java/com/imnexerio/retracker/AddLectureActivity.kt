@@ -62,6 +62,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         put("endDate", null)
     }
 
+    private var previousDuration = "Forever"
+
 
     private var trackingTypes = mutableListOf<String>()
     private var frequencies = mutableMapOf<String, List<Int>>()
@@ -194,19 +196,24 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
         durationSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                duration = durationOptions[position]
+                val selectedDuration = durationOptions[position]
 
-                when (duration) {
-                    "Forever" -> {
-                        durationData["type"] = "forever"
-                        durationData["numberOfTimes"] = null
-                        durationData["endDate"] = null
-                    }
-                    "Specific Number of Times" -> {
-                        showNumberOfTimesDialog()
-                    }
-                    "Until" -> {
-                        showEndDatePicker()
+                // Only process if there's an actual change
+                if (selectedDuration != duration) {
+                    when (selectedDuration) {
+                        "Forever" -> {
+                            previousDuration = selectedDuration
+                            duration = selectedDuration
+                            durationData["type"] = "forever"
+                            durationData["numberOfTimes"] = null
+                            durationData["endDate"] = null
+                        }
+                        "Specific Number of Times" -> {
+                            showNumberOfTimesDialog()
+                        }
+                        "Until" -> {
+                            showEndDatePicker()
+                        }
                     }
                 }
             }
@@ -216,6 +223,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             }
         }
     }
+
     private fun showNumberOfTimesDialog() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Enter Number of Times")
@@ -239,6 +247,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             val parsedValue = inputValue.toIntOrNull()
 
             if (parsedValue != null && parsedValue >= 1) {
+                previousDuration = duration
+                duration = "Specific Number of Times"
                 durationData["type"] = "specificTimes"
                 durationData["numberOfTimes"] = parsedValue
                 durationData["endDate"] = null
@@ -250,15 +260,20 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     Toast.LENGTH_SHORT
                 ).show()
 
-                // Reset to "Forever" if invalid input
-                durationSpinner.setSelection(0)
+                // Reset spinner to previous valid selection
+                resetSpinnerToPreviousSelection()
             }
         }
 
         builder.setNegativeButton("Cancel") { dialog, _ ->
             dialog.cancel()
-            // Reset to previous selection or "Forever"
-            durationSpinner.setSelection(0)
+            // Reset spinner to previous valid selection
+            resetSpinnerToPreviousSelection()
+        }
+
+        // Handle dismissal by clicking outside the dialog
+        builder.setOnCancelListener {
+            resetSpinnerToPreviousSelection()
         }
 
         builder.show()
@@ -281,6 +296,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val formattedDate = dateFormat.format(selectedDate.time)
 
+                previousDuration = duration
+                duration = "Until"
                 durationData["type"] = "until"
                 durationData["numberOfTimes"] = null
                 durationData["endDate"] = formattedDate
@@ -293,7 +310,30 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // Set minimum date to today
         datePickerDialog.datePicker.minDate = calendar.timeInMillis
 
+        // Handle cancel event
+        datePickerDialog.setOnCancelListener {
+            resetSpinnerToPreviousSelection()
+        }
+
         datePickerDialog.show()
+    }
+
+    private fun resetSpinnerToPreviousSelection() {
+        // Find the index of the previous selection
+        val previousIndex = durationOptions.indexOf(previousDuration)
+        if (previousIndex >= 0) {
+            // This will trigger onItemSelected but with the previous value
+            durationSpinner.setSelection(previousIndex)
+            // Also update the duration variable
+            duration = previousDuration
+        } else {
+            // Fallback to "Forever" if previous selection can't be found
+            durationSpinner.setSelection(0)
+            duration = "Forever"
+            durationData["type"] = "forever"
+            durationData["numberOfTimes"] = null
+            durationData["endDate"] = null
+        }
     }
 
     private fun updateRevisionFrequencySpinner() {
