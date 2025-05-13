@@ -67,10 +67,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       // First check if cached data is available
       Map<String, dynamic>? data = provider.currentData;
 
-      if (data == null) {
-        // If no cached data, fetch from database
-        data = await provider.fetchSubjectsAndCodes();
-      }
+      data ??= await provider.fetchSubjectsAndCodes();
 
       // Update state with the retrieved data
       setState(() {
@@ -933,7 +930,10 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                                     ),
                                                     actions: <Widget>[
                                                       TextButton(
-                                                        child: const Text('CANCEL'),
+                                                        child: const Text(
+                                                          'SAVE',
+                                                          style: TextStyle(fontWeight: FontWeight.bold),
+                                                        ),
                                                         onPressed: () {
                                                           setState(() {
                                                             _duration = 'Forever';
@@ -1083,10 +1083,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                 ),
                               ),
                               child: const Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                ),
+                                'CANCEL',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -1110,8 +1108,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Theme.of(context).colorScheme.primary,
                                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
-                              child: const Text('Save'),
+                              child: const Text(
+                                'SAVE',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                         ],

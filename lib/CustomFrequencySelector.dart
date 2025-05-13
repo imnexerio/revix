@@ -247,12 +247,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                     ),
                     if (_frequencyType == 'month')
                       Padding(
-                        padding: const EdgeInsets.only(top: 16.0, left: 60.0),
+                        padding: const EdgeInsets.only(top: 16.0),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             _buildOptionButton(
-                              "Repeat on the ${_selectedDayOfMonth}${_getOrdinalSuffix(_selectedDayOfMonth)}",
+                              "Repeat on the $_selectedDayOfMonth${_getOrdinalSuffix(_selectedDayOfMonth)}",
                               _monthlyOption == 'day',
                                   () {
                                 setState(() {
@@ -264,7 +264,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                             ),
                             const SizedBox(height: 12),
                             _buildOptionButton(
-                              "Repeat on the ${_selectedWeekOfMonth}${_getOrdinalSuffix(_selectedWeekOfMonth)} $_selectedDayOfWeek",
+                              "Repeat on the $_selectedWeekOfMonth${_getOrdinalSuffix(_selectedWeekOfMonth)} $_selectedDayOfWeek",
                               _monthlyOption == 'weekday',
                                   () {
                                 setState(() {
@@ -305,12 +305,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                     ),
                     if (_frequencyType == 'year')
                       Padding(
-                        padding: const EdgeInsets.only(top: 16.0, left: 60.0),
+                        padding: const EdgeInsets.only(top: 16.0),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             _buildOptionButton(
-                              "Repeat on ${_selectedMonthDay}${_getOrdinalSuffix(_selectedMonthDay)} $_selectedMonth",
+                              "Repeat on $_selectedMonthDay${_getOrdinalSuffix(_selectedMonthDay)} $_selectedMonth",
                               _yearlyOption == 'day',
                                   () {
                                 setState(() {
@@ -323,7 +323,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
 
                             const SizedBox(height: 12),
                             _buildOptionButton(
-                              "Repeat on the ${_selectedWeekOfYear}${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear of $_selectedMonth",
+                              "Repeat on the $_selectedWeekOfYear${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear of $_selectedMonth",
                               _yearlyOption == 'weekday',
                                   () {
                                 setState(() {
@@ -362,8 +362,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: colorScheme.onSurface.withOpacity(0.7),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 Expanded(
@@ -418,8 +422,12 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Save'),
+                    child: const Text(
+                      'SAVE',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -433,8 +441,8 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   Widget _buildMonthSelectionButton(ColorScheme colorScheme) {
     final int selectedCount = _selectedMonths.where((isSelected) => isSelected).length;
     final String dayText = _yearlyOption == 'day'
-        ? "${_selectedMonthDay}${_getOrdinalSuffix(_selectedMonthDay)} day"
-        : "the ${_selectedWeekOfYear}${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear";
+        ? "$_selectedMonthDay${_getOrdinalSuffix(_selectedMonthDay)} day"
+        : "the $_selectedWeekOfYear${_getOrdinalSuffix(_selectedWeekOfYear)} $_selectedDayOfWeekForYear";
 
     return GestureDetector(
       onTap: () {
@@ -456,12 +464,13 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
         child: Text(
           selectedCount == 1
               ? "Select months to repeat on $dayText"
-              : "Repeat on $dayText in ${selectedCount} months",
+              : "Repeat on $dayText in $selectedCount months",
           style: TextStyle(
             color: _showMonthSelection ? colorScheme.onPrimary : colorScheme.onSurface.withOpacity(0.8),
             fontSize: 16,
             fontStyle: FontStyle.italic,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -595,7 +604,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
               TextInputFormatter.withFunction((oldValue, newValue) {
                 final int? value = int.tryParse(newValue.text);
                 if (value == null || value < 1) {
-                  return oldValue.text.isEmpty ? TextEditingValue(text: "1") : oldValue;
+                  return oldValue.text.isEmpty ? const TextEditingValue(text: "1") : oldValue;
                 }
                 return newValue;
               }),
@@ -606,7 +615,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
               fontStyle: FontStyle.italic,
               decoration: TextDecoration.underline,
             ),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               isDense: true,
               contentPadding: EdgeInsets.symmetric(horizontal: 5, vertical: 0),
               border: InputBorder.none,
@@ -675,6 +684,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
@@ -690,7 +700,9 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
             color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface.withOpacity(0.8),
             fontSize: 16,
             fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w500,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -713,7 +725,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 ...rowDays.map((day) => _buildDateCircle(day, colorScheme)),
-                ...List.generate(7 - rowDays.length, (index) => SizedBox(width: 32))
+                ...List.generate(7 - rowDays.length, (index) => const SizedBox(width: 32))
               ],
             ),
           );
