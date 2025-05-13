@@ -1,7 +1,6 @@
 <resources>
     <color name="white">#FF000000</color>
     <color name="text">#FFFFFF</color>
-    <color name="MarkAsDone">#41D1CD</color>
+    <color name="MarkAsDone">#32C6DC</color>
     <color name="WidgetBackground">#2E2D2D</color>
-    <color name="colorOnPrimary">#3BB4C7</color>
 </resources>
