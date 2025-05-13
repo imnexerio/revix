@@ -336,7 +336,7 @@ class RecordUpdateService : Service() {
         val datesRevised = details["dates_revised"] as? List<*> ?: listOf<String>()
         val newDatesRevised = ArrayList<String>(datesRevised.map { it.toString() })
         newDatesRevised.add(currentDateTime)
-        if(noRevision==-1){
+        if (noRevision == -1) {
             newDatesRevised.clear()
         }
         updatedValues["dates_revised"] = newDatesRevised
@@ -346,22 +346,88 @@ class RecordUpdateService : Service() {
 
         // Update date_scheduled with next revision date
         updatedValues["date_scheduled"] = nextRevisionDate
+
+        val newEnabledStatus = determineEnabledStatus(
+            details.toMutableMap().apply {
+                this["no_revision"] = noRevision + 1
+            }
+        )
+
+        if (!newEnabledStatus && (details["status"] as? String) == "Enabled") {
+            updatedValues["status"] = "Disabled"
+        }
+
         // Update the record in Firebase
         val userId = FirebaseAuth.getInstance().currentUser!!.uid
         val recordPath = "users/$userId/user_data/$subject/$subjectCode/$lectureNo"
         FirebaseDatabase.getInstance().getReference(recordPath)
             .updateChildren(updatedValues)
             .addOnSuccessListener {
-                clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
-                Toast.makeText(applicationContext, "Record updated successfully! Scheduled for $nextRevisionDate", Toast.LENGTH_SHORT).show()
+                clearProcessingState(subject, subjectCode, lectureNo)
+                Toast.makeText(
+                    applicationContext,
+                    "Record updated successfully! Scheduled for $nextRevisionDate",
+                    Toast.LENGTH_SHORT
+                ).show()
                 refreshWidgets(startId)
             }
             .addOnFailureListener { e ->
-                clearProcessingState(subject, subjectCode, lectureNo) // NEW LINE
+                clearProcessingState(subject, subjectCode, lectureNo)
                 Toast.makeText(applicationContext, "Update failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 refreshWidgets(startId)
                 stopSelf(startId)
             }
+    }
+
+    private fun determineEnabledStatus(details: Map<*, *>): Boolean {
+        Log.d("RecordUpdateService", "Determining enabled status for details: $details")
+        var isEnabled = (details["status"] as? String) == "Enabled"
+        val durationData = (details["duration"] as? Map<*, *>)?.let {
+            it.mapKeys { entry -> entry.key.toString() }
+        } ?: mapOf("type" to "forever")
+
+        val durationType = durationData["type"] as? String ?: "forever"
+
+        when (durationType) {
+            "specificTimes" -> {
+                val numberOfTimes = (durationData["numberOfTimes"] as? Number)?.toInt()
+                val currentRevisions = (details["no_revision"] as? Number)?.toInt() ?: 0
+                if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
+                    isEnabled = false
+                }
+            }
+            "until" -> {
+                val endDateStr = durationData["endDate"] as? String
+                if (endDateStr != null) {
+                    try {
+                        val endDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(endDateStr)
+                        val today = Date()
+                        val endCalendar = Calendar.getInstance()
+                        endCalendar.time = endDate ?: today
+                        endCalendar.set(Calendar.HOUR_OF_DAY, 0)
+                        endCalendar.set(Calendar.MINUTE, 0)
+                        endCalendar.set(Calendar.SECOND, 0)
+                        endCalendar.set(Calendar.MILLISECOND, 0)
+
+                        val todayCalendar = Calendar.getInstance()
+                        todayCalendar.time = today
+                        todayCalendar.set(Calendar.HOUR_OF_DAY, 0)
+                        todayCalendar.set(Calendar.MINUTE, 0)
+                        todayCalendar.set(Calendar.SECOND, 0)
+                        todayCalendar.set(Calendar.MILLISECOND, 0)
+
+                        // Disable if today is on or after the end date
+                        if (todayCalendar.after(endCalendar) || todayCalendar.equals(endCalendar)) {
+                            isEnabled = false
+                        }
+                    } catch (e: Exception) {
+//                        Log.e("RecordUpdateService", "Error parsing end date: ${e.message}")
+                    }
+                }
+            }
+        }
+
+        return isEnabled
     }
 
     private fun moveToDeletedData(
