@@ -496,20 +496,22 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
         _buildTimelineItem(
           context,
           "Initiated on",
-          details['date_learnt'],
+          details['date_learnt'] ?? 'NA',
           Icons.school_outlined,
           isFirst: true,
         ),
         _buildTimelineItem(
           context,
           "Last Reviewed",
-          details['date_revised'] != null ? formatDate(details['date_revised']) : 'NA',
+          details['date_revised'] != null && details['date_revised'] != "Unspecified"
+              ? formatDate(details['date_revised'])
+              : 'NA',
           Icons.history,
         ),
         _buildTimelineItem(
           context,
           "Next Review",
-          details['date_scheduled'],
+          details['date_scheduled'] ?? 'NA',
           Icons.event_outlined,
           isLast: true,
           isHighlighted: true,
@@ -520,10 +522,23 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
 }
 
 String formatDate(String date) {
-  final DateTime parsedDate = DateTime.parse(date);
-  final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
-  return formatter.format(parsedDate);
+  // Check if the date is a special case like "Unspecified" or empty
+  if (date == null || date == "Unspecified" || date.isEmpty) {
+    return "NA";
+  }
+
+  try {
+    final DateTime parsedDate = DateTime.parse(date);
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+    return formatter.format(parsedDate);
+  } catch (e) {
+    // Handle any parsing errors gracefully
+    print("Error parsing date: $date, Error: $e");
+    return "Invalid Date";
+  }
 }
+
+
 
 Widget _buildTimelineItem(
     BuildContext context, String label, String date, IconData icon,
