@@ -935,6 +935,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                                       TextButton(
                                                         child: const Text('CANCEL'),
                                                         onPressed: () {
+                                                          setState(() {
+                                                            _duration = 'Forever';
+                                                            _durationData = {
+                                                              "type": "forever",
+                                                              "numberOfTimes": null,
+                                                              "endDate": null
+                                                            };
+                                                          });
                                                           Navigator.of(context).pop();
                                                         },
                                                       ),
@@ -965,7 +973,18 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                                     ],
                                                   );
                                                 },
-                                              );
+                                              ).then((value) {
+                                                if (_durationData["type"] != "specificTimes") {
+                                                  setState(() {
+                                                    _duration = 'Forever';
+                                                    _durationData = {
+                                                      "type": "forever",
+                                                      "numberOfTimes": null,
+                                                      "endDate": null
+                                                    };
+                                                  });
+                                                }
+                                              });
                                             }
                                             else if (_duration == 'Until') {
                                               // Show a date picker to select the end date
