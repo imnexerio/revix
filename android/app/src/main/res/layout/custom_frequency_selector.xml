@@ -453,8 +453,8 @@
             android:layout_weight="1"
             android:text="SAVE"
             android:textSize="16sp"
-            android:backgroundTint="@color/divider"
-            android:shadowColor="@color/divider"
+            android:backgroundTint="@color/MarkAsDone"
+            android:shadowColor="@color/MarkAsDone"
             android:layout_marginStart="8dp"/>
     </LinearLayout>
 
