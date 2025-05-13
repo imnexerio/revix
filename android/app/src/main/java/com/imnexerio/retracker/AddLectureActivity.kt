@@ -222,6 +222,20 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 // Do nothing
             }
         }
+
+        durationSpinner.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                val selectedItem = durationOptions[durationSpinner.selectedItemPosition]
+                if (selectedItem == duration && (selectedItem == "Specific Number of Times" || selectedItem == "Until")) {
+                    when (selectedItem) {
+                        "Specific Number of Times" -> showNumberOfTimesDialog()
+                        "Until" -> showEndDatePicker()
+                    }
+                    return@setOnTouchListener true
+                }
+            }
+            return@setOnTouchListener false
+        }
     }
 
     private fun showNumberOfTimesDialog() {
