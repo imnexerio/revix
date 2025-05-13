@@ -110,11 +110,6 @@ class RecordUpdateService : Service() {
         } catch (e: Exception) {
             // Handle any exceptions that occur during the refresh
             Toast.makeText(this, "Error refreshing widgets: ${e.message}", Toast.LENGTH_SHORT).show()
-//            e.printStackTrace()
-
-            // Optionally log the error or take other actions
-//            Log.e("RecordUpdateService", "Error refreshing widgets: ${e.message}")
-//            finishTask(startId)
         }
     }
 
