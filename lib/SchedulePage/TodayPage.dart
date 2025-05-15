@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'RealtimeDatabaseListener.dart';
+import '../Utils/UnifiedDatabaseService.dart';
 import 'ScheduleTable.dart';
 import 'showLectureScheduleP.dart';
 
@@ -12,20 +12,20 @@ class TodayPage extends StatefulWidget {
 class _TodayPageState extends State<TodayPage> {
   late StreamController<Map<String, List<Map<String, dynamic>>>> _recordsController;
   late Stream<Map<String, List<Map<String, dynamic>>>> _recordsStream;
-  late RealtimeDatabaseListener _databaseListener;
-
-  final String _todayStr = DateTime.now().toIso8601String().split('T')[0];
-  final String _nextDayStr = DateTime.now().add(Duration(days: 1)).toIso8601String().split('T')[0];
-  final DateTime _today = DateTime.now();
-  final DateTime _next7Days = DateTime.now().add(Duration(days: 7));
+  late UnifiedDatabaseService _databaseListener;
 
   @override
   void initState() {
     super.initState();
     _recordsController = StreamController<Map<String, List<Map<String, dynamic>>>>();
     _recordsStream = _recordsController.stream;
-    _databaseListener = RealtimeDatabaseListener(_recordsController, _todayStr, _nextDayStr, _today, _next7Days);
-    _databaseListener.setupDatabaseListener();
+    _databaseListener = UnifiedDatabaseService();
+    _databaseListener.initialize();
+    _databaseListener.categorizedRecordsStream.listen((data) {
+      _recordsController.add(data);
+    }, onError: (error) {
+      _recordsController.addError(error);
+    });
   }
 
   @override
@@ -33,7 +33,6 @@ class _TodayPageState extends State<TodayPage> {
     _recordsController.close();
     super.dispose();
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +40,8 @@ class _TodayPageState extends State<TodayPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: () async {
-          await _databaseListener.databaseRef?.get();
-          return Future.delayed(Duration(milliseconds: 300));
+          _databaseListener.forceDataReprocessing();
+          // return Future.delayed(const Duration(milliseconds: 300));
         },
         child: StreamBuilder<Map<String, List<Map<String, dynamic>>>>(
           stream: _recordsStream,
@@ -55,7 +54,7 @@ class _TodayPageState extends State<TodayPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       'Error: ${snapshot.error}',
                       style: TextStyle(
@@ -83,7 +82,8 @@ class _TodayPageState extends State<TodayPage> {
         data['missed']!.isEmpty &&
         data['nextDay']!.isEmpty &&
         data['next7Days']!.isEmpty &&
-        data['todayAdded']!.isEmpty;
+        data['todayAdded']!.isEmpty &&
+        data['noreminderdate']!.isEmpty;
   }
 
   Widget _buildEmptyState() {
@@ -92,7 +92,7 @@ class _TodayPageState extends State<TodayPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'No schedules found',
             style: TextStyle(
@@ -116,13 +116,13 @@ class _TodayPageState extends State<TodayPage> {
           if (data['missed']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['missed']!,
-              title: 'Missed Schedule (${data['missed']!.length})',
+              title: 'Missed (${data['missed']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
           if (data['today']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['today']!,
-              title: 'Today\'s Schedule (${data['today']!.length})',
+              title: 'Today\'s (${data['today']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
           if (data['todayAdded']!.isNotEmpty)
@@ -134,13 +134,19 @@ class _TodayPageState extends State<TodayPage> {
           if (data['nextDay']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['nextDay']!,
-              title: 'Next Day Schedule (${data['nextDay']!.length})',
+              title: 'Next Day (${data['nextDay']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
           if (data['next7Days']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['next7Days']!,
-              title: 'Next 7 Days Schedule (${data['next7Days']!.length})',
+              title: 'Next Week (${data['next7Days']!.length})',
+              onSelect: (context, record) => showLectureScheduleP(context, record),
+            ),
+          if (data['noreminderdate']!.isNotEmpty)
+            ScheduleTable(
+              initialRecords: data['noreminderdate']!,
+              title: 'Unspecified Date (${data['noreminderdate']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
         ],

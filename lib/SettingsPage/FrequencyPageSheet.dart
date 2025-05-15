@@ -25,13 +25,13 @@ void showAddFrequencySheet(
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
               blurRadius: 10,
               spreadRadius: 0,
-              offset: Offset(0, -2),
+              offset: const Offset(0, -2),
             ),
           ],
         ),
@@ -39,10 +39,10 @@ void showAddFrequencySheet(
           children: [
             // Header
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
               ),
               child: Column(
                 children: [
@@ -54,7 +54,7 @@ void showAddFrequencySheet(
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -66,7 +66,7 @@ void showAddFrequencySheet(
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close),
+                        icon: const Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
@@ -75,11 +75,11 @@ void showAddFrequencySheet(
                 ],
               ),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             // Form
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Form(
                   key: formKey,
                   child: Column(
@@ -90,7 +90,7 @@ void showAddFrequencySheet(
                         decoration: InputDecoration(
                           labelText: 'Title',
                           hintText: 'Enter frequency title',
-                          prefixIcon: Icon(Icons.title),
+                          prefixIcon: const Icon(Icons.title),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -107,13 +107,13 @@ void showAddFrequencySheet(
                           return null;
                         },
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       TextFormField(
                         controller: frequencyController,
                         decoration: InputDecoration(
                           labelText: 'Frequency',
                           hintText: 'Enter comma-separated numbers (e.g., 1,2,3)',
-                          prefixIcon: Icon(Icons.timeline),
+                          prefixIcon: const Icon(Icons.timeline),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -137,7 +137,7 @@ void showAddFrequencySheet(
             ),
             // Submit button
             Container(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: FilledButton.icon(
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
@@ -165,11 +165,10 @@ void showAddFrequencySheet(
                       frequencyController.clear();
                       Navigator.pop(context);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
+
                         customSnackBar(
                           context: context,
                           message: 'New frequency added successfully',
-                        ),
                       );
 
                       onFrequencyAdded(); // Call the callback to refresh the dropdown
@@ -177,7 +176,7 @@ void showAddFrequencySheet(
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Row(
+                          content: const Row(
                             children: [
                               Icon(Icons.error, color: Colors.white),
                               SizedBox(width: 8),
@@ -194,10 +193,10 @@ void showAddFrequencySheet(
                     }
                   }
                 },
-                icon: Icon(Icons.save),
-                label: Text('Save Frequency'),
+                icon: const Icon(Icons.save),
+                label: const Text('Save Frequency'),
                 style: FilledButton.styleFrom(
-                  minimumSize: Size(200, 48),
+                  minimumSize: const Size(200, 48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

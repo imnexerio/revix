@@ -9,7 +9,7 @@ PreferredSizeWidget buildDetailPageAppBar(
   return AppBar(
     title: Text(title),
     leading: IconButton(
-      icon: Icon(Icons.arrow_back),
+      icon: const Icon(Icons.arrow_back),
       onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
     ),
     centerTitle: true,

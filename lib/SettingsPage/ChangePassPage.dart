@@ -19,7 +19,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     return Scaffold(
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -39,7 +39,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               _buildInputField(
                 context: context,
                 label: 'New Password',
@@ -55,7 +55,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               _buildInputField(
                 context: context,
                 label: 'Confirm Password',
@@ -73,7 +73,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
               Center(
                 child: Container(
                   width: 200,
@@ -90,11 +90,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                           await user.reauthenticateWithCredential(credential);
                           await user.updatePassword(_newPassword!);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
+
                             customSnackBar(
                               context: context,
                               message: 'Password updated successfully',
-                            ),
                           );
 
                           _newPasswordController.clear();
@@ -106,13 +105,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             SnackBar(
                               content: Row(
                                 children: [
-                                  Icon(Icons.error, color: Colors.white),
-                                  SizedBox(width: 8),
+                                  const Icon(Icons.error, color: Colors.white),
+                                  const SizedBox(width: 8),
                                   Text('Failed to update password: $e'),
                                 ],
                               ),
                               backgroundColor: Colors.red,
-                              duration: Duration(seconds: 2),
+                              duration: const Duration(seconds: 2),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -123,12 +122,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       }
                     },
                     style: FilledButton.styleFrom(
-                      minimumSize: Size(double.infinity, 55),
+                      minimumSize: const Size(double.infinity, 55),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: Text(
+                    child: const Text(
                       'Update Password',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
@@ -161,7 +160,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: Colors.grey.withOpacity(0.1),

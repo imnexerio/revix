@@ -26,10 +26,10 @@ class LegendItem extends StatelessWidget {
             size: 10,
           ),
         ),
-        SizedBox(width: 6),
+        const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),

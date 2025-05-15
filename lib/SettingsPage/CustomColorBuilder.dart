@@ -29,7 +29,7 @@ Widget buildColorSlider(
           ),
         ],
       ),
-      SizedBox(height: 8),
+      const SizedBox(height: 8),
       Container(
         height: 40,
         decoration: BoxDecoration(
@@ -42,8 +42,8 @@ Widget buildColorSlider(
         child: SliderTheme(
           data: SliderThemeData(
             trackHeight: 4,
-            thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
-            overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
             activeTrackColor: color,
             inactiveTrackColor: color.withOpacity(0.2),
             thumbColor: color,

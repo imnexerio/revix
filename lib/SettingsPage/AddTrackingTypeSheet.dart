@@ -23,13 +23,13 @@ void showAddtrackingTypeSheet(
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
               blurRadius: 10,
               spreadRadius: 0,
-              offset: Offset(0, -2),
+              offset: const Offset(0, -2),
             ),
           ],
         ),
@@ -37,10 +37,10 @@ void showAddtrackingTypeSheet(
           children: [
             // Header
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
               ),
               child: Column(
                 children: [
@@ -52,7 +52,7 @@ void showAddtrackingTypeSheet(
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -64,7 +64,7 @@ void showAddtrackingTypeSheet(
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close),
+                        icon: const Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
@@ -73,11 +73,11 @@ void showAddtrackingTypeSheet(
                 ],
               ),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             // Form
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Form(
                   key: formKey,
                   child: Column(
@@ -88,7 +88,7 @@ void showAddtrackingTypeSheet(
                         decoration: InputDecoration(
                           labelText: 'Type',
                           hintText: 'Enter new tracking type',
-                          prefixIcon: Icon(Icons.title),
+                          prefixIcon: const Icon(Icons.title),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -102,7 +102,7 @@ void showAddtrackingTypeSheet(
                           return null;
                         },
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -110,7 +110,7 @@ void showAddtrackingTypeSheet(
             ),
             // Submit button
             Container(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: FilledButton.icon(
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
@@ -133,18 +133,17 @@ void showAddtrackingTypeSheet(
                       titleController.clear();
                       Navigator.pop(context);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
                         customSnackBar(
                           context: context,
                           message: 'New tracking type added successfully',
-                        ),
+
                       );
 
                       onTypeAdded(); // Call the callback to refresh the dropdown
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Row(
+                          content: const Row(
                             children: [
                               Icon(Icons.error, color: Colors.white),
                               SizedBox(width: 8),
@@ -161,10 +160,10 @@ void showAddtrackingTypeSheet(
                     }
                   }
                 },
-                icon: Icon(Icons.save),
-                label: Text('Save Type'),
+                icon: const Icon(Icons.save),
+                label: const Text('Save Type'),
                 style: FilledButton.styleFrom(
-                  minimumSize: Size(200, 48),
+                  minimumSize: const Size(200, 48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -6,10 +6,11 @@ import '../SchedulePage/ProportionalRingPainter.dart';
 
 class StudyCalendar extends StatefulWidget {
   final List<Map<String, dynamic>> records;
-
+  final String trackingType;
   const StudyCalendar({
     Key? key,
     required this.records,
+    this.trackingType = '',
   }) : super(key: key);
 
   @override
@@ -47,8 +48,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
       final details = record['details'] as Map<String, dynamic>;
 
       // Add date learned events
-      if (details.containsKey('date_learnt')) {
-        final dateLearnedStr = details['date_learnt'] as String;
+      if (details.containsKey('initiated_on')) {
+        final dateLearnedStr = details['initiated_on'] as String;
         final dateLearned = DateTime.parse(dateLearnedStr);
         final key = DateTime(dateLearned.year, dateLearned.month, dateLearned.day);
 
@@ -106,6 +107,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
       }
 
       // Add scheduled dates
+      if (details['date_learnt']!='Unspecified')
       if (details.containsKey('date_scheduled')) {
         final dateScheduledStr = details['date_scheduled'] as String;
         final dateScheduled = DateTime.parse(dateScheduledStr);
@@ -188,13 +190,13 @@ class _StudyCalendarState extends State<StudyCalendar> {
                 );
               },
             ),
-            headerStyle: HeaderStyle(
+            headerStyle: const HeaderStyle(
               formatButtonVisible: true,
               titleCentered: true,
               formatButtonShowsNext: false,
             ),
             // Add this to hide the default markers
-            calendarStyle: CalendarStyle(
+            calendarStyle: const CalendarStyle(
               markersMaxCount: 0,
               // Make sure any marker-related properties are set to be invisible
               // markerDecoration: const BoxDecoration(
@@ -204,8 +206,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
             ),
           ),
           const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -401,7 +403,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             ),
             title: Text(
               '${event['subject']} (${event['subject_code']}) - ${event['lecture_no']}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),

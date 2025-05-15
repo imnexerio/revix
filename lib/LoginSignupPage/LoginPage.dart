@@ -39,7 +39,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1000),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -110,11 +110,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
           // Fetch and apply the latest custom theme
           ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-          await themeNotifier.fetchCustomTheme();
+          await themeNotifier.fetchRemoteTheme();
 
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => MyHomePage()),
+            MaterialPageRoute(builder: (context) => const MyHomePage()),
           );
         } catch (e) {
           setState(() {
@@ -167,13 +167,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             height: double.infinity,
             child: SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(height: 40),
+                      const SizedBox(height: 40),
                       // Logo
                       Hero(
                         tag: 'app_logo',
@@ -186,7 +186,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               BoxShadow(
                                 color: colorScheme.primary.withOpacity(0.2),
                                 blurRadius: 10,
-                                offset: Offset(0, 4),
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -196,7 +196,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           ),
                         ),
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       Text(
                         'Welcome back',
                         style: textTheme.headlineSmall?.copyWith(
@@ -210,12 +210,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           color: colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
                       if (_errorMessage != null)
                         Container(
                           width: double.infinity,
-                          margin: EdgeInsets.only(bottom: 16),
-                          padding: EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: colorScheme.error.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -227,7 +227,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                 color: colorScheme.error,
                                 size: 20,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
@@ -246,7 +246,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         decoration: InputDecoration(
                           labelText: 'Email Address',
                           hintText: 'Enter your email...',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          prefixIcon: const Icon(Icons.email_outlined),
                           enabledBorder: OutlineInputBorder(
                             borderSide: BorderSide(
                               color: colorScheme.onSurface.withOpacity(0.12),
@@ -277,7 +277,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           ),
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
                         validator: _validatePassword,
@@ -285,7 +285,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         decoration: InputDecoration(
                           labelText: 'Password',
                           hintText: 'Enter your password...',
-                          prefixIcon: Icon(Icons.lock_outline),
+                          prefixIcon: const Icon(Icons.lock_outline),
                           enabledBorder: OutlineInputBorder(
                             borderSide: BorderSide(
                               color: colorScheme.onSurface.withOpacity(0.12),
@@ -330,7 +330,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           ),
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
@@ -343,17 +343,17 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             );
                           },
 
-                          child: Text('Forgot Password?'),
+                          child: const Text('Forgot Password?'),
                           style: TextButton.styleFrom(
                             foregroundColor: colorScheme.primary,
-                            padding: EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -370,7 +370,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               ),
                             ),
                           )
-                              : Text(
+                              : const Text(
                             'Login',
                             style: TextStyle(
                               fontSize: 16,
@@ -387,7 +387,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           ),
                         ),
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       InkWell(
                         onTap: () {
                           Navigator.push(
@@ -398,7 +398,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           );
                         },
                         child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -420,23 +420,23 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         ),
 
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       IconButton(
-                        icon: ImageIcon(
+                        icon: const ImageIcon(
                           AssetImage('assets/github.png'), // Path to your GitHub icon
                         ),
                         onPressed: () {
                           UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
                         },
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       FutureBuilder<String>(
                         future: _getAppVersion(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
-                            return CircularProgressIndicator();
+                            return const CircularProgressIndicator();
                           } else if (snapshot.hasError) {
-                            return Text('Error loading version');
+                            return const Text('Error loading version');
                           } else {
                             return Text(
                               'v${snapshot.data}',

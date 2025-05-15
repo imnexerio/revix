@@ -83,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ),
                     padding: const EdgeInsets.all(24),
                     child: Lottie.asset(
-                      'assets/animation.json',
+                      'assets/reTracker.json',
                       controller: _controller,
                       onLoaded: (composition) {
                         _controller.duration = composition.duration;

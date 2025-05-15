@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".AddLectureActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="?android:attr/colorBackground">
+
+        <!-- Form content -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+
+                <!-- Category -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Category"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <Spinner
+                        android:id="@+id/category_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:paddingHorizontal="12dp"
+                        android:background="@drawable/spinner_border"
+                        android:spinnerMode="dropdown" />
+                </androidx.cardview.widget.CardView>
+
+                <!-- Add New Category -->
+                <LinearLayout
+                    android:id="@+id/add_new_category_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Category Name"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp"/>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="2dp"
+                        
+                        app:contentPadding="0dp">
+
+                        <EditText
+                            android:id="@+id/new_category_edit_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:hint="Enter new category"
+                            android:paddingHorizontal="12dp"
+                            android:background="@drawable/edit_text_border"
+                            android:inputType="text" />
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+                <!-- Sub Category -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sub Category"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <Spinner
+                        android:id="@+id/subcategory_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:paddingHorizontal="12dp"
+                        android:background="@drawable/spinner_border"
+                        android:spinnerMode="dropdown" />
+                </androidx.cardview.widget.CardView>
+
+                <!-- Add New Sub Category -->
+                <LinearLayout
+                    android:id="@+id/add_new_subcategory_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Sub Category Name"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp"/>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="2dp"
+                        
+                        app:contentPadding="0dp">
+
+                        <EditText
+                            android:id="@+id/new_subcategory_edit_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:hint="Enter new sub category"
+                            android:paddingHorizontal="12dp"
+                            android:background="@drawable/edit_text_border"
+                            android:inputType="text" />
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+                <!-- Lecture Type -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select Type"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <Spinner
+                        android:id="@+id/lecture_type_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:paddingHorizontal="12dp"
+                        android:background="@drawable/spinner_border"
+                        android:spinnerMode="dropdown" />
+                </androidx.cardview.widget.CardView>
+
+                <!-- Title -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Title"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <EditText
+                        android:id="@+id/title_edit_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:hint="Enter title"
+                        android:paddingHorizontal="12dp"
+                        android:background="@drawable/edit_text_border"
+                        android:inputType="text" />
+                </androidx.cardview.widget.CardView>
+
+                <!-- Reminder Time -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reminder Time"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <LinearLayout
+                        android:background="@drawable/edit_text_border"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <EditText
+                            android:id="@+id/reminder_time_edit_text"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:hint="Set time"
+                            android:paddingHorizontal="12dp"
+                            android:background="@drawable/edit_text_border"
+                            android:focusable="false"
+                            android:clickable="true" />
+
+                        <CheckBox
+                            android:id="@+id/all_day_checkbox"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="All Day"
+                            android:checked="true"
+                            android:paddingHorizontal="8dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Initiation Date -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Initiation Date"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    app:contentPadding="0dp">
+
+                    <LinearLayout
+                        android:background="@drawable/edit_text_border"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <EditText
+                            android:id="@+id/initiation_date_edit_text"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:hint="Set time"
+                            android:paddingHorizontal="12dp"
+                            android:background="@drawable/edit_text_border"
+                            android:focusable="false"
+                            android:clickable="true" />
+
+                        <CheckBox
+                            android:id="@+id/initiation_date_checkbox"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Unspecified"
+                            android:checked="true"
+                            android:paddingHorizontal="8dp" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Revision Frequency -->
+                <TextView
+                    android:id="@+id/revision_frequency_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Revision Frequency"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/revision_frequency_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <LinearLayout
+                        android:background="@drawable/edit_text_border"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <Spinner
+                            android:id="@+id/revision_frequency_spinner"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:paddingHorizontal="12dp"
+                            android:background="@drawable/spinner_border"
+                            android:spinnerMode="dropdown" />
+
+                        <CheckBox
+                            android:id="@+id/review_frequency_checkbox"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="No Repetition"
+                            android:checked="true"
+                            android:paddingHorizontal="8dp" />
+                    </LinearLayout>
+
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Scheduled Date -->
+                <TextView
+                    android:id="@+id/scheduled_date_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="First Reminder Date"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/scheduled_date_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <EditText
+                        android:id="@+id/scheduled_date_edit_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:hint="Select date"
+                        android:paddingHorizontal="12dp"
+                        android:drawableEnd="@drawable/ic_calendar"
+                        android:background="@drawable/edit_text_border"
+                        android:focusable="false"
+                        android:clickable="true" />
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/reminder_duration_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reminder duration"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/duration_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+
+                    app:contentPadding="0dp">
+
+                    <Spinner
+                        android:id="@+id/duration_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:paddingHorizontal="12dp"
+                        android:background="@drawable/spinner_border"
+                        android:spinnerMode="dropdown" />
+                </androidx.cardview.widget.CardView>
+
+                <!-- Description -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Description"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    
+                    app:contentPadding="0dp">
+
+                    <EditText
+                        android:id="@+id/description_edit_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Enter description"
+                        android:padding="12dp"
+                        android:background="@drawable/edit_text_border"
+                        android:inputType="textMultiLine"
+                        android:minLines="3"
+                        android:gravity="top" />
+                </androidx.cardview.widget.CardView>
+
+                <!-- Button Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp">
+
+                    <Button
+                        android:id="@+id/cancel_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Cancel"
+                        android:textSize="16sp"
+                        android:padding="12dp"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/rounded_cancel_button"
+                        android:textColor="@color/text"
+                        android:elevation="2dp" />
+
+                    <Button
+                        android:id="@+id/save_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Save"
+                        android:textSize="16sp"
+                        android:padding="12dp"
+                        android:background="@drawable/rounded_save_button"
+                        android:textColor="@android:color/white"
+                        android:layout_margin="8dp"
+                        android:elevation="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

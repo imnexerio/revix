@@ -2,22 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart';
+import 'ProfileImageUpload.dart';
+import 'ProfileProvider.dart';
+import 'ProfileImageWidget.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final Future<String> Function() getDisplayName;
-  final Future<Image?> Function(String) decodeProfileImage;
-  final Future<void> Function(BuildContext, XFile, String) uploadProfilePicture;
-  final String Function() getCurrentUserUid;
-
-  const EditProfilePage({
-    Key? key,
-    required this.getDisplayName,
-    required this.decodeProfileImage,
-    required this.uploadProfilePicture,
-    required this.getCurrentUserUid,
-  }) : super(key: key);
+  const EditProfilePage({Key? key}) : super(key: key);
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
@@ -27,34 +20,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   String? _fullName;
-  bool _isLoading = true;
-  Image? _profileImage;
+  bool _isLoading_pic = false;
+  bool _isLoading_name = false;
   late final String _uid;
 
   @override
   void initState() {
     super.initState();
-    _uid = widget.getCurrentUserUid();
-    _loadUserData();
+    _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+    });
   }
 
-  Future<void> _loadUserData() async {
-    try {
-      // Load display name
-      String displayName = await widget.getDisplayName();
-      _nameController.text = displayName;
 
-      // Cache profile image
-      _profileImage = await widget.decodeProfileImage(_uid);
-    } catch (e) {
-      _nameController.text = 'User';
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+  Future<void> _loadUserData() async {
+      await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
+      await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateDisplayName();
+      _nameController.text = Provider.of<ProfileProvider>(context, listen: false).displayName ?? 'User';
   }
 
   @override
@@ -69,17 +52,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (image != null && mounted) {
       setState(() {
-        _isLoading = true;
+        _isLoading_pic = true;
       });
 
-      await widget.uploadProfilePicture(context, image, _uid);
+      await uploadProfilePicture(context, image);
 
-      // Update cached image
-      _profileImage = await widget.decodeProfileImage(_uid);
+      await Provider.of<ProfileProvider>(context, listen: false).fetchAndUpdateProfileImage(context);
 
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isLoading_pic = false;
         });
       }
     }
@@ -139,17 +121,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         SizedBox(
           width: 110,
           height: 110,
-          child: _isLoading
+          child: _isLoading_pic
               ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
               : ClipOval(
-            child: _profileImage != null
-                ? _profileImage!
-                : Image.asset(
-              'assets/icon/icon.png',
-              width: 110,
-              height: 110,
-              fit: BoxFit.cover,
-            ),
+            child: ProfileImageWidget(),
           ),
         ),
 
@@ -174,7 +149,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               child: const Icon(
                 Icons.camera_alt,
-                color: Colors.white,
+                // color: Colors.white,
                 size: 20,
               ),
             ),
@@ -227,7 +202,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Widget _buildSaveButton() {
     return FilledButton(
-      onPressed: _saveProfile,
+      onPressed: _isLoading_name ? null : _saveProfile, // Disable button when loading
       style: FilledButton.styleFrom(
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
@@ -235,7 +210,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         elevation: 0,
       ),
-      child: _isLoading
+      child: _isLoading_name
           ? const SizedBox(
         width: 24,
         height: 24,
@@ -256,43 +231,57 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _saveProfile() async {
+    // Check if the form is valid
     if (_formKey.currentState!.validate()) {
+      // Save form data
       _formKey.currentState!.save();
 
+        customSnackBar(
+          context: context,
+          message: 'Updating Display Name',
+
+      );
+
+      // Begin the async operation and update the loading state
       setState(() {
-        _isLoading = true;
+        _isLoading_name = true; // Start loading spinner
       });
 
       try {
         User? user = FirebaseAuth.instance.currentUser;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$_uid/profile_data');
+        DatabaseReference ref =
+        FirebaseDatabase.instance.ref('users/$_uid/profile_data');
+
+        // Update name in Firebase database
         await ref.update({
-          'name': _fullName
+          'name': _fullName,
         });
 
+        // Update display name for FirebaseAuth user
         await user?.updateDisplayName(_fullName);
 
+        // Update the display name in the provider
+        await Provider.of<ProfileProvider>(context, listen: false)
+            .fetchAndUpdateDisplayName();
+
+        // Show success message
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+
             customSnackBar(
               context: context,
-              message: 'Profile updated successfully',
-            ),
+              message: 'Display Name updated successfully',
           );
         }
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            customSnackBar_error(
-              context: context,
-              message: 'Failed to update profile: $e',
-            ),
-          );
-        }
+          customSnackBar_error(
+            context: context,
+            message: 'Failed to update profile: $e',
+        );
       } finally {
+        // Reset loading state
         if (mounted) {
           setState(() {
-            _isLoading = false;
+            _isLoading_name = false; // Stop loading spinner
           });
         }
       }

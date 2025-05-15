@@ -52,7 +52,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     flex: 3,
                     child: Text(
@@ -73,6 +73,35 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
       );
     }).toList();
 
+    // Add Custom option
+    items.add(
+      DropdownMenuItem<String>(
+        value: 'Custom',
+        child: Text(
+          'Custom',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+
+    // Add No Repetition option
+    items.add(
+      DropdownMenuItem<String>(
+        value: 'No Repetition',
+        child: Text(
+          'No Repetition',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+
+    // Add New option
     items.add(
       DropdownMenuItem<String>(
         value: 'Add New',
@@ -96,17 +125,12 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return Container(
-          margin: EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Theme.of(context).cardColor,
-            border: Border.all(color: Theme.of(context).dividerColor),
-          ),
+          margin: const EdgeInsets.symmetric(vertical: 8),
           child: ButtonTheme(
             alignedDropdown: true,
             child: DropdownButtonFormField<String>(
               isExpanded: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Review Frequency',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

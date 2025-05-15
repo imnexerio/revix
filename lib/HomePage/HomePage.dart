@@ -3,10 +3,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
-import '../Utils/FetchRecord.dart';
+import 'package:retracker/Utils/customSnackBar_error.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';
 import 'CustomLectureSave.dart';
-import 'CustomizationBottomSheet.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
 import 'SubjectDistributionCard.dart';
@@ -22,13 +23,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
-  final FetchRecord _recordService = FetchRecord();
+  final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
   Stream<Map<String, dynamic>>? _recordsStream;
 
   String _lectureViewType = 'Total';
   String _revisionViewType = 'Total';
   String _completionViewType = 'Total';
   String _missedViewType = 'Total';
+
+  String _selectedLectureType = 'All'; // Changed default to 'All'
+  List<String> _availableLectureTypes = ['All']; // Added 'All' instead of 'Lectures'
+
   Map<String, Set<String>> _selectedTrackingTypesMap = {
     'lecture': {},
     'revision': {},
@@ -36,7 +41,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     'missed': {},
   };
 
-  int _customCompletionTarget = 200;
+  Map<String, int> _completionTargets = {};
+  int get _customCompletionTarget => _completionTargets[_selectedLectureType] ?? 200;
 
   Size? _previousSize;
 
@@ -46,9 +52,68 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   @override
   void initState() {
     super.initState();
-    _recordService.startRealTimeUpdates();
-    _recordsStream = _recordService.recordsStream;
+    _recordService.initialize();
+    _recordsStream = _recordService.allRecordsStream;
+    _loadSavedPreferences();
     _fetchTrackingTypesAndTargetFromFirebase();
+    _loadAvailableLectureTypes();
+  }
+
+  // Load saved preferences from SharedPreferences
+  Future<void> _loadSavedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      _lectureViewType = prefs.getString('lectureViewType') ?? 'Total';
+      _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
+      _completionViewType = prefs.getString('completionViewType') ?? 'Total';
+      _missedViewType = prefs.getString('missedViewType') ?? 'Total';
+      _selectedLectureType = prefs.getString('selectedLectureType') ?? 'All'; // Changed default to 'All'
+    });
+  }
+
+  // Save preferences to SharedPreferences
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('lectureViewType', _lectureViewType);
+    await prefs.setString('revisionViewType', _revisionViewType);
+    await prefs.setString('completionViewType', _completionViewType);
+    await prefs.setString('missedViewType', _missedViewType);
+    await prefs.setString('selectedLectureType', _selectedLectureType);
+  }
+
+  // Modified method to load available lecture types
+  Future<void> _loadAvailableLectureTypes() async {
+    try {
+      final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
+      setState(() {
+        // Ensure 'All' is always the first option and then add other tracking types
+        List<String> types = ['All']; // Start with 'All'
+        if (trackingTypes.isNotEmpty) {
+          // Add all types except 'All' if it already exists in trackingTypes
+          types.addAll(trackingTypes.where((type) => type != 'All'));
+        }
+        _availableLectureTypes = types;
+      });
+    } catch (e) {
+      // Handle error, keeping default with 'All'
+      setState(() {
+        _availableLectureTypes = ['All'];
+      });
+    }
+  }
+
+  // Cycle through available lecture types
+  void _cycleLectureType() {
+    if (_availableLectureTypes.isEmpty) return;
+
+    setState(() {
+      int currentIndex = _availableLectureTypes.indexOf(_selectedLectureType);
+      int nextIndex = (currentIndex + 1) % _availableLectureTypes.length;
+      _selectedLectureType = _availableLectureTypes[nextIndex];
+    });
+    _savePreferences(); // Save when lecture type changes
   }
 
   Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
@@ -59,11 +124,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
         DatabaseReference typesRef = FirebaseDatabase.instance
             .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
-        DatabaseReference targetRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/customCompletionTarget');
+        DatabaseReference targetsRef = FirebaseDatabase.instance
+            .ref('users/$uid/profile_data/home_page/completionTargets');
 
         DatabaseEvent typesEvent = await typesRef.once();
-        DatabaseEvent targetEvent = await targetRef.once();
+        DatabaseEvent targetsEvent = await targetsRef.once();
+
         if (typesEvent.snapshot.exists) {
           Map<dynamic, dynamic> data = typesEvent.snapshot.value as Map<dynamic, dynamic>;
 
@@ -75,37 +141,35 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               }
             });
           });
-        } else {
         }
 
-        if (targetEvent.snapshot.exists) {
+        if (targetsEvent.snapshot.exists) {
           setState(() {
-            _customCompletionTarget = int.parse(targetEvent.snapshot.value.toString());
+            Map<dynamic, dynamic> targetsData = targetsEvent.snapshot.value as Map<dynamic, dynamic>;
+            targetsData.forEach((lectureType, target) {
+              _completionTargets[lectureType.toString()] = int.parse(target.toString());
+            });
           });
-        } else {
         }
       }
     } catch (e) {
+      // Handle error
     }
   }
 
-  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      _recordService.stopRealTimeUpdates();
+      _recordService.stopListening();
     } else if (state == AppLifecycleState.resumed) {
-      _recordService.startRealTimeUpdates();
+      _recordService.initialize();
     }
   }
 
   @override
   void dispose() {
-    // Stop listening when the widget is disposed
-    _recordService.stopRealTimeUpdates();
     _recordService.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -114,88 +178,96 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     final currentSize = MediaQuery.of(context).size;
     final screenWidth = currentSize.width;
 
-    // Only rebuild the layout if the screen size has changed significantly
     final rebuildLayout = _previousSize == null ||
         (_previousSize!.width != currentSize.width &&
             (_crossesBreakpoint(_previousSize!.width, currentSize.width, 600) ||
                 _crossesBreakpoint(_previousSize!.width, currentSize.width, 900)));
 
-    // Update the previous size
     _previousSize = currentSize;
-
-    final horizontalPadding = screenWidth > 600 ? 24.0 : 16.0;
     final cardPadding = screenWidth > 600 ? 24.0 : 16.0;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
-          child: StreamBuilder(
-            stream: _recordsStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return _buildErrorWidget();
-              } else if (!snapshot.hasData || snapshot.data!['allRecords']!.isEmpty) {
-                return _buildEmptyWidget();
-              }
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0.0),
+        child: StreamBuilder(
+          stream: _recordsStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return _buildErrorWidget();
+            } else if (!snapshot.hasData || snapshot.data!['allRecords']!.isEmpty) {
+              return _buildEmptyWidget();
+            }
 
-              List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
-              Map<String, int> subjectDistribution = calculateSubjectDistribution(allRecords);
+            List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
 
-              return CustomScrollView(
-                key: const PageStorageKey('homeScrollView'),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Performance Analytics',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).textTheme.titleLarge?.color,
-                          ),
+            List<Map<String, dynamic>> filteredRecords = _selectedLectureType == 'All'
+                ? allRecords
+                : allRecords.where((record) {
+              return record['details']['lecture_type'] == _selectedLectureType;
+            }).toList();
+
+            Map<String, int> subjectDistribution = calculateSubjectDistribution(filteredRecords);
+
+            return CustomScrollView(
+              key: const PageStorageKey('homeScrollView'),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 32),
-
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          padding: EdgeInsets.all(cardPadding),
+                        padding: EdgeInsets.all(cardPadding),
                         child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Overview',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).textTheme.titleLarge?.color,
+                                // Make the Overview title clickable
+                                GestureDetector(
+                                  onTap: _cycleLectureType,
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'Overview: $_selectedLectureType',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).textTheme.titleLarge?.color,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.swap_horiz,
+                                        size: 16,
+                                        color: Theme.of(context).textTheme.titleLarge?.color,
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.edit_outlined), // Using outlined version for modern look
-                                  // style: IconButton.styleFrom(
-                                  //   backgroundColor: Colors.blue.withOpacity(0.1),
-                                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  // ),
+                                  icon: const Icon(Icons.edit_outlined),
                                   onPressed: () {
+                                    if (_selectedLectureType == 'All') {
+                                      customSnackBar_error(context: context, message: 'Cannot set target for combined view');
+                                      return;
+                                    }
+
                                     final TextEditingController textFieldController = TextEditingController(
                                       text: _customCompletionTarget.toString(),
                                     );
@@ -205,16 +277,16 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                       builder: (BuildContext context) {
                                         return AlertDialog(
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          title: const Text(
-                                            'Set Target',
+                                          title: Text(
+                                            'Set Target for $_selectedLectureType',
                                             style: TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                           content: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              const Text(
-                                                'Enter your completion target:',
+                                              Text(
+                                                'Enter your completion target for $_selectedLectureType:',
                                               ),
                                               const SizedBox(height: 16),
                                               TextField(
@@ -237,8 +309,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                           ),
                                           actions: [
                                             TextButton(
-                                              style: TextButton.styleFrom(
-                                              ),
+                                              style: TextButton.styleFrom(),
                                               child: const Text('Cancel'),
                                               onPressed: () {
                                                 Navigator.of(context).pop();
@@ -257,9 +328,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                                   final int newTarget = int.parse(targetValue);
 
                                                   final profileService = ProfileDataService();
-                                                  await profileService.saveCompletionTarget(targetValue);
+                                                  await profileService.saveCompletionTarget(_selectedLectureType, targetValue);
                                                   setState(() {
-                                                    _customCompletionTarget = newTarget;
+                                                    _completionTargets[_selectedLectureType] = newTarget;
                                                   });
                                                 }
                                                 Navigator.of(context).pop();
@@ -275,46 +346,42 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                               ],
                             ),
                             const SizedBox(height: 16),
-
-                            // Responsive grid layout for stats - only rebuild if needed
                             rebuildLayout
                                 ? screenWidth > 900
-                                ? _buildSingleRowStatsGrid(allRecords)
-                                : _buildTwoByTwoStatsGrid(allRecords)
+                                ? _buildSingleRowStatsGrid(filteredRecords)
+                                : _buildTwoByTwoStatsGrid(filteredRecords)
                                 : screenWidth > 900
-                                ? _buildSingleRowStatsGrid(allRecords)
-                                : _buildTwoByTwoStatsGrid(allRecords),
+                                ? _buildSingleRowStatsGrid(filteredRecords)
+                                : _buildTwoByTwoStatsGrid(filteredRecords),
                           ],
                         ),
-                        ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
                   ),
-                  SliverToBoxAdapter(
-                    child: rebuildLayout
-                        ? screenWidth > 900
-                        ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
-                        : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding)
-                        : screenWidth > 900
-                        ? _buildTwoColumnLayout(allRecords, subjectDistribution, cardPadding)
-                        : _buildSingleColumnLayout(allRecords, subjectDistribution, cardPadding),
-                  ),
-                ],
-              );
-            },
-          ),
+                ),
+                SliverToBoxAdapter(
+                  child: rebuildLayout
+                      ? screenWidth > 900
+                      ? _buildTwoColumnLayout(filteredRecords, subjectDistribution, cardPadding)
+                      : _buildSingleColumnLayout(filteredRecords, subjectDistribution, cardPadding)
+                      : screenWidth > 900
+                      ? _buildTwoColumnLayout(filteredRecords, subjectDistribution, cardPadding)
+                      : _buildSingleColumnLayout(filteredRecords, subjectDistribution, cardPadding),
+                ),
+              ],
+            );
+          },
         ),
+      ),
     );
   }
 
-  // Check if the width crosses any of our breakpoints
   bool _crossesBreakpoint(double oldWidth, double newWidth, double breakpoint) {
     return (oldWidth <= breakpoint && newWidth > breakpoint) ||
         (oldWidth > breakpoint && newWidth <= breakpoint);
   }
 
-  // Error widget - extracted to reduce build method complexity
   Widget _buildErrorWidget() {
     return Center(
       child: Column(
@@ -335,7 +402,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  // Empty widget - extracted to reduce build method complexity
   Widget _buildEmptyWidget() {
     return Center(
       child: Column(
@@ -356,8 +422,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  // Two-by-two grid for medium screens
-  Widget _buildTwoByTwoStatsGrid(List<Map<String, dynamic>> allRecords) {
+  Widget _buildTwoByTwoStatsGrid(List<Map<String, dynamic>> filteredRecords) {
     return Column(
       children: [
         Row(
@@ -365,22 +430,20 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 'Initiatives',
-                _getLectureValue(allRecords, _lectureViewType),
+                _getLectureValue(filteredRecords, _lectureViewType),
                 const Color(0xFF6C63FF),
                 _lectureViewType,
-                    () => _cycleViewType('lecture'),
-                    () => _showCustomizationSheet('lecture'),
+                    () => _cycleViewType(),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
                 'Reviewed',
-                _getRevisionValue(allRecords, _revisionViewType),
+                _getRevisionValue(filteredRecords, _revisionViewType),
                 const Color(0xFFDA5656),
                 _revisionViewType,
-                    () => _cycleViewType('revision'),
-                    () => _showCustomizationSheet('revision'),
+                    () => _cycleViewType(),
               ),
             ),
           ],
@@ -391,22 +454,20 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 "Completion Percentage",
-                _getCompletionValue(allRecords, _completionViewType),
-                getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
+                _getCompletionValue(filteredRecords, _completionViewType),
+                getCompletionColor(calculatePercentageCompletion(filteredRecords, _customCompletionTarget)),
                 _completionViewType,
-                    () => _cycleViewType('completion'),
-                    () => _showCustomizationSheet('completion'),
+                    () => _cycleViewType(),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
                 "Missed",
-                _getMissedValue(allRecords, _missedViewType),
+                _getMissedValue(filteredRecords, _missedViewType),
                 const Color(0xFF008CC4),
                 _missedViewType,
-                    () => _cycleViewType('missed'),
-                    () => _showCustomizationSheet('missed'),
+                    () => _cycleViewType(),
               ),
             ),
           ],
@@ -415,23 +476,14 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  void _cycleViewType(String type) {
+  void _cycleViewType() {
     setState(() {
-      switch (type) {
-        case 'lecture':
-          _lectureViewType = _getNextViewType(_lectureViewType);
-          break;
-        case 'revision':
-          _revisionViewType = _getNextViewType(_revisionViewType);
-          break;
-        case 'completion':
-          _completionViewType = _getNextViewType(_completionViewType);
-          break;
-        case 'missed':
-          _missedViewType = _getNextViewType(_missedViewType);
-          break;
-      }
+      _lectureViewType = _getNextViewType(_lectureViewType);
+      _revisionViewType = _getNextViewType(_revisionViewType);
+      _completionViewType = _getNextViewType(_completionViewType);
+      _missedViewType = _getNextViewType(_missedViewType);
     });
+    _savePreferences(); // Save when view type changes
   }
 
   String _getNextViewType(String currentType) {
@@ -452,195 +504,128 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   String _getLectureValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalLectures(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalLectures(records).toString();
       case 'Monthly':
-        return calculateMonthlyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateMonthlyLectures(records).toString();
       case 'Weekly':
-        return calculateWeeklyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateWeeklyLectures(records).toString();
       case 'Daily':
-        return calculateDailyLectures(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateDailyLectures(records).toString();
       default:
-        return calculateTotalLectures(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalLectures(records).toString();
     }
   }
 
   String _getRevisionValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalRevisions(records).toString();
       case 'Monthly':
-        return calculateMonthlyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateMonthlyRevisions(records).toString();
       case 'Weekly':
-        return calculateWeeklyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateWeeklyRevisions(records).toString();
       case 'Daily':
-        return calculateDailyRevisions(records,_selectedTrackingTypesMap).toString(); // Updated function call
+        return calculateDailyRevisions(records).toString();
       default:
-        return calculateTotalRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateTotalRevisions(records).toString();
     }
   }
 
   String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
+    int target = _selectedLectureType == 'All' ? _calculateAllCompletionPercentage(records) : _customCompletionTarget;
+
     switch (viewType) {
       case 'Total':
-        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, target).toStringAsFixed(1)}%";
       case 'Monthly':
-        return "${calculateMonthlyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateMonthlyCompletion(records, target).toStringAsFixed(1)}%";
       case 'Weekly':
-        return "${calculateWeeklyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateWeeklyCompletion(records, target).toStringAsFixed(1)}%";
       case 'Daily':
-        return "${calculateDailyCompletion(records, _selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculateDailyCompletion(records, target).toStringAsFixed(1)}%";
       default:
-        return "${calculatePercentageCompletion(records,_selectedTrackingTypesMap,_customCompletionTarget).toStringAsFixed(1)}%";
+        return "${calculatePercentageCompletion(records, target).toStringAsFixed(1)}%";
     }
+  }
+
+  int _calculateAllCompletionPercentage(List<Map<String, dynamic>> records) {
+    if (_completionTargets.isEmpty) return 200;
+
+    int totalTarget = 0;
+    _completionTargets.forEach((type, target) {
+      if (type != 'All') {
+        totalTarget += target;
+      }
+    });
+
+    return totalTarget > 0 ? totalTarget : 200;
   }
 
   String _getMissedValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateMissedRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateMissedRevisions(records).toString();
       case 'Monthly':
-        return calculateMonthlyMissed(records,_selectedTrackingTypesMap).toString();
+        return calculateMonthlyMissed(records).toString();
       case 'Weekly':
-        return calculateWeeklyMissed(records,_selectedTrackingTypesMap).toString();
+        return calculateWeeklyMissed(records).toString();
       case 'Daily':
-        return calculateDailyMissed(records,_selectedTrackingTypesMap).toString();
+        return calculateDailyMissed(records).toString();
       default:
-        return calculateMissedRevisions(records,_selectedTrackingTypesMap).toString();
+        return calculateMissedRevisions(records).toString();
     }
   }
 
-
-
-  // Single row layout for larger screens
-  Widget _buildSingleRowStatsGrid(List<Map<String, dynamic>> allRecords) {
+  Widget _buildSingleRowStatsGrid(List<Map<String, dynamic>> filteredRecords) {
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             'Initiatives',
-            _getLectureValue(allRecords, _lectureViewType),
+            _getLectureValue(filteredRecords, _lectureViewType),
             const Color(0xFF6C63FF),
             _lectureViewType,
-                () => _cycleViewType('lecture'),
-                () => _showCustomizationSheet('lecture'),
+                () => _cycleViewType(),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
             'Reviewed',
-            _getRevisionValue(allRecords, _revisionViewType),
+            _getRevisionValue(filteredRecords, _revisionViewType),
             const Color(0xFFDA5656),
             _revisionViewType,
-                () => _cycleViewType('revision'),
-                () => _showCustomizationSheet('revision'),
+                () => _cycleViewType(),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            "Completion Percentage",
-            _getCompletionValue(allRecords, _completionViewType),
-            getCompletionColor(calculatePercentageCompletion(allRecords,_selectedTrackingTypesMap,_customCompletionTarget)),
-            _completionViewType,
-                () => _cycleViewType('completion'),
-                () => _showCustomizationSheet('completion'),
+              "Completion Percentage",
+              _getCompletionValue(filteredRecords, _completionViewType),
+              getCompletionColor(calculatePercentageCompletion(filteredRecords,
+                  _selectedLectureType == 'All' ? _calculateAllCompletionPercentage(filteredRecords) : _customCompletionTarget)),
+              _completionViewType,
+                  () => _cycleViewType()
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            "Missed",
-            _getMissedValue(allRecords, _missedViewType),
-            const Color(0xFF008CC4),
-            _missedViewType,
-                () => _cycleViewType('missed'),
-                () => _showCustomizationSheet('missed'),
+              "Missed",
+              _getMissedValue(filteredRecords, _missedViewType),
+              const Color(0xFF008CC4),
+              _missedViewType,
+                  () => _cycleViewType()
           ),
         ),
       ],
     );
   }
 
-
-  Future<void> _showCustomizationSheet(String type) async {
-    final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
-    final TextEditingController controller = TextEditingController();
-
-    // Set initial controller values
-    switch (type) {
-      case 'lecture':
-        controller.text = _customCompletionTarget.toString();
-        break;
-      case 'revision':
-        controller.text = _customCompletionTarget.toString();
-        break;
-      case 'completion':
-        controller.text = _customCompletionTarget.toString();
-        break;
-      case 'missed':
-        controller.text = _customCompletionTarget.toString();
-        break;
-    }
-
-    final result = await showModalBottomSheet<List<String>>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return CustomizationBottomSheet(
-          type: type,
-          typeTitle: _getTypeTitle(type),
-          trackingTypes: trackingTypes,
-          initialSelected: _selectedTrackingTypesMap[type]!,
-          controller: controller,
-        );
-      },
-    );
-    if (result != null) {
-      setState(() {
-        _selectedTrackingTypesMap[type] = result.toSet();
-      });
-      await _saveTrackingTypeToFirebase(type, result.toList());
-    }
-  }
-  Future<void> _saveTrackingTypeToFirebase(String type, List<String> selectedTypes) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final String uid = user.uid;
-        DatabaseReference typeRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes/$type');
-
-        // Update just this specific type
-        await typeRef.set(selectedTypes);
-      }
-    } catch (e) {
-    }
-  }
-
-  String _getTypeTitle(String type) {
-    switch (type) {
-      case 'lecture':
-        return 'Lectures';
-      case 'revision':
-        return 'Revisions';
-      case 'completion':
-        return 'Completion Target';
-      case 'missed':
-        return 'Missed Revisions';
-      default:
-        return '';
-    }
-  }
-
-  double calculatePercentageCompletion(List<Map<String, dynamic>> records, Map<String, Set<String>> selectedTrackingTypesMap, int customCompletionTarget) {
-    Set<String> selectedCompletionTypes = selectedTrackingTypesMap['completion'] ?? {};
+  double calculatePercentageCompletion(List<Map<String, dynamic>> records, int customCompletionTarget) {
     int completedLectures = records.where((record) =>
-      record['details']['date_learnt'] != null &&
-      selectedCompletionTypes.contains(record['details']['lecture_type'])
+    record['details']['date_learnt'] != null
     ).length;
     double percentageCompletion = customCompletionTarget > 0
         ? (completedLectures / customCompletionTarget) * 100
@@ -649,7 +634,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
   Widget _buildTwoColumnLayout(
-      List<Map<String, dynamic>> allRecords,
+      List<Map<String, dynamic>> filteredRecords,
       Map<String, int> subjectDistribution,
       double cardPadding) {
     return Row(
@@ -660,9 +645,21 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildDailyProgressCard(allRecords, cardPadding,context),
+              buildDailyProgressCard(
+                filteredRecords,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,  // Pass the callback function
+                selectedLectureType: _selectedLectureType,  // Pass the selected type
+              ),
               const SizedBox(height: 32),
-              buildSubjectDistributionCard(subjectDistribution, cardPadding,context),
+              buildSubjectDistributionCard(
+                subjectDistribution,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,
+                selectedLectureType: _selectedLectureType,
+              ),
             ],
           ),
         ),
@@ -672,9 +669,21 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           flex: 1,
           child: Column(
             children: [
-              buildWeeklyProgressCard(allRecords, cardPadding,context),
+              buildWeeklyProgressCard(
+                filteredRecords,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,
+                selectedLectureType: _selectedLectureType,
+              ),
               const SizedBox(height: 32),
-              buildProgressCalendarCard(allRecords, cardPadding,context),
+              buildProgressCalendarCard(
+                filteredRecords,
+                cardPadding,
+                context,
+                onTitleTap: _cycleLectureType,
+                selectedLectureType: _selectedLectureType,
+              ),
             ],
           ),
         ),
@@ -683,27 +692,50 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
   Widget _buildSingleColumnLayout(
-      List<Map<String, dynamic>> allRecords,
+      List<Map<String, dynamic>> filteredRecords,
       Map<String, int> subjectDistribution,
       double cardPadding) {
     return Column(
       children: [
-        buildDailyProgressCard(allRecords, cardPadding,context),
+        buildDailyProgressCard(
+          filteredRecords,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
         const SizedBox(height: 24),
-        buildWeeklyProgressCard(allRecords, cardPadding,context),
+        buildWeeklyProgressCard(
+          filteredRecords,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
         const SizedBox(height: 24),
-        buildProgressCalendarCard(allRecords, cardPadding,context),
+        buildProgressCalendarCard(
+          filteredRecords,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
         const SizedBox(height: 24),
-        buildSubjectDistributionCard(subjectDistribution, cardPadding,context),
+        buildSubjectDistributionCard(
+          subjectDistribution,
+          cardPadding,
+          context,
+          onTitleTap: _cycleLectureType,
+          selectedLectureType: _selectedLectureType,
+        ),
       ],
     );
   }
 
 
-  Widget _buildStatCard(String title, String value, Color color, String viewType, Function() onTap, Function() onLongPress) {
+  Widget _buildStatCard(String title, String value, Color color, String viewType, Function() onTap) {
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onLongPress,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

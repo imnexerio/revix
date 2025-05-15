@@ -58,7 +58,7 @@ class _FrequencyPageState extends State<FrequencyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             Container(
@@ -72,7 +72,7 @@ class _FrequencyPageState extends State<FrequencyPage> {
               child: Column(
                 children: [
                   Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
                         Expanded(
@@ -96,11 +96,11 @@ class _FrequencyPageState extends State<FrequencyPage> {
                       ],
                     ),
                   ),
-                  Divider(height: 1),
+                  const Divider(height: 1),
                   ...frequencies.map((frequency) => Column(
                     children: [
                       Padding(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
                             Expanded(
@@ -123,13 +123,13 @@ class _FrequencyPageState extends State<FrequencyPage> {
                         ),
                       ),
                       if (frequencies.indexOf(frequency) != frequencies.length - 1)
-                        Divider(height: 1),
+                        const Divider(height: 1),
                     ],
                   )).toList(),
                 ],
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => showAddFrequencySheet(
                 context,
@@ -141,10 +141,10 @@ class _FrequencyPageState extends State<FrequencyPage> {
                 isValidFrequencyFormat,
                 fetchFrequencies,
               ),
-              icon: Icon(Icons.add),
-              label: Text('Add Custom Frequency'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Custom Frequency'),
               style: FilledButton.styleFrom(
-                minimumSize: Size(200, 48),
+                minimumSize: const Size(200, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

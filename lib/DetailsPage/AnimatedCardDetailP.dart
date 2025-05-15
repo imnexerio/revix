@@ -1,5 +1,5 @@
-import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../SchedulePage/RevisionGraph.dart';
 
 class AnimatedCardDetailP extends StatelessWidget {
@@ -67,8 +67,11 @@ class AnimatedCardDetailP extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
+
+
+                              // Usage
                               Text(
-                                '${record['date_learnt']} · ${record['no_revision'] } · ${record['missed_revision']}',
+                                '${formatDate(record['initiated_on'])} · ${record['no_revision']} · ${record['missed_revision']}',
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                   fontSize: 13,
@@ -158,5 +161,14 @@ class AnimatedCardDetailP extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // import 'package:intl/intl.dart';
+
+  // Inside your build method or wherever you need to format the date
+  String formatDate(String date) {
+    final DateTime parsedDate = DateTime.parse(date);
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+    return formatter.format(parsedDate);
   }
 }

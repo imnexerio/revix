@@ -27,7 +27,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
   }
 
   // Calculate the start date (Monday) of the earliest week we want to track
-  DateTime startDate = nextSunday.subtract(Duration(days: (4 * 7) - 1));
+  DateTime startDate = nextSunday.subtract(const Duration(days: (4 * 7) - 1));
   startDate = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
 
   for (var record in records) {
@@ -38,18 +38,17 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     String? dateScheduled;
 
     if (record['details'] != null) {
-      if (record['details']['lecture_type'] == 'Lectures') {
-        dateLearnt = record['details']['date_learnt'];
-        datesRevised = record['details']['dates_revised'];
-        datesMissedRevisions = record['details']['dates_missed_revisions'];
-        dateScheduled = record['details']['date_scheduled'];
-      }
+      dateLearnt = record['details']['date_learnt'];
+      datesRevised = record['details']['dates_revised'];
+      datesMissedRevisions = record['details']['dates_missed_revisions'];
+      dateScheduled = record['details']['date_scheduled'];
     }
 
     // Process lecture date
+    if (dateLearnt!='Unspecified')
     if (dateLearnt != null) {
       DateTime lectureDate = DateTime.parse(dateLearnt);
-      if (lectureDate.isAfter(startDate) && lectureDate.isBefore(nextSunday.add(Duration(days: 1)))) {
+      if (lectureDate.isAfter(startDate) && lectureDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
         // Calculate which week this date belongs to
         int daysFromNextSunday = nextSunday.difference(lectureDate).inDays;
         int weekIndex = 3 - (daysFromNextSunday ~/ 7); // Reverse the index so newest week is at index 3
@@ -72,7 +71,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
       for (var revisionDateStr in datesRevised) {
         if (revisionDateStr is String) {
           DateTime revisionDate = DateTime.parse(revisionDateStr);
-          if (revisionDate.isAfter(startDate) && revisionDate.isBefore(nextSunday.add(Duration(days: 1)))) {
+          if (revisionDate.isAfter(startDate) && revisionDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
             int daysFromNextSunday = nextSunday.difference(revisionDate).inDays;
             int weekIndex = 3 - (daysFromNextSunday ~/ 7);
 
@@ -96,7 +95,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
       for (var missedDateStr in datesMissedRevisions) {
         if (missedDateStr is String) {
           DateTime missedDate = DateTime.parse(missedDateStr);
-          if (missedDate.isAfter(startDate) && missedDate.isBefore(nextSunday.add(Duration(days: 1)))) {
+          if (missedDate.isAfter(startDate) && missedDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
             int daysFromNextSunday = nextSunday.difference(missedDate).inDays;
             int weekIndex = 3 - (daysFromNextSunday ~/ 7);
 
@@ -116,9 +115,10 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     }
 
     // Process scheduled date
+    if (dateLearnt!='Unspecified')
     if (dateScheduled != null) {
       DateTime scheduledDate = DateTime.parse(dateScheduled);
-      if (scheduledDate.isAfter(startDate) && scheduledDate.isBefore(nextSunday.add(Duration(days: 7)))) {
+      if (scheduledDate.isAfter(startDate) && scheduledDate.isBefore(nextSunday.add(const Duration(days: 7)))) {
         int daysFromNextSunday = nextSunday.difference(scheduledDate).inDays;
         int weekIndex = 3 - (daysFromNextSunday ~/ 7);
 
@@ -199,7 +199,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
                 '${weekStart.day}/${weekStart.month}-${weekEnd.day}/${weekEnd.month}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -215,7 +215,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
           getTitlesWidget: (value, meta) {
             return Text(
               value.toInt().toString(),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -224,8 +224,8 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
           reservedSize: 30,
         ),
       ),
-      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
     ),
     borderData: FlBorderData(show: false),
     barGroups: weeklyData.entries.map((entry) {
@@ -237,7 +237,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
             toY: data.lectures.toDouble(),
             color: Colors.blue,
             width: 12,
-            borderRadius: BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
             ),
@@ -246,7 +246,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
             toY: data.revisions.toDouble(),
             color: Colors.green,
             width: 12,
-            borderRadius: BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
             ),
@@ -255,7 +255,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
             toY: data.missed.toDouble(),
             color: Colors.red,
             width: 12,
-            borderRadius: BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
             ),
@@ -264,7 +264,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
             toY: data.scheduled.toDouble(),
             color: Colors.orange,
             width: 12,
-            borderRadius: BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
             ),

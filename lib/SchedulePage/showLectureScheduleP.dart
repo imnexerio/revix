@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../RecordForm/CalculateCustomNextDate.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
@@ -10,6 +11,7 @@ import 'RevisionGraph.dart';
 
 void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
   String description = details['description'] ?? '';
+  String dateScheduled = details['date_scheduled'] ?? '';
 
   showModalBottomSheet(
     context: context,
@@ -22,12 +24,12 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
             height: MediaQuery.of(context).size.height * 0.85,
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.15),
                   blurRadius: 15,
-                  offset: Offset(0, -2),
+                  offset: const Offset(0, -2),
                   spreadRadius: 2,
                 )
               ],
@@ -36,7 +38,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
               children: [
                 // Handle bar for dragging
                 Container(
-                  margin: EdgeInsets.only(top: 12),
+                  margin: const EdgeInsets.only(top: 12),
                   height: 4,
                   width: 40,
                   decoration: BoxDecoration(
@@ -47,11 +49,11 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
                 // Header with subject and lecture info
                 Container(
-                  padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -66,29 +68,29 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             BoxShadow(
                               color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                               blurRadius: 10,
-                              offset: Offset(0, 4),
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.menu_book,
                           color: Colors.white,
                           size: 28,
                         ),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               '${details['subject']} · ${details['subject_code']} · ${details['lecture_no']}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               '${details['lecture_type']} · ${details['reminder_time']}',
                               style: TextStyle(
@@ -105,7 +107,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: Icon(Icons.close),
+                          icon: const Icon(Icons.close),
                           onPressed: () => Navigator.pop(context),
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
@@ -117,13 +119,13 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                 // Details sections
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(
                           child: ConstrainedBox(
-                            constraints: BoxConstraints(
+                            constraints: const BoxConstraints(
                               maxWidth: 300, // Maximum width to prevent the chart from becoming too large
                               maxHeight: 300, // Maximum height to maintain aspect ratio
                             ),
@@ -140,7 +142,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                         // Status card
                         _buildStatusCard(context, details),
 
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
                         // Dates section
                         Text(
@@ -151,10 +153,10 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         _buildTimelineCard(context, details),
 
-                        SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
                         Text(
                           "Description",
@@ -164,7 +166,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         DescriptionCard(
                           details: details,
                           onDescriptionChanged: (text) {
@@ -174,7 +176,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             });
                           },
                         ),
-                        SizedBox(height: 24),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -183,12 +185,12 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                 // Action button
                 SafeArea(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        icon: Icon(Icons.check_circle_outline),
-                        label: Text('MARK AS DONE'),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('MARK AS DONE'),
                         onPressed: () async {
                           try {
                             showDialog(
@@ -197,12 +199,12 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               builder: (BuildContext context) {
                                 return Center(
                                   child: Container(
-                                    padding: EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    child: Column(
+                                    child: const Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         CircularProgressIndicator(),
@@ -218,14 +220,27 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               },
                             );
 
+                            if (details['date_learnt'] == 'Unspecified') {
+                              await moveToDeletedData(
+                                  details['subject'],
+                                  details['subject_code'],
+                                  details['lecture_no'],
+                                  details
+                              );
+
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+
+                                customSnackBar(
+                                  context: context,
+                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} has been marked as done and moved to deleted data.',
+                              );
+                              return;
+                            }
+
                             String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
                             int missedRevision = (details['missed_revision'] as num).toInt();
                             DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
-                            String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                              scheduledDate,
-                              details['revision_frequency'],
-                              details['no_revision'] + 1,
-                            )).toIso8601String().split('T')[0];
 
                             if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
                               missedRevision += 1;
@@ -239,11 +254,82 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
                             datesRevised.add(dateRevised);
 
-                            if (details['only_once'] != 0) {
-                              details['status'] = 'Disabled';
-                            }
+                            if (details['revision_frequency']== 'No Repetition'){
+                              await moveToDeletedData(
+                                  details['subject'],
+                                  details['subject_code'],
+                                  details['lecture_no'],
+                                  details
+                              );
 
-                            await UpdateRecords(
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+
+                                customSnackBar(
+                                  context: context,
+                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} has been marked as done and moved to deleted data.',
+                              );
+                              return;
+                            }else{
+                              if (details['revision_frequency'] == 'Custom') {
+                                // First convert the LinkedMap to a proper Map<String, dynamic>
+                                // print('details: $details');
+                                Map<String, dynamic> revisionData = {};
+
+                                // Check if revision_data exists and has the necessary custom_params
+                                if (details['revision_data'] != null) {
+                                  final rawData = details['revision_data'];
+                                  revisionData['frequency'] = rawData['frequency'];
+
+                                  if (rawData['custom_params'] != null) {
+                                    Map<String, dynamic> customParams = {};
+                                    final rawCustomParams = rawData['custom_params'];
+
+                                    if (rawCustomParams['frequencyType'] != null) {
+                                      customParams['frequencyType'] = rawCustomParams['frequencyType'];
+                                    }
+
+                                    if (rawCustomParams['value'] != null) {
+                                      customParams['value'] = rawCustomParams['value'];
+                                    }
+
+                                    if (rawCustomParams['daysOfWeek'] != null) {
+                                      customParams['daysOfWeek'] = List<bool>.from(rawCustomParams['daysOfWeek']);
+                                    }
+
+                                    revisionData['custom_params'] = customParams;
+                                  }
+                                }
+                                // print('revisionData: $revisionData');
+                                DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+                                    DateTime.parse(details['date_scheduled']),
+                                    revisionData
+                                );
+                                dateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                              } else {
+                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                                  scheduledDate,
+                                  details['revision_frequency'],
+                                  details['no_revision'] + 1,
+                                )).toIso8601String().split('T')[0];
+                              }
+
+                              if (details['no_revision'] < 0) {
+                                datesRevised = [];
+                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                                  DateTime.parse(dateRevised),  // Parse the string into a DateTime object
+                                  details['revision_frequency'],
+                                  details['no_revision'] + 1,
+                                )).toIso8601String().split('T')[0];
+                              }
+
+                              Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(details);
+                              updatedDetails['no_revision'] = details['no_revision'] + 1;
+                              bool isEnabled = determineEnabledStatus(updatedDetails);
+
+
+
+                            await UpdateRecordsRevision(
                               details['subject'],
                               details['subject_code'],
                               details['lecture_no'],
@@ -255,26 +341,17 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               datesRevised,
                               missedRevision,
                               datesMissedRevisions,
-                              details['revision_frequency'],
-                              details['status'],
+                              isEnabled ? 'Enabled' : 'Disabled',
                             );
 
                             Navigator.pop(context);
                             Navigator.pop(context);
 
-                            if (details['only_once'] != 1) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+
                                 customSnackBar(
                                   context: context,
-                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} done. Next schedule is on $dateScheduled.',
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                customSnackBar(
-                                  context: context,
-                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} done.',
-                                ),
+                                  message: '${details['subject']} ${details['subject_code']} ${details['lecture_no']} done and scheduled for $dateScheduled',
+
                               );
                             }
                           } catch (e) {
@@ -282,18 +359,16 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               Navigator.pop(context);
                             }
 
-                            ScaffoldMessenger.of(context).showSnackBar(
                               customSnackBar_error(
                                 context: context,
                                 message: 'Failed : ${e.toString()}',
-                              ),
                             );
                           }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.primary,
                           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 2,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -312,12 +387,53 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
   );
 }
 
+bool determineEnabledStatus(Map<String, dynamic> details) {
+  // Default to the current status (convert from string to bool)
+  bool isEnabled = details['status'] == 'Enabled';
+
+  // Get the duration data with proper casting
+  Map<String, dynamic> durationData = {};
+  if (details['duration'] != null) {
+    // Cast the LinkedMap to Map<String, dynamic>
+    durationData = Map<String, dynamic>.from(details['duration'] as Map);
+  } else {
+    durationData = {'type': 'forever'};
+  }
+
+  String durationType = durationData['type'] as String? ?? 'forever';
+
+  // Check duration conditions
+  if (durationType == 'specificTimes') {
+    int? numberOfTimes = durationData['numberOfTimes'] as int?;
+    int currentRevisions = (details['no_revision'] as num?)?.toInt() ?? 0;
+
+    // Disable if we've reached or exceeded the specified number of revisions
+    if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
+      isEnabled = false;
+    }
+  }
+  else if (durationType == 'until') {
+    String? endDateStr = durationData['endDate'] as String?;
+    if (endDateStr != null) {
+      DateTime endDate = DateTime.parse(endDateStr);
+      DateTime today = DateTime.now();
+
+      // Compare only the date part (ignore time)
+      if (today.isAfter(DateTime(endDate.year, endDate.month, endDate.day))) {
+        isEnabled = false;
+      }
+    }
+  }
+
+  return isEnabled;
+}
+
 Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
   String revisionFrequency = details['revision_frequency'];
   int noRevision = details['no_revision'];
 
   return Container(
-    padding: EdgeInsets.all(16),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topLeft,
@@ -332,7 +448,7 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
         BoxShadow(
           color: Colors.black.withOpacity(0.05),
           blurRadius: 10,
-          offset: Offset(0, 5),
+          offset: const Offset(0, 5),
         ),
       ],
     ),
@@ -409,7 +525,7 @@ Widget _buildStatusItem(BuildContext context, String label, String value, IconDa
 
 Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
   return Container(
-    padding: EdgeInsets.all(16),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
@@ -417,7 +533,7 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
         BoxShadow(
           color: Colors.black.withOpacity(0.05),
           blurRadius: 10,
-          offset: Offset(0, 5),
+          offset: const Offset(0, 5),
         ),
       ],
     ),
@@ -426,20 +542,22 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
         _buildTimelineItem(
           context,
           "Initiated on",
-          details['date_learnt'],
+          details['date_learnt'] ?? 'NA',
           Icons.school_outlined,
           isFirst: true,
         ),
         _buildTimelineItem(
           context,
           "Last Reviewed",
-          details['date_revised'] ?? 'NA',
+          details['date_revised'] != null && details['date_revised'] != "Unspecified"
+              ? formatDate(details['date_revised'])
+              : 'NA',
           Icons.history,
         ),
         _buildTimelineItem(
           context,
           "Next Review",
-          details['date_scheduled'],
+          details['date_scheduled'] ?? 'NA',
           Icons.event_outlined,
           isLast: true,
           isHighlighted: true,
@@ -448,6 +566,25 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
     ),
   );
 }
+
+String formatDate(String date) {
+  // Check if the date is a special case like "Unspecified" or empty
+  if (date == null || date == "Unspecified" || date.isEmpty) {
+    return "NA";
+  }
+
+  try {
+    final DateTime parsedDate = DateTime.parse(date);
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+    return formatter.format(parsedDate);
+  } catch (e) {
+    // Handle any parsing errors gracefully
+    print("Error parsing date: $date, Error: $e");
+    return "Invalid Date";
+  }
+}
+
+
 
 Widget _buildTimelineItem(
     BuildContext context, String label, String date, IconData icon,
@@ -487,7 +624,7 @@ Widget _buildTimelineItem(
       const SizedBox(width: 16),
       Expanded(
         child: Padding(
-          padding: EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.only(top: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -498,7 +635,7 @@ Widget _buildTimelineItem(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 date,
                 style: TextStyle(

@@ -1,32 +1,43 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
+import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/customSnackBar_error.dart';
+import '../Utils/platform_utils.dart';
 import 'AboutPage.dart';
 import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
-import 'DecodeProfilePic.dart';
-import 'FetchProfilePic.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
 import 'NotificationPage.dart';
 import 'ProfileHeader.dart';
-import 'ProfileImageUpload.dart';
 import 'ProfileOptionCard.dart';
 import 'ProfilePage.dart';
-import 'SendVerificationMail.dart';
+import 'ProfileProvider.dart';
 import 'ThemePage.dart';
 import 'TrackingTypePage.dart';
 import 'buildDetailPageAppBar.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends StatelessWidget {
   @override
-  _SettingsPageState createState() => _SettingsPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ProfileProvider(),
+      child: SettingsPageContent(),
+    );
+  }
 }
 
-class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
-  // Track currently selected page for large screens
+class SettingsPageContent extends StatefulWidget {
+  @override
+  _SettingsPageContentState createState() => _SettingsPageContentState();
+}
+
+class _SettingsPageContentState extends State<SettingsPageContent> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   Widget? _currentDetailPage;
   String _currentTitle = 'Edit Profile'; // Set default title
   bool _isInitialized = false;
@@ -36,12 +47,6 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Cache for frequently accessed data to prevent unnecessary rebuilds
-  String? _cachedDisplayName;
-  Image? _cachedProfileImage;
-  bool? _cachedEmailVerified;
-
-  // Keep widget alive when switching tabs or resizing
   @override
   bool get wantKeepAlive => true;
 
@@ -49,10 +54,14 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
   void initState() {
     super.initState();
 
+    final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+    profileProvider.loadProfileImage(context);
+    profileProvider.loadDisplayName();
+
     // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
 
     _fadeAnimation = Tween<double>(
@@ -64,7 +73,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     ));
 
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0.05, 0),
+      begin: const Offset(0.05, 0),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -74,8 +83,6 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     // Start the animation
     _animationController.forward();
 
-    // Prefetch data to improve UX
-    _prefetchUserData();
   }
 
   @override
@@ -84,60 +91,59 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     super.dispose();
   }
 
-  // Prefetch user data to avoid multiple fetches
-  Future<void> _prefetchUserData() async {
-    try {
-      _cachedDisplayName = await _getDisplayName();
-      _cachedEmailVerified = await _isEmailVerified();
-      _cachedProfileImage = await _decodeProfileImage(getCurrentUserUid());
-
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      print('Error prefetching user data: $e');
-    }
-  }
 
   Future<void> _logout(BuildContext context) async {
-    // Add a subtle animation before logout
-    _animationController.reverse().then((_) async {
+    try {
+      await _animationController.reverse();
+      final databaseService = CombinedDatabaseService();
+      databaseService.stopListening();
+
+      if (PlatformUtils.instance.isAndroid) {
+        await HomeWidgetService.updateWidgetData([],[],[]);
+      }
+
+      await FirebaseAuth.instance.signOut();
+
+      if (PlatformUtils.instance.isAndroid) {
+        await HomeWidgetService.updateLoginStatus();
+      }
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove('isLoggedIn');
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            var begin = Offset(0.0, 1.0);
-            var end = Offset.zero;
-            var curve = Curves.easeInOutCubic;
-            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-            return SlideTransition(
-              position: animation.drive(tween),
-              child: child,
-            );
-          },
-          transitionDuration: Duration(milliseconds: 500),
-        ),
-      );
-    });
+      await prefs.clear();
+
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              var begin = const Offset(0.0, 1.0);
+              var end = Offset.zero;
+              var curve = Curves.easeInOutCubic;
+              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+              return SlideTransition(
+                position: animation.drive(tween),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+          customSnackBar_error(
+            context: context,
+            message: 'Error during logout: $e',
+        );
+      }
+    }
   }
 
   Future<void> _refreshProfile() async {
-    // Clear cache
-    _cachedDisplayName = null;
-    _cachedProfileImage = null;
-    _cachedEmailVerified = null;
-
-    // Reload data
-    await _prefetchUserData();
-
-    if (mounted) {
-      setState(() {
-        // This will only rebuild the necessary widgets thanks to the cache
-      });
-    }
+    final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+    await profileProvider.fetchAndUpdateDisplayName();
+    await profileProvider.fetchAndUpdateProfileImage(context);
   }
 
   String getCurrentUserUid() {
@@ -147,37 +153,6 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
   Future<String> _getAppVersion() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     return '${packageInfo.version}+${packageInfo.buildNumber}';
-  }
-
-  Future<String> _getDisplayName() async {
-    if (_cachedDisplayName != null) return _cachedDisplayName!;
-
-    User? user = FirebaseAuth.instance.currentUser;
-    return user?.displayName ?? 'User';
-  }
-
-  Future<bool> _isEmailVerified() async {
-    if (_cachedEmailVerified != null) return _cachedEmailVerified!;
-
-    User? user = FirebaseAuth.instance.currentUser;
-    await user?.reload();
-    return user?.emailVerified ?? false;
-  }
-
-  Future<String?> _getProfilePicture(String uid) {
-    return getProfilePicture(uid);
-  }
-
-  Future<Image?> _decodeProfileImage(String uid) async {
-    if (_cachedProfileImage != null) return _cachedProfileImage;
-
-    return decodeProfileImage(context, uid, _getProfilePicture);
-  }
-
-  Future<void> _sendVerificationEmail(BuildContext context) async {
-    await sendVerificationEmail(context);
-    _cachedEmailVerified = null; // Clear cache to force refresh
-    await _refreshProfile();
   }
 
   Future<String> _fetchReleaseNotes() {
@@ -200,7 +175,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             body: page,
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            var begin = Offset(1.0, 0.0);
+            var begin = const Offset(1.0, 0.0);
             var end = Offset.zero;
             var curve = Curves.easeOutCubic;
             var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
@@ -213,7 +188,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
               ),
             );
           },
-          transitionDuration: Duration(milliseconds: 300),
+          transitionDuration: const Duration(milliseconds: 300),
         ),
       ).then((_) {
         // Optional: refresh data when returning from detail page
@@ -237,11 +212,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
 
   // Create pages once and store them in variables to avoid recreation
   Widget _createEditProfilePage() {
-    return EditProfilePage(
-      getDisplayName: _getDisplayName,
-      decodeProfileImage: _decodeProfileImage,
-      uploadProfilePicture: uploadProfilePicture,
-      getCurrentUserUid: getCurrentUserUid,
+    return const EditProfilePage(
     );
   }
 
@@ -291,16 +262,44 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     );
   }
 
+  // Method to handle back navigation
+  void _handleBackNavigation() {
+    Navigator.of(context).pop();
+  }
+
+  // Back button component that appears at the top regardless of screen size
+  Widget _buildBackButton() {
+    return Positioned(
+      top: 16,
+      left: 16,
+      child: Container(
+        child: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+          onPressed: _handleBackNavigation,
+          tooltip: 'Back',
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(),
+          style: IconButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   PreferredSizeWidget _buildLargeScreenAppBar() {
     return AppBar(
       title: AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         transitionBuilder: (Widget child, Animation<double> animation) {
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
               position: Tween<Offset>(
-                begin: Offset(0.0, 0.2),
+                begin: const Offset(0.0, 0.2),
                 end: Offset.zero,
               ).animate(animation),
               child: child,
@@ -336,12 +335,12 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
         children: [
           // Using staggered animations for each option card
           ..._buildAnimatedOptionCards(isSmallScreen),
-          SizedBox(height: 32),
+          const SizedBox(height: 32),
 
           // Animated logout button
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0.0, end: 1.0),
-            duration: Duration(milliseconds: 500),
+            duration: const Duration(milliseconds: 500),
             curve: Curves.easeOutCubic,
             builder: (context, value, child) {
               return Opacity(
@@ -355,14 +354,14 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
             child: FilledButton(
               onPressed: () => _logout(context),
               style: FilledButton.styleFrom(
-                minimumSize: Size(70, 55),
+                minimumSize: const Size(70, 55),
                 backgroundColor: Theme.of(context).colorScheme.errorContainer,
                 foregroundColor: Theme.of(context).colorScheme.error,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.logout, size: 20),
@@ -449,7 +448,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
       // Create staggered animation for each card
       final card = TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.0, end: 1.0),
-        duration: Duration(milliseconds: 600),
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeOutCubic,
         // Delay each card by a bit more
         builder: (context, value, child) {
@@ -479,7 +478,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
 
       // Add spacing except after the last item
       if (i < options.length - 1) {
-        cards.add(SizedBox(height: 16));
+        cards.add(const SizedBox(height: 16));
       }
     }
 
@@ -499,98 +498,84 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshProfile,
-        child: isSmallScreen
-        // Small screen layout - Single column scrollable with animation
-            ? SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              ProfileHeader(
-                isSmallScreen: isSmallScreen,
-                cachedProfileImage: _cachedProfileImage,
-                cachedDisplayName: _cachedDisplayName,
-                cachedEmailVerified: _cachedEmailVerified,
-                decodeProfileImage: _decodeProfileImage,
-                getDisplayName: _getDisplayName,
-                isEmailVerified: _isEmailVerified,
-                sendVerificationEmail: _sendVerificationEmail,
-                uploadProfilePicture: uploadProfilePicture,
-                refreshProfile: _refreshProfile,
-                showEditProfilePage: _showEditProfilePage,
-                getCurrentUserUid: getCurrentUserUid,
-              ),
-              _buildSettingsOptions(isSmallScreen),
-            ],
-          ),
-        )
-        // Large screen layout - Side-by-side master-detail view with animation
-            : Row(
+        child: Stack(
           children: [
-            // Left side - Settings options
-            Container(
-              width: MediaQuery.of(context).size.width * 0.33, // 33% of the screen width
-              child: SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    ProfileHeader(
-                      isSmallScreen: isSmallScreen,
-                      cachedProfileImage: _cachedProfileImage,
-                      cachedDisplayName: _cachedDisplayName,
-                      cachedEmailVerified: _cachedEmailVerified,
-                      decodeProfileImage: _decodeProfileImage,
-                      getDisplayName: _getDisplayName,
-                      isEmailVerified: _isEmailVerified,
-                      sendVerificationEmail: _sendVerificationEmail,
-                      uploadProfilePicture: uploadProfilePicture,
-                      refreshProfile: _refreshProfile,
-                      showEditProfilePage: _showEditProfilePage,
-                      getCurrentUserUid: getCurrentUserUid,
-                    ),
-                    _buildSettingsOptions(isSmallScreen),
-                  ],
-                ),
-              ),
-            ),
-            // Divider between sections
-            VerticalDivider(width: 1, thickness: 1),
-            // Right side - Detail view with app bar and animations
-            Expanded(
+            isSmallScreen
+            // Small screen layout - Single column scrollable with animation
+                ? SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
-                  // App bar for large screens
-                  _buildLargeScreenAppBar(),
-                  // Detail content with fade animation
-                  Expanded(
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: _currentDetailPage ?? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.touch_app,
-                                size: 64,
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  ProfileHeader(
+                    isSmallScreen: isSmallScreen,
+                    showEditProfilePage: _showEditProfilePage,
+                  ),
+                  _buildSettingsOptions(isSmallScreen),
+                ],
+              ),
+            )
+            // Large screen layout - Side-by-side master-detail view with animation
+                : Row(
+              children: [
+                // Left side - Settings options
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.33, // 33% of the screen width
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        ProfileHeader(
+                          isSmallScreen: isSmallScreen,
+                          showEditProfilePage: _showEditProfilePage,
+                        ),
+                        _buildSettingsOptions(isSmallScreen),
+                      ],
+                    ),
+                  ),
+                ),
+                // Divider between sections
+                const VerticalDivider(width: 1, thickness: 1),
+                // Right side - Detail view with app bar and animations
+                Expanded(
+                  child: Column(
+                    children: [
+                      // App bar for large screens
+                      _buildLargeScreenAppBar(),
+                      // Detail content with fade animation
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: _currentDetailPage ?? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.touch_app,
+                                    size: 64,
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Select an option from the left menu',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Select an option from the left menu',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+            // Back button positioned at the top left, regardless of screen size
+            _buildBackButton(),
           ],
         ),
       ),

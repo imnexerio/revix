@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import '../SchedulePage/LegendItem.dart';
 import 'WeeklyProgress.dart';
 
-Widget buildWeeklyProgressCard(List<Map<String, dynamic>> allRecords, double cardPadding, BuildContext context) {
+Widget buildWeeklyProgressCard(List<Map<String,
+    dynamic>> allRecords,
+    double cardPadding,
+    BuildContext context,
+    {required Function() onTitleTap, required String selectedLectureType}) {
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
@@ -21,12 +25,26 @@ Widget buildWeeklyProgressCard(List<Map<String, dynamic>> allRecords, double car
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Weekly Progress',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).textTheme.titleLarge?.color,
+        // Make the title row clickable
+        GestureDetector(
+          onTap: onTitleTap,
+          child: Row(
+            children: [
+              Text(
+                'Weekly Progress: $selectedLectureType',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.swap_horiz,
+                size: 16,
+                color: Theme.of(context).textTheme.titleLarge?.color,
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),

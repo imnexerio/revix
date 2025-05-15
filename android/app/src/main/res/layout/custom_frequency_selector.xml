@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    >
+
+    <View
+        android:id="@+id/dragHandle"
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+
+        app:layout_constraintBottom_toTopOf="@+id/buttonLayout"
+        app:layout_constraintTop_toBottomOf="@+id/dragHandle">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp">
+
+            <!-- Day Option -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical">
+
+                <RadioButton
+                    android:id="@+id/radioDayOption"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/radio_selector"
+                    android:button="@null" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Every"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+
+                <EditText
+                    android:id="@+id/dayInput"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:inputType="number"
+                    android:maxLength="3"
+                    android:text="1"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="italic"
+                    android:textColor="@color/text"
+                     />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="day"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:alpha="0.1"
+                android:background="?android:attr/colorBackground" />
+
+            <!-- Week Option -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <RadioButton
+                    android:id="@+id/radioWeekOption"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/radio_selector"
+                    android:button="@null" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Every"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+
+                <EditText
+                    android:id="@+id/weekInput"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:inputType="number"
+                    android:maxLength="3"
+                    android:text="1"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="italic"
+                    android:textColor="@color/text"
+                     />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="week"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+            </LinearLayout>
+
+            <!-- Weekly Options Layout -->
+            <LinearLayout
+                android:id="@+id/weeklyOptionsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="20dp"
+                android:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_marginTop="5dp">
+
+                    <TextView
+                        android:id="@+id/daySunday"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="S"
+                        android:gravity="center"
+                        android:background="@drawable/circle_unselected"
+                        android:layout_marginHorizontal="4dp"/>
+
+                    <TextView
+                        android:id="@+id/dayMonday"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="M"
+                        android:gravity="center"
+                        android:background="@drawable/circle_unselected"
+                        android:layout_marginHorizontal="4dp"/>
+
+                    <TextView
+                        android:id="@+id/dayTuesday"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="T"
+                        android:gravity="center"
+                        android:background="@drawable/circle_unselected"
+                        android:layout_marginHorizontal="4dp"/>
+
+                    <TextView
+                        android:id="@+id/dayWednesday"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="W"
+                        android:gravity="center"
+                        android:background="@drawable/circle_unselected"
+                        android:layout_marginHorizontal="4dp"/>
+
+                    <TextView
+                        android:id="@+id/dayThursday"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="T"
+                        android:gravity="center"
+                        android:background="@drawable/circle_unselected"
+                        android:layout_marginHorizontal="4dp"/>
+
+                    <TextView
+                        android:id="@+id/dayFriday"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="F"
+                        android:gravity="center"
+                        android:background="@drawable/circle_unselected"
+                        android:layout_marginHorizontal="4dp"/>
+
+                    <TextView
+                        android:id="@+id/daySaturday"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="S"
+                        android:gravity="center"
+                        android:background="@drawable/circle_unselected"
+                        android:layout_marginHorizontal="4dp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:alpha="0.1"
+                android:background="?android:attr/colorBackground" />
+
+            <!-- Month Option -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <RadioButton
+                    android:id="@+id/radioMonthOption"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/radio_selector"
+                    android:button="@null" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Every"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+
+                <EditText
+                    android:id="@+id/monthInput"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:inputType="number"
+                    android:maxLength="3"
+                    android:text="1"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="italic"
+                    android:textColor="@color/text"
+                     />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="month"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+            </LinearLayout>
+
+            <!-- Monthly Options Layout -->
+            <LinearLayout
+                android:id="@+id/monthlyOptionsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="20dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/monthOptionDay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:text="Repeat on the 1st"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="10dp"/>
+
+                <TextView
+                    android:id="@+id/monthOptionWeekday"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:text="Repeat on the 1st Monday"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="10dp"/>
+
+                <TextView
+                    android:id="@+id/monthOptionDates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:text="Select multiple dates"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="10dp"/>
+
+                <!-- Date Selection Grid -->
+                <GridLayout
+                    android:id="@+id/dateSelectionGrid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="7"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="10dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:alpha="0.1"
+                android:background="?android:attr/colorBackground" />
+
+            <!-- Year Option -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <RadioButton
+                    android:id="@+id/radioYearOption"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/radio_selector"
+                    android:button="@null" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Every"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+
+                <EditText
+                    android:id="@+id/yearInput"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:inputType="number"
+                    android:maxLength="3"
+                    android:text="1"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="italic"
+                    android:textColor="@color/text"
+                     />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="year"
+                    android:textSize="22sp"
+                    android:textStyle="italic" />
+            </LinearLayout>
+
+            <!-- Yearly Options Layout -->
+            <LinearLayout
+                android:id="@+id/yearlyOptionsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="20dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/yearOptionDay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:text="Repeat on 1st Jan"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="10dp"/>
+
+                <TextView
+                    android:id="@+id/yearOptionWeekday"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:text="Repeat on the 1st Monday of Jan"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="10dp"/>
+
+                <TextView
+                    android:id="@+id/monthSelectionButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:text="Select months to repeat on 1st day"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:layout_marginTop="10dp"/>
+
+                <!-- Month Selection Grid -->
+                <GridLayout
+                    android:id="@+id/monthSelectionGrid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:columnCount="4"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="10dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <!-- Bottom margin space -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="20dp"/>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Button Layout -->
+    <LinearLayout
+        android:id="@+id/buttonLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:text="CANCEL"
+            android:textSize="16sp"
+            android:background="@drawable/rounded_cancel_button"
+            android:textColor="@color/text"
+            android:layout_margin="8dp"
+            android:elevation="2dp"/>
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:text="SAVE"
+            android:textSize="16sp"
+            android:background="@drawable/rounded_save_button"
+            android:textColor="@android:color/white"
+            android:layout_margin="8dp"
+            android:elevation="2dp"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

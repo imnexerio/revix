@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../CustomFrequencySelector.dart';
+import '../RecordForm/CalculateCustomNextDate.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
@@ -31,6 +34,14 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late int noRevision;
   late TextEditingController _descriptionController;
   late String formattedTime;
+  late String dateScheduled;
+  Map<String, dynamic> customFrequencyParams = {};
+  String duration = 'Forever';
+  Map<String, dynamic> durationData = {
+    "type": "forever",
+    "numberOfTimes": null,
+    "endDate": null
+  };
 
   @override
   void initState() {
@@ -42,6 +53,23 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
+    customFrequencyParams = Map<String, dynamic>.from(
+      widget.details['revision_data']['custom_params'] ?? {},
+    );
+    durationData = {
+      "type": widget.details['duration']['type'],
+      "numberOfTimes": widget.details['duration']['numberOfTimes'],
+      "endDate": widget.details['duration']['endDate'],
+    };
+
+    // Set the correct duration display value based on durationData
+    if (durationData["type"] == "forever") {
+      duration = "Forever";
+    } else if (durationData["type"] == "specificTimes") {
+      duration = "Specific Number of Times";
+    } else if (durationData["type"] == "until") {
+      duration = "Until";
+    }
   }
 
   @override
@@ -50,18 +78,19 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.15),
             blurRadius: 15,
-            offset: Offset(0, -2),
+            offset: const Offset(0, -2),
             spreadRadius: 2,
           )
         ],
@@ -70,7 +99,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         children: [
           // Handle bar for dragging
           Container(
-            margin: EdgeInsets.only(top: 12),
+            margin: const EdgeInsets.only(top: 12),
             height: 4,
             width: 40,
             decoration: BoxDecoration(
@@ -81,11 +110,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
           // Header with subject and lecture info
           Container(
-            padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
             child: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -100,29 +129,29 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       BoxShadow(
                         color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                         blurRadius: 10,
-                        offset: Offset(0, 4),
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.menu_book,
                     color: Colors.white,
                     size: 28,
                   ),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '${widget.selectedSubject} · ${widget.selectedSubjectCode} · ${widget.lectureNo}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         '${widget.details['lecture_type']}',
                         style: TextStyle(
@@ -139,7 +168,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.close),
+                    icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -148,17 +177,16 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
           ),
 
-          // Details sections
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
                   Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
+                      constraints: const BoxConstraints(
                         maxWidth: 300,
                         maxHeight: 300,
                       ),
@@ -175,7 +203,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   // Status card
                   _buildStatusCard(context),
 
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Timeline section
                   Text(
@@ -186,10 +214,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _buildTimelineCard(context),
 
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // Description section
                   Text(
@@ -200,7 +228,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   DescriptionCard(
                     details: widget.details,
                     onDescriptionChanged: (text) {
@@ -210,7 +238,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     },
                   ),
 
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   Text(
                     "Review Settings",
                     style: TextStyle(
@@ -219,10 +247,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _buildRevisionSettingsCard(context),
 
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -231,13 +259,13 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           // Action buttons
           SafeArea(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: Icon(Icons.check_circle_outline),
-                      label: Text('MARK AS DONE'),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('MARK AS DONE'),
                       onPressed: () async {
                         try {
                           showDialog(
@@ -246,12 +274,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             builder: (BuildContext context) {
                               return Center(
                                 child: Container(
-                                  padding: EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Column(
+                                  child: const Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       CircularProgressIndicator(),
@@ -272,14 +300,26 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             throw 'Cannot mark as done when the status is disabled';
                           }
 
+                          if (widget.details['date_learnt'] == 'Unspecified') {
+                            await moveToDeletedData(
+                                widget.selectedSubject,
+                                widget.selectedSubjectCode,
+                                widget.lectureNo,
+                                widget.details
+                            );
+
+                            Navigator.pop(context);
+                            Navigator.pop(context);
+                              customSnackBar(
+                                context: context,
+                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
+                            );
+                            return;
+                          }
+
                           String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
                           int missedRevision = (widget.details['missed_revision'] as num).toInt();
                           DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
-                          String dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                            scheduledDate,
-                            revisionFrequency,
-                            noRevision + 1,
-                          )).toIso8601String().split('T')[0];
 
                           if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
                             missedRevision += 1;
@@ -292,9 +332,58 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
                           datesRevised.add(dateRevised);
 
-                          if (widget.details['only_once'] != 0) {
-                            isEnabled = false;
-                          }
+
+                            if (widget.details['revision_frequency']== 'No Repetition'){
+                              await moveToDeletedData(
+                                  widget.selectedSubject,
+                                  widget.selectedSubjectCode,
+                                  widget.lectureNo,
+                                  widget.details
+                              );
+
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+                                customSnackBar(
+                                  context: context,
+                                  message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
+                              );
+                              return;
+                            }else{
+                              if (widget.details['revision_frequency'] == 'Custom') {
+
+                                Map<String, dynamic> revisionData = extractRevisionData(widget.details);
+                                // print('revisionData: $revisionData');
+                                DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+                                    DateTime.parse(widget.details['date_scheduled']),
+                                    revisionData
+                                );
+                                dateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                              } else {
+                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                                  scheduledDate,
+                                  revisionFrequency,
+                                  noRevision + 1,
+                                )).toIso8601String().split('T')[0];
+                              }
+                              Map<String, dynamic> revisionData = {
+                                'frequency': revisionFrequency,
+                              };
+                              if(customFrequencyParams.isNotEmpty) {
+                                revisionData['custom_params'] = customFrequencyParams;
+                              }
+
+                              if (widget.details['no_revision'] < 0) {
+                                datesRevised = [];
+                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+                                  DateTime.parse(dateRevised),
+                                  widget.details['revision_frequency'],
+                                  widget.details['no_revision'] + 1,
+                                )).toIso8601String().split('T')[0];
+                              }
+                              Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(widget.details);
+                              updatedDetails['no_revision'] = noRevision+1;
+                              isEnabled = determineEnabledStatus(updatedDetails);
+
 
                           await UpdateRecords(
                             widget.selectedSubject,
@@ -310,43 +399,34 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             datesMissedRevisions,
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
+                            revisionData,
+                            durationData
                           );
 
                           Navigator.pop(context);
                           Navigator.pop(context);
 
-                          if (widget.details['only_once'] != 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              customSnackBar(
-                                context: context,
-                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. This lecture is marked as done and will not be revised again.',
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
+
+
                               customSnackBar(
                                 context: context,
                                 message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
-                              ),
                             );
                           }
                         } catch (e) {
                           if (Navigator.canPop(context)) {
                             Navigator.pop(context);
                           }
-
-                          ScaffoldMessenger.of(context).showSnackBar(
                             customSnackBar_error(
                               context: context,
                               message: 'Failed to mark as done: ${e.toString()}',
-                            ),
                           );
                         }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -354,11 +434,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: Icon(Icons.save),
-                      label: Text('SAVE CHANGES'),
+                      icon: const Icon(Icons.save),
+                      label: const Text('SAVE CHANGES'),
                       onPressed: () async {
                         try {
                           showDialog(
@@ -367,12 +447,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             builder: (BuildContext context) {
                               return Center(
                                 child: Container(
-                                  padding: EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Column(
+                                  child: const Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       CircularProgressIndicator(),
@@ -396,6 +476,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                               DateTime.parse(widget.details['date_scheduled']).isBefore(DateTime.now())) {
                             dateScheduled = DateTime.now().toIso8601String().split('T')[0];
                           }
+                          Map<String, dynamic> revisionData = {
+                            'frequency': revisionFrequency,
+                          };
+                          if(customFrequencyParams.isNotEmpty) {
+                            revisionData['custom_params'] = customFrequencyParams;
+                          }
 
                           await UpdateRecords(
                             widget.selectedSubject,
@@ -411,34 +497,33 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             datesMissedRevisions,
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
+                            revisionData,
+                            durationData
                           );
 
                           Navigator.pop(context);
                           Navigator.pop(context);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
+
                             customSnackBar(
                               context: context,
                               message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
-                            ),
                           );
                         } catch (e) {
                           if (Navigator.canPop(context)) {
                             Navigator.pop(context);
                           }
 
-                          ScaffoldMessenger.of(context).showSnackBar(
                             customSnackBar_error(
                               context: context,
                               message: 'Update Failed: ${e.toString()}',
-                            ),
                           );
                         }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.secondary,
                         foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -457,7 +542,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
   Widget _buildStatusCard(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -472,7 +557,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -606,7 +691,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
   Widget _buildTimelineCard(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -614,7 +699,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -630,7 +715,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildTimelineItem(
             context,
             "Last Reviewed",
-            widget.details['date_revised'] ?? 'NA',
+            widget.details['date_revised'] != null ? formatDate(widget.details['date_revised']) : 'NA',
             Icons.history,
           ),
           _buildTimelineItem(
@@ -684,7 +769,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         const SizedBox(width: 16),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -695,7 +780,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   date,
                   style: TextStyle(
@@ -716,7 +801,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
   Widget _buildRevisionSettingsCard(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -724,69 +809,247 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Review Frequency",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    RevisionFrequencyDropdown(
-                      revisionFrequency: revisionFrequency,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          revisionFrequency = newValue!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          const SizedBox(height: 8),
+          // Wrap the RevisionFrequencyDropdown in a Container with styling
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).cardColor,
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: RevisionFrequencyDropdown(
+              revisionFrequency: revisionFrequency,
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    revisionFrequency = newValue;
+
+                    // If custom is selected, show custom options
+                    if (newValue == 'Custom') {
+                      // print('extractRevisionData: ${extractRevisionData(widget.details)}');
+                      showCustomFrequencySelector();
+                    } else {
+                      customFrequencyParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+                    }
+                  });
+                }
+              },
+            ),
           ),
 
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
+
+          // Duration section
+          Text(
+            "Duration",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).cardColor,
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: duration,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  isExpanded: true,
+                  items: const [
+                    DropdownMenuItem<String>(
+                      value: 'Forever',
+                      child: Text('Forever'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Specific Number of Times',
+                      child: Text('Specific Number of Times'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Until',
+                      child: Text('Until'),
+                    ),
+                  ],
+                  onChanged: (String? newValue) {
+                    if(newValue != null) {
+                      setState(() {
+                        duration = newValue;
+                        if (duration == 'Forever') {
+                          durationData = {
+                            "type": "forever",
+                            "numberOfTimes": null,
+                            "endDate": null
+                          };
+                        }
+                        else if (duration == 'Specific Number of Times') {
+                          // Show a dialog or bottom sheet to enter the number of times
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              final controller = TextEditingController(
+                                text: durationData["numberOfTimes"]?.toString() ?? ''
+                              );
+
+                              return AlertDialog(
+                                title: const Text('Enter Number of Times'),
+                                content: TextFormField(
+                                  controller: controller,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Number of Times',
+                                    hintText: 'Enter a value ≥ 1',
+                                  ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a value';
+                                    }
+                                    final number = int.tryParse(value);
+                                    if (number == null || number < 1) {
+                                      return 'Value must be at least 1';
+                                    }
+                                    return null;
+                                  },
+                                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('CANCEL'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                  TextButton(
+                                    child: const Text('OK'),
+                                    onPressed: () {
+                                      int? parsedValue = int.tryParse(controller.text);
+                                      if (parsedValue != null && parsedValue >= 1) {
+                                        setState(() {
+                                          durationData = {
+                                            "type": "specificTimes",
+                                            "numberOfTimes": parsedValue,
+                                            "endDate": null
+                                          };
+                                        });
+                                        Navigator.of(context).pop();
+                                      } else {
+                                        // Show error feedback
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Please enter a valid number (minimum 1)'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        }
+                        else if (duration == 'Until') {
+                          // Show a date picker to select the end date
+                          final initialDate = durationData["endDate"] != null
+                              ? DateTime.parse(durationData["endDate"])
+                              : DateTime.now();
+
+                          showDatePicker(
+                            context: context,
+                            initialDate: initialDate.isAfter(DateTime.now()) ? initialDate : DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                          ).then((pickedDate) {
+                            if (pickedDate != null) {
+                              setState(() {
+                                durationData = {
+                                  "type": "until",
+                                  "numberOfTimes": null,
+                                  "endDate": pickedDate.toIso8601String().split('T')[0]
+                                };
+                              });
+                            }
+                          });
+                        }
+                      });
+                    }
+                  },
+                ),
+                // Show additional information about the selected duration
+                if (durationData["numberOfTimes"] != null || durationData["endDate"] != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Text(
+                      durationData["numberOfTimes"] != null
+                          ? "Will repeat ${durationData["numberOfTimes"]} times"
+                          : durationData["endDate"] != null
+                              ? "Will repeat until ${durationData["endDate"]}"
+                              : "",
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Custom frequency description (if selected)
+          if (revisionFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              // child: Text(
+              //   getCustomFrequencyDescription(),
+              //   style: TextStyle(
+              //     fontStyle: FontStyle.italic,
+              //     color: Theme.of(context).colorScheme.secondary,
+              //   ),
+              // ),
+            ),
+
+          const SizedBox(height: 20),
 
           // Status toggle
+          Text(
+            "Status",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Status",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      isEnabled
-                          ? "This lecture is enabled for future revisions"
-                          : "This lecture is disabled and won't appear in revisions",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  isEnabled
+                      ? "This lecture is enabled for future revisions"
+                      : "This lecture is disabled and won't appear in revisions",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
               ),
               Switch(
@@ -803,6 +1066,126 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         ],
       ),
     );
+  }
+
+  String formatDate(String date) {
+    // Check if the date is a special case like "Unspecified" or empty
+    if (date == null || date == "Unspecified" || date.isEmpty) {
+      return "NA";
+    }
+
+    try {
+      final DateTime parsedDate = DateTime.parse(date);
+      final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+      return formatter.format(parsedDate);
+    } catch (e) {
+      // Handle any parsing errors gracefully
+      print("Error parsing date: $date, Error: $e");
+      return "Invalid Date";
+    }
+  }
+
+  Future<void> showCustomFrequencySelector() async {
+    // Get the actual custom params from the nested structure
+    Map<String, dynamic> initialParams = {};
+
+    if (widget.details['revision_data'] != null &&
+        widget.details['revision_data']['custom_params'] != null) {
+      initialParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+    }
+
+    // For debugging
+    // print('Passing initialParams to CustomFrequencySelector: $initialParams');
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return CustomFrequencySelector(
+          initialParams: initialParams,
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        customFrequencyParams = result;
+      });
+    }
+  }
+
+  Map<String, dynamic> extractRevisionData(Map<String, dynamic> details) {
+    Map<String, dynamic> revisionData = {};
+
+    if (details['revision_data'] != null) {
+      final rawData = details['revision_data'];
+      revisionData['frequency'] = rawData['frequency'];
+
+      if (rawData['custom_params'] != null) {
+        Map<String, dynamic> customParams = {};
+        final rawCustomParams = rawData['custom_params'];
+
+        if (rawCustomParams['frequencyType'] != null) {
+          customParams['frequencyType'] = rawCustomParams['frequencyType'];
+        }
+
+        if (rawCustomParams['value'] != null) {
+          customParams['value'] = rawCustomParams['value'];
+        }
+
+        if (rawCustomParams['daysOfWeek'] != null) {
+          customParams['daysOfWeek'] = List<bool>.from(rawCustomParams['daysOfWeek']);
+        }
+
+        revisionData['custom_params'] = customParams;
+      }
+    }
+
+    return revisionData;
+  }
+
+  bool determineEnabledStatus(Map<String, dynamic> details) {
+    // Default to the current status (convert from string to bool)
+    bool isEnabled = details['status'] == 'Enabled';
+
+    // Get the duration data with proper casting
+    Map<String, dynamic> durationData = {};
+    if (details['duration'] != null) {
+      // Cast the LinkedMap to Map<String, dynamic>
+      durationData = Map<String, dynamic>.from(details['duration'] as Map);
+    } else {
+      durationData = {'type': 'forever'};
+    }
+
+    String durationType = durationData['type'] as String? ?? 'forever';
+
+    // Check duration conditions
+    if (durationType == 'specificTimes') {
+      int? numberOfTimes = durationData['numberOfTimes'] as int?;
+      int currentRevisions = (details['no_revision'] as num?)?.toInt() ?? 0;
+
+      // Disable if we've reached or exceeded the specified number of revisions
+      if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
+        isEnabled = false;
+      }
+    }
+    else if (durationType == 'until') {
+      String? endDateStr = durationData['endDate'] as String?;
+      if (endDateStr != null) {
+        DateTime endDate = DateTime.parse(endDateStr);
+        DateTime today = DateTime.now();
+
+        // Compare only the date part (ignore time)
+        if (today.isAfter(DateTime(endDate.year, endDate.month, endDate.day))) {
+          isEnabled = false;
+        }
+      }
+    }
+
+    return isEnabled;
   }
 
 }

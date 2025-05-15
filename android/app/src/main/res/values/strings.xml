@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_widget">Add widget</string>
+    <string name="no_records">No records for today</string>
+    <string name="widget_error">Error loading data</string>
+    <string name="refresh">Refresh</string>
+    <string name="appwidget_text">Today\'s Schedule</string>
+    <string name="app_widget_description">Shows today\'s study schedule</string>
+    <string name="no_schedules">No schedules for today</string>
+</resources>
