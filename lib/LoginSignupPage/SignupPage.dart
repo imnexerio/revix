@@ -118,9 +118,6 @@ class _SignupPageState extends State<SignupPage>
           'createdAt': DateTime.now().toIso8601String(),
           "custom_trackingType": [
             "Lectures",
-            "Handouts",
-            "O-NCERTs",
-            "N-NCERTs",
             "Others"
           ],
           'custom_frequencies': {
