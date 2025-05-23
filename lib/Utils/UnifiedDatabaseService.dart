@@ -75,8 +75,7 @@ class CombinedDatabaseService {
 
   Future<void> _checkGuestMode() async {
     _isGuestMode = await GuestAuthService.isGuestMode();
-  }
-  Future<void> _initializeLocalDatabase() async {
+  }  Future<void> _initializeLocalDatabase() async {
     await LocalDatabaseService.initialize(); // Make sure Hive boxes are initialized
     await _localDatabase.initializeWithDefaultData();
     

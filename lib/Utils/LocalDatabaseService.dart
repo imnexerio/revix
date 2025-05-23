@@ -4,15 +4,17 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provides simple local database functionality using Hive for guest mode.
-/// This service only handles data storage and retrieval - data processing is handled by UnifiedDatabaseService.
+/// This service handles data storage and retrieval in Firebase-compatible structure.
+/// Data is stored in the format: users/{userId}/{user_data, profile_data, deleted_user_data}
 class LocalDatabaseService {
-  static const String _recordsBoxName = 'user_records';
-  static const String _profileBoxName = 'user_profile';
+  static const String _usersBoxName = 'users_data';
   static const String _errorLogBoxName = 'error_logs';
   
-  static Box<Map>? _recordsBox;
-  static Box<Map>? _profileBox;
+  static Box<Map>? _usersBox;
   static Box<String>? _errorLogBox;
+  
+  // Current user ID for guest mode
+  static String _currentUserId = 'guest_user_local';
   
   // Stream controller for raw data changes - simplified to just notify when data changes
   final StreamController<dynamic> _rawDataController =
@@ -27,15 +29,42 @@ class LocalDatabaseService {
     return _instance;
   }
   
-  LocalDatabaseService._internal();  
-  /// Initializes all Hive boxes needed for the application
+  LocalDatabaseService._internal();
+  
+  /// Sets the current user ID for local storage
+  static void setCurrentUserId(String userId) {
+    _currentUserId = userId;
+  }
+  
+  /// Gets the current user ID
+  static String getCurrentUserId() {
+    return _currentUserId;
+  }
+  
+  /// Gets the complete users data structure
+  Future<Map<String, dynamic>> getUsersData() async {
+    try {
+      return (_usersBox!.get('users', defaultValue: {}) ?? {}).cast<String, dynamic>();
+    } catch (e) {
+      _logError('Error getting users data: $e');
+      return {};
+    }
+  }
+  
+  /// Gets data for the current user
+  Future<Map<String, dynamic>> getCurrentUserData() async {
+    try {
+      final usersData = await getUsersData();
+      return (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+    } catch (e) {
+      _logError('Error getting current user data: $e');
+      return {};
+    }
+  }    /// Initializes all Hive boxes needed for the application
   static Future<void> initialize() async {
     try {
-      if (!Hive.isBoxOpen(_recordsBoxName)) {
-        _recordsBox = await Hive.openBox<Map>(_recordsBoxName);
-      }
-      if (!Hive.isBoxOpen(_profileBoxName)) {
-        _profileBox = await Hive.openBox<Map>(_profileBoxName);
+      if (!Hive.isBoxOpen(_usersBoxName)) {
+        _usersBox = await Hive.openBox<Map>(_usersBoxName);
       }
       if (!Hive.isBoxOpen(_errorLogBoxName)) {
         _errorLogBox = await Hive.openBox<String>(_errorLogBoxName);
@@ -45,7 +74,6 @@ class LocalDatabaseService {
       await _recoverFromHiveError();
     }
   }
-
   /// Attempts to recover from a Hive error by clearing corrupted data
   static Future<void> _recoverFromHiveError() async {
     try {
@@ -54,8 +82,7 @@ class LocalDatabaseService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('hive_recovery_needed', true);
       
-      _recordsBox = await Hive.openBox<Map>(_recordsBoxName);
-      _profileBox = await Hive.openBox<Map>(_profileBoxName);
+      _usersBox = await Hive.openBox<Map>(_usersBoxName);
       _errorLogBox = await Hive.openBox<String>(_errorLogBoxName);
       
       _logError('Recovered from Hive error');
@@ -82,38 +109,40 @@ class LocalDatabaseService {
       debugPrint('Error logging error: $e');
       debugPrint('Original error: $error');
     }
-  }  
-  /// Initializes the database with default data for new guest users
+  }    /// Initializes the database with default data for new guest users
   Future<void> initializeWithDefaultData() async {
     try {
       await initialize();
       
-      // Initialize with default profile data if guest mode is new
-      if (_profileBox!.isEmpty) {
-        await _profileBox!.put('profile_data', {
-          'email': 'guest@retracker.local',
-          'name': 'Guest User',
-          'createdAt': DateTime.now().toIso8601String(),
-          'custom_trackingType': ['Lectures', 'Others'],
-          'custom_frequencies': {
-            'Default': [1, 4, 7, 15, 30, 60],
-            'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
+      final usersData = await getUsersData();
+      
+      // Initialize with default profile data if user doesn't exist
+      if (usersData[_currentUserId] == null) {
+        usersData[_currentUserId] = {
+          'profile_data': {
+            'email': 'guest@retracker.local',
+            'name': 'Guest User',
+            'createdAt': DateTime.now().toIso8601String(),
+            'custom_trackingType': ['Lectures', 'Others'],
+            'custom_frequencies': {
+              'Default': [1, 4, 7, 15, 30, 60],
+              'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
+            },
+            'theme_data': {
+              'customThemeColor': null,
+              'selectedThemeIndex': 0,
+              'themeMode': 'ThemeMode.system',
+            },
+            'home_page': {
+              'selectedTrackingTypes': {},
+              'completionTargets': {},
+            }
           },
-          'theme_data': {
-            'customThemeColor': null,
-            'selectedThemeIndex': 0,
-            'themeMode': 'ThemeMode.system',
-          },
-          'home_page': {
-            'selectedTrackingTypes': {},
-            'completionTargets': {},
-          }
-        });
-      }
-
-      // Initialize empty records if none exist
-      if (_recordsBox!.isEmpty) {
-        await _recordsBox!.put('user_data', {});
+          'user_data': {},
+          'deleted_user_data': {}
+        };
+        
+        await _usersBox!.put('users', usersData);
       }
 
       // Notify listeners of the initial data
@@ -122,15 +151,17 @@ class LocalDatabaseService {
       _logError('Error initializing default data: $e');
       // Create basic empty data structures if we couldn't initialize properly
       try {
-        if (_profileBox != null && _profileBox!.isOpen && _profileBox!.isEmpty) {
-          await _profileBox!.put('profile_data', {
-            'name': 'Guest User',
-            'theme_data': {'themeMode': 'ThemeMode.system'},
-          });
-        }
-        
-        if (_recordsBox != null && _recordsBox!.isOpen && _recordsBox!.isEmpty) {
-          await _recordsBox!.put('user_data', {});
+        final usersData = await getUsersData();
+        if (usersData[_currentUserId] == null) {
+          usersData[_currentUserId] = {
+            'profile_data': {
+              'name': 'Guest User',
+              'theme_data': {'themeMode': 'ThemeMode.system'},
+            },
+            'user_data': {},
+            'deleted_user_data': {}
+          };
+          await _usersBox!.put('users', usersData);
         }
         
         _notifyDataChange();
@@ -139,16 +170,22 @@ class LocalDatabaseService {
       }
     }
   }
-
   /// Notifies listeners when data changes
-  void _notifyDataChange() {
-    final rawData = _recordsBox!.get('user_data', defaultValue: {});
-    _rawDataController.add(rawData);
-  }  
-  // CRUD operations for records - simple data storage without processing
+  void _notifyDataChange() async {
+    try {
+      final userData = await getCurrentUserData();
+      final rawData = userData['user_data'] ?? {};
+      _rawDataController.add(rawData);
+    } catch (e) {
+      _logError('Error notifying data change: $e');
+      _rawDataController.add({});
+    }
+  }  // CRUD operations for records - Firebase-compatible structure
   Future<bool> saveRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
     try {
-      final currentData = (_recordsBox!.get('user_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
       
       if (currentData[subject] == null) {
         currentData[subject] = <String, dynamic>{};
@@ -159,7 +196,10 @@ class LocalDatabaseService {
       
       currentData[subject][subjectCode][lectureNo] = recordData;
       
-      await _recordsBox!.put('user_data', currentData);
+      userData['user_data'] = currentData;
+      usersData[_currentUserId] = userData;
+      
+      await _usersBox!.put('users', usersData);
       _notifyDataChange();
       return true;
     } catch (e) {
@@ -170,14 +210,19 @@ class LocalDatabaseService {
 
   Future<bool> updateRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> updates) async {
     try {
-      final currentData = (_recordsBox!.get('user_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
       
       if (currentData[subject]?[subjectCode]?[lectureNo] != null) {
         final existingRecord = Map<String, dynamic>.from(currentData[subject][subjectCode][lectureNo]);
         existingRecord.addAll(updates);
         currentData[subject][subjectCode][lectureNo] = existingRecord;
         
-        await _recordsBox!.put('user_data', currentData);
+        userData['user_data'] = currentData;
+        usersData[_currentUserId] = userData;
+        
+        await _usersBox!.put('users', usersData);
         _notifyDataChange();
         return true;
       }
@@ -190,7 +235,9 @@ class LocalDatabaseService {
 
   Future<bool> deleteRecord(String subject, String subjectCode, String lectureNo) async {
     try {
-      final currentData = (_recordsBox!.get('user_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
       
       if (currentData[subject]?[subjectCode]?[lectureNo] != null) {
         currentData[subject][subjectCode].remove(lectureNo);
@@ -203,7 +250,10 @@ class LocalDatabaseService {
           currentData.remove(subject);
         }
         
-        await _recordsBox!.put('user_data', currentData);
+        userData['user_data'] = currentData;
+        usersData[_currentUserId] = userData;
+        
+        await _usersBox!.put('users', usersData);
         _notifyDataChange();
         return true;
       }
@@ -213,41 +263,37 @@ class LocalDatabaseService {
       return false;
     }
   }
-
   Future<bool> saveDeletedRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
     try {
-      // Initialize deleted_user_data box if needed
-      Box<Map>? deletedBox;
-      try {
-        deletedBox = await Hive.openBox<Map>('deleted_user_data');
-      } catch (e) {
-        _logError('Error opening deleted data box: $e');
-        return false;
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final deletedData = (userData['deleted_user_data'] ?? {}).cast<String, dynamic>();
+      
+      if (deletedData[subject] == null) {
+        deletedData[subject] = <String, dynamic>{};
+      }
+      if (deletedData[subject][subjectCode] == null) {
+        deletedData[subject][subjectCode] = <String, dynamic>{};
       }
       
-      final currentData = (deletedBox.get('deleted_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      deletedData[subject][subjectCode][lectureNo] = recordData;
       
-      if (currentData[subject] == null) {
-        currentData[subject] = <String, dynamic>{};
-      }
-      if (currentData[subject][subjectCode] == null) {
-        currentData[subject][subjectCode] = <String, dynamic>{};
-      }
+      userData['deleted_user_data'] = deletedData;
+      usersData[_currentUserId] = userData;
       
-      currentData[subject][subjectCode][lectureNo] = recordData;
-      
-      await deletedBox.put('deleted_data', currentData);
+      await _usersBox!.put('users', usersData);
       return true;
     } catch (e) {
       _logError('Error saving deleted record: $e');
       return false;
     }
   }
-  
-  // Profile data operations - simple key-value storage
+    // Profile data operations - Firebase-compatible structure
   Future<bool> saveProfileData(String key, dynamic value) async {
     try {
-      final currentProfile = (_profileBox!.get('profile_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final currentProfile = (userData['profile_data'] ?? {}).cast<String, dynamic>();
       
       // Handle nested keys with dot notation
       if (key.contains('.')) {
@@ -265,7 +311,10 @@ class LocalDatabaseService {
         currentProfile[key] = value;
       }
       
-      await _profileBox!.put('profile_data', currentProfile);
+      userData['profile_data'] = currentProfile;
+      usersData[_currentUserId] = userData;
+      
+      await _usersBox!.put('users', usersData);
       return true;
     } catch (e) {
       _logError('Error saving profile data: $e');
@@ -275,7 +324,9 @@ class LocalDatabaseService {
 
   Future<bool> updateProfileData(String key, dynamic value) async {
     try {
-      final profile = (_profileBox!.get('profile_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final profile = (userData['profile_data'] ?? {}).cast<String, dynamic>();
       
       if (key.contains('.')) {
         final keys = key.split('.');
@@ -293,7 +344,10 @@ class LocalDatabaseService {
         profile[key] = value;
       }
       
-      await _profileBox!.put('profile_data', profile);
+      userData['profile_data'] = profile;
+      usersData[_currentUserId] = userData;
+      
+      await _usersBox!.put('users', usersData);
       return true;
     } catch (e) {
       _logError('Error updating profile data: $e');
@@ -303,7 +357,8 @@ class LocalDatabaseService {
 
   Future<dynamic> getProfileData(String key, {dynamic defaultValue}) async {
     try {
-      final profile = (_profileBox!.get('profile_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      final userData = await getCurrentUserData();
+      final profile = (userData['profile_data'] ?? {}).cast<String, dynamic>();
       
       if (key.contains('.')) {
         final keys = key.split('.');
@@ -328,31 +383,79 @@ class LocalDatabaseService {
 
   Future<Map<String, dynamic>> getAllProfileData() async {
     try {
-      return (_profileBox!.get('profile_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      final userData = await getCurrentUserData();
+      return (userData['profile_data'] ?? {}).cast<String, dynamic>();
     } catch (e) {
       _logError('Error getting all profile data: $e');
       return {};
     }
   }
-  
-  // Raw data access for UnifiedDatabaseService compatibility
+    // Raw data access for UnifiedDatabaseService compatibility
   Future<dynamic> getRawData() async {
     try {
-      return _recordsBox!.get('user_data', defaultValue: {});
+      final userData = await getCurrentUserData();
+      return userData['user_data'] ?? {};
     } catch (e) {
       _logError('Error getting raw data: $e');
       return {};
     }
   }
 
+  /// Gets deleted user data
+  Future<Map<String, dynamic>> getDeletedUserData() async {
+    try {
+      final userData = await getCurrentUserData();
+      return (userData['deleted_user_data'] ?? {}).cast<String, dynamic>();
+    } catch (e) {
+      _logError('Error getting deleted user data: $e');
+      return {};
+    }
+  }
+
+  /// Imports Firebase data structure directly into local storage
+  Future<bool> importFirebaseData(Map<String, dynamic> firebaseData) async {
+    try {
+      await _usersBox!.put('users', firebaseData);
+      _notifyDataChange();
+      return true;
+    } catch (e) {
+      _logError('Error importing Firebase data: $e');
+      return false;
+    }
+  }
+
+  /// Sets data for a specific user (useful for migrating from Firebase)
+  Future<bool> setUserData(String userId, Map<String, dynamic> userData) async {
+    try {
+      final usersData = await getUsersData();
+      usersData[userId] = userData;
+      await _usersBox!.put('users', usersData);
+      _notifyDataChange();
+      return true;
+    } catch (e) {
+      _logError('Error setting user data: $e');
+      return false;
+    }
+  }
+
   // Utility methods
   Future<void> clearAllData() async {
     try {
-      await _recordsBox!.clear();
-      await _profileBox!.clear();
+      final usersData = await getUsersData();
+      usersData.remove(_currentUserId);
+      await _usersBox!.put('users', usersData);
       _notifyDataChange();
     } catch (e) {
       _logError('Error clearing all data: $e');
+    }
+  }
+
+  Future<void> clearAllUsersData() async {
+    try {
+      await _usersBox!.clear();
+      _notifyDataChange();
+    } catch (e) {
+      _logError('Error clearing all users data: $e');
     }
   }
 
@@ -363,7 +466,8 @@ class LocalDatabaseService {
 
   void stopListening() {
     // Local database doesn't need to stop listening as it's not streaming from external source
-  }  void dispose() {
+  }  
+  void dispose() {
     _rawDataController.close();
   }
 }

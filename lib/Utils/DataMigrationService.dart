@@ -33,11 +33,10 @@ class DataMigrationService {
       // Get the local database instance to access cached data
       LocalDatabaseService localDatabase = LocalDatabaseService();
       
-      // Get all records from local storage
-      final recordsBox = await Hive.openBox<Map>('user_records');
-      final userData = recordsBox.get('user_data');
+      // Get all user data from local storage (Firebase-compatible structure)
+      final userData = await localDatabase.getCurrentUserData();
       
-      if (userData == null || userData.isEmpty) {
+      if (userData.isEmpty || userData['user_data'] == null || userData['user_data'].isEmpty) {
         // No data to migrate
         await _completeGuestModeMigration();
         return true;
@@ -50,57 +49,42 @@ class DataMigrationService {
       DataSnapshot existingData = await userDataRef.get();
       if (existingData.exists) {
         // User has existing data, we need to merge
-        await _mergeData(userDataRef, userData.cast<dynamic, dynamic>());
+        await _mergeData(userDataRef, userData['user_data'].cast<dynamic, dynamic>());
       } else {
         // User has no data, we can directly set
-        await userDataRef.set(userData);
+        await userDataRef.set(userData['user_data']);
       }
       
-      // Get profile data from local storage
-      final profileBox = await Hive.openBox<Map>('user_profile');
-      final profileData = profileBox.get('profile_data');
-      
-      if (profileData != null && profileData.isNotEmpty) {
-        // Only migrate non-personal profile data
-        Map<String, dynamic> filteredProfileData = Map<String, dynamic>.from(profileData);
-        
-        // Remove personal identifiers from guest data
-        filteredProfileData.remove('email');
-        filteredProfileData.remove('name');
-        
-        // Migrate custom tracking types, frequencies, and theme data
+      // Migrate profile data
+      if (userData['profile_data'] != null && userData['profile_data'].isNotEmpty) {
         DatabaseReference profileRef = _database.ref('users/${currentUser.uid}/profile_data');
-        
-        // Create a shallow copy of existing Firebase profile to maintain other fields
         DataSnapshot existingProfile = await profileRef.get();
         if (existingProfile.exists) {
-          Map<dynamic, dynamic> mergedProfile = Map<dynamic, dynamic>.from(existingProfile.value as Map);
-          
-          // Only update specific fields we want to migrate
-          if (filteredProfileData.containsKey('custom_trackingType')) {
-            mergedProfile['custom_trackingType'] = filteredProfileData['custom_trackingType'];
-          }
-          if (filteredProfileData.containsKey('custom_frequencies')) {
-            mergedProfile['custom_frequencies'] = filteredProfileData['custom_frequencies'];
-          }
-          if (filteredProfileData.containsKey('theme_data')) {
-            mergedProfile['theme_data'] = filteredProfileData['theme_data'];
-          }
-          if (filteredProfileData.containsKey('home_page')) {
-            mergedProfile['home_page'] = filteredProfileData['home_page'];
-          }
-
-          await profileRef.update(Map<String, Object?>.from(mergedProfile));
+          await _mergeData(profileRef, userData['profile_data'].cast<dynamic, dynamic>());
         } else {
-          // Set default values for required fields
-          filteredProfileData['email'] = currentUser.email ?? '';
-          filteredProfileData['name'] = currentUser.displayName ?? 'User';
-          filteredProfileData['createdAt'] = DateTime.now().toIso8601String();
-          
-          // Set the filtered profile data
-          await profileRef.set(filteredProfileData);
+          await profileRef.set(userData['profile_data']);
         }
       }
+      
+      // Migrate deleted data if it exists
+      if (userData['deleted_user_data'] != null && userData['deleted_user_data'].isNotEmpty) {
+        DatabaseReference deletedRef = _database.ref('users/${currentUser.uid}/deleted_user_data');
+        await deletedRef.set(userData['deleted_user_data']);
+      }
+      
+      // The profile data migration is handled above, as we now store everything in the users/{userId} structure
+      // Adding extra clean-up for any legacy profile data that might exist
+      try {
+        final legacyProfileBox = await Hive.openBox<Map>('user_profile');
+        if (legacyProfileBox.isNotEmpty) {
+          await legacyProfileBox.clear();
+        }
+      } catch (e) {
+        // Ignore errors with legacy boxes
+      }
+      
+      // Update user ID for local storage to match Firebase user ID
+      LocalDatabaseService.setCurrentUserId(currentUser.uid);
       
       // Complete the migration by cleaning up guest mode
       await _completeGuestModeMigration();
@@ -159,21 +143,19 @@ class DataMigrationService {
         return null; // Only allow export for guest mode
       }
       
-      // Get data from Hive
-      final recordsBox = await Hive.openBox<Map>('user_records');
-      final profileBox = await Hive.openBox<Map>('user_profile');
+      // Get the data from LocalDatabaseService in Firebase-compatible format
+      LocalDatabaseService localDatabase = LocalDatabaseService();
+      final userData = await localDatabase.getCurrentUserData();
       
-      final userData = recordsBox.get('user_data');
-      final profileData = profileBox.get('profile_data');
-      
-      if (userData == null && profileData == null) {
+      if (userData == null || userData.isEmpty) {
         return null; // No data to export
       }
       
       // Create a map with all data
       Map<String, dynamic> exportData = {
-        'user_data': userData,
-        'profile_data': profileData,
+        'user_data': userData['user_data'] ?? {},
+        'profile_data': userData['profile_data'] ?? {},
+        'deleted_user_data': userData['deleted_user_data'] ?? {},
         'export_timestamp': DateTime.now().toIso8601String(),
         'app_version': '1.0.0', // Replace with actual app version
       };
@@ -198,20 +180,26 @@ class DataMigrationService {
       // Parse the JSON data
       Map<String, dynamic> importData = jsonDecode(jsonData);
       
-      if (!importData.containsKey('user_data') || !importData.containsKey('profile_data')) {
+      if (!importData.containsKey('user_data')) {
         return false; // Invalid import data
       }
       
-      // Get boxes
-      final recordsBox = await Hive.openBox<Map>('user_records');
-      final profileBox = await Hive.openBox<Map>('user_profile');
+      // Create a user data object in the Firebase-compatible structure
+      final LocalDatabaseService localDatabase = LocalDatabaseService();
+      final String userId = LocalDatabaseService.getCurrentUserId();
+      
+      // Prepare the user data structure
+      Map<String, dynamic> userData = {
+        'user_data': importData['user_data'] ?? {},
+        'profile_data': importData['profile_data'] ?? {},
+        'deleted_user_data': importData['deleted_user_data'] ?? {},
+      };
       
       // Import the data
-      await recordsBox.put('user_data', Map<dynamic, dynamic>.from(importData['user_data']));
-      await profileBox.put('profile_data', Map<dynamic, dynamic>.from(importData['profile_data']));
+      await localDatabase.setUserData(userId, userData);
       
       // Force a refresh of the local database
-      LocalDatabaseService().forceDataReprocessing();
+      await localDatabase.forceDataReprocessing();
       
       return true;
     } catch (e) {
