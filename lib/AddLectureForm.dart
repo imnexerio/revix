@@ -11,6 +11,8 @@ import 'RecordForm/CalculateCustomNextDate.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/UnifiedDatabaseService.dart';
 import 'Utils/customSnackBar_error.dart';
+import 'Utils/GuestAuthService.dart';
+import 'Utils/LocalDatabaseService.dart';
 
 
 class AddLectureForm extends StatefulWidget {
@@ -58,29 +60,77 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _setScheduledDate();
     _timeController.text = 'All Day';
   }
-
   Future<void> _loadSubjectsAndCodes() async {
     try {
-      // Get the singleton instance
-      final provider = SubjectDataProvider();
-
-      // First check if cached data is available
-      Map<String, dynamic>? data = provider.currentData;
-
-      data ??= await provider.fetchSubjectsAndCodes();
-
-      // Update state with the retrieved data
-      setState(() {
-        _subjects = data!['subjects'];
-        _subjectCodes = data['subjectCodes'];
-
-        // Set appropriate selection
-        if (_subjects.isNotEmpty) {
-          _selectedSubject = _subjects[0];
+      // Check if user is in guest mode
+      if (await GuestAuthService.isGuestMode()) {
+        // Use local database for guest users
+        final localDb = LocalDatabaseService();
+        
+        // Get cached data directly from local database
+        final rawData = await localDb.getRawData();
+        
+        if (rawData != null && rawData is Map) {
+          Map<String, dynamic> data = Map<String, dynamic>.from(rawData);
+          
+          // Extract subjects and subject codes from local data
+          List<String> subjects = [];
+          Map<String, List<String>> subjectCodes = {};
+          
+          for (String subject in data.keys) {
+            subjects.add(subject);
+            subjectCodes[subject] = [];
+            
+            if (data[subject] is Map) {
+              Map<String, dynamic> subjectData = Map<String, dynamic>.from(data[subject]);
+              for (String subjectCode in subjectData.keys) {
+                subjectCodes[subject]!.add(subjectCode);
+              }
+            }
+          }
+          
+          setState(() {
+            _subjects = subjects;
+            _subjectCodes = subjectCodes;
+            
+            // Set appropriate selection
+            if (_subjects.isNotEmpty) {
+              _selectedSubject = _subjects[0];
+            } else {
+              _selectedSubject = 'DEFAULT_VALUE';
+            }
+          });
         } else {
-          _selectedSubject = 'DEFAULT_VALUE';
+          // Initialize empty data for new guest users
+          setState(() {
+            _subjects = [];
+            _subjectCodes = {};
+            _selectedSubject = 'DEFAULT_VALUE';
+          });
         }
-      });
+      } else {
+        // Use Firebase for authenticated users (original code)
+        // Get the singleton instance
+        final provider = SubjectDataProvider();
+
+        // First check if cached data is available
+        Map<String, dynamic>? data = provider.currentData;
+
+        data ??= await provider.fetchSubjectsAndCodes();
+
+        // Update state with the retrieved data
+        setState(() {
+          _subjects = data!['subjects'];
+          _subjectCodes = data['subjectCodes'];
+
+          // Set appropriate selection
+          if (_subjects.isNotEmpty) {
+            _selectedSubject = _subjects[0];
+          } else {
+            _selectedSubject = 'DEFAULT_VALUE';
+          }
+        });
+      }
 
       // No need to set up a listener here since this is part of a form
       // that's not constantly visible in the UI
@@ -92,69 +142,126 @@ class _AddLectureFormState extends State<AddLectureForm> {
       );
     }
   }
-
   Future<void> UpdateRecords(BuildContext context) async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('No authenticated user');
-      }
-      String uid = user.uid;
+      // Check if user is in guest mode
+      if (await GuestAuthService.isGuestMode()) {
+        // Use local database for guest users
+        final localDb = LocalDatabaseService();
+        
+        if (todayDate == 'Unspecified') {
+          no_revision = -1;
+          _revisionFrequency = 'No Repetition';
+          dateScheduled = 'Unspecified';
+          _durationData = {
+            "type": "forever",
+            "numberOfTimes": null,
+            "endDate": null
+          };
+        } else {
+          if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
+            no_revision = -1;
+          }
+        }
 
-      DatabaseReference ref = FirebaseDatabase.instance
-          .ref('users/$uid/user_data')
-          .child(_selectedSubject)
-          .child(_selectedSubjectCode)
-          .child(_lectureNo);
-
-
-      if (todayDate == 'Unspecified') {
-        no_revision = -1;
-        _revisionFrequency = 'No Repetition';
-        dateScheduled = 'Unspecified';
-        _durationData = {
-          "type": "forever",
-          "numberOfTimes": null,
-          "endDate": null
+        // Create a map to store all revision parameters including custom ones
+        Map<String, dynamic> revisionData = {
+          'frequency': _revisionFrequency,
         };
 
-      }else{
-        if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
+        // Add custom frequency parameters if present
+        if (_customFrequencyParams.isNotEmpty) {
+          revisionData['custom_params'] = _customFrequencyParams;
+        }
+
+        // Prepare record data for local storage
+        Map<String, dynamic> recordData = {
+          'initiated_on': initiated_on,
+          'reminder_time': _timeController.text,
+          'lecture_type': _lectureType,
+          'date_learnt': todayDate,
+          'date_revised': todayDate,
+          'date_scheduled': dateScheduled,
+          'description': _description,
+          'missed_revision': 0,
+          'no_revision': no_revision,
+          'revision_frequency': _revisionFrequency,
+          'revision_data': revisionData,
+          'status': 'Enabled',
+          'duration': _durationData,
+        };
+
+        // Save to local database
+        bool success = await localDb.saveRecord(_selectedSubject, _selectedSubjectCode, _lectureNo, recordData);
+        
+        if (success) {
+          customSnackBar(
+            context: context,
+            message: 'Record added successfully',
+          );
+        } else {
+          throw Exception('Failed to save record to local database');
+        }
+      } else {
+        // Use Firebase for authenticated users (original code)
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          throw Exception('No authenticated user');
+        }
+        String uid = user.uid;
+
+        DatabaseReference ref = FirebaseDatabase.instance
+            .ref('users/$uid/user_data')
+            .child(_selectedSubject)
+            .child(_selectedSubjectCode)
+            .child(_lectureNo);
+
+        if (todayDate == 'Unspecified') {
           no_revision = -1;
-        }}
+          _revisionFrequency = 'No Repetition';
+          dateScheduled = 'Unspecified';
+          _durationData = {
+            "type": "forever",
+            "numberOfTimes": null,
+            "endDate": null
+          };
+        } else {
+          if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
+            no_revision = -1;
+          }
+        }
 
-      // Create a map to store all revision parameters including custom ones
-      Map<String, dynamic> revisionData = {
-        'frequency': _revisionFrequency,
-      };
+        // Create a map to store all revision parameters including custom ones
+        Map<String, dynamic> revisionData = {
+          'frequency': _revisionFrequency,
+        };
 
-      // Add custom frequency parameters if present
-      if (_customFrequencyParams.isNotEmpty) {
-        revisionData['custom_params'] = _customFrequencyParams;
+        // Add custom frequency parameters if present
+        if (_customFrequencyParams.isNotEmpty) {
+          revisionData['custom_params'] = _customFrequencyParams;
+        }
+
+        await ref.set({
+          'initiated_on': initiated_on,
+          'reminder_time': _timeController.text,
+          'lecture_type': _lectureType,
+          'date_learnt': todayDate,
+          'date_revised': todayDate,
+          'date_scheduled': dateScheduled,
+          'description': _description,
+          'missed_revision': 0,
+          'no_revision': no_revision,
+          'revision_frequency': _revisionFrequency,
+          'revision_data': revisionData,
+          'status': 'Enabled',
+          'duration': _durationData,
+        });
+
+        customSnackBar(
+          context: context,
+          message: 'Record added successfully',
+        );
       }
-      // print(_customFrequencyParams);
-
-      await ref.set({
-        'initiated_on': initiated_on,
-        'reminder_time': _timeController.text,
-        'lecture_type': _lectureType,
-        'date_learnt': todayDate,
-        'date_revised': todayDate,
-        'date_scheduled': dateScheduled,
-        'description': _description,
-        'missed_revision': 0,
-        'no_revision': no_revision,
-        'revision_frequency': _revisionFrequency,
-        'revision_data': revisionData,  // Store all revision-related data here
-        'status': 'Enabled',
-        'duration': _durationData,
-      });
-
-
-      customSnackBar(
-        context: context,
-        message: 'Record added successfully',
-      );
     } catch (e) {
       throw Exception('Failed to save lecture: $e');
     }
