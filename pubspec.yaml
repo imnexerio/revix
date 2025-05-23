@@ -57,6 +57,8 @@ dependencies:
   uuid: ^4.5.1
   home_widget: ^0.7.0+1
   connectivity_plus: ^6.1.4
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
 
 flutter_launcher_icons:
 
