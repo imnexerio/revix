@@ -57,28 +57,45 @@ class CombinedDatabaseService {
 
   Map<String, dynamic>? _cachedSubjectsData;
   dynamic _cachedRawData;
-  Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;
-  void initialize() {
-    _checkGuestMode().then((_) {
-      if (_isGuestMode) {
-        _initializeLocalDatabase();
-      } else {
-        User? user = _auth.currentUser;
-        if (user == null) {
-          _addErrorToAllControllers('No authenticated user');
-          return;
-        }
-        _initialize(user.uid);
+  Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;  void initialize() async {
+    await _checkGuestMode();
+    if (_isGuestMode) {
+      await _initializeLocalDatabase();
+      // Ensure we force data processing after initialization
+      await forceDataReprocessing();
+    } else {
+      User? user = _auth.currentUser;
+      if (user == null) {
+        _addErrorToAllControllers('No authenticated user');
+        return;
       }
-    });
+      _initialize(user.uid);
+    }
   }
 
   Future<void> _checkGuestMode() async {
     _isGuestMode = await GuestAuthService.isGuestMode();
   }
-
   Future<void> _initializeLocalDatabase() async {
+    await LocalDatabaseService.initialize(); // Make sure Hive boxes are initialized
     await _localDatabase.initializeWithDefaultData();
+    
+    // Ensure we have the latest data from local database
+    final rawData = await _localDatabase.fetchRawData();
+    if (rawData != null) {
+      _cachedRawData = rawData;
+      _rawDataController.add(_cachedRawData);
+      
+      final subjectsData = await _localDatabase.fetchSubjectsAndCodes();
+      _cachedSubjectsData = subjectsData;
+      _subjectsController.add(_cachedSubjectsData!);
+      
+      final categorizedData = _localDatabase.currentCategorizedData;
+      if (categorizedData != null) {
+        _cachedCategorizedData = categorizedData;
+        _categorizedRecordsController.add(_cachedCategorizedData!);
+      }
+    }
   }
 
   void _initialize(String uid) {
@@ -403,6 +420,77 @@ class CombinedDatabaseService {
 
     return _cachedRawData;
   }
+  
+  // Add public method for saving records that works in both guest mode and Firebase mode
+  Future<bool> saveRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
+    if (_isGuestMode) {
+      bool success = await _localDatabase.saveRecord(subject, subjectCode, lectureNo, recordData);
+      if (success) {
+        // Force refresh data to ensure UI updates
+        await forceDataReprocessing();
+      }
+      return success;
+    } else {
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        await _databaseRef!.child(subject).child(subjectCode).child(lectureNo).set(recordData);
+        // Force a data refresh immediately instead of waiting for Firebase event
+        await forceDataReprocessing();
+        return true;
+      } catch (e) {
+        _addErrorToAllControllers('Failed to save record: $e');
+        return false;
+      }
+    }
+  }
+  
+  // Add public method for updating records
+  Future<bool> updateRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> updates) async {
+    if (_isGuestMode) {
+      bool success = await _localDatabase.updateRecord(subject, subjectCode, lectureNo, updates);
+      if (success) {
+        await forceDataReprocessing();
+      }
+      return success;
+    } else {
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        await _databaseRef!.child(subject).child(subjectCode).child(lectureNo).update(updates);
+        await forceDataReprocessing();
+        return true;
+      } catch (e) {
+        _addErrorToAllControllers('Failed to update record: $e');
+        return false;
+      }
+    }
+  }
+  
+  // Add public method for deleting records
+  Future<bool> deleteRecord(String subject, String subjectCode, String lectureNo) async {
+    if (_isGuestMode) {
+      bool success = await _localDatabase.deleteRecord(subject, subjectCode, lectureNo);
+      if (success) {
+        await forceDataReprocessing();
+      }
+      return success;
+    } else {
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        await _databaseRef!.child(subject).child(subjectCode).child(lectureNo).remove();
+        await forceDataReprocessing();
+        return true;
+      } catch (e) {
+        _addErrorToAllControllers('Failed to delete record: $e');
+        return false;
+      }
+    }
+  }
 }
 
 Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
@@ -456,4 +544,64 @@ class UnifiedDatabaseService {
   void stopListening() => _service.stopListening();
   void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
   DatabaseReference? get databaseRef => _service.databaseRef;
+  
+  // Add method to save records, forwarding to the appropriate database based on guest mode
+  Future<bool> saveRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
+    if (_service._isGuestMode) {
+      return await _service._localDatabase.saveRecord(subject, subjectCode, lectureNo, recordData);
+    } else {
+      try {
+        if (_service.databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        
+        await _service.databaseRef!.child(subject).child(subjectCode).child(lectureNo).set(recordData);
+        await _service.forceDataReprocessing();
+        return true;
+      } catch (e) {
+        print('Error saving record to Firebase: $e');
+        return false;
+      }
+    }
+  }
+  
+  // Add method to update existing records
+  Future<bool> updateRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> updates) async {
+    if (_service._isGuestMode) {
+      return await _service._localDatabase.updateRecord(subject, subjectCode, lectureNo, updates);
+    } else {
+      try {
+        if (_service.databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        
+        await _service.databaseRef!.child(subject).child(subjectCode).child(lectureNo).update(updates);
+        await _service.forceDataReprocessing();
+        return true;
+      } catch (e) {
+        print('Error updating record in Firebase: $e');
+        return false;
+      }
+    }
+  }
+  
+  // Add method to delete records
+  Future<bool> deleteRecord(String subject, String subjectCode, String lectureNo) async {
+    if (_service._isGuestMode) {
+      return await _service._localDatabase.deleteRecord(subject, subjectCode, lectureNo);
+    } else {
+      try {
+        if (_service.databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        
+        await _service.databaseRef!.child(subject).child(subjectCode).child(lectureNo).remove();
+        await _service.forceDataReprocessing();
+        return true;
+      } catch (e) {
+        print('Error deleting record from Firebase: $e');
+        return false;
+      }
+    }
+  }
 }
