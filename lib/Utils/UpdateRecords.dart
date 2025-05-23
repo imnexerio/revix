@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-
+import 'GuestAuthService.dart';
+import 'LocalDatabaseService.dart';
 
 Future<void> UpdateRecords(
     String selectedSubject,
@@ -19,6 +20,37 @@ Future<void> UpdateRecords(
     Map<String, dynamic> revisionData,
     Map<String, dynamic> durationData
     ) async {
+  
+  // Check if user is in guest mode
+  if (await GuestAuthService.isGuestMode()) {
+    // Use local database for guest users
+    final localDb = LocalDatabaseService();
+    
+    // Prepare update data
+    Map<String, dynamic> updateData = {
+      'reminder_time': reminderTime,
+      'date_revised': dateRevised,
+      'no_revision': noRevision,
+      'date_scheduled': dateScheduled,
+      'missed_revision': missedRevision,
+      'dates_missed_revisions': datesMissedRevisions,
+      'revision_frequency': revisionFrequency,
+      'status': status,
+      'dates_revised': datesRevised,
+      'description': description,
+      'revision_data': revisionData,
+      'duration': durationData,
+    };
+    
+    // Update record in local database
+    bool success = await localDb.updateRecord(selectedSubject, selectedSubjectCode, lectureNo, updateData);
+    if (!success) {
+      throw Exception('Failed to update record in local database');
+    }
+    return;
+  }
+
+  // Original Firebase logic for authenticated users
   // Get the currently authenticated user
   User? user = FirebaseAuth.instance.currentUser;
   if (user == null) {
@@ -32,7 +64,6 @@ Future<void> UpdateRecords(
       .child(selectedSubject)
       .child(selectedSubjectCode)
       .child(lectureNo);
-
 
   // Perform the update operation
   await ref.update({
@@ -57,6 +88,31 @@ Future<void> moveToDeletedData(
     String lectureNo,
     Map<String, dynamic> lectureData,
 ) async {
+  
+  // Check if user is in guest mode
+  if (await GuestAuthService.isGuestMode()) {
+    // Use local database for guest users
+    final localDb = LocalDatabaseService();
+    
+    // Add deletion timestamp to the data
+    Map<String, dynamic> deletedData = Map<String, dynamic>.from(lectureData);
+    deletedData['deleted_at'] = DateTime.now().toIso8601String();
+    
+    // Save to deleted data in local database
+    bool success = await localDb.saveDeletedRecord(selectedSubject, selectedSubjectCode, lectureNo, deletedData);
+    if (!success) {
+      throw Exception('Failed to move record to deleted data in local database');
+    }
+    
+    // Remove from original location in local database
+    bool removeSuccess = await localDb.deleteRecord(selectedSubject, selectedSubjectCode, lectureNo);
+    if (!removeSuccess) {
+      throw Exception('Failed to remove record from original location in local database');
+    }
+    return;
+  }
+
+  // Original Firebase logic for authenticated users
   // Get the currently authenticated user
   User? user = FirebaseAuth.instance.currentUser;
   if (user == null) {
@@ -100,6 +156,34 @@ Future<void> UpdateRecordsRevision(
     List<String> datesMissedRevisions,
     String status,
     ) async {
+  
+  // Check if user is in guest mode
+  if (await GuestAuthService.isGuestMode()) {
+    // Use local database for guest users
+    final localDb = LocalDatabaseService();
+    
+    // Prepare update data
+    Map<String, dynamic> updateData = {
+      'reminder_time': reminderTime,
+      'date_revised': dateRevised,
+      'no_revision': noRevision,
+      'date_scheduled': dateScheduled,
+      'missed_revision': missedRevision,
+      'dates_missed_revisions': datesMissedRevisions,
+      'dates_revised': datesRevised,
+      'description': description,
+      'status': status,
+    };
+    
+    // Update record in local database
+    bool success = await localDb.updateRecord(selectedSubject, selectedSubjectCode, lectureNo, updateData);
+    if (!success) {
+      throw Exception('Failed to update record revision in local database');
+    }
+    return;
+  }
+
+  // Original Firebase logic for authenticated users
   // Get the currently authenticated user
   User? user = FirebaseAuth.instance.currentUser;
   if (user == null) {
@@ -113,7 +197,6 @@ Future<void> UpdateRecordsRevision(
       .child(selectedSubject)
       .child(selectedSubjectCode)
       .child(lectureNo);
-
 
   // Perform the update operation
   await ref.update({

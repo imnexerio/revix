@@ -213,6 +213,36 @@ class LocalDatabaseService {
       return false;
     }
   }
+
+  Future<bool> saveDeletedRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
+    try {
+      // Initialize deleted_user_data box if needed
+      Box<Map>? deletedBox;
+      try {
+        deletedBox = await Hive.openBox<Map>('deleted_user_data');
+      } catch (e) {
+        _logError('Error opening deleted data box: $e');
+        return false;
+      }
+      
+      final currentData = (deletedBox.get('deleted_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      
+      if (currentData[subject] == null) {
+        currentData[subject] = <String, dynamic>{};
+      }
+      if (currentData[subject][subjectCode] == null) {
+        currentData[subject][subjectCode] = <String, dynamic>{};
+      }
+      
+      currentData[subject][subjectCode][lectureNo] = recordData;
+      
+      await deletedBox.put('deleted_data', currentData);
+      return true;
+    } catch (e) {
+      _logError('Error saving deleted record: $e');
+      return false;
+    }
+  }
   
   // Profile data operations - simple key-value storage
   Future<bool> saveProfileData(String key, dynamic value) async {
