@@ -89,9 +89,8 @@ class DataMigrationService {
           if (filteredProfileData.containsKey('home_page')) {
             mergedProfile['home_page'] = filteredProfileData['home_page'];
           }
-          
-          // Update the profile with merged data
-          await profileRef.update(mergedProfile);
+
+          await profileRef.update(Map<String, Object?>.from(mergedProfile));
         } else {
           // Set default values for required fields
           filteredProfileData['email'] = currentUser.email ?? '';
