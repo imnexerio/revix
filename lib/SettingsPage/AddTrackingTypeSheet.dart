@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
+import '../Utils/GuestAuthService.dart';
+import '../Utils/LocalDatabaseService.dart';
 
 // lib/SettingsPage/AddTrackingTypeSheet.dart
 void showAddtrackingTypeSheet(
@@ -111,24 +113,43 @@ void showAddtrackingTypeSheet(
             // Submit button
             Container(
               padding: const EdgeInsets.all(24),
-              child: FilledButton.icon(
-                onPressed: () async {
+              child: FilledButton.icon(                onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     try {
                       String trackingTitle = titleController.text.trim();
 
-                      String uid = FirebaseAuth.instance.currentUser!.uid;
-                      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_trackingType');
+                      // Check if we're in guest mode
+                      bool isGuestMode = await GuestAuthService.isGuestMode();
+                      
+                      if (isGuestMode) {
+                        // Handle guest mode - save to local database
+                        final currentList = await LocalDatabaseService().getProfileData('custom_trackingType', defaultValue: ['Lectures', 'Others']);
+                        List<String> updatedList = [];
+                        if (currentList is List) {
+                          updatedList = List<String>.from(currentList);
+                        } else {
+                          updatedList = ['Lectures', 'Others'];
+                        }
+                        
+                        updatedList.add(trackingTitle);
+                        await LocalDatabaseService().saveProfileData('custom_trackingType', updatedList);
+                      } else {
+                        // Handle authenticated users - save to Firebase
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          String uid = user.uid;
+                          DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_trackingType');
 
-                      DataSnapshot snapshot = await databaseRef.get();
-                      List<String> currentList = [];
-                      if (snapshot.exists) {
-                        currentList = List<String>.from(snapshot.value as List);
+                          DataSnapshot snapshot = await databaseRef.get();
+                          List<String> currentList = [];
+                          if (snapshot.exists) {
+                            currentList = List<String>.from(snapshot.value as List);
+                          }
+
+                          currentList.add(trackingTitle);
+                          await databaseRef.set(currentList);
+                        }
                       }
-
-                      currentList.add(trackingTitle);
-
-                      await databaseRef.set(currentList);
 
                       titleController.clear();
                       Navigator.pop(context);

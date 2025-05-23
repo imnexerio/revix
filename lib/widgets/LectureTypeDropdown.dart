@@ -24,11 +24,11 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
     super.initState();
     _fetchLectureTypes();
   }
-
   Future<void> _fetchLectureTypes() async {
     List<String> types = await FetchtrackingTypeUtils.fetchtrackingType();
     setState(() {
-      _lectureTypes = types;
+      // Remove duplicates by converting to Set and back to List
+      _lectureTypes = types.toSet().toList();
       _lectureTypes.add('Add new'); // Add the 'Add new' option
       _isLoading = false;
     });

@@ -9,6 +9,8 @@ import 'package:retracker/widgets/RevisionFrequencyDropdown.dart';
 import 'CustomFrequencySelector.dart';
 import 'RecordForm/CalculateCustomNextDate.dart';
 import 'Utils/CustomSnackBar.dart';
+import 'Utils/GuestAuthService.dart';
+import 'Utils/LocalDatabaseService.dart';
 import 'Utils/UnifiedDatabaseService.dart';
 import 'Utils/customSnackBar_error.dart';
 
@@ -58,7 +60,6 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _setScheduledDate();
     _timeController.text = 'All Day';
   }
-
   Future<void> _loadSubjectsAndCodes() async {
     try {
       // Get the singleton instance
@@ -67,17 +68,28 @@ class _AddLectureFormState extends State<AddLectureForm> {
       // First check if cached data is available
       Map<String, dynamic>? data = provider.currentData;
 
-      data ??= await provider.fetchSubjectsAndCodes();
+      // If no cached data, fetch it based on user status (guest or regular)
+      if (data == null) {
+        // This will use the appropriate data source (Hive for guests, Firebase for regular users)
+        data = await provider.fetchSubjectsAndCodes();
+      }
 
       // Update state with the retrieved data
       setState(() {
-        _subjects = data!['subjects'];
-        _subjectCodes = data['subjectCodes'];
+        if (data != null) {
+          _subjects = data['subjects'] as List<String>? ?? [];
+          _subjectCodes = data['subjectCodes'] as Map<String, List<String>>? ?? {};
 
-        // Set appropriate selection
-        if (_subjects.isNotEmpty) {
-          _selectedSubject = _subjects[0];
+          // Set appropriate selection
+          if (_subjects.isNotEmpty) {
+            _selectedSubject = _subjects[0];
+          } else {
+            _selectedSubject = 'DEFAULT_VALUE';
+          }
         } else {
+          // Handle case when no data is available
+          _subjects = [];
+          _subjectCodes = {};
           _selectedSubject = 'DEFAULT_VALUE';
         }
       });
@@ -92,22 +104,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
       );
     }
   }
-
   Future<void> UpdateRecords(BuildContext context) async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('No authenticated user');
-      }
-      String uid = user.uid;
-
-      DatabaseReference ref = FirebaseDatabase.instance
-          .ref('users/$uid/user_data')
-          .child(_selectedSubject)
-          .child(_selectedSubjectCode)
-          .child(_lectureNo);
-
-
+      // Check if the user is in guest mode
+      bool isGuest = await GuestAuthService.isGuestMode();
+      
+      // Prepare record data
       if (todayDate == 'Unspecified') {
         no_revision = -1;
         _revisionFrequency = 'No Repetition';
@@ -117,11 +119,11 @@ class _AddLectureFormState extends State<AddLectureForm> {
           "numberOfTimes": null,
           "endDate": null
         };
-
-      }else{
-      if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
-        no_revision = -1;
-      }}
+      } else {
+        if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
+          no_revision = -1;
+        }
+      }
 
       // Create a map to store all revision parameters including custom ones
       Map<String, dynamic> revisionData = {
@@ -132,9 +134,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
       if (_customFrequencyParams.isNotEmpty) {
         revisionData['custom_params'] = _customFrequencyParams;
       }
-      // print(_customFrequencyParams);
 
-      await ref.set({
+      // Create the record data
+      final recordData = {
         'initiated_on': initiated_on,
         'reminder_time': _timeController.text,
         'lecture_type': _lectureType,
@@ -145,18 +147,50 @@ class _AddLectureFormState extends State<AddLectureForm> {
         'missed_revision': 0,
         'no_revision': no_revision,
         'revision_frequency': _revisionFrequency,
-        'revision_data': revisionData,  // Store all revision-related data here
+        'revision_data': revisionData,
         'status': 'Enabled',
         'duration': _durationData,
-      });
+      };
 
+      if (isGuest) {
+        // Use LocalDatabaseService for guest users
+        final localDb = LocalDatabaseService();
+        bool success = await localDb.saveRecord(
+          _selectedSubject,
+          _selectedSubjectCode,
+          _lectureNo,
+          recordData
+        );
+        
+        if (!success) {
+          throw Exception('Failed to save lecture in local database');
+        }
+      } else {
+        // Use Firebase for regular users
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          throw Exception('No authenticated user');
+        }
+        String uid = user.uid;
 
-        customSnackBar(
-          context: context,
-          message: 'Record added successfully',
+        DatabaseReference ref = FirebaseDatabase.instance
+            .ref('users/$uid/user_data')
+            .child(_selectedSubject)
+            .child(_selectedSubjectCode)
+            .child(_lectureNo);
+
+        await ref.set(recordData);
+      }
+
+      customSnackBar(
+        context: context,
+        message: 'Record added successfully',
       );
     } catch (e) {
-      throw Exception('Failed to save lecture: $e');
+      customSnackBar_error(
+        context: context,
+        message: 'Failed to save lecture: $e',
+      );
     }
   }
 
@@ -1090,19 +1124,11 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: () async {
+                            child: ElevatedButton(                              onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
-                                  try {
-                                    _formKey.currentState!.save();
-                                    await UpdateRecords(context);
-                                    Navigator.of(context).pop(); // Navigate after showing SnackBar
-                                  } catch (e) {
-                                      customSnackBar_error(
-                                        context: context,
-                                        message: 'Failed to save record: $e',
-                                    );
-                                  }
+                                  _formKey.currentState!.save();
+                                  await UpdateRecords(context);
+                                  Navigator.of(context).pop(); // Navigate after showing SnackBar
                                 }
                               },
                               style: ElevatedButton.styleFrom(
