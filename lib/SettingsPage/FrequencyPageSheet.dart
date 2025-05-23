@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:retracker/Utils/GuestAuthService.dart';
+import 'package:retracker/Utils/LocalDatabaseService.dart';
 
 void showAddFrequencySheet(
     BuildContext context,
@@ -136,22 +138,36 @@ void showAddFrequencySheet(
               ),
             ),
             // Submit button
-            Container(
-              padding: const EdgeInsets.all(24),
+            Container(              padding: const EdgeInsets.all(24),
               child: FilledButton.icon(
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     try {
                       String title = titleController.text.trim();
                       String frequency = frequencyController.text.trim();
-
-                      // Firebase update
-                      String uid = FirebaseAuth.instance.currentUser!.uid;
-                      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
                       List<int> frequencyList = frequency.split(',').map((e) => int.parse(e.trim())).toList();
-                      await databaseRef.update({
-                        title: frequencyList,
-                      });
+
+                      // Check if in guest mode
+                      bool isGuest = await GuestAuthService.isGuestMode();
+                      
+                      if (isGuest) {
+                        // Update Hive storage for guest users
+                        final localDb = LocalDatabaseService();
+                        Map<String, dynamic> customFrequencies = await localDb.getProfileData('custom_frequencies', defaultValue: {});
+                        
+                        // Update the frequencies
+                        customFrequencies[title] = frequencyList;
+                        
+                        // Save back to profile
+                        await localDb.updateProfileData('custom_frequencies', customFrequencies);
+                      } else {
+                        // Firebase update for logged-in users
+                        String uid = FirebaseAuth.instance.currentUser!.uid;
+                        DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
+                        await databaseRef.update({
+                          title: frequencyList,
+                        });
+                      }
 
                       // Update local state
                       setState(() {

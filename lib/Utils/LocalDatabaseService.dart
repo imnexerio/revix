@@ -457,6 +457,34 @@ class LocalDatabaseService {
     }
   }
 
+  Future<bool> updateProfileData(String key, dynamic value) async {
+    try {
+      final profile = (_profileBox!.get('profile_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
+      
+      if (key.contains('.')) {
+        final keys = key.split('.');
+        Map<String, dynamic> current = profile;
+        
+        for (int i = 0; i < keys.length - 1; i++) {
+          final k = keys[i];
+          if (!current.containsKey(k) || current[k] is! Map) {
+            current[k] = <String, dynamic>{};
+          }
+          current = current[k] as Map<String, dynamic>;
+        }
+        current[keys.last] = value;
+      } else {
+        profile[key] = value;
+      }
+      
+      await _profileBox!.put('profile_data', profile);
+      return true;
+    } catch (e) {
+      _logError('Error updating profile data: $e');
+      return false;
+    }
+  }
+
   Future<dynamic> getProfileData(String key, {dynamic defaultValue}) async {
     try {
       final profile = (_profileBox!.get('profile_data', defaultValue: {}) ?? {}).cast<String, dynamic>();
