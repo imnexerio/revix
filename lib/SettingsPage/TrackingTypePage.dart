@@ -17,13 +17,12 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
     super.initState();
     fetchtrackingType();
   }
+
   void fetchtrackingType() async {
     try {
       List<String> data = await FetchtrackingTypeUtils.fetchtrackingType();
-      // Remove duplicates by converting to Set and back to List
-      List<String> uniqueData = data.toSet().toList();
       setState(() {
-        trackingtype = uniqueData.map((trackingTitle) {
+        trackingtype = data.map((trackingTitle) {
           return {
             'trackingTitle': trackingTitle
           };

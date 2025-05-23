@@ -20,27 +20,15 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _frequencyController = TextEditingController();
-  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _fetchFrequencies();
   }
+
   Future<void> _fetchFrequencies() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
     Map<String, dynamic> frequencies = await FetchFrequenciesUtils.fetchFrequencies();
-    
-    // Make sure we have at least default frequencies if empty
-    if (frequencies.isEmpty) {
-      frequencies = {
-        'Default': [1, 4, 7, 15, 30, 60],
-      };
-    }
-    
     List<DropdownMenuItem<String>> items = frequencies.keys.map((key) {
       String frequency = frequencies[key].toString();
       return DropdownMenuItem<String>(
@@ -125,43 +113,29 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
           ),
         ),
       ),
-    );    
+    );
+
     setState(() {
       _dropdownItems = items;
-      _isLoading = false;
-      
-      // Handle case where the current selection is not in the new items list
-      if (widget.revisionFrequency != null && 
-          !_dropdownItems.any((item) => item.value == widget.revisionFrequency)) {
-        // If the current value isn't in the items, select Default if available
-        if (_dropdownItems.any((item) => item.value == 'Default')) {
-          widget.onChanged('Default');
-        } else if (_dropdownItems.isNotEmpty) {
-          // Otherwise select the first item
-          widget.onChanged(_dropdownItems.first.value);
-        }
-      }
     });
-  }  @override
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 8),
-          child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : ButtonTheme(
-                alignedDropdown: true,
-                child: DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Review Frequency',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  ),
-                  value: _dropdownItems.isEmpty || !_dropdownItems.any((item) => item.value == widget.revisionFrequency) 
-                      ? null 
-                      : widget.revisionFrequency,
+          child: ButtonTheme(
+            alignedDropdown: true,
+            child: DropdownButtonFormField<String>(
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Review Frequency',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              value: widget.revisionFrequency,
               onChanged: (String? newValue) {
                 if (newValue == 'Add New') {
                   showAddFrequencySheet(

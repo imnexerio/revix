@@ -22,11 +22,10 @@ class _TrackingTypeDropdownState extends State<TrackingTypeDropdown> {
     super.initState();
     _fetchFrequencies();
   }
+
   Future<void> _fetchFrequencies() async {
     List<String> trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
-    // Remove duplicates by converting to Set and back to List
-    List<String> uniqueTypes = trackingTypes.toSet().toList();
-    List<DropdownMenuItem<String>> items = uniqueTypes.map((type) {
+    List<DropdownMenuItem<String>> items = trackingTypes.map((type) {
       return DropdownMenuItem<String>(
         value: type,
         child: Text(type),
