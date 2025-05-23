@@ -44,13 +44,13 @@ class CombinedDatabaseService {
   final StreamController<dynamic> _rawDataController =
   StreamController<dynamic>.broadcast();
   Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
-      _isGuestMode ? _localDatabase.categorizedRecordsStream : _categorizedRecordsController.stream;
+      _categorizedRecordsController.stream;
 
   Stream<Map<String, dynamic>> get allRecordsStream =>
-      _isGuestMode ? _localDatabase.allRecordsStream : _allRecordsController.stream;
+      _allRecordsController.stream;
 
   Stream<Map<String, dynamic>> get subjectsStream =>
-      _isGuestMode ? _localDatabase.subjectsStream : _subjectsController.stream;
+      _subjectsController.stream;
 
   Stream<dynamic> get rawDataStream =>
       _isGuestMode ? _localDatabase.rawDataStream : _rawDataController.stream;
@@ -81,19 +81,32 @@ class CombinedDatabaseService {
     await _localDatabase.initializeWithDefaultData();
     
     // Ensure we have the latest data from local database
-    final rawData = await _localDatabase.fetchRawData();
+    final rawData = await _localDatabase.getRawData();
     if (rawData != null) {
       _cachedRawData = rawData;
       _rawDataController.add(_cachedRawData);
       
-      final subjectsData = await _localDatabase.fetchSubjectsAndCodes();
-      _cachedSubjectsData = subjectsData;
-      _subjectsController.add(_cachedSubjectsData!);
-      
-      final categorizedData = _localDatabase.currentCategorizedData;
-      if (categorizedData != null) {
+      // Process the raw data for guest mode
+      if (_cachedRawData != null) {
+        // Process subjects data
+        _processSubjectsData(_cachedRawData);
+        
+        // Process categorized data
+        Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(_cachedRawData);
         _cachedCategorizedData = categorizedData;
-        _categorizedRecordsController.add(_cachedCategorizedData!);
+        _categorizedRecordsController.add(categorizedData);
+        
+        // Process all records
+        List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
+        _allRecordsController.add({'allRecords': allRecords});
+        
+        if (PlatformUtils.instance.isAndroid) {
+          _updateHomeWidget(
+            categorizedData['today'] ?? [],
+            categorizedData['missed'] ?? [],
+            categorizedData['noreminderdate'] ?? []
+          );
+        }
       }
     }
   }
@@ -304,7 +317,31 @@ class CombinedDatabaseService {
   }
   Future<void> forceDataReprocessing() async {
     if (_isGuestMode) {
+      // Get latest data from local database
       await _localDatabase.forceDataReprocessing();
+      final rawData = await _localDatabase.getRawData();
+      if (rawData != null) {
+        _cachedRawData = rawData;
+        _rawDataController.add(_cachedRawData);
+        
+        // Process the data
+        _processSubjectsData(_cachedRawData);
+        
+        Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(_cachedRawData);
+        _cachedCategorizedData = categorizedData;
+        _categorizedRecordsController.add(categorizedData);
+        
+        List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
+        _allRecordsController.add({'allRecords': allRecords});
+        
+        if (PlatformUtils.instance.isAndroid) {
+          _updateHomeWidget(
+            categorizedData['today'] ?? [],
+            categorizedData['missed'] ?? [],
+            categorizedData['noreminderdate'] ?? []
+          );
+        }
+      }
       return;
     }
     
@@ -361,18 +398,12 @@ class CombinedDatabaseService {
   }
 
   DatabaseReference? get databaseRef => _databaseRef;
-  Map<String, dynamic>? get currentSubjectsData => 
-      _isGuestMode ? _localDatabase.currentSubjectsData : _cachedSubjectsData;
+  Map<String, dynamic>? get currentSubjectsData => _cachedSubjectsData;
       
-  dynamic get currentRawData => 
-      _isGuestMode ? _localDatabase.currentRawData : _cachedRawData;
+  dynamic get currentRawData => _cachedRawData;
       
-  Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => 
-      _isGuestMode ? _localDatabase.currentCategorizedData : _cachedCategorizedData;
+  Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _cachedCategorizedData;
   String getScheduleData() {
-    if (_isGuestMode) {
-      return _localDatabase.getScheduleData();
-    }
     if (_cachedRawData != null) {
       return _cachedRawData.toString();
     }
@@ -380,20 +411,27 @@ class CombinedDatabaseService {
   }
 
   Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
-    if (_isGuestMode) {
-      return await _localDatabase.fetchSubjectsAndCodes();
-    }
-    
     if (_cachedSubjectsData != null) {
       return _cachedSubjectsData!;
     }
 
-    User? user = _auth.currentUser;
-    if (user == null) {
-      throw Exception('No authenticated user');
-    }
+    if (_isGuestMode) {
+      // For guest mode, get raw data from local database and process it
+      final rawData = await _localDatabase.getRawData();
+      if (rawData != null) {
+        _processSubjectsData(rawData);
+        if (_cachedSubjectsData != null) {
+          return _cachedSubjectsData!;
+        }
+      }
+    } else {
+      User? user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('No authenticated user');
+      }
 
-    await forceDataReprocessing();
+      await forceDataReprocessing();
+    }
 
     if (_cachedSubjectsData == null) {
       return {'subjects': [], 'subjectCodes': {}};
@@ -403,14 +441,14 @@ class CombinedDatabaseService {
   }
 
   Future<dynamic> fetchRawData() async {
-    if (_isGuestMode) {
-      return await _localDatabase.fetchRawData();
-    }
-    
     if (_cachedRawData != null) {
       return _cachedRawData;
     }
 
+    if (_isGuestMode) {
+      return await _localDatabase.getRawData();
+    }
+    
     User? user = _auth.currentUser;
     if (user == null) {
       throw Exception('No authenticated user');
@@ -544,6 +582,12 @@ class UnifiedDatabaseService {
   void stopListening() => _service.stopListening();
   void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
   DatabaseReference? get databaseRef => _service.databaseRef;
+  
+  Map<String, dynamic>? get currentSubjectsData => _service.currentSubjectsData;
+      
+  dynamic get currentRawData => _service.currentRawData;
+      
+  Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _service.currentCategorizedData;
   
   // Add method to save records, forwarding to the appropriate database based on guest mode
   Future<bool> saveRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
