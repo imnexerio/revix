@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
+import '../Utils/GuestAuthService.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/platform_utils.dart';
@@ -13,6 +14,7 @@ import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
+import 'GuestDataManagementWidget.dart';
 import 'NotificationPage.dart';
 import 'ProfileHeader.dart';
 import 'ProfileOptionCard.dart';
@@ -102,7 +104,16 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         await HomeWidgetService.updateWidgetData([],[],[]);
       }
 
-      await FirebaseAuth.instance.signOut();
+      // Check if user is in guest mode
+      bool isGuestMode = await GuestAuthService.isGuestMode();
+      
+      if (isGuestMode) {
+        // Handle guest mode logout
+        await GuestAuthService.disableGuestMode();
+      } else {
+        // Handle regular authentication logout
+        await FirebaseAuth.instance.signOut();
+      }
 
       if (PlatformUtils.instance.isAndroid) {
         await HomeWidgetService.updateLoginStatus();
@@ -148,6 +159,10 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
   String getCurrentUserUid() {
     return FirebaseAuth.instance.currentUser!.uid;
+  }
+
+  Future<bool> _isGuestMode() async {
+    return await GuestAuthService.isGuestMode();
   }
 
   Future<String> _getAppVersion() async {
@@ -334,7 +349,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       child: Column(
         children: [
           // Using staggered animations for each option card
-          ..._buildAnimatedOptionCards(isSmallScreen),
+          _buildAnimatedOptionCards(isSmallScreen),
           const SizedBox(height: 32),
 
           // Animated logout button
@@ -380,109 +395,133 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   }
 
   // Create staggered animation for option cards
-  List<Widget> _buildAnimatedOptionCards(bool isSmallScreen) {
-    final options = [
-      {
-        'title': 'Edit Profile',
-        'subtitle': 'Update your personal information',
-        'icon': Icons.person,
-        'onTap': () => _showEditProfilePage(context),
-        'isSelected': _shouldShowSelectionHighlight('Edit Profile'),
+  Widget _buildAnimatedOptionCards(bool isSmallScreen) {
+    return FutureBuilder<bool>(
+      future: _isGuestMode(),
+      builder: (context, snapshot) {
+        bool isGuestMode = snapshot.data ?? false;
+        
+        // Common options for all users
+        final List<Map<String, dynamic>> commonOptions = [
+          {
+            'title': 'Edit Profile',
+            'subtitle': 'Update your personal information',
+            'icon': Icons.person,
+            'onTap': () => _showEditProfilePage(context),
+            'isSelected': _shouldShowSelectionHighlight('Edit Profile'),
+          },
+          {
+            'title': 'Set Theme',
+            'subtitle': 'Choose your style',
+            'icon': Icons.color_lens_outlined,
+            'onTap': () => _showThemePage(context),
+            'isSelected': _shouldShowSelectionHighlight('Set Theme'),
+          },
+          {
+            'title': 'Custom Frequency',
+            'subtitle': 'Modify your tracking intervals',
+            'icon': Icons.timelapse_sharp,
+            'onTap': () => _showFrequencyPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Custom Frequency'),
+          },
+          {
+            'title': 'Custom Tracking Type',
+            'subtitle': 'Modify your tracking intervals',
+            'icon': Icons.track_changes_rounded,
+            'onTap': () => _showTrackingTypePage(context),
+            'isSelected': _shouldShowSelectionHighlight('Custom Tracking Type'),
+          },
+        ];
+        
+        // Options only for authenticated users
+        final List<Map<String, dynamic>> authOnlyOptions = [
+          {
+            'title': 'Change Password',
+            'subtitle': 'Update your security credentials',
+            'icon': Icons.lock_outline,
+            'onTap': () => _showChangePasswordPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Change Password'),
+          },
+          {
+            'title': 'Change Email',
+            'subtitle': 'Update your email address',
+            'icon': Icons.email_outlined,
+            'onTap': () => _showChangeEmailPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Change Email'),
+          },
+        ];
+        
+        // Options only for guest mode users
+        final List<Map<String, dynamic>> guestOnlyOptions = [
+          {
+            'title': 'Guest Data Management',
+            'subtitle': 'Export or import your data',
+            'icon': Icons.import_export,
+            'onTap': () => _navigateToPage(context, GuestDataManagementWidget(), 'Guest Data Management'),
+            'isSelected': _shouldShowSelectionHighlight('Guest Data Management'),
+          },
+        ];
+        
+        // Common options for all users at the bottom of the list
+        final List<Map<String, dynamic>> bottomOptions = [
+          {
+            'title': 'Notification Settings',
+            'subtitle': 'Configure your notifications',
+            'icon': Icons.notifications_none,
+            'onTap': () => _showNotificationSettingsPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Notification Settings'),
+          },
+          {
+            'title': 'About',
+            'subtitle': 'App information and updates',
+            'icon': Icons.info_outline,
+            'onTap': () => _showAboutPage(context),
+            'isSelected': _shouldShowSelectionHighlight('About'),
+          },
+        ];
+        
+        // Combine options based on auth status
+        List<Map<String, dynamic>> options = [
+          ...commonOptions,
+          ...isGuestMode ? guestOnlyOptions : authOnlyOptions,
+          ...bottomOptions,
+        ];
+        
+        // Return a Column widget containing all of the animated option cards
+        return Column(
+          children: options.asMap().entries.map((entry) {
+            int index = entry.key;
+            var option = entry.value;
+            
+            return TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 400 + (index * 100)),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: child,
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: buildProfileOptionCard(
+                  context: context,
+                  title: option['title'],
+                  subtitle: option['subtitle'],
+                  icon: option['icon'],
+                  onTap: option['onTap'],
+                  isSelected: option['isSelected'],
+                ),
+              ),
+            );
+          }).toList(),
+        );
       },
-      {
-        'title': 'Set Theme',
-        'subtitle': 'Choose your style',
-        'icon': Icons.color_lens_outlined,
-        'onTap': () => _showThemePage(context),
-        'isSelected': _shouldShowSelectionHighlight('Set Theme'),
-      },
-      {
-        'title': 'Custom Frequency',
-        'subtitle': 'Modify your tracking intervals',
-        'icon': Icons.timelapse_sharp,
-        'onTap': () => _showFrequencyPage(context),
-        'isSelected': _shouldShowSelectionHighlight('Custom Frequency'),
-      },
-      {
-        'title': 'Custom Tracking Type',
-        'subtitle': 'Modify your tracking intervals',
-        'icon': Icons.track_changes_rounded,
-        'onTap': () => _showTrackingTypePage(context),
-        'isSelected': _shouldShowSelectionHighlight('Custom Tracking Type'),
-      },
-      {
-        'title': 'Change Password',
-        'subtitle': 'Update your security credentials',
-        'icon': Icons.lock_outline,
-        'onTap': () => _showChangePasswordPage(context),
-        'isSelected': _shouldShowSelectionHighlight('Change Password'),
-      },
-      {
-        'title': 'Change Email',
-        'subtitle': 'Update your Email credentials',
-        'icon': Icons.email_outlined,
-        'onTap': () => _showChangeEmailPage(context),
-        'isSelected': _shouldShowSelectionHighlight('Change Email'),
-      },
-      {
-        'title': 'Notification Settings',
-        'subtitle': 'Manage your notification preferences',
-        'icon': Icons.notifications_outlined,
-        'onTap': () => _showNotificationSettingsPage(context),
-        'isSelected': _shouldShowSelectionHighlight('Notification Settings'),
-      },
-      {
-        'title': 'About',
-        'subtitle': 'Read about this project',
-        'icon': Icons.privacy_tip_outlined,
-        'onTap': () => _showAboutPage(context),
-        'isSelected': _shouldShowSelectionHighlight('About'),
-      },
-    ];
-
-    List<Widget> cards = [];
-
-    for (int i = 0; i < options.length; i++) {
-      final option = options[i];
-
-      // Create staggered animation for each card
-      final card = TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOutCubic,
-        // Delay each card by a bit more
-        builder: (context, value, child) {
-          // Calculate delay based on index
-          final delay = i * 0.1;
-          final adjustedValue = (value - delay).clamp(0.0, 1.0) / (1.0 - delay);
-
-          return Opacity(
-            opacity: adjustedValue,
-            child: Transform.translate(
-              offset: Offset(30 * (1 - adjustedValue), 0),
-              child: child,
-            ),
-          );
-        },
-        child: buildProfileOptionCard(
-          context: context,
-          title: option['title'] as String,
-          subtitle: option['subtitle'] as String,
-          icon: option['icon'] as IconData,
-          onTap: option['onTap'] as Function(),
-          isSelected: option['isSelected'] as bool,
-        ),
-      );
-
-      cards.add(card);
-
-      // Add spacing except after the last item
-      if (i < options.length - 1) {
-        cards.add(const SizedBox(height: 16));
-      }
-    }
-
-    return cards;
+    );
   }
 
   @override

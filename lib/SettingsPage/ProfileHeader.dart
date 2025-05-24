@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import '../Utils/GuestAuthService.dart';
 import 'ProfileImageWidget.dart';
 import 'ProfileProvider.dart';
 import 'SendVerificationMail.dart';
@@ -96,41 +97,77 @@ class ProfileHeader extends StatelessWidget {
               },
             ),
             const SizedBox(height: 4),
-            // Animated email verification status
+            // Check if user is in guest mode before showing email verification status
             FutureBuilder<bool>(
-              future: isEmailVerified(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+              future: GuestAuthService.isGuestMode(),
+              builder: (context, guestSnapshot) {
+                if (guestSnapshot.connectionState == ConnectionState.waiting) {
                   return const SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   );
-                } else if (snapshot.hasError) {
-                  return const Text('Error loading verification status');
-                } else {
-                  bool isVerified = snapshot.data!;
-                  return Center(
-                    key: ValueKey('email-${isVerified}'),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                          ),
+                }
+                
+                bool isGuest = guestSnapshot.data ?? false;
+                
+                if (isGuest) {
+                  // For guest users, show guest mode indicator
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Guest Mode',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                         ),
-                        const SizedBox(width: 8),
-                        if (isVerified)
-                          const Icon(Icons.verified_outlined, color: Colors.green)
-                        else
-                          TextButton(
-                            onPressed: () => sendVerificationEmail(context),
-                            child: const Icon(Icons.error, color: Colors.red),
-                          )
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.person_off_outlined, 
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                      ),
+                    ],
+                  );
+                } else {
+                  // For authenticated users, show email verification status
+                  return FutureBuilder<bool>(
+                    future: isEmailVerified(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        );
+                      } else if (snapshot.hasError) {
+                        return const Text('Error loading verification status');
+                      } else {
+                        bool isVerified = snapshot.data!;
+                        return Center(
+                          key: ValueKey('email-${isVerified}'),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (isVerified)
+                                const Icon(Icons.verified_outlined, color: Colors.green)
+                              else
+                                TextButton(
+                                  onPressed: () => sendVerificationEmail(context),
+                                  child: const Icon(Icons.error, color: Colors.red),
+                                )
+                            ],
+                          ),
+                        );
+                      }
+                    },
                   );
                 }
               },
