@@ -1,13 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
-import 'package:retracker/main.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../ThemeNotifier.dart';
-import '../Utils/GuestAuthService.dart';
-import '../Utils/LocalDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
 import 'UrlLauncher.dart';
 
@@ -21,7 +15,7 @@ class _SignupPageState extends State<SignupPage>
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
@@ -109,7 +103,7 @@ class _SignupPageState extends State<SignupPage>
 
     try {
       UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+      await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
@@ -135,9 +129,9 @@ class _SignupPageState extends State<SignupPage>
         await user.sendEmailVerification();
 
 
-          customSnackBar(
-            context: context,
-            message: 'Account created successfully. Please check your email for verification.',
+        customSnackBar(
+          context: context,
+          message: 'Account created successfully. Please check your email for verification.',
 
         );
 
@@ -148,9 +142,9 @@ class _SignupPageState extends State<SignupPage>
         _errorMessage = _getFirebaseErrorMessage(e.code);
       });
     } catch (e) {
-        customSnackBar_error(
-          context: context,
-          message: 'An unexpected error occurred. Please try again.',
+      customSnackBar_error(
+        context: context,
+        message: 'An unexpected error occurred. Please try again.',
       );
     } finally {
       if (mounted) {
@@ -172,96 +166,6 @@ class _SignupPageState extends State<SignupPage>
       default:
         return 'Authentication failed. Please try again.';
     }
-  }
-  // Method to handle guest login
-  Future<void> _continueAsGuest() async {
-    // Show a dialog explaining guest mode limitations
-    bool? proceed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Continue as Guest?', 
-          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('You are about to use reTracker in guest mode.'),
-            SizedBox(height: 12),
-            Text('Important information:', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            _buildInfoRow(Icons.save, 'Your data will be stored locally on this device only'),
-            SizedBox(height: 4),
-            _buildInfoRow(Icons.cloud_off, 'Data will not sync across devices'),
-            SizedBox(height: 4),
-            _buildInfoRow(Icons.delete, 'If you clear app data or uninstall, your data will be lost'),
-            SizedBox(height: 4),
-            _buildInfoRow(Icons.swap_horiz, 'You can sign up for an account later to save your data'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Continue'),
-          ),
-        ],
-      ),
-    );
-
-    if (proceed != true) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Initialize Hive and local database
-      await LocalDatabaseService.initialize();
-
-      // Enable guest mode in preferences
-      await GuestAuthService.enableGuestMode();
-
-      // Initialize local database with default data
-      final localDb = LocalDatabaseService();
-      await localDb.initializeWithDefaultData();
-
-      // Update theme
-      ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-      // await themeNotifier.loadLocalTheme(); // Load default theme or saved theme from SharedPreferences
-
-      // Navigate to home page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MyHomePage()),
-      );
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to start guest mode. Please try again.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-  
-  Widget _buildInfoRow(IconData icon, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-        SizedBox(width: 8),
-        Expanded(child: Text(text)),
-      ],
-    );
   }
 
   @override
@@ -534,7 +438,7 @@ class _SignupPageState extends State<SignupPage>
                             onPressed: () {
                               setState(() {
                                 _confirmPasswordVisibility =
-                                    !_confirmPasswordVisibility;
+                                !_confirmPasswordVisibility;
                               });
                             },
                           ),
@@ -548,15 +452,15 @@ class _SignupPageState extends State<SignupPage>
                           onPressed: _isLoading ? null : _signup,
                           child: _isLoading
                               ? SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                )
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.onPrimary,
+                              ),
+                            ),
+                          )
                               : const Text('Create Account'),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: colorScheme.onPrimary,
@@ -566,29 +470,7 @@ class _SignupPageState extends State<SignupPage>
                               borderRadius: BorderRadius.circular(30),
                             ),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 12),                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Continue as guest button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: _isLoading ? null : _continueAsGuest,
-                          child: const Text(
-                            'Continue as Guest',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colorScheme.primary,
-                            side: BorderSide(color: colorScheme.primary),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                                horizontal: 24, vertical: 12),
                           ),
                         ),
                       ),

@@ -92,9 +92,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         List<String> types = ['All']; // Start with 'All'
         if (trackingTypes.isNotEmpty) {
           // Add all types except 'All' if it already exists in trackingTypes
-          // Remove duplicates by converting to Set and back to List
-          List<String> uniqueTypes = trackingTypes.where((type) => type != 'All').toSet().toList();
-          types.addAll(uniqueTypes);
+          types.addAll(trackingTypes.where((type) => type != 'All'));
         }
         _availableLectureTypes = types;
       });

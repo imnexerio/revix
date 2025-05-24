@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'GuestAuthService.dart';
-import 'LocalDatabaseService.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -35,19 +32,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward().whenComplete(() => _navigateToHome());
   }
-  void _navigateToHome() async {
-    // Check if user is in guest mode
-    bool isGuestMode = await GuestAuthService.isGuestMode();
-    
-    if (isGuestMode) {
-      // Initialize local database for guest mode
-      await LocalDatabaseService.initialize();
-      
-      // Ensure guest mode is properly set in SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-    }
-    
+
+  void _navigateToHome() {
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
