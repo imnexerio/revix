@@ -350,6 +350,45 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
       print('Error retrieving theme data: $e');
     }
   }
+  // Apply a default theme for new guest users
+  Future<void> applyDefaultTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Set default theme values
+    _selectedThemeIndex = 0; // Use the first theme
+    _customThemeColor = null;
+    _currentThemeMode = ThemeMode.system;
+    
+    // Save to preferences
+    await prefs.setString(_prefThemeMode, _currentThemeMode.toString());
+    await prefs.setInt(_prefThemeIndex, _selectedThemeIndex);
+    if (_customThemeColor != null) {
+      await prefs.setInt(_prefCustomThemeColor, _customThemeColor!.value);
+    } else {
+      await prefs.remove(_prefCustomThemeColor);
+    }
+    
+    // Update the current theme
+    _updateThemeData();
+    notifyListeners();
+  }
+
+  // Update theme based on current settings
+  void _updateThemeData() {
+    if (_selectedThemeIndex == customThemeIndex && _customThemeColor == null) {
+      // If selecting custom theme but no custom color is set, keep current theme
+      return;
+    }
+
+    // Determine which theme to use based on current theme mode
+    if (_currentThemeMode == ThemeMode.system) {
+      _updateThemeBasedOnSystemBrightness();
+    } else {
+      _currentTheme = AppThemes.themes[_selectedThemeIndex * 2 +
+          (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
+    }
+  }
+
   // Set and apply custom theme, save locally first, then to Firebase/local storage depending on user type
   void setCustomTheme(Color color) async {
     _customThemeColor = color;
@@ -367,11 +406,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   }
   // Update theme based on selected index and current mode
   void updateThemeBasedOnMode(int selectedThemeIndex) async {
-    if (selectedThemeIndex == customThemeIndex && _customThemeColor == null) {
-      // If selecting custom theme but no custom color is set, keep current theme
-      return;
-    }
-
     _selectedThemeIndex = selectedThemeIndex;
 
     // Determine which theme to use based on current theme mode

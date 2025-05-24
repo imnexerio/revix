@@ -1,7 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:retracker/ThemeNotifier.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:retracker/Utils/GuestAuthService.dart';
+import 'package:retracker/Utils/LocalDatabaseService.dart';
+import 'package:retracker/main.dart';
 import '../Utils/customSnackBar_error.dart';
 import 'UrlLauncher.dart';
 
@@ -152,6 +157,40 @@ class _SignupPageState extends State<SignupPage>
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _continueAsGuest() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Initialize local database for guest mode
+      await LocalDatabaseService.initialize();
+      
+      // Enable guest mode
+      await GuestAuthService.enableGuestMode();
+      
+      // Initialize the local database with default data
+      final localDb = LocalDatabaseService();
+      await localDb.initializeWithDefaultData();
+
+      // Set theme preferences
+      ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+      await themeNotifier.applyDefaultTheme();
+
+      // Navigate to home page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MyHomePage()),
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to initialize guest mode. Please try again.';
+        _isLoading = false;
+      });
     }
   }
 
@@ -471,6 +510,39 @@ class _SignupPageState extends State<SignupPage>
                             ),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 24, vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _continueAsGuest,
+                          child: _isLoading
+                              ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.primary,
+                              ),
+                            ),
+                          )
+                              : const Text(
+                            'Continue as Guest',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colorScheme.primary,
+                            side: BorderSide(color: colorScheme.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
                         ),
                       ),
