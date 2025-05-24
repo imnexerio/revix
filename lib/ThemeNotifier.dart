@@ -6,8 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'CustomThemeGenerator.dart';
+import 'Utils/GuestAuthService.dart';
+import 'Utils/LocalDatabaseService.dart';
 
 class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
+  // Theme management class that supports both Firebase (for authenticated users) 
+  // and local storage (for guest users) while maintaining existing functionality
   ThemeData _currentTheme;
   ThemeMode _currentThemeMode;
   int _selectedThemeIndex;
@@ -41,7 +45,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     _selectedThemeIndex = themeIndex;
     _customThemeColor = customColor;
   }
-
   // Initialize SharedPreferences and prepare for remote theme fetch
   Future<void> _initPreferences() async {
     _prefs = await SharedPreferences.getInstance();
@@ -49,18 +52,28 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     // We don't need to load theme from SharedPreferences here
     // since we already did that in main.dart and passed it to the constructor
 
-    // Check connectivity and fetch remote theme if online
-    final connectivityResult = await Connectivity().checkConnectivity();
-    _isOnline = connectivityResult != ConnectivityResult.none;
-    if (_isOnline) {
+    // Check if user is in guest mode
+    bool isGuestMode = await GuestAuthService.isGuestMode();
+      if (isGuestMode) {
+      // For guest users, fetch theme from local storage
       fetchRemoteTheme();
+    } else {
+      // For authenticated users, check connectivity and fetch remote theme if online
+      final connectivityResult = await Connectivity().checkConnectivity();
+      _isOnline = connectivityResult.any((result) => result != ConnectivityResult.none);
+      if (_isOnline) {
+        fetchRemoteTheme();
+      }
     }
   }
-
   // Setup connectivity listener to detect when internet becomes available
   void _setupConnectivityListener() {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
-        List<ConnectivityResult> results) {
+        List<ConnectivityResult> results) async {
+      // Only handle connectivity changes for authenticated users
+      bool isGuestMode = await GuestAuthService.isGuestMode();
+      if (isGuestMode) return;
+      
       final wasOffline = !_isOnline;
       // Check if any connection is available
       _isOnline = results.any((result) => result != ConnectivityResult.none);
@@ -164,7 +177,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   Color? get customThemeColor => _customThemeColor;
 
   bool get isCustomTheme => _selectedThemeIndex == customThemeIndex;
-
   // Change theme mode (light/dark/system)
   void changeThemeMode(ThemeMode newMode) async {
     _currentThemeMode = newMode;
@@ -180,22 +192,35 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     await _saveThemeToLocal();
     notifyListeners();
 
-    // Then save to Firebase if online
+    // Then save to Firebase if online (for authenticated users) or to local storage (for guest users)
     _saveThemeToFirebase();
   }
-
-  // Save current theme settings to Firebase if logged in and online
+  // Save current theme settings to Firebase if logged in and online, or to local storage for guest users
   Future<void> _saveThemeToFirebase() async {
-    if (!_isOnline) return;
-
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    String uid = user.uid;
-    DatabaseReference databaseRef = FirebaseDatabase.instance.ref(
-        'users/$uid/profile_data/theme_data');
-
     try {
+      // Check if user is in guest mode
+      if (await GuestAuthService.isGuestMode()) {
+        // Use local database for guest users
+        final localDb = LocalDatabaseService();
+        
+        // Save theme data to local database
+        await localDb.saveProfileData('theme_data.customThemeColor', _customThemeColor?.value);
+        await localDb.saveProfileData('theme_data.selectedThemeIndex', _selectedThemeIndex);
+        await localDb.saveProfileData('theme_data.themeMode', _currentThemeMode.toString());
+        
+        return;
+      }
+      
+      // Original Firebase logic for authenticated users
+      if (!_isOnline) return;
+
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      String uid = user.uid;
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref(
+          'users/$uid/profile_data/theme_data');
+
       await databaseRef.set({
         'customThemeColor': _customThemeColor?.value,
         'selectedThemeIndex': _selectedThemeIndex,
@@ -203,21 +228,71 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
       });
     } catch (e) {
       // Silently fail - we've already updated locally
-      print('Error saving theme to Firebase: $e');
+      print('Error saving theme: $e');
     }
   }
-
-  // Fetch theme from Firebase (called when online)
+  // Fetch theme from Firebase (called when online) or from local storage for guest users
   Future<void> fetchRemoteTheme() async {
     // Add a small delay to avoid slowing down the initial app render
     // This ensures the app launches quickly with cached theme
     await Future.delayed(const Duration(milliseconds: 100));
 
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    String uid = user.uid;
     try {
+      // Check if user is in guest mode
+      if (await GuestAuthService.isGuestMode()) {
+        // Use local database for guest users
+        final localDb = LocalDatabaseService();
+        
+        // Get theme data from local database
+        final remoteColorValue = await localDb.getProfileData('theme_data.customThemeColor');
+        final remoteThemeIndex = await localDb.getProfileData('theme_data.selectedThemeIndex');
+        final remoteThemeModeString = await localDb.getProfileData('theme_data.themeMode', defaultValue: ThemeMode.system.toString());
+
+        bool hasChanged = false;
+
+        // Check if theme index has changed
+        if (remoteThemeIndex != null && remoteThemeIndex != _selectedThemeIndex) {
+          _selectedThemeIndex = remoteThemeIndex;
+          hasChanged = true;
+        }
+
+        // Check if theme mode has changed
+        final remoteThemeMode = ThemeMode.values.firstWhere(
+                (e) => e.toString() == remoteThemeModeString,
+            orElse: () => ThemeMode.system
+        );
+        if (remoteThemeMode != _currentThemeMode) {
+          _currentThemeMode = remoteThemeMode;
+          hasChanged = true;
+        }
+
+        // Check if custom color has changed
+        if (remoteColorValue != null &&
+            (_customThemeColor == null ||
+                remoteColorValue != _customThemeColor!.value)) {
+          _customThemeColor = Color(remoteColorValue);
+          hasChanged = true;
+        }
+
+        // If anything has changed, apply the new theme and save locally
+        if (hasChanged) {
+          if (_selectedThemeIndex == customThemeIndex &&
+              _customThemeColor != null) {
+            _applyCustomTheme(_customThemeColor!);
+          } else {
+            updateThemeBasedOnMode(_selectedThemeIndex);
+          }
+          await _saveThemeToLocal();
+          notifyListeners();
+        }
+        return;
+      }
+
+      // Original Firebase logic for authenticated users
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      String uid = user.uid;
       DatabaseReference databaseRef = FirebaseDatabase.instance.ref(
           'users/$uid/profile_data/theme_data');
       DataSnapshot snapshot = await databaseRef.get();
@@ -272,11 +347,10 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
       }
     } catch (e) {
       // Silently fail - we're still using the locally cached theme
-      // print('Error retrieving remote theme data: $e');
+      print('Error retrieving theme data: $e');
     }
   }
-
-  // Set and apply custom theme, save locally first, then to Firebase if possible
+  // Set and apply custom theme, save locally first, then to Firebase/local storage depending on user type
   void setCustomTheme(Color color) async {
     _customThemeColor = color;
     _selectedThemeIndex = customThemeIndex;
@@ -288,10 +362,9 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     await _saveThemeToLocal();
     notifyListeners();
 
-    // Then save to Firebase if online
+    // Then save to Firebase if online (for authenticated users) or to local storage (for guest users)
     _saveThemeToFirebase();
   }
-
   // Update theme based on selected index and current mode
   void updateThemeBasedOnMode(int selectedThemeIndex) async {
     if (selectedThemeIndex == customThemeIndex && _customThemeColor == null) {
@@ -313,7 +386,7 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     await _saveThemeToLocal();
     notifyListeners();
 
-    // Then save to Firebase if logged in and online
+    // Then save to Firebase if logged in and online (for authenticated users) or to local storage (for guest users)
     _saveThemeToFirebase();
   }
 
