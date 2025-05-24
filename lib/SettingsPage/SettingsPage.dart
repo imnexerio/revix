@@ -1,14 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
-import '../Utils/DataMigrationService.dart';
-import '../Utils/GuestAuthService.dart';
-import '../Utils/LocalDatabaseService.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/platform_utils.dart';
@@ -17,7 +13,6 @@ import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
-import 'GuestDataManagementWidget.dart';
 import 'NotificationPage.dart';
 import 'ProfileHeader.dart';
 import 'ProfileOptionCard.dart';
@@ -96,106 +91,18 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     super.dispose();
   }
 
+
   Future<void> _logout(BuildContext context) async {
     try {
       await _animationController.reverse();
       final databaseService = CombinedDatabaseService();
       databaseService.stopListening();
 
-      // Check if user is in guest mode
-      bool isGuestMode = await GuestAuthService.isGuestMode();
-
       if (PlatformUtils.instance.isAndroid) {
         await HomeWidgetService.updateWidgetData([],[],[]);
       }
 
-      if (isGuestMode) {
-        // Ask if user wants to save data before logging out
-        if (context.mounted) {
-          bool? saveData = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Save Guest Data?'),
-              content: const Text(
-                'Would you like to export your data before logging out? '
-                'This will allow you to restore your data later.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('No, Logout'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Export Data'),
-                ),
-              ],
-            ),
-          );
-
-          if (saveData == true && context.mounted) {
-            // User wants to export data
-            final data = await DataMigrationService.exportGuestData();
-            
-            if (data != null && context.mounted) {
-              await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Your Data'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Copy this code to import your data later:'),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          data.length > 100 ? '${data.substring(0, 100)}...' : data,
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: () {
-                        // Copy to clipboard
-                        Clipboard.setData(ClipboardData(text: data));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Data copied to clipboard')),
-                        );
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(Icons.copy),
-                      label: const Text('Copy & Continue'),
-                    ),
-                  ],
-                ),
-              );
-            }
-          }
-        }
-        
-        // Disable guest mode
-        await GuestAuthService.disableGuestMode();
-        
-        // Clear local database data
-        await LocalDatabaseService().clearAllData();
-      } else {
-        // Regular firebase logout
-        await FirebaseAuth.instance.signOut();
-      }
+      await FirebaseAuth.instance.signOut();
 
       if (PlatformUtils.instance.isAndroid) {
         await HomeWidgetService.updateLoginStatus();
@@ -225,9 +132,9 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       }
     } catch (e) {
       if (context.mounted) {
-          customSnackBar_error(
-            context: context,
-            message: 'Error during logout: $e',
+        customSnackBar_error(
+          context: context,
+          message: 'Error during logout: $e',
         );
       }
     }
@@ -603,8 +510,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
                     isSmallScreen: isSmallScreen,
                     showEditProfilePage: _showEditProfilePage,
                   ),
-                  // Add Guest Data Management Widget below the profile header in small screens
-                  const GuestDataManagementWidget(),
                   _buildSettingsOptions(isSmallScreen),
                 ],
               ),
@@ -623,8 +528,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
                           isSmallScreen: isSmallScreen,
                           showEditProfilePage: _showEditProfilePage,
                         ),
-                        // Add Guest Data Management Widget below the profile header in large screens
-                        const GuestDataManagementWidget(),
                         _buildSettingsOptions(isSmallScreen),
                       ],
                     ),

@@ -105,35 +105,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  // Load theme from local storage only (for guest mode)
-  Future<void> loadLocalTheme() async {
-    if (_prefs == null) {
-      _prefs = await SharedPreferences.getInstance();
-    }
-
-    // Load theme mode
-    final themeModeString = _prefs!.getString(_prefThemeMode);
-    if (themeModeString != null) {
-      _currentThemeMode = _parseThemeMode(themeModeString);
-    }
-
-    // Load theme index
-    final themeIndex = _prefs!.getInt(_prefThemeIndex) ?? 0;
-    _selectedThemeIndex = themeIndex;
-
-    // Load custom theme color if needed
-    if (themeIndex == customThemeIndex) {
-      final colorValue = _prefs!.getInt(_prefCustomThemeColor);
-      _customThemeColor = colorValue != null ? Color(colorValue) : null;
-    } else {
-      _customThemeColor = null;
-    }
-
-    // Apply the loaded theme
-    _updateTheme();
-    notifyListeners();
-  }
-
   // Save theme to local storage
   Future<void> _saveThemeToLocal() async {
     if (_prefs == null) return;
@@ -359,23 +330,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       _currentTheme =
       _currentThemeMode == ThemeMode.dark ? darkTheme : lightTheme;
-    }
-  }
-
-  // Parse theme mode from string
-  ThemeMode _parseThemeMode(String modeString) {
-    return ThemeMode.values.firstWhere(
-            (e) => e.toString() == modeString,
-        orElse: () => ThemeMode.system
-    );
-  }
-
-  // Update theme immediately
-  void _updateTheme() {
-    if (_selectedThemeIndex == customThemeIndex && _customThemeColor != null) {
-      _applyCustomTheme(_customThemeColor!);
-    } else {
-      updateThemeBasedOnMode(_selectedThemeIndex);
     }
   }
 }

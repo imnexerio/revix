@@ -6,7 +6,6 @@ import 'package:retracker/DetailsPage/DetailsPage.dart';
 import 'package:retracker/LoginSignupPage/LoginPage.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'AI/ChatPage.dart';
 import 'CustomThemeGenerator.dart';
 import 'HomePage/HomePage.dart';
@@ -16,39 +15,14 @@ import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
-import 'Utils/GuestAuthService.dart';
-import 'Utils/LocalDatabaseService.dart';
-import 'Utils/HiveService.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PlatformUtils.init();
-  
-  // Initialize Hive for local storage
-  await Hive.initFlutter();
-  await HiveService.initialize();
-  
-  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
-  // Initialize SharedPreferences
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  
-  // Check if user is in guest mode and ensure consistency
-  await HiveService.syncGuestModeStatus();
-  bool isGuestMode = await GuestAuthService.isGuestMode();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  
-  // If user is in guest mode, initialize local database
-  if (isGuestMode) {
-    await LocalDatabaseService.initialize();
-    // Make sure isLoggedIn is set to true for guest mode
-    if (!isLoggedIn) {
-      await prefs.setBool('isLoggedIn', true);
-      isLoggedIn = true;
-    }
-  }
 
   // Load cached theme data from SharedPreferences
   ThemeMode cachedThemeMode = ThemeMode.system;
@@ -96,16 +70,12 @@ void main() async {
       initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (cachedThemeMode == ThemeMode.dark ? 1 : 0)];
     }
   }
+
   // Create ThemeNotifier with the cached theme data
   ThemeNotifier themeNotifier = ThemeNotifier(initialTheme, cachedThemeMode);
 
   // Set the cached values directly (they'll be applied in the constructor)
   themeNotifier.setInitialValues(cachedThemeIndex, cachedCustomColor);
-  
-  // If in guest mode, ensure we're using local theme settings only
-  if (isGuestMode) {
-    await themeNotifier.loadLocalTheme();
-  }
 
   runApp(
     MultiProvider(
@@ -134,6 +104,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeNotifier>(

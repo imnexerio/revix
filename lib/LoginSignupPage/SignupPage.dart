@@ -233,7 +233,7 @@ class _SignupPageState extends State<SignupPage>
 
       // Update theme
       ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-      await themeNotifier.loadLocalTheme(); // Load default theme or saved theme from SharedPreferences
+      // await themeNotifier.loadLocalTheme(); // Load default theme or saved theme from SharedPreferences
 
       // Navigate to home page
       Navigator.pushReplacement(
