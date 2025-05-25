@@ -67,4 +67,21 @@ class ChatStorage {
       await prefs.remove(_activeConversationKey);
     }
   }
+  
+  // Clear all conversations (used during logout)
+  static Future<void> clearAllConversations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final conversationIds = await getConversationIds();
+    
+    // Delete each conversation
+    for (final id in conversationIds) {
+      await prefs.remove('conversation_$id');
+    }
+    
+    // Clear the list of conversation IDs
+    await prefs.remove(_conversationsKey);
+    
+    // Clear the active conversation reference
+    await prefs.remove(_activeConversationKey);
+  }
 }

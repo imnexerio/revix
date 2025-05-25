@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../AI/ChatStorage.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/LocalDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/platform_utils.dart';
 import 'AboutPage.dart';
@@ -105,11 +107,17 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         await HomeWidgetService.updateWidgetData([],[],[]);
       }
 
+      // Get a reference to the local database
+      final localDatabase = LocalDatabaseService();
+
       // Check if user is in guest mode
       bool isGuestMode = await GuestAuthService.isGuestMode();
-        if (isGuestMode) {
+      if (isGuestMode) {
         // Handle guest mode logout
         await GuestAuthService.disableGuestMode();
+        
+        // Clear all guest user data from local database
+        await localDatabase.clearAllData();
       } else {
         // Handle regular authentication logout
         await _databaseService.signOut();
@@ -119,8 +127,16 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         await HomeWidgetService.updateLoginStatus();
       }
 
+      // Clear all shared preferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
+
+      // Clear any cached AI chat data
+      try {
+        await ChatStorage.clearAllConversations();
+      } catch (e) {
+        print('Error clearing chat data: $e');
+      }
 
       if (context.mounted) {
         Navigator.pushReplacement(
