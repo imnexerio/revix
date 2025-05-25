@@ -7,6 +7,7 @@ import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'CustomLectureSave.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
@@ -116,28 +117,56 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     _savePreferences(); // Save when lecture type changes
   }
 
-  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final String uid = user.uid;
-
-        DatabaseReference typesRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
-        DatabaseReference targetsRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/completionTargets');
-
-        DatabaseEvent typesEvent = await typesRef.once();
-        DatabaseEvent targetsEvent = await targetsRef.once();
-
-        if (typesEvent.snapshot.exists) {
-          Map<dynamic, dynamic> data = typesEvent.snapshot.value as Map<dynamic, dynamic>;
+  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {    try {
+      if (await GuestAuthService.isGuestMode()) {
+        // Use local database for guest users
+        final localDb = LocalDatabaseService();
+        final homePageData = await localDb.getProfileData('home_page', defaultValue: {});
+        
+        if (homePageData.isNotEmpty && homePageData is Map<String, dynamic>) {
+          final selectedTypes = homePageData['selectedTrackingTypes'] as Map<String, dynamic>? ?? {};
+          final completionTargets = homePageData['completionTargets'] as Map<String, dynamic>? ?? {};
 
           setState(() {
-            data.forEach((key, value) {
+            selectedTypes.forEach((key, value) {
               if (_selectedTrackingTypesMap.containsKey(key)) {
                 List<dynamic> valueList = value as List<dynamic>;
                 _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+              }
+            });
+
+            completionTargets.forEach((key, value) {
+              if (_completionTargetsMap.containsKey(key)) {
+                _completionTargetsMap[key] = value.toString();
+              }
+            });
+          });
+        }
+      } else {
+        // Use centralized Firebase service for authenticated users
+        final firebaseService = FirebaseDatabaseService();
+        final homePageData = await firebaseService.fetchHomePageSettings();
+
+        if (homePageData.isNotEmpty) {
+          final selectedTypes = homePageData['selectedTrackingTypes'] as Map<String, dynamic>? ?? {};
+          final completionTargets = homePageData['completionTargets'] as Map<String, dynamic>? ?? {};
+
+          setState(() {
+            selectedTypes.forEach((key, value) {
+              if (_selectedTrackingTypesMap.containsKey(key)) {
+                List<dynamic> valueList = value as List<dynamic>;
+                _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+              }
+            });
+
+            completionTargets.forEach((key, value) {
+              if (_completionTargetsMap.containsKey(key)) {
+                _completionTargetsMap[key] = value.toString();
+              }
+            });
+          });
+        }
+      }
               }
             });
           });

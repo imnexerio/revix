@@ -1,7 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'GuestAuthService.dart';
-import 'LocalDatabaseService.dart';
+import 'FirebaseDatabaseService.dart';
 
 class DateNextRevision {
   static Future<DateTime> calculateNextRevisionDate(DateTime scheduledDate, String frequency, int noRevision) async {
@@ -21,47 +18,13 @@ class DateNextRevision {
 
     return scheduledDate;
   }
+  
   static Future<List<Map<String, String>>> fetchFrequencies() async {
-    List<Map<String, String>> frequencies = [];
-      try {
-      // Check if user is in guest mode
-      if (await GuestAuthService.isGuestMode()) {
-        // Fetch from local database
-        final localDb = LocalDatabaseService();
-        final profileData = await localDb.getProfileData('custom_frequencies', defaultValue: {});
-        
-        if (profileData.isNotEmpty) {
-          Map<String, dynamic> data = Map<String, dynamic>.from(profileData);
-          frequencies = data.entries.map((entry) {
-            return {
-              'title': entry.key,
-              'frequency': (entry.value as List<dynamic>).join(', '),
-            };
-          }).toList();
-        }
-      } else {
-        // Fetch from Firebase for authenticated users
-        User? currentUser = FirebaseAuth.instance.currentUser;
-        if (currentUser != null) {
-          String uid = currentUser.uid;
-          DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
-          DataSnapshot snapshot = await databaseRef.get();
-          if (snapshot.exists) {
-            Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
-            frequencies = data.entries.map((entry) {
-              return {
-                'title': entry.key,
-                'frequency': (entry.value as List<dynamic>).join(', '),
-              };
-            }).toList();
-          }
-        }
-      }
+    try {
+      return await FirebaseDatabaseService().fetchFrequenciesForDateCalculation();
     } catch (e) {
-      // Handle error
       print('Error fetching frequencies: $e');
+      return [];
     }
-    return frequencies;
   }
-
 }

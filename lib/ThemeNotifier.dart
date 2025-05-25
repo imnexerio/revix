@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'CustomThemeGenerator.dart';
 import 'Utils/GuestAuthService.dart';
 import 'Utils/LocalDatabaseService.dart';
+import 'Utils/FirebaseDatabaseService.dart';
 
 class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   // Theme management class that supports both Firebase (for authenticated users) 
@@ -209,19 +210,11 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
         await localDb.saveProfileData('theme_data.themeMode', _currentThemeMode.toString());
 
         return;
-      }
-
-      // Original Firebase logic for authenticated users
+      }      // Original Firebase logic for authenticated users
       if (!_isOnline) return;
 
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      String uid = user.uid;
-      DatabaseReference databaseRef = FirebaseDatabase.instance.ref(
-          'users/$uid/profile_data/theme_data');
-
-      await databaseRef.set({
+      final firebaseService = FirebaseDatabaseService();
+      await firebaseService.saveThemeData({
         'customThemeColor': _customThemeColor?.value,
         'selectedThemeIndex': _selectedThemeIndex,
         'themeMode': _currentThemeMode.toString(),
@@ -283,24 +276,15 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
             updateThemeBasedOnMode(_selectedThemeIndex);
           }
           await _saveThemeToLocal();
-          notifyListeners();
-        }
+          notifyListeners();        }
         return;
       }
 
       // Original Firebase logic for authenticated users
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      final firebaseService = FirebaseDatabaseService();
+      Map<String, dynamic> themeData = await firebaseService.fetchThemeData();
 
-      String uid = user.uid;
-      DatabaseReference databaseRef = FirebaseDatabase.instance.ref(
-          'users/$uid/profile_data/theme_data');
-      DataSnapshot snapshot = await databaseRef.get();
-
-      if (snapshot.exists) {
-        Map<String, dynamic> themeData = Map<String, dynamic>.from(
-            snapshot.value as Map);
-
+      if (themeData.isNotEmpty) {
         // Compare with local data to see if we need to update
         final remoteColorValue = themeData['customThemeColor'];
         final remoteThemeIndex = themeData['selectedThemeIndex'];

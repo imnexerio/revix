@@ -13,7 +13,7 @@ import 'Utils/UnifiedDatabaseService.dart';
 import 'Utils/customSnackBar_error.dart';
 import 'Utils/GuestAuthService.dart';
 import 'Utils/LocalDatabaseService.dart';
-
+import 'Utils/FirebaseDatabaseService.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
