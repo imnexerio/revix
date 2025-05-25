@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:retracker/Utils/DataMigrationService.dart';
 import 'package:retracker/Utils/GuestAuthService.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+/// Widget for managing guest user data with options to:
+/// 1. Create a new account and automatically upload data to Firebase
+/// 2. Export data manually as JSON
+/// 3. Import data manually from JSON
+/// 
+/// The "Create Account" feature provides a seamless way for guest users
+/// to transition to a permanent account without losing their data.
 class GuestDataManagementWidget extends StatefulWidget {
   const GuestDataManagementWidget({Key? key}) : super(key: key);
 
@@ -15,25 +21,22 @@ class GuestDataManagementWidget extends StatefulWidget {
 class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
   bool _isExporting = false;
   bool _isImporting = false;
+  bool _isCreatingAccount = false;
   final TextEditingController _importController = TextEditingController();
-  String? _exportData;
 
   @override
   void dispose() {
     _importController.dispose();
     super.dispose();
   }
-
   Future<void> _exportGuestData() async {
     setState(() {
       _isExporting = true;
-      _exportData = null;
     });
 
     try {
       final data = await DataMigrationService.exportGuestData();
       setState(() {
-        _exportData = data;
         _isExporting = false;
       });
 
@@ -192,6 +195,26 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       _showSnackBar('Error importing data: $e');
     }
   }
+  Future<void> _createAccountAndMigrate() async {
+    setState(() {
+      _isCreatingAccount = true;
+    });
+
+    try {
+      await DataMigrationService.createAccountAndMigrateData(context);
+      setState(() {
+        _isCreatingAccount = false;
+      });
+
+      // Note: If successful, the user will be navigated to the login page
+      // so this setState might not execute if the widget is disposed
+    } catch (e) {
+      setState(() {
+        _isCreatingAccount = false;
+      });
+      _showSnackBar('Error creating account: $e');
+    }
+  }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -231,13 +254,57 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
                           ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 16),
+                ),                const SizedBox(height: 16),
                 const Text(
                   'In guest mode, all your data is stored locally on this device. '
-                  'Use these options to back up or restore your data.',
+                  'Create an account to sync your data to the cloud and access it from any device.',
                 ),
                 const SizedBox(height: 16),
+                
+                // Create Account Button (Primary Action)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isCreatingAccount ? null : _createAccountAndMigrate,
+                    icon: _isCreatingAccount
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            ),
+                          )
+                        : const Icon(Icons.person_add),
+                    label: const Text('Create Account & Upload Data'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Divider with text
+                Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Manual Export/Import Buttons
                 Row(
                   children: [
                     Expanded(
