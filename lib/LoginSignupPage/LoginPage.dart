@@ -9,6 +9,7 @@ import '../ThemeNotifier.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/FirebaseAuthService.dart';
 import 'SignupPage.dart';
 import 'UrlLauncher.dart';
 
@@ -22,6 +23,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
@@ -78,8 +80,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       return 'Password must be at least 6 characters';
     }
     return null;
-  }
-  Future<void> _login() async {
+  }  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -88,7 +89,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       _isLoading = true;
       _errorMessage = null;
     });    try {
-      UserCredential? userCredential = await _databaseService.signInWithEmailAndPassword(
+      UserCredential? userCredential = await _authService.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
@@ -125,7 +126,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _databaseService.getAuthErrorMessage(e);
+        _errorMessage = _authService.getAuthErrorMessage(e);
         _isLoading = false;
       });
     } catch (e) {

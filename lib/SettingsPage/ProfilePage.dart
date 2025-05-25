@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:provider/provider.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileProvider.dart';
@@ -8,6 +7,7 @@ import 'ProfileImageWidget.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
 import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/FirebaseAuthService.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({Key? key}) : super(key: key);
@@ -16,10 +16,10 @@ class EditProfilePage extends StatefulWidget {
   _EditProfilePageState createState() => _EditProfilePageState();
 }
 
-class _EditProfilePageState extends State<EditProfilePage> {
-  final _formKey = GlobalKey<FormState>();
+class _EditProfilePageState extends State<EditProfilePage> {  final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   String? _fullName;
   bool _isLoading_pic = false;
   bool _isLoading_name = false;
@@ -28,7 +28,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _uid = _databaseService.currentUserId ?? '';
+    _uid = _authService.currentUserId ?? '';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
     });
@@ -247,13 +247,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _isLoading_name = true; // Start loading spinner
       });      try {
-        User? user = _databaseService.currentUser;
-        
         // Update name using centralized database service
         await _databaseService.updateProfileData({'name': _fullName});
 
         // Update display name for FirebaseAuth user
-        await _databaseService.updateDisplayName(_fullName!);
+        await _authService.updateDisplayName(_fullName!);
 
         // Update the display name in the provider
         await Provider.of<ProfileProvider>(context, listen: false)

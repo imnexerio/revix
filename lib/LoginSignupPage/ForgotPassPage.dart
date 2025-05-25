@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter/material.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
-import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/FirebaseAuthService.dart';
 import 'UrlLauncher.dart';
 
 class ForgotPassPage extends StatefulWidget {
@@ -11,9 +11,8 @@ class ForgotPassPage extends StatefulWidget {
 }
 
 class _ForgotPassPageState extends State<ForgotPassPage>
-    with SingleTickerProviderStateMixin {
-  final TextEditingController _emailController = TextEditingController();
-  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+    with SingleTickerProviderStateMixin {  final TextEditingController _emailController = TextEditingController();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
@@ -59,13 +58,11 @@ class _ForgotPassPageState extends State<ForgotPassPage>
   Future<void> _forgotPass() async {
     if (!_formKey.currentState!.validate()) {
       return;
-    }
-
-    setState(() {
+    }    setState(() {
       _isLoading = true;
       _errorMessage = null;
     });    try {
-      await _databaseService.sendPasswordResetEmail(email: _emailController.text.trim());
+      await _authService.sendPasswordResetEmail(email: _emailController.text.trim());
 
         customSnackBar(
           context: context,
@@ -75,7 +72,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
 
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _databaseService.getAuthErrorMessage(e);
+        _errorMessage = _authService.getAuthErrorMessage(e);
       });
     } catch (e) {
         customSnackBar_error(

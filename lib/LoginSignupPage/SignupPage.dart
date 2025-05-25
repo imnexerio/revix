@@ -8,6 +8,7 @@ import 'package:retracker/Utils/LocalDatabaseService.dart';
 import 'package:retracker/main.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/FirebaseAuthService.dart';
 import 'UrlLauncher.dart';
 
 class SignupPage extends StatefulWidget {
@@ -22,6 +23,7 @@ class _SignupPageState extends State<SignupPage>
   TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
@@ -98,14 +100,12 @@ class _SignupPageState extends State<SignupPage>
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) {
       return;
-    }
-
-    setState(() {
+    }    setState(() {
       _isLoading = true;
       _errorMessage = null;
     });    try {
       UserCredential? userCredential =
-      await _databaseService.createUserWithEmailAndPassword(
+      await _authService.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );      User? user = userCredential?.user;
@@ -116,7 +116,7 @@ class _SignupPageState extends State<SignupPage>
           _nameController.text.trim()
         );
 
-        await _databaseService.sendEmailVerification();
+        await _authService.sendEmailVerification();
 
 
         customSnackBar(
@@ -129,7 +129,7 @@ class _SignupPageState extends State<SignupPage>
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _databaseService.getAuthErrorMessage(e);
+        _errorMessage = _authService.getAuthErrorMessage(e);
       });
     } catch (e) {
       customSnackBar_error(

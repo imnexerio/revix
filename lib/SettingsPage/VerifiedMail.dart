@@ -1,7 +1,7 @@
-import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/FirebaseAuthService.dart';
 
 Future<bool> isEmailVerified() async {
-  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
-  await _databaseService.reloadUser();
-  return _databaseService.isEmailVerified;
+  final FirebaseAuthService _authService = FirebaseAuthService();
+  await _authService.reloadUser();
+  return _authService.isEmailVerified;
 }
