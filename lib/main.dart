@@ -6,6 +6,8 @@ import 'package:retracker/DetailsPage/DetailsPage.dart';
 import 'package:retracker/LoginSignupPage/LoginPage.dart';
 import 'package:retracker/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'AI/ChatPage.dart';
 import 'CustomThemeGenerator.dart';
 import 'HomePage/HomePage.dart';
@@ -20,9 +22,18 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PlatformUtils.init();
+  
+  // Initialize Hive
+  await Hive.initFlutter();
+  // Register any Hive adapters here if needed
+  // Example: Hive.registerAdapter(YourModelAdapter());
+  
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+  // Initialize Hive
+  await Hive.initFlutter();
 
   // Load cached theme data from SharedPreferences
   ThemeMode cachedThemeMode = ThemeMode.system;
