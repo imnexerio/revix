@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:retracker/Utils/customSnackBar.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 // lib/SettingsPage/AddTrackingTypeSheet.dart
 void showAddtrackingTypeSheet(
@@ -116,30 +116,9 @@ void showAddtrackingTypeSheet(
               child: FilledButton.icon(                onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     try {
-                      String trackingTitle = titleController.text.trim();
-
-                      if (await GuestAuthService.isGuestMode()) {
-                        // Save to local database for guest users
-                        final localDb = LocalDatabaseService();
-                        final currentList = await localDb.getProfileData('custom_trackingType', defaultValue: <String>[]);
-                        List<String> updatedList = List<String>.from(currentList);
-                        updatedList.add(trackingTitle);
-                        
-                        await localDb.saveProfileData('custom_trackingType', updatedList);
-                      } else {
-                        // Save to Firebase for authenticated users
-                        String uid = FirebaseAuth.instance.currentUser!.uid;
-                        DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_trackingType');
-
-                        DataSnapshot snapshot = await databaseRef.get();
-                        List<String> currentList = [];
-                        if (snapshot.exists) {
-                          currentList = List<String>.from(snapshot.value as List);
-                        }
-
-                        currentList.add(trackingTitle);
-                        await databaseRef.set(currentList);
-                      }
+                      String trackingTitle = titleController.text.trim();                      // Use centralized database service
+                      final firebaseService = FirebaseDatabaseService();
+                      await firebaseService.addCustomTrackingType(trackingTitle);
 
                       titleController.clear();
                       Navigator.pop(context);

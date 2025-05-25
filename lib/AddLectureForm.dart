@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -201,20 +200,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
           );
         } else {
           throw Exception('Failed to save record to local database');
-        }
-      } else {
-        // Use Firebase for authenticated users (original code)
-        User? user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          throw Exception('No authenticated user');
-        }
-        String uid = user.uid;
-
-        DatabaseReference ref = FirebaseDatabase.instance
-            .ref('users/$uid/user_data')
-            .child(_selectedSubject)
-            .child(_selectedSubjectCode)
-            .child(_lectureNo);
+        }      } else {
+        // Use Firebase for authenticated users via centralized service
+        final firebaseService = FirebaseDatabaseService();
 
         if (todayDate == 'Unspecified') {
           no_revision = -1;
@@ -241,7 +229,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
           revisionData['custom_params'] = _customFrequencyParams;
         }
 
-        await ref.set({
+        Map<String, dynamic> recordData = {
           'initiated_on': initiated_on,
           'reminder_time': _timeController.text,
           'lecture_type': _lectureType,
@@ -255,7 +243,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
           'revision_data': revisionData,
           'status': 'Enabled',
           'duration': _durationData,
-        });
+        };
+
+        // Save record using centralized service
+        bool success = await firebaseService.saveRecord(_selectedSubject, _selectedSubjectCode, _lectureNo, recordData);
+        
+        if (!success) {
+          throw Exception('Failed to save record to Firebase');
+        }
 
         customSnackBar(
           context: context,

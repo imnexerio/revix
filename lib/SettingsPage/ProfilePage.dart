@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:provider/provider.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileProvider.dart';
 import 'ProfileImageWidget.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({Key? key}) : super(key: key);
@@ -245,17 +245,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // Begin the async operation and update the loading state
       setState(() {
         _isLoading_name = true; // Start loading spinner
-      });
-
-      try {
+      });      try {
         User? user = FirebaseAuth.instance.currentUser;
-        DatabaseReference ref =
-        FirebaseDatabase.instance.ref('users/$_uid/profile_data');
-
-        // Update name in Firebase database
-        await ref.update({
-          'name': _fullName,
-        });
+        
+        // Update name using centralized database service
+        final firebaseService = FirebaseDatabaseService();
+        await firebaseService.updateProfileData({'name': _fullName});
 
         // Update display name for FirebaseAuth user
         await user?.updateDisplayName(_fullName);

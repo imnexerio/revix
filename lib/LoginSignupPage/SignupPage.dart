@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:retracker/ThemeNotifier.dart';
@@ -8,6 +7,7 @@ import 'package:retracker/Utils/GuestAuthService.dart';
 import 'package:retracker/Utils/LocalDatabaseService.dart';
 import 'package:retracker/main.dart';
 import '../Utils/customSnackBar_error.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'UrlLauncher.dart';
 
 class SignupPage extends StatefulWidget {
@@ -111,25 +111,14 @@ class _SignupPageState extends State<SignupPage>
       await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-      );
-
-      User? user = userCredential.user;
+      );      User? user = userCredential.user;
       if (user != null) {
-        String uid = user.uid;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
-        await ref.set({
-          'email': user.email,
-          'name': _nameController.text.trim(),
-          'createdAt': DateTime.now().toIso8601String(),
-          "custom_trackingType": [
-            "Lectures",
-            "Others"
-          ],
-          'custom_frequencies': {
-            'Default': [1, 4, 7, 15, 30, 60],
-            'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
-          },
-        });
+        // Initialize profile data using centralized database service
+        final firebaseService = FirebaseDatabaseService();
+        await firebaseService.initializeUserProfile(
+          user.email ?? '', 
+          _nameController.text.trim()
+        );
 
         await user.sendEmailVerification();
 

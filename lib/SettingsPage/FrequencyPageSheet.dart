@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:retracker/Utils/customSnackBar.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 void showAddFrequencySheet(
     BuildContext context,
@@ -145,24 +145,9 @@ void showAddFrequencySheet(
                     try {
                       String title = titleController.text.trim();
                       String frequency = frequencyController.text.trim();
-                      List<int> frequencyList = frequency.split(',').map((e) => int.parse(e.trim())).toList();
-
-                      if (await GuestAuthService.isGuestMode()) {
-                        // Save to local database for guest users
-                        final localDb = LocalDatabaseService();
-                        final currentFrequencies = await localDb.getProfileData('custom_frequencies', defaultValue: <String, dynamic>{});
-                        Map<String, dynamic> updatedFrequencies = Map<String, dynamic>.from(currentFrequencies);
-                        updatedFrequencies[title] = frequencyList;
-                        
-                        await localDb.saveProfileData('custom_frequencies', updatedFrequencies);
-                      } else {
-                        // Save to Firebase for authenticated users
-                        String uid = FirebaseAuth.instance.currentUser!.uid;
-                        DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
-                        await databaseRef.update({
-                          title: frequencyList,
-                        });
-                      }
+                      List<int> frequencyList = frequency.split(',').map((e) => int.parse(e.trim())).toList();                      // Use centralized database service
+                      final firebaseService = FirebaseDatabaseService();
+                      await firebaseService.addCustomFrequency(title, frequencyList);
 
                       // Update local state
                       setState(() {

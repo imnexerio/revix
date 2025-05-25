@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../ThemeNotifier.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'SignupPage.dart';
 import 'UrlLauncher.dart';
 
@@ -94,18 +94,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-      );
-
-      User? user = userCredential.user;
+      );      User? user = userCredential.user;
       if (user != null) {
-        String uid = user.uid;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
-
         try {
-          DataSnapshot snapshot = await ref.get();
-          if (!snapshot.exists) {
-            throw Exception('User data not found');
-          }
+          // Check if user data exists using centralized database service
+          final firebaseService = FirebaseDatabaseService();
+          bool userDataExists = await firebaseService.checkUserDataExists();          if (!userDataExists) {
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setBool('isLoggedIn', true);

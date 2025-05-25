@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 Future<void> uploadProfilePicture(BuildContext context, XFile imageFile) async {
   try {
@@ -27,16 +26,12 @@ Future<void> uploadProfilePicture(BuildContext context, XFile imageFile) async {
       );
 
       quality -= 10; // Decrease quality by 10 for each iteration
-    } while (compressedImageBytes.lengthInBytes > maxSizeInBytes && quality > 0);
-
-    // Encode byte array to Base64 string
+    } while (compressedImageBytes.lengthInBytes > maxSizeInBytes && quality > 0);    // Encode byte array to Base64 string
     String base64String = base64Encode(compressedImageBytes);
 
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-
-    // Store Base64 string in Firebase Realtime Database at the specified location
-    DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data');
-    await databaseRef.update({'profile_picture': base64String});
+    // Store Base64 string using centralized database service
+    final firebaseService = FirebaseDatabaseService();
+    await firebaseService.setProfilePicture(base64String);
 
 
       customSnackBar(

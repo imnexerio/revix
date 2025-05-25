@@ -112,6 +112,58 @@ class FirebaseDatabaseService {
     }
   }
   
+  /// Adds a new custom tracking type
+  Future<void> addCustomTrackingType(String trackingType) async {
+    if (await GuestAuthService.isGuestMode()) {
+      // Use local database for guest users
+      final localDb = LocalDatabaseService();
+      final currentList = await localDb.getProfileData('custom_trackingType', defaultValue: <String>[]);
+      List<String> updatedList = List<String>.from(currentList);
+      
+      if (!updatedList.contains(trackingType)) {
+        updatedList.add(trackingType);
+        await localDb.saveProfileData('custom_trackingType', updatedList);
+      }
+    } else {
+      // Use Firebase for authenticated users
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No authenticated user');
+      
+      final ref = _database.ref('users/${user.uid}/profile_data/custom_trackingType');
+      final snapshot = await ref.get();
+      
+      List<String> currentList = [];
+      if (snapshot.exists) {
+        currentList = List<String>.from(snapshot.value as List);
+      }
+      
+      if (!currentList.contains(trackingType)) {
+        currentList.add(trackingType);
+        await ref.set(currentList);
+      }
+    }
+  }
+
+  /// Adds a new custom frequency
+  Future<void> addCustomFrequency(String title, List<int> frequency) async {
+    if (await GuestAuthService.isGuestMode()) {
+      // Use local database for guest users
+      final localDb = LocalDatabaseService();
+      final currentFrequencies = await localDb.getProfileData('custom_frequencies', defaultValue: <String, dynamic>{});
+      Map<String, dynamic> updatedFrequencies = Map<String, dynamic>.from(currentFrequencies);
+      updatedFrequencies[title] = frequency;
+      
+      await localDb.saveProfileData('custom_frequencies', updatedFrequencies);
+    } else {
+      // Use Firebase for authenticated users
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No authenticated user');
+      
+      final ref = _database.ref('users/${user.uid}/profile_data/custom_frequencies');
+      await ref.update({title: frequency});
+    }
+  }
+  
   /// Fetch theme data from profile data
   Future<Map<String, dynamic>> fetchThemeData() async {
     try {
@@ -193,6 +245,55 @@ class FirebaseDatabaseService {
       return false;
     }
   }
+
+  /// Saves completion target for a lecture type
+  Future<void> saveHomePageCompletionTarget(String lectureType, String targetValue) async {
+    if (await GuestAuthService.isGuestMode()) {
+      // Use local database for guest users
+      final localDb = LocalDatabaseService();
+      await localDb.saveProfileData('home_page.completionTargets.$lectureType', targetValue);
+    } else {
+      // Use Firebase for authenticated users
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No authenticated user');
+      
+      final ref = _database.ref('users/${user.uid}/profile_data/home_page/completionTargets');
+      await ref.update({lectureType: targetValue});
+    }
+  }
+
+  /// Fetches completion targets for home page
+  Future<Map<String, int>> fetchHomePageCompletionTargets() async {
+    Map<String, int> targets = {};
+    
+    if (await GuestAuthService.isGuestMode()) {
+      // Use local database for guest users
+      final localDb = LocalDatabaseService();
+      final homePageData = await localDb.getProfileData('home_page', defaultValue: {});
+      if (homePageData is Map && homePageData.containsKey('completionTargets')) {
+        final completionTargets = homePageData['completionTargets'] as Map<String, dynamic>? ?? {};
+        completionTargets.forEach((key, value) {
+          targets[key] = int.tryParse(value.toString()) ?? 0;
+        });
+      }
+    } else {
+      // Use Firebase for authenticated users
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No authenticated user');
+      
+      final ref = _database.ref('users/${user.uid}/profile_data/home_page/completionTargets');
+      final snapshot = await ref.get();
+      
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          targets[key.toString()] = int.tryParse(value.toString()) ?? 0;
+        });
+      }
+    }
+    
+    return targets;
+  }
   
   /// Fetch entire profile data
   Future<Map<String, dynamic>> fetchProfileData() async {
@@ -238,6 +339,91 @@ class FirebaseDatabaseService {
       print('Error saving profile data: $e');
       return false;
     }
+  }
+
+  /// Updates profile data fields
+  Future<void> updateProfileData(Map<String, dynamic> updates) async {
+    if (await GuestAuthService.isGuestMode()) {
+      // Use local database for guest users
+      final localDb = LocalDatabaseService();
+      for (final entry in updates.entries) {
+        await localDb.saveProfileData(entry.key, entry.value);
+      }
+    } else {
+      // Use Firebase for authenticated users
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No authenticated user');
+      
+      final ref = _database.ref('users/${user.uid}/profile_data');
+      await ref.update(updates);
+    }
+  }
+
+  /// Gets profile picture URL
+  Future<String?> getProfilePicture() async {
+    if (await GuestAuthService.isGuestMode()) {
+      // Use local database for guest users
+      final localDb = LocalDatabaseService();
+      return await localDb.getProfileData('profile_picture');
+    } else {
+      // Use Firebase for authenticated users
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No authenticated user');
+      
+      final ref = _database.ref('users/${user.uid}/profile_data/profile_picture');
+      final snapshot = await ref.get();
+      if (snapshot.exists) {
+        return snapshot.value as String?;
+      }
+    }
+    return null;
+  }
+
+  /// Sets profile picture URL
+  Future<void> setProfilePicture(String profilePictureUrl) async {
+    if (await GuestAuthService.isGuestMode()) {
+      // Use local database for guest users
+      final localDb = LocalDatabaseService();
+      await localDb.saveProfileData('profile_picture', profilePictureUrl);
+    } else {
+      // Use Firebase for authenticated users
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No authenticated user');
+      
+      final ref = _database.ref('users/${user.uid}/profile_data');
+      await ref.update({'profile_picture': profilePictureUrl});
+    }
+  }
+
+  /// Initializes user profile data for new users
+  Future<void> initializeUserProfile(String email, String name) async {
+    // This method is only used for Firebase authenticated users during signup
+    User? user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user');
+    
+    final ref = _database.ref('users/${user.uid}/profile_data');
+    await ref.set({
+      'email': email,
+      'name': name,
+      'createdAt': DateTime.now().toIso8601String(),
+      'custom_trackingType': [
+        'Lectures',
+        'Others'
+      ],
+      'custom_frequencies': {
+        'Default': [1, 4, 7, 15, 30, 60],
+        'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
+      },
+      'theme_data': {
+        'customThemeColor': null,
+        'selectedThemeIndex': 0,
+        'themeMode': 'ThemeMode.system',
+      },
+      'home_page': {
+        'selectedTrackingTypes': {},
+        'completionTargets': {},
+      }
+    });
   }
   
   // ====================================================================================
@@ -380,6 +566,17 @@ class FirebaseDatabaseService {
       print('Error fetching all user data: $e');
       return {};
     }
+  }
+  
+  /// Checks if user data exists in the database
+  Future<bool> checkUserDataExists() async {
+    // This is only for authenticated users checking Firebase
+    User? user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user');
+    
+    final ref = _database.ref('users/${user.uid}');
+    final snapshot = await ref.get();
+    return snapshot.exists;
   }
   
   // ====================================================================================
