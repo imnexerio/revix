@@ -422,11 +422,11 @@ class CombinedDatabaseService {
         if (_cachedSubjectsData != null) {
           return _cachedSubjectsData!;
         }
-      }
-    } else {
+      }    } else {
       User? user = _auth.currentUser;
       if (user == null) {
-        throw Exception('No authenticated user');
+        // User is not authenticated (logged out), return default data instead of throwing exception
+        return {'subjects': [], 'subjectCodes': {}};
       }
 
       await forceDataReprocessing();
@@ -446,11 +446,11 @@ class CombinedDatabaseService {
 
     if (_isGuestMode) {
       return await _localDatabase.getRawData();
-    }
-    
+    }    
     User? user = _auth.currentUser;
     if (user == null) {
-      throw Exception('No authenticated user');
+      // User is not authenticated (logged out), return null instead of throwing exception
+      return null;
     }
 
     await forceDataReprocessing();

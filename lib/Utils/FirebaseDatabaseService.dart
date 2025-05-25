@@ -544,7 +544,6 @@ class FirebaseDatabaseService {
       await ref.update(updates);
     }
   }
-
   /// Gets profile picture URL
   Future<String?> getProfilePicture() async {
     if (await GuestAuthService.isGuestMode()) {
@@ -554,7 +553,10 @@ class FirebaseDatabaseService {
     } else {
       // Use Firebase for authenticated users
       User? user = _auth.currentUser;
-      if (user == null) throw Exception('No authenticated user');
+      if (user == null) {
+        // User is not authenticated (logged out), return null instead of throwing exception
+        return null;
+      }
       
       final ref = _database.ref('users/${user.uid}/profile_data/profile_picture');
       final snapshot = await ref.get();
