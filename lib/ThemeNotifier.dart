@@ -349,19 +349,23 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   }
   // Update theme based on selected index and current mode
   void updateThemeBasedOnMode(int selectedThemeIndex) async {
-    if (selectedThemeIndex == customThemeIndex && _customThemeColor == null) {
-      // If selecting custom theme but no custom color is set, keep current theme
-      return;
-    }
-
     _selectedThemeIndex = selectedThemeIndex;
 
-    // Determine which theme to use based on current theme mode
-    if (_currentThemeMode == ThemeMode.system) {
-      _updateThemeBasedOnSystemBrightness();
+    if (selectedThemeIndex == customThemeIndex) {
+      // For custom theme, only apply if we have a custom color
+      if (_customThemeColor != null) {
+        _applyCustomTheme(_customThemeColor!);
+      }
+      // Even if no custom color is set, we still update the selected index
+      // so the UI can show the custom theme section
     } else {
-      _currentTheme = AppThemes.themes[selectedThemeIndex * 2 +
-          (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
+      // For standard themes, determine which theme to use based on current theme mode
+      if (_currentThemeMode == ThemeMode.system) {
+        _updateThemeBasedOnSystemBrightness();
+      } else {
+        _currentTheme = AppThemes.themes[selectedThemeIndex * 2 +
+            (_currentThemeMode == ThemeMode.dark ? 1 : 0)];
+      }
     }
 
     // Save locally first for immediate effect

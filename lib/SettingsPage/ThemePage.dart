@@ -18,7 +18,6 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
 
   // Debounce timer for color changes
   Timer? _debounceTimer;
-
   @override
   void initState() {
     super.initState();
@@ -26,9 +25,10 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
 
     Future.microtask(() => themeNotifier.fetchRemoteTheme());
 
-    _redValue = themeNotifier.customThemeColor?.red ?? 0;
-    _greenValue = themeNotifier.customThemeColor?.green ?? 0;
-    _blueValue = themeNotifier.customThemeColor?.blue ?? 0;
+    // Initialize color values - use existing custom color or default values
+    _redValue = themeNotifier.customThemeColor?.red ?? 100;
+    _greenValue = themeNotifier.customThemeColor?.green ?? 150;
+    _blueValue = themeNotifier.customThemeColor?.blue ?? 200;
 
     // Use a shorter animation duration to improve perceived performance
     _animationController = AnimationController(
@@ -48,12 +48,16 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
     _debounceTimer?.cancel();
     super.dispose();
   }
-
   // Optimize theme change to avoid UI freezing
   void _updateTheme(ThemeNotifier themeNotifier, int themeIndex) {
-
     Future.microtask(() {
-      themeNotifier.updateThemeBasedOnMode(themeIndex);
+      // If selecting custom theme and no custom color exists, set a default color
+      if (themeIndex == ThemeNotifier.customThemeIndex && themeNotifier.customThemeColor == null) {
+        final defaultColor = Color.fromRGBO(_redValue, _greenValue, _blueValue, 1);
+        themeNotifier.setCustomTheme(defaultColor);
+      } else {
+        themeNotifier.updateThemeBasedOnMode(themeIndex);
+      }
     });
   }
 
@@ -236,12 +240,11 @@ class _ThemePageState extends State<ThemePage> with SingleTickerProviderStateMix
         childAspectRatio: aspectRatio,
       ),
       itemCount: AppThemes.themeNames.length + 1, // Add 1 for custom theme
-      itemBuilder: (context, index) {
-        bool isCustom = index == AppThemes.themeNames.length;
+      itemBuilder: (context, index) {        bool isCustom = index == AppThemes.themeNames.length;
         int themeIndex = isCustom ? ThemeNotifier.customThemeIndex : index;
         String themeName = isCustom ? 'Custom' : AppThemes.themeNames[index];
         Color themeColor = isCustom
-            ? themeNotifier.customThemeColor ?? Colors.grey
+            ? themeNotifier.customThemeColor ?? Color.fromRGBO(_redValue, _greenValue, _blueValue, 1)
             : AppThemes.themes[index * 2].colorScheme.primary;
         bool isSelected = themeNotifier.selectedThemeIndex == themeIndex;
 
