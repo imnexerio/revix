@@ -179,7 +179,7 @@ class _SignupPageState extends State<SignupPage>
 
       // Set theme preferences
       ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-      await themeNotifier.applyDefaultTheme();
+      await themeNotifier.fetchRemoteTheme();
 
       // Navigate to home page
       Navigator.pushReplacement(
