@@ -23,13 +23,11 @@ class CombinedDatabaseService {
       }
     });
   }
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseDatabase _database = FirebaseDatabase.instance;
   final LocalDatabaseService _localDatabase = LocalDatabaseService();
-
   DatabaseReference? _databaseRef;
-  StreamSubscription<DatabaseEvent>? _databaseSubscription;
+  StreamSubscription? _dataSubscription;
   bool _isGuestMode = false;
 
   final StreamController<Map<String, List<Map<String, dynamic>>>> _categorizedRecordsController =
@@ -61,8 +59,6 @@ class CombinedDatabaseService {
     await _checkGuestMode();
     if (_isGuestMode) {
       await _initializeLocalDatabase();
-      // Ensure we force data processing after initialization
-      await forceDataReprocessing();
     } else {
       User? user = _auth.currentUser;
       if (user == null) {
@@ -79,71 +75,46 @@ class CombinedDatabaseService {
     await LocalDatabaseService.initialize(); // Make sure Hive boxes are initialized
     await _localDatabase.initializeWithDefaultData();
     
-    // Ensure we have the latest data from local database
-    final rawData = await _localDatabase.getRawData();
-    if (rawData != null) {
-      _cachedRawData = rawData;
-      _rawDataController.add(_cachedRawData);
+    // Set up stream subscription for local database changes
+    _setupDataListener();
+    
+    // Initial data load
+    await forceDataReprocessing();
+  }
+  void _setupDataListener() {
+    _dataSubscription?.cancel();
+
+    if (_isGuestMode) {
+      // Set up local database stream listener
+      _dataSubscription = _localDatabase.rawDataStream.listen((rawData) {
+        _processDataChange(rawData);
+      }, onError: (error) {
+        String errorMsg = 'Failed to fetch local data: $error';
+        _addErrorToAllControllers(errorMsg);
+      });
+    } else {
+      // Set up Firebase database stream listener
+      if (_databaseRef == null) return;
       
-      // Process the raw data for guest mode
-      if (_cachedRawData != null) {
-        // Process subjects data
-        _processSubjectsData(_cachedRawData);
-        
-        // Process categorized data
-        Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(_cachedRawData);
-        _cachedCategorizedData = categorizedData;
-        _categorizedRecordsController.add(categorizedData);
-        
-        // Process all records
-        List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
-        _allRecordsController.add({'allRecords': allRecords});
-        
-        if (PlatformUtils.instance.isAndroid) {
-          _updateHomeWidget(
-            categorizedData['today'] ?? [],
-            categorizedData['missed'] ?? [],
-            categorizedData['noreminderdate'] ?? []
-          );
+      _dataSubscription = _databaseRef!.onValue.listen((event) {
+        if (!event.snapshot.exists) {
+          _processDataChange(null);
+          return;
         }
-      }
+        Map<Object?, Object?> rawData = event.snapshot.value as Map<Object?, Object?>;
+        _processDataChange(rawData);
+      }, onError: (error) {
+        String errorMsg = 'Failed to fetch data: $error';
+        _addErrorToAllControllers(errorMsg);
+      });
     }
-  }
-
-  void _initialize(String uid) {
+  }  void _initialize(String uid) {
     _databaseRef = _database.ref('users/$uid/user_data');
-    _setupDatabaseListener();
+    _setupDataListener();
   }
 
-  void _setupDatabaseListener() {
-    _databaseSubscription?.cancel();
-
-    if (_databaseRef == null) return;
-
-    _databaseSubscription = _databaseRef!.onValue.listen((event) {
-      if (!event.snapshot.exists) {
-        Map<String, List<Map<String, dynamic>>> emptyData = {
-          'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': [], 'noreminderdate': []
-        };
-        _cachedCategorizedData = emptyData;
-        _categorizedRecordsController.add(emptyData);
-        _allRecordsController.add({'allRecords': []});
-        _subjectsController.add({'subjects': [], 'subjectCodes': {}});
-        _rawDataController.add(null);
-
-        _updateHomeWidget([], [], []);
-        return;
-      }
-      _processSnapshot(event.snapshot);
-
-    }, onError: (error) {
-      String errorMsg = 'Failed to fetch data: $error';
-      _addErrorToAllControllers(errorMsg);
-    });
-  }
-
-  void _processSnapshot(DataSnapshot snapshot) {
-    if (!snapshot.exists) {
+  void _processDataChange(dynamic rawData) {
+    if (rawData == null) {
       Map<String, List<Map<String, dynamic>>> emptyData = {
         'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': [], 'noreminderdate': []
       };
@@ -157,19 +128,21 @@ class CombinedDatabaseService {
       return;
     }
 
-    Map<Object?, Object?> rawData = snapshot.value as Map<Object?, Object?>;
+    Map<Object?, Object?> processedRawData = rawData is Map<Object?, Object?> 
+        ? rawData 
+        : Map<Object?, Object?>.from(rawData as Map);
 
-    _cachedRawData = rawData;
+    _cachedRawData = processedRawData;
     _rawDataController.add(_cachedRawData);
 
-    Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(rawData);
+    Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(processedRawData);
     _cachedCategorizedData = categorizedData;
     _categorizedRecordsController.add(categorizedData);
 
-    List<Map<String, dynamic>> allRecords = _processAllRecords(rawData);
+    List<Map<String, dynamic>> allRecords = _processAllRecords(processedRawData);
     _allRecordsController.add({'allRecords': allRecords});
 
-    _processSubjectsData(rawData);
+    _processSubjectsData(processedRawData);
 
     if (PlatformUtils.instance.isAndroid) {
       _updateHomeWidget(categorizedData['today'] ?? [],
@@ -343,11 +316,11 @@ class CombinedDatabaseService {
       }
       return;
     }
-    
-    if (_databaseRef != null) {
+      if (_databaseRef != null) {
       try {
         final snapshot = await _databaseRef!.get();
-        _processSnapshot(snapshot);
+        final rawData = snapshot.exists ? snapshot.value as Map<Object?, Object?> : null;
+        _processDataChange(rawData);
         return;
       } catch (error) {
         String errorMsg = 'Failed to refresh data: $error';
@@ -370,29 +343,25 @@ class CombinedDatabaseService {
     _cachedRawData = null;
     _cachedCategorizedData = null;
     _databaseRef = null;
-  }
-
-  void _cleanupCurrentListener() {
-    _databaseSubscription?.cancel();
-    _databaseSubscription = null;
-  }
-  void stopListening() {
+  }  void _cleanupCurrentListener() {
+    _dataSubscription?.cancel();
+    _dataSubscription = null;
+  }void stopListening() {
+    _cleanupCurrentListener();
     if (_isGuestMode) {
       _localDatabase.stopListening();
-    } else {
-      _cleanupCurrentListener();
     }
   }
 
   void dispose() {
+    stopListening();
+    _categorizedRecordsController.close();
+    _allRecordsController.close();
+    _subjectsController.close();
+    _rawDataController.close();
+    
     if (_isGuestMode) {
       _localDatabase.dispose();
-    } else {
-      stopListening();
-      _categorizedRecordsController.close();
-      _allRecordsController.close();
-      _subjectsController.close();
-      _rawDataController.close();
     }
   }
 
