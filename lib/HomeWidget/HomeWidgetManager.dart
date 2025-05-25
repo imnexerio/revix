@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
@@ -121,7 +120,7 @@ class HomeWidgetService {
 
   static Future<void> refreshWidgetFromExternal() async {
     await initialize();
-    final User? user = _databaseService.currentUser;
+    final user = _databaseService.currentUser;
     final bool isLoggedIn = user != null;
 
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
