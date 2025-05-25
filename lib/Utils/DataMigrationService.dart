@@ -151,11 +151,9 @@ class DataMigrationService {
       
       // Create a map with all data
       Map<String, dynamic> exportData = {
-        'user_data': userData['user_data'] ?? {},
         'profile_data': userData['profile_data'] ?? {},
         'deleted_user_data': userData['deleted_user_data'] ?? {},
-        'export_timestamp': DateTime.now().toIso8601String(),
-        'app_version': '1.0.0', // Replace with actual app version
+        'user_data': userData['user_data'] ?? {}
       };
       
       // Convert to JSON
