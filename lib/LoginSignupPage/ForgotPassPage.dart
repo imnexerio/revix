@@ -1,7 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter/material.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'UrlLauncher.dart';
 
 class ForgotPassPage extends StatefulWidget {
@@ -12,7 +13,7 @@ class ForgotPassPage extends StatefulWidget {
 class _ForgotPassPageState extends State<ForgotPassPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
@@ -63,10 +64,8 @@ class _ForgotPassPageState extends State<ForgotPassPage>
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-    });
-
-    try {
-      await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
+    });    try {
+      await _databaseService.sendPasswordResetEmail(email: _emailController.text.trim());
 
         customSnackBar(
           context: context,
@@ -76,32 +75,18 @@ class _ForgotPassPageState extends State<ForgotPassPage>
 
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _getFirebaseErrorMessage(e.code);
+        _errorMessage = _databaseService.getAuthErrorMessage(e);
       });
     } catch (e) {
         customSnackBar_error(
           context: context,
           message: 'An unexpected error occurred. Please try again.',
-      );
-    } finally {
+      );    } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'weak-password':
-        return 'The password provided is too weak';
-      case 'email-already-in-use':
-        return 'An account already exists for this email';
-      case 'invalid-email':
-        return 'Please enter a valid email address';
-      default:
-        return 'Authentication failed. Please try again.';
     }
   }
 

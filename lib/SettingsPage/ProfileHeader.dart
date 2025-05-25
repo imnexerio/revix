@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../Utils/GuestAuthService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'ProfileImageWidget.dart';
 import 'ProfileProvider.dart';
 import 'SendVerificationMail.dart';
@@ -10,6 +10,7 @@ import 'VerifiedMail.dart';
 class ProfileHeader extends StatelessWidget {
   final bool isSmallScreen;
   final void Function(BuildContext) showEditProfilePage;
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
 
   ProfileHeader({
     required this.isSmallScreen,
@@ -147,10 +148,9 @@ class ProfileHeader extends StatelessWidget {
                         return Center(
                           key: ValueKey('email-${isVerified}'),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+                            mainAxisAlignment: MainAxisAlignment.center,                            children: [
                               Text(
-                                '${FirebaseAuth.instance.currentUser?.email ?? 'imnexerio@gmail.com'}',
+                                '${_databaseService.currentUserEmail ?? 'imnexerio@gmail.com'}',
                                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                   color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                                 ),

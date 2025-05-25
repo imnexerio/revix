@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User, AuthCredential, EmailAuthProvider;
 import 'package:retracker/Utils/CustomSnackBar.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   @override
@@ -10,6 +11,7 @@ class ChangePasswordPage extends StatefulWidget {
 class _ChangePasswordPageState extends State<ChangePasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _newPasswordController = TextEditingController();
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   String? _currentPassword;
   String? _newPassword;
   String? _confirmPassword;
@@ -80,15 +82,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   child: FilledButton(
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
-                        _formKey.currentState!.save();
-                        try {
-                          User? user = FirebaseAuth.instance.currentUser;
+                        _formKey.currentState!.save();                        try {
+                          User? user = _databaseService.currentUser;
                           AuthCredential credential = EmailAuthProvider.credential(
                             email: user!.email!,
                             password: _currentPassword!,
                           );
                           await user.reauthenticateWithCredential(credential);
-                          await user.updatePassword(_newPassword!);
+                          await _databaseService.updatePassword(_newPassword!);
 
 
                             customSnackBar(

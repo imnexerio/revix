@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, UserCredential;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -21,7 +21,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
@@ -87,23 +87,19 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-    });
-
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+    });    try {
+      UserCredential? userCredential = await _databaseService.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       
-      User? user = userCredential.user;
-      if (user != null) {
+      if (userCredential?.user != null) {
         try {
           // Check if user data exists using centralized database service
-          final firebaseService = FirebaseDatabaseService();
-          bool userDataExists = await firebaseService.checkUserDataExists();
+          bool userDataExists = await _databaseService.checkUserDataExists();
             if (!userDataExists) {
             // Initialize user profile if it doesn't exist
-            await firebaseService.initializeUserProfile(
+            await _databaseService.initializeUserProfile(
               _emailController.text.trim(),
               'User' // Default name, user can update later
             );
@@ -129,7 +125,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _getFirebaseErrorMessage(e.code);
+        _errorMessage = _databaseService.getAuthErrorMessage(e);
         _isLoading = false;
       });
     } catch (e) {

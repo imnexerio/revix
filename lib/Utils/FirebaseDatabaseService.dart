@@ -27,6 +27,192 @@ class FirebaseDatabaseService {
   Future<bool> get isGuestMode => GuestAuthService.isGuestMode();
   
   // ====================================================================================
+  // AUTHENTICATION OPERATIONS (Centralized Firebase Auth Access)
+  // ====================================================================================
+  
+  /// Get the current user's email
+  String? get currentUserEmail => currentUser?.email;
+  
+  /// Get the current user's display name
+  String? get currentUserDisplayName => currentUser?.displayName;
+  
+  /// Check if user is currently authenticated
+  bool get isAuthenticated => currentUser != null;
+  
+  /// Check if user's email is verified
+  bool get isEmailVerified => currentUser?.emailVerified ?? false;
+  
+  /// Stream of authentication state changes
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  
+  /// Sign in with email and password
+  Future<UserCredential?> signInWithEmailAndPassword({
+    required String email, 
+    required String password
+  }) async {
+    try {
+      return await _auth.signInWithEmailAndPassword(
+        email: email, 
+        password: password
+      );
+    } on FirebaseAuthException catch (e) {
+      print('FirebaseDatabaseService: Sign in error - ${e.code}: ${e.message}');
+      rethrow;
+    } catch (e) {
+      print('FirebaseDatabaseService: Sign in unexpected error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Create account with email and password
+  Future<UserCredential?> createUserWithEmailAndPassword({
+    required String email, 
+    required String password
+  }) async {
+    try {
+      return await _auth.createUserWithEmailAndPassword(
+        email: email, 
+        password: password
+      );
+    } on FirebaseAuthException catch (e) {
+      print('FirebaseDatabaseService: Account creation error - ${e.code}: ${e.message}');
+      rethrow;
+    } catch (e) {
+      print('FirebaseDatabaseService: Account creation unexpected error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Sign out the current user
+  Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+      print('FirebaseDatabaseService: User signed out successfully');
+    } catch (e) {
+      print('FirebaseDatabaseService: Sign out error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Send password reset email
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      print('FirebaseDatabaseService: Password reset email sent to $email');
+    } on FirebaseAuthException catch (e) {
+      print('FirebaseDatabaseService: Password reset error - ${e.code}: ${e.message}');
+      rethrow;
+    } catch (e) {
+      print('FirebaseDatabaseService: Password reset unexpected error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Send email verification
+  Future<void> sendEmailVerification() async {
+    try {
+      final user = currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        print('FirebaseDatabaseService: Email verification sent to ${user.email}');
+      } else if (user == null) {
+        throw Exception('No user is currently signed in');
+      } else {
+        print('FirebaseDatabaseService: Email is already verified');
+      }
+    } catch (e) {
+      print('FirebaseDatabaseService: Email verification error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Reload the current user to get updated information
+  Future<void> reloadUser() async {
+    try {
+      await currentUser?.reload();
+      print('FirebaseDatabaseService: User data reloaded');
+    } catch (e) {
+      print('FirebaseDatabaseService: User reload error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Update user's display name
+  Future<void> updateDisplayName(String displayName) async {
+    try {
+      final user = currentUser;
+      if (user != null) {
+        await user.updateDisplayName(displayName);
+        await user.reload();
+        print('FirebaseDatabaseService: Display name updated to $displayName');
+      } else {
+        throw Exception('No user is currently signed in');
+      }
+    } catch (e) {
+      print('FirebaseDatabaseService: Display name update error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Update user's email
+  Future<void> updateEmail(String newEmail) async {
+    try {
+      final user = currentUser;
+      if (user != null) {
+        await user.verifyBeforeUpdateEmail(newEmail);
+        print('FirebaseDatabaseService: Email update verification sent to $newEmail');
+      } else {
+        throw Exception('No user is currently signed in');
+      }
+    } catch (e) {
+      print('FirebaseDatabaseService: Email update error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Update user's password
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      final user = currentUser;
+      if (user != null) {
+        await user.updatePassword(newPassword);
+        print('FirebaseDatabaseService: Password updated successfully');
+      } else {
+        throw Exception('No user is currently signed in');
+      }
+    } catch (e) {
+      print('FirebaseDatabaseService: Password update error - $e');
+      rethrow;
+    }
+  }
+  
+  /// Get Firebase Auth error message in user-friendly format
+  String getAuthErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'weak-password':
+        return 'The password provided is too weak.';
+      case 'email-already-in-use':
+        return 'The account already exists for that email.';
+      case 'user-not-found':
+        return 'No user found for that email.';
+      case 'wrong-password':
+        return 'Wrong password provided for that user.';
+      case 'invalid-email':
+        return 'The email address is not valid.';
+      case 'user-disabled':
+        return 'This user account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many requests. Try again later.';
+      case 'operation-not-allowed':
+        return 'Operation not allowed. Please contact support.';
+      case 'requires-recent-login':
+        return 'This operation requires recent authentication. Please sign in again.';
+      default:
+        return e.message ?? 'An unknown error occurred.';
+    }
+  }
+
+  // ====================================================================================
   // PROFILE DATA OPERATIONS
   // ====================================================================================
   

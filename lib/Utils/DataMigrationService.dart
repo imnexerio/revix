@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:firebase_database/firebase_database.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import 'HiveService.dart';
+import 'FirebaseDatabaseService.dart';
 
 class DataMigrationService {
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   static final FirebaseDatabase _database = FirebaseDatabase.instance;
   
   /// Migrates data from guest mode to a registered user account
@@ -19,7 +19,7 @@ class DataMigrationService {
   static Future<bool> migrateGuestDataToAccount() async {
     try {
       // Verify if a user is logged in
-      User? currentUser = _auth.currentUser;
+      User? currentUser = _databaseService.currentUser;
       if (currentUser == null) {
         return false;
       }

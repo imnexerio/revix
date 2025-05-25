@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:provider/provider.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileProvider.dart';
@@ -19,6 +19,7 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   String? _fullName;
   bool _isLoading_pic = false;
   bool _isLoading_name = false;
@@ -27,7 +28,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _uid = _databaseService.currentUserId ?? '';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
     });
@@ -246,14 +247,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _isLoading_name = true; // Start loading spinner
       });      try {
-        User? user = FirebaseAuth.instance.currentUser;
+        User? user = _databaseService.currentUser;
         
         // Update name using centralized database service
-        final firebaseService = FirebaseDatabaseService();
-        await firebaseService.updateProfileData({'name': _fullName});
+        await _databaseService.updateProfileData({'name': _fullName});
 
         // Update display name for FirebaseAuth user
-        await user?.updateDisplayName(_fullName);
+        await _databaseService.updateDisplayName(_fullName!);
 
         // Update the display name in the provider
         await Provider.of<ProfileProvider>(context, listen: false)

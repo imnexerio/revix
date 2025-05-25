@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, UserCredential, User;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:retracker/ThemeNotifier.dart';
@@ -16,13 +16,12 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage>
-    with SingleTickerProviderStateMixin {
-  final TextEditingController _emailController = TextEditingController();
+    with SingleTickerProviderStateMixin {  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
   TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
@@ -104,23 +103,20 @@ class _SignupPageState extends State<SignupPage>
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-    });
-
-    try {
-      UserCredential userCredential =
-      await _auth.createUserWithEmailAndPassword(
+    });    try {
+      UserCredential? userCredential =
+      await _databaseService.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-      );      User? user = userCredential.user;
+      );      User? user = userCredential?.user;
       if (user != null) {
         // Initialize profile data using centralized database service
-        final firebaseService = FirebaseDatabaseService();
-        await firebaseService.initializeUserProfile(
+        await _databaseService.initializeUserProfile(
           user.email ?? '', 
           _nameController.text.trim()
         );
 
-        await user.sendEmailVerification();
+        await _databaseService.sendEmailVerification();
 
 
         customSnackBar(
@@ -133,7 +129,7 @@ class _SignupPageState extends State<SignupPage>
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _getFirebaseErrorMessage(e.code);
+        _errorMessage = _databaseService.getAuthErrorMessage(e);
       });
     } catch (e) {
       customSnackBar_error(
@@ -164,9 +160,7 @@ class _SignupPageState extends State<SignupPage>
       
       // Initialize the local database with default data
       final localDb = LocalDatabaseService();
-      await localDb.initializeWithDefaultData();
-
-      // Set theme preferences
+      await localDb.initializeWithDefaultData();      // Set theme preferences
       ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
       await themeNotifier.fetchRemoteTheme();
 
@@ -180,19 +174,6 @@ class _SignupPageState extends State<SignupPage>
         _errorMessage = 'Failed to initialize guest mode. Please try again.';
         _isLoading = false;
       });
-    }
-  }
-
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'weak-password':
-        return 'The password provided is too weak';
-      case 'email-already-in-use':
-        return 'An account already exists for this email';
-      case 'invalid-email':
-        return 'Please enter a valid email address';
-      default:
-        return 'Authentication failed. Please try again.';
     }
   }
 

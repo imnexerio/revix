@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:retracker/Utils/customSnackBar.dart';
-import '../Utils/GuestAuthService.dart';
-import '../Utils/LocalDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 
 void showAddFrequencySheet(

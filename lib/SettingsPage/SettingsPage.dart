@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +7,7 @@ import '../HomeWidget/HomeWidgetManager.dart';
 import '../LoginSignupPage/LoginPage.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/platform_utils.dart';
 import 'AboutPage.dart';
@@ -43,6 +44,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   Widget? _currentDetailPage;
   String _currentTitle = 'Edit Profile'; // Set default title
   bool _isInitialized = false;
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
 
   // Animation controllers
   late AnimationController _animationController;
@@ -106,13 +108,12 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
       // Check if user is in guest mode
       bool isGuestMode = await GuestAuthService.isGuestMode();
-      
-      if (isGuestMode) {
+        if (isGuestMode) {
         // Handle guest mode logout
         await GuestAuthService.disableGuestMode();
       } else {
         // Handle regular authentication logout
-        await FirebaseAuth.instance.signOut();
+        await _databaseService.signOut();
       }
 
       if (PlatformUtils.instance.isAndroid) {
@@ -156,9 +157,8 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     await profileProvider.fetchAndUpdateDisplayName();
     await profileProvider.fetchAndUpdateProfileImage(context);
   }
-
   String getCurrentUserUid() {
-    return FirebaseAuth.instance.currentUser!.uid;
+    return _databaseService.currentUserId ?? '';
   }
 
   Future<bool> _isGuestMode() async {

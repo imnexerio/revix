@@ -1,11 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:retracker/Utils/CustomSnackBar.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 Future<void> sendVerificationEmail(BuildContext context) async {
   try {
-    User? user = FirebaseAuth.instance.currentUser;
-    await user?.sendEmailVerification();
+    final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+    await _databaseService.sendEmailVerification();
 
 
       customSnackBar(

@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 class HomeWidgetService {
   static const String appGroupId = 'HomeWidgetPreferences';
@@ -12,6 +13,7 @@ class HomeWidgetService {
   static const String noReminderDateRecordsKey = 'noreminderdate';
   static const String isLoggedInKey = 'isLoggedIn';
   static bool _isInitialized = false;
+  static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
@@ -21,7 +23,7 @@ class HomeWidgetService {
     // Set up widget background callback handling
     HomeWidget.registerInteractivityCallback(backgroundCallback);
 
-    final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final bool isLoggedIn = _databaseService.isAuthenticated;
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
     if (!isLoggedIn) {
@@ -47,9 +49,8 @@ class HomeWidgetService {
       List<Map<String, dynamic>> todayRecords,
       List<Map<String, dynamic>> missedRecords,
       List<Map<String, dynamic>> noReminderDateRecords,
-      ) async {
-    try {
-      final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
+      ) async {    try {
+      final bool isLoggedIn = _databaseService.isAuthenticated;
       await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
       // Format and save all three data categories
@@ -111,9 +112,8 @@ class HomeWidgetService {
       // Channel might not be initialized yet, which is fine
     }
   }
-
   static Future<void> updateLoginStatus() async {
-    final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final bool isLoggedIn = _databaseService.isAuthenticated;
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
     await _updateWidget();
     // debugPrint('Login status updated: $isLoggedIn');
@@ -121,7 +121,7 @@ class HomeWidgetService {
 
   static Future<void> refreshWidgetFromExternal() async {
     await initialize();
-    final User? user = FirebaseAuth.instance.currentUser;
+    final User? user = _databaseService.currentUser;
     final bool isLoggedIn = user != null;
 
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);

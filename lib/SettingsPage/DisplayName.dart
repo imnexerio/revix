@@ -1,6 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 Future<String> getDisplayName() async {
-  User? user = FirebaseAuth.instance.currentUser;
-  return user?.displayName ?? 'User';
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  return _databaseService.currentUserDisplayName ?? 'User';
 }
