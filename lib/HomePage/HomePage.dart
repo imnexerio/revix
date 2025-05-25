@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
@@ -7,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';
 import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/GuestAuthService.dart';
+import '../Utils/LocalDatabaseService.dart';
 import 'CustomLectureSave.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
@@ -115,8 +116,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     });
     _savePreferences(); // Save when lecture type changes
   }
-
-  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {    try {
+  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
+    try {
       if (await GuestAuthService.isGuestMode()) {
         // Use local database for guest users
         final localDb = LocalDatabaseService();
@@ -135,9 +136,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             });
 
             completionTargets.forEach((key, value) {
-              if (_completionTargetsMap.containsKey(key)) {
-                _completionTargetsMap[key] = value.toString();
-              }
+              _completionTargets[key] = int.tryParse(value.toString()) ?? 200;
             });
           });
         }
@@ -159,23 +158,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             });
 
             completionTargets.forEach((key, value) {
-              if (_completionTargetsMap.containsKey(key)) {
-                _completionTargetsMap[key] = value.toString();
-              }
-            });
-          });
-        }
-      }
-              }
-            });
-          });
-        }
-
-        if (targetsEvent.snapshot.exists) {
-          setState(() {
-            Map<dynamic, dynamic> targetsData = targetsEvent.snapshot.value as Map<dynamic, dynamic>;
-            targetsData.forEach((lectureType, target) {
-              _completionTargets[lectureType.toString()] = int.parse(target.toString());
+              _completionTargets[key] = int.tryParse(value.toString()) ?? 200;
             });
           });
         }
@@ -349,14 +332,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                                   borderRadius: BorderRadius.circular(10),
                                                 ),
                                               ),
-                                              child: const Text('Save'),
-                                              onPressed: () async {
+                                              child: const Text('Save'),                                              onPressed: () async {
                                                 final String targetValue = textFieldController.text;
                                                 if (targetValue.isNotEmpty) {
                                                   final int newTarget = int.parse(targetValue);
 
-                                                  final profileService = ProfileDataService();
-                                                  await profileService.saveCompletionTarget(_selectedLectureType, targetValue);
+                                                  final firebaseService = FirebaseDatabaseService();
+                                                  await firebaseService.saveHomePageCompletionTarget(_selectedLectureType, targetValue);
                                                   setState(() {
                                                     _completionTargets[_selectedLectureType] = newTarget;
                                                   });

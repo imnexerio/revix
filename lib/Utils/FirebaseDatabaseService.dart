@@ -628,11 +628,10 @@ class FirebaseDatabaseService {
     }
     return frequencies;
   }
-  
-  /// Initialize the service - call this during app startup
+    /// Initialize the service - call this during app startup
   Future<void> initialize() async {
     if (await isGuestMode) {
-      await _localDatabase.initialize();
+      await LocalDatabaseService.initialize();
     }
   }
   

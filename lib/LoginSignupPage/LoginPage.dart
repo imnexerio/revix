@@ -79,7 +79,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     }
     return null;
   }
-
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -94,12 +93,21 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-      );      User? user = userCredential.user;
+      );
+      
+      User? user = userCredential.user;
       if (user != null) {
         try {
           // Check if user data exists using centralized database service
           final firebaseService = FirebaseDatabaseService();
-          bool userDataExists = await firebaseService.checkUserDataExists();          if (!userDataExists) {
+          bool userDataExists = await firebaseService.checkUserDataExists();
+            if (!userDataExists) {
+            // Initialize user profile if it doesn't exist
+            await firebaseService.initializeUserProfile(
+              _emailController.text.trim(),
+              'User' // Default name, user can update later
+            );
+          }
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setBool('isLoggedIn', true);
