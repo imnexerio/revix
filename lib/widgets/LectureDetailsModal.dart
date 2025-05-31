@@ -889,12 +889,13 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
-              ),
-              Switch(
+              ),              Switch(
                 value: isEnabled,
                 onChanged: (bool newValue) {
                   setState(() {
                     isEnabled = newValue;
+                    // Update the underlying data to maintain consistency
+                    widget.details['status'] = newValue ? 'Enabled' : 'Disabled';
                   });
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
