@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../CustomFrequencySelector.dart';
-import '../RecordForm/CalculateCustomNextDate.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
-import '../Utils/date_utils.dart';
+import '../Utils/MarkAsDoneService.dart';
 import 'DescriptionCard.dart';
 import 'RevisionFrequencyDropdown.dart';
 
@@ -242,9 +241,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                 ],
               ),
             ),
-          ),
-
-          // Action buttons
+          ),          // Action buttons
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -254,163 +251,16 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('MARK AS DONE'),
-                      onPressed: () async {
-                        try {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (BuildContext context) {
-                              return Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: const Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircularProgressIndicator(),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        "Updating...",
-                                        style: TextStyle(fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-
-                          if(!isEnabled) {
-                            Navigator.pop(context);
-                            throw 'Cannot mark as done when the status is disabled';
-                          }
-
-                          if (widget.details['date_learnt'] == 'Unspecified') {
-                            await moveToDeletedData(
-                                widget.selectedSubject,
-                                widget.selectedSubjectCode,
-                                widget.lectureNo,
-                                widget.details
-                            );
-
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                              customSnackBar(
-                                context: context,
-                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
-                            );
-                            return;
-                          }
-
-                          String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
-                          int missedRevision = (widget.details['missed_revision'] as num).toInt();
-                          DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
-
-                          if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
-                            missedRevision += 1;
-                          }
-                          List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
-
-                          if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
-                            datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
-                          }
-                          List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
-                          datesRevised.add(dateRevised);
-
-
-                            if (widget.details['revision_frequency']== 'No Repetition'){
-                              await moveToDeletedData(
-                                  widget.selectedSubject,
-                                  widget.selectedSubjectCode,
-                                  widget.lectureNo,
-                                  widget.details
-                              );
-
-                              Navigator.pop(context);
-                              Navigator.pop(context);
-                                customSnackBar(
-                                  context: context,
-                                  message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
-                              );
-                              return;
-                            }else{
-                              if (widget.details['revision_frequency'] == 'Custom') {
-
-                                Map<String, dynamic> revisionData = extractRevisionData(widget.details);
-                                // print('revisionData: $revisionData');
-                                DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
-                                    DateTime.parse(widget.details['date_scheduled']),
-                                    revisionData
-                                );
-                                dateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                              } else {
-                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                                  scheduledDate,
-                                  revisionFrequency,
-                                  noRevision + 1,
-                                )).toIso8601String().split('T')[0];
-                              }
-                              Map<String, dynamic> revisionData = {
-                                'frequency': revisionFrequency,
-                              };
-                              if(customFrequencyParams.isNotEmpty) {
-                                revisionData['custom_params'] = customFrequencyParams;
-                              }
-
-                              if (widget.details['no_revision'] < 0) {
-                                datesRevised = [];
-                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                                  DateTime.parse(dateRevised),
-                                  widget.details['revision_frequency'],
-                                  widget.details['no_revision'] + 1,
-                                )).toIso8601String().split('T')[0];
-                              }
-                              Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(widget.details);
-                              updatedDetails['no_revision'] = noRevision+1;
-                              isEnabled = determineEnabledStatus(updatedDetails);
-
-
-                          await UpdateRecords(
-                            widget.selectedSubject,
-                            widget.selectedSubjectCode,
-                            widget.lectureNo,
-                            dateRevised,
-                            widget.details['description'],
-                            widget.details['reminder_time'],
-                            noRevision + 1,
-                            dateScheduled,
-                            datesRevised,
-                            missedRevision,
-                            datesMissedRevisions,
-                            revisionFrequency,
-                            isEnabled ? 'Enabled' : 'Disabled',
-                            revisionData,
-                            durationData
-                          );
-
-                          Navigator.pop(context);
-                          Navigator.pop(context);
-
-
-
-                              customSnackBar(
-                                context: context,
-                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
-                            );
-                          }
-                        } catch (e) {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
-                            customSnackBar_error(
-                              context: context,
-                              message: 'Failed to mark as done: ${e.toString()}',
-                          );
-                        }
-                      },
+                      onPressed: () => MarkAsDoneService.markAsDone(
+                        context: context,
+                        details: widget.details,
+                        subject: widget.selectedSubject,
+                        subjectCode: widget.selectedSubjectCode,
+                        lectureNo: widget.lectureNo,
+                        durationData: durationData,
+                        isEnabled: isEnabled,
+                        useRevisionUpdate: false,
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -1134,46 +984,4 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
     return revisionData;
   }
-
-  bool determineEnabledStatus(Map<String, dynamic> details) {
-    // Default to the current status (convert from string to bool)
-    bool isEnabled = details['status'] == 'Enabled';
-
-    // Get the duration data with proper casting
-    Map<String, dynamic> durationData = {};
-    if (details['duration'] != null) {
-      // Cast the LinkedMap to Map<String, dynamic>
-      durationData = Map<String, dynamic>.from(details['duration'] as Map);
-    } else {
-      durationData = {'type': 'forever'};
-    }
-
-    String durationType = durationData['type'] as String? ?? 'forever';
-
-    // Check duration conditions
-    if (durationType == 'specificTimes') {
-      int? numberOfTimes = durationData['numberOfTimes'] as int?;
-      int currentRevisions = (details['no_revision'] as num?)?.toInt() ?? 0;
-
-      // Disable if we've reached or exceeded the specified number of revisions
-      if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
-        isEnabled = false;
-      }
-    }
-    else if (durationType == 'until') {
-      String? endDateStr = durationData['endDate'] as String?;
-      if (endDateStr != null) {
-        DateTime endDate = DateTime.parse(endDateStr);
-        DateTime today = DateTime.now();
-
-        // Compare only the date part (ignore time)
-        if (today.isAfter(DateTime(endDate.year, endDate.month, endDate.day))) {
-          isEnabled = false;
-        }
-      }
-    }
-
-    return isEnabled;
-  }
-
 }
