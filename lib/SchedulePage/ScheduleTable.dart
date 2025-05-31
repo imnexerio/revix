@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'AnimatedCard.dart';
+import 'shared_components/RecordSortingUtils.dart';
+import 'shared_components/SortingBottomSheet.dart';
+import 'shared_components/FilterButton.dart';
+import 'shared_components/GridLayoutUtils.dart';
 
 class ScheduleTable extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;
@@ -175,11 +179,10 @@ class _ScheduleTable extends State<ScheduleTable>
       });
     }
   }
-
   // New method for refreshing without animation reset
   void _applyRefreshSorting(String field, bool ascending) {
     // Skip animation reset and directly apply sorting
-    final sortedRecords = SortingUtils.sortRecords(
+    final sortedRecords = RecordSortingUtils.sortRecords(
       records: records,
       field: field,
       ascending: ascending,
@@ -191,27 +194,47 @@ class _ScheduleTable extends State<ScheduleTable>
       records = sortedRecords;
     });
   }
-
   void _applySorting(String field, bool ascending) {
-    applySorting(
+    // Check if we already have sorted records in cache
+    final String cacheKey = '${field}_${ascending ? 'asc' : 'desc'}';
+    if (_sortedRecordsCache.containsKey(cacheKey)) {
+      setState(() {
+        currentSortField = field;
+        isAscending = ascending;
+        records = _sortedRecordsCache[cacheKey]!;
+      });
+      
+      // Persist the state
+      _persistState();
+      
+      _animationController.reset();
+      _animationController.forward();
+      return;
+    }
+
+    // Reset animation controller
+    _animationController.reset();
+
+    // Sort the records using the shared utility
+    final sortedRecords = RecordSortingUtils.sortRecords(
       records: records,
       field: field,
       ascending: ascending,
-      animationController: _animationController,
-      onSorted: (sortedRecords) {
-        setState(() {
-          currentSortField = field;
-          isAscending = ascending;
-          records = sortedRecords;
-        });
-
-        // Persist the state whenever sorting changes
-        _persistState();
-      },
-      sortedRecordsCache: _sortedRecordsCache,
-      currentSortField: currentSortField,
-      isAscending: isAscending,
     );
+
+    // Store sorted list in cache
+    _sortedRecordsCache[cacheKey] = sortedRecords;
+
+    setState(() {
+      currentSortField = field;
+      isAscending = ascending;
+      records = sortedRecords;
+    });
+
+    // Persist the state
+    _persistState();
+
+    _animationController.forward();
   }
 
   void _toggleExpanded() {
@@ -227,7 +250,6 @@ class _ScheduleTable extends State<ScheduleTable>
       _persistState();
     });
   }
-
   int _calculateColumns(double width) {
     // Use cached value if width hasn't changed
     if (_previousWidth == width && _cachedColumnCount != null) {
@@ -235,29 +257,8 @@ class _ScheduleTable extends State<ScheduleTable>
     }
 
     _previousWidth = width;
-
-    int columns;
-    if (width < 500) columns = 1;         // Mobile
-    else if (width < 900) columns = 2;    // Tablet
-    else if (width < 1200) columns = 3;   // Small desktop
-    else if (width < 1500) columns = 4;   // Medium desktop
-    else columns = 5;                     // Large desktop
-
-    _cachedColumnCount = columns;
-    return columns;
-  }
-
-  // Get readable name for the sort field
-  String _getSortFieldName(String field) {
-    switch (field) {
-      case 'reminder_time': return 'Reminder Time';
-      case 'date_learnt': return 'Date Initiated';
-      case 'date_revised': return 'Date Reviewed';
-      case 'missed_revision': return 'Overdue Reviews';
-      case 'no_revision': return 'Number of Reviews';
-      case 'revision_frequency': return 'Review Frequency';
-      default: return field;
-    }
+    _cachedColumnCount = GridLayoutUtils.calculateColumns(width);
+    return _cachedColumnCount!;
   }
 
   @override
@@ -309,7 +310,23 @@ class _ScheduleTable extends State<ScheduleTable>
                 Row(
                   mainAxisSize: MainAxisSize.min, // Make sure this row takes minimum space
                   children: [
-                    if (isExpanded) _buildFilterButton(),
+                    if (isExpanded) FilterButton(
+                      currentSortField: currentSortField,
+                      isAscending: isAscending,
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (context) => SortingBottomSheet(
+                            currentSortField: currentSortField,
+                            isAscending: isAscending,
+                            onSortApplied: _applySorting,
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(width: 4), // Add some spacing
                     RotationTransition(
                       turns: _rotateAnimation,
@@ -392,41 +409,6 @@ class _ScheduleTable extends State<ScheduleTable>
     );
   }
 
-  Widget _buildFilterButton() {
-    return InkWell(
-      onTap: (){
-        showModalBottomSheet(
-          context: context,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (context) => _buildSortingSheet(),
-        );
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                '(${_getSortFieldName(currentSortField!)} ${isAscending ? '↑' : '↓'})',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.filter_list, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSortingSheet() {
     return StatefulBuilder(
