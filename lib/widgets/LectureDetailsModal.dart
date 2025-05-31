@@ -218,27 +218,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   _buildTimelineCard(context),
 
                   const SizedBox(height: 24),
-
-                  // Description section
-                  Text(
-                    "Description is che",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DescriptionCard(
-                    details: widget.details,
-                    onDescriptionChanged: (text) {
-                      setState(() {
-                        widget.details['description'] = text;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
                   Text(
                     "Review Settings",
                     style: TextStyle(
@@ -250,6 +229,15 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   const SizedBox(height: 12),
                   _buildRevisionSettingsCard(context),
 
+                  // const SizedBox(height: 12),
+                  DescriptionCard(
+                    details: widget.details,
+                    onDescriptionChanged: (text) {
+                      setState(() {
+                        widget.details['description'] = text;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
