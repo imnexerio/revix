@@ -1,4 +1,4 @@
-import 'FirebaseDatabaseService.dart';
+﻿import 'FirebaseDatabaseService.dart';
 
 Future<void> UpdateRecords(
     String selectedSubject,
@@ -23,16 +23,16 @@ Future<void> UpdateRecords(
   // Prepare update data
   Map<String, dynamic> updateData = {
     'reminder_time': reminderTime,
-    'date_revised': dateRevised,
-    'no_revision': noRevision,
-    'date_scheduled': dateScheduled,
-    'missed_revision': missedRevision,
+    'date_updated': dateRevised,
+    'completion_counts': noRevision,
+    'scheduled_date': dateScheduled,
+    'missed_counts': missedRevision,
     'dates_missed_revisions': datesMissedRevisions,
-    'revision_frequency': revisionFrequency,
+    'recurrence_frequency': revisionFrequency,
     'status': status,
-    'dates_revised': datesRevised,
+    'dates_updated': datesRevised,
     'description': description,
-    'revision_data': revisionData,
+    'recurrence_data': revisionData,
     'duration': durationData,
   };
   
@@ -79,12 +79,12 @@ Future<void> UpdateRecordsRevision(
   // Prepare update data
   Map<String, dynamic> updateData = {
     'reminder_time': reminderTime,
-    'date_revised': dateRevised,
-    'no_revision': noRevision,
-    'date_scheduled': dateScheduled,
-    'missed_revision': missedRevision,
+    'date_updated': dateRevised,
+    'completion_counts': noRevision,
+    'scheduled_date': dateScheduled,
+    'missed_counts': missedRevision,
     'dates_missed_revisions': datesMissedRevisions,
-    'dates_revised': datesRevised,
+    'dates_updated': datesRevised,
     'description': description,
     'status': status,
   };

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../SchedulePage/RevisionGraph.dart';
 
@@ -117,17 +117,17 @@ class _BaseAnimatedCardState extends State<BaseAnimatedCard> {
                               _buildDateInfo(
                                 context,
                                 'Scheduled',
-                                editableRecord['date_scheduled'] ?? '',
+                                editableRecord['scheduled_date'] ?? '',
                                 Icons.calendar_today,
-                                'date_scheduled',
+                                'scheduled_date',
                               ),
                               if (widget.isCompleted)
                                 _buildDateInfo(
                                   context,
                                   'Initiated',
-                                  editableRecord['date_learnt'] ?? '',
+                                  editableRecord['date_initiated'] ?? '',
                                   Icons.check_circle_outline,
-                                  'date_learnt',
+                                  'date_initiated',
                                 ),
                             ],
                           ),
@@ -139,10 +139,10 @@ class _BaseAnimatedCardState extends State<BaseAnimatedCard> {
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(
-                                key: ValueKey('chart_${editableRecord['subject']}_${editableRecord['lecture_no']}_${editableRecord['dates_revised']?.length ?? 0}_${editableRecord['dates_missed_revisions']?.length ?? 0}'),
-                                dateLearnt: editableRecord['date_learnt'],
+                                key: ValueKey('chart_${editableRecord['subject']}_${editableRecord['lecture_no']}_${editableRecord['dates_updated']?.length ?? 0}_${editableRecord['dates_missed_revisions']?.length ?? 0}'),
+                                dateLearnt: editableRecord['date_initiated'],
                                 datesMissedRevisions: List<String>.from(editableRecord['dates_missed_revisions'] ?? []),
-                                datesRevised: List<String>.from(editableRecord['dates_revised'] ?? []),
+                                datesRevised: List<String>.from(editableRecord['dates_updated'] ?? []),
                                 showLabels: false,
                               ),
                             ),
@@ -217,18 +217,18 @@ class _BaseAnimatedCardState extends State<BaseAnimatedCard> {
   String _getTitleText() {
     switch (widget.displayMode) {
       case CardDisplayMode.schedule:
-        return '${editableRecord['subject']} · ${editableRecord['subject_code']} · ${editableRecord['lecture_no']}';
+        return '${editableRecord['subject']} Â· ${editableRecord['subject_code']} Â· ${editableRecord['lecture_no']}';
       case CardDisplayMode.detail:
-        return '${editableRecord['lecture_type']} · ${editableRecord['lecture_no']}';
+        return '${editableRecord['entry_type']} Â· ${editableRecord['lecture_no']}';
     }
   }
 
   String _getSubtitleText() {
     switch (widget.displayMode) {
       case CardDisplayMode.schedule:
-        return '${editableRecord['lecture_type']} · ${editableRecord['reminder_time']}';
+        return '${editableRecord['entry_type']} Â· ${editableRecord['reminder_time']}';
       case CardDisplayMode.detail:
-        return '${_formatDate(editableRecord['initiated_on'])} · ${editableRecord['no_revision']} · ${editableRecord['missed_revision']}';
+        return '${_formatDate(editableRecord['start_timestamp'])} Â· ${editableRecord['completion_counts']} Â· ${editableRecord['missed_counts']}';
     }
   }
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../SchedulePage/LegendItem.dart';
@@ -48,8 +48,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
       final details = record['details'] as Map<String, dynamic>;
 
       // Add date learned events
-      if (details.containsKey('initiated_on')) {
-        final dateLearnedStr = details['initiated_on'] as String;
+      if (details.containsKey('start_timestamp')) {
+        final dateLearnedStr = details['start_timestamp'] as String;
         final dateLearned = DateTime.parse(dateLearnedStr);
         final key = DateTime(dateLearned.year, dateLearned.month, dateLearned.day);
 
@@ -67,8 +67,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
       }
 
       // Add revision dates
-      if (details.containsKey('dates_revised') && details['dates_revised'] is List) {
-        for (var dateStr in (details['dates_revised'] as List)) {
+      if (details.containsKey('dates_updated') && details['dates_updated'] is List) {
+        for (var dateStr in (details['dates_updated'] as List)) {
           final dateRevised = DateTime.parse(dateStr.toString());
           final key = DateTime(dateRevised.year, dateRevised.month, dateRevised.day);
 
@@ -107,9 +107,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
       }
 
       // Add scheduled dates
-      if (details['date_learnt']!='Unspecified')
-      if (details.containsKey('date_scheduled')) {
-        final dateScheduledStr = details['date_scheduled'] as String;
+      if (details['date_initiated']!='Unspecified')
+      if (details.containsKey('scheduled_date')) {
+        final dateScheduledStr = details['scheduled_date'] as String;
         final dateScheduled = DateTime.parse(dateScheduledStr);
         final key = DateTime(dateScheduled.year, dateScheduled.month, dateScheduled.day);
 

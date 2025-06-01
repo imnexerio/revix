@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+﻿package com.imnexerio.retracker
 
 import android.app.AlertDialog
 import android.app.DatePickerDialog
@@ -245,7 +245,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // Set up the input
         val input = EditText(this)
         input.inputType = InputType.TYPE_CLASS_NUMBER
-        input.hint = "Enter a value ≥ 1"
+        input.hint = "Enter a value â‰¥ 1"
 
         // Pre-fill with existing value if any
         val existingValue = durationData["numberOfTimes"]
@@ -691,7 +691,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         if (revisionFrequency == "Custom" && customFrequencyData.isNotEmpty()) {
             revisionData["frequency"] = "Custom"
             revisionData["custom_params"] = customFrequencyData
-            recordData["revision_data"] = revisionData
+            recordData["recurrence_data"] = revisionData
 
             try {
                 val dateScheduled_ = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayDate)
@@ -709,7 +709,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         } else {
             // For standard frequencies
             revisionData["frequency"] = revisionFrequency
-            recordData["revision_data"] = revisionData
+            recordData["recurrence_data"] = revisionData
 
             try {
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -896,16 +896,16 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             }
 
             // Fix 3: Set recordData values based on the current state
-            recordData["initiated_on"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Calendar.getInstance().time)
+            recordData["start_timestamp"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Calendar.getInstance().time)
             recordData["reminder_time"] = reminderTime
-            recordData["lecture_type"] = lectureType
-            recordData["date_learnt"] = todayDate
-            recordData["date_revised"] = todayDate
-            recordData["date_scheduled"] = dateScheduled
+            recordData["entry_type"] = lectureType
+            recordData["date_initiated"] = todayDate
+            recordData["date_updated"] = todayDate
+            recordData["scheduled_date"] = dateScheduled
             recordData["description"] = description
-            recordData["missed_revision"] = 0
-            recordData["no_revision"] = noRevision
-            recordData["revision_frequency"] = revisionFrequency
+            recordData["missed_counts"] = 0
+            recordData["completion_counts"] = noRevision
+            recordData["recurrence_frequency"] = revisionFrequency
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
 
@@ -913,15 +913,15 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             if (revisionFrequency == "Custom" && !isUnspecifiedInitiationDate && !isNoRepetition) {
                 revisionData["frequency"] = "Custom"
                 revisionData["custom_params"] = customFrequencyData
-                recordData["revision_data"] = revisionData
+                recordData["recurrence_data"] = revisionData
             } else if (!isUnspecifiedInitiationDate && !isNoRepetition) {
                 // For standard frequencies
                 revisionData["frequency"] = revisionFrequency
-                recordData["revision_data"] = revisionData
+                recordData["recurrence_data"] = revisionData
             } else {
                 // For "Unspecified" or "No Repetition", set minimal revision data
                 revisionData["frequency"] = "No Repetition"
-                recordData["revision_data"] = revisionData
+                recordData["recurrence_data"] = revisionData
             }
 
             // Save to Firebase

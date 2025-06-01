@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../CustomFrequencySelector.dart';
@@ -45,15 +45,15 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   @override
   void initState() {
     super.initState();
-    revisionFrequency = widget.details['revision_frequency'];
+    revisionFrequency = widget.details['recurrence_frequency'];
     isEnabled = widget.details['status'] == 'Enabled';
-    noRevision = widget.details['no_revision'];
+    noRevision = widget.details['completion_counts'];
     formattedTime = widget.details['reminder_time'];
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
     customFrequencyParams = Map<String, dynamic>.from(
-      widget.details['revision_data']['custom_params'] ?? {},
+      widget.details['recurrence_data']['custom_params'] ?? {},
     );
     durationData = {
       "type": widget.details['duration']['type'],
@@ -144,7 +144,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${widget.selectedSubject} · ${widget.selectedSubjectCode} · ${widget.lectureNo}',
+                        '${widget.selectedSubject} Â· ${widget.selectedSubjectCode} Â· ${widget.lectureNo}',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -152,7 +152,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${widget.details['lecture_type']}',
+                        '${widget.details['entry_type']}',
                         style: TextStyle(
                           fontSize: 16,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -192,9 +192,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       child: AspectRatio(
                         aspectRatio: 1.0,
                         child: RevisionRadarChart(
-                          dateLearnt: widget.details['date_learnt'],
+                          dateLearnt: widget.details['date_initiated'],
                           datesMissedRevisions: List.from(widget.details['dates_missed_revisions'] ?? []),
-                          datesRevised: List.from(widget.details['dates_revised'] ?? []),
+                          datesRevised: List.from(widget.details['dates_updated'] ?? []),
                         ),
                       ),
                     ),
@@ -307,11 +307,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           );
 
                           List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
-                          List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
-                          String dateScheduled = widget.details['date_scheduled'];
+                          List<String> datesRevised = List<String>.from(widget.details['dates_updated'] ?? []);
+                          String dateScheduled = widget.details['scheduled_date'];
 
                           if (isEnabled && widget.details['status'] == 'Disabled' &&
-                              DateTime.parse(widget.details['date_scheduled']).isBefore(DateTime.now())) {
+                              DateTime.parse(widget.details['scheduled_date']).isBefore(DateTime.now())) {
                             dateScheduled = DateTime.now().toIso8601String().split('T')[0];
                           }
                           Map<String, dynamic> revisionData = {
@@ -325,13 +325,13 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             widget.selectedSubject,
                             widget.selectedSubjectCode,
                             widget.lectureNo,
-                            widget.details['date_revised'],
+                            widget.details['date_updated'],
                             widget.details['description'],
                             formattedTime,
                             noRevision,
                             dateScheduled,
                             datesRevised,
-                            widget.details['missed_revision'],
+                            widget.details['missed_counts'],
                             datesMissedRevisions,
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
@@ -451,9 +451,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildStatusItem(
             context,
             "Missed",
-            "${widget.details['missed_revision']}",
+            "${widget.details['missed_counts']}",
             Icons.cancel_outlined,
-            int.parse(widget.details['missed_revision'].toString()) > 0
+            int.parse(widget.details['missed_counts'].toString()) > 0
                 ? Theme.of(context).colorScheme.error
                 : Theme.of(context).colorScheme.onSurface,
           ),
@@ -546,20 +546,20 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildTimelineItem(
             context,
             "Initiated on",
-            widget.details['date_learnt'],
+            widget.details['date_initiated'],
             Icons.school_outlined,
             isFirst: true,
           ),
           _buildTimelineItem(
             context,
             "Last Reviewed",
-            widget.details['date_revised'] != null ? formatDate(widget.details['date_revised']) : 'NA',
+            widget.details['date_updated'] != null ? formatDate(widget.details['date_updated']) : 'NA',
             Icons.history,
           ),
           _buildTimelineItem(
             context,
             "Next Review",
-            widget.details['date_scheduled'],
+            widget.details['scheduled_date'],
             Icons.event_outlined,
             isLast: true,
             isHighlighted: true,
@@ -675,7 +675,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       // print('extractRevisionData: ${extractRevisionData(widget.details)}');
                       showCustomFrequencySelector();
                     } else {
-                      customFrequencyParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+                      customFrequencyParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
                     }
                   });
                 }
@@ -752,7 +752,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Number of Times',
-                                    hintText: 'Enter a value ≥ 1',
+                                    hintText: 'Enter a value â‰¥ 1',
                                   ),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
@@ -928,9 +928,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     // Get the actual custom params from the nested structure
     Map<String, dynamic> initialParams = {};
 
-    if (widget.details['revision_data'] != null &&
-        widget.details['revision_data']['custom_params'] != null) {
-      initialParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+    if (widget.details['recurrence_data'] != null &&
+        widget.details['recurrence_data']['custom_params'] != null) {
+      initialParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
     }
 
     // For debugging
@@ -959,8 +959,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   Map<String, dynamic> extractRevisionData(Map<String, dynamic> details) {
     Map<String, dynamic> revisionData = {};
 
-    if (details['revision_data'] != null) {
-      final rawData = details['revision_data'];
+    if (details['recurrence_data'] != null) {
+      final rawData = details['recurrence_data'];
       revisionData['frequency'] = rawData['frequency'];
 
       if (rawData['custom_params'] != null) {

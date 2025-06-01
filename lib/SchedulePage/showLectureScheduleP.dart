@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 // import '../RecordForm/CalculateCustomNextDate.dart';
 // import '../Utils/CustomSnackBar.dart';
@@ -84,7 +84,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${details['subject']} · ${details['subject_code']} · ${details['lecture_no']}',
+                              '${details['subject']} Â· ${details['subject_code']} Â· ${details['lecture_no']}',
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -92,7 +92,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${details['lecture_type']} · ${details['reminder_time']}',
+                              '${details['entry_type']} Â· ${details['reminder_time']}',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Theme.of(context).colorScheme.onSurface,
@@ -132,9 +132,9 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             child: AspectRatio(
                               aspectRatio: 1.0, // Keep the chart perfectly circular
                               child: RevisionRadarChart(
-                                dateLearnt: details['date_learnt'],
+                                dateLearnt: details['date_initiated'],
                                 datesMissedRevisions: List.from(details['dates_missed_revisions'] ?? []),
-                                datesRevised: List.from(details['dates_revised'] ?? []),
+                                datesRevised: List.from(details['dates_updated'] ?? []),
                               ),
                             ),
                           ),
@@ -221,8 +221,8 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 }
 
 Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
-  String revisionFrequency = details['revision_frequency'];
-  int noRevision = details['no_revision'];
+  String revisionFrequency = details['recurrence_frequency'];
+  int noRevision = details['completion_counts'];
 
   return Container(
     padding: const EdgeInsets.all(16),
@@ -275,9 +275,9 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
         _buildStatusItem(
           context,
           "Missed",
-          "${details['missed_revision']}",
+          "${details['missed_counts']}",
           Icons.cancel_outlined,
-          int.parse(details['missed_revision'].toString()) > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
+          int.parse(details['missed_counts'].toString()) > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
         ),
       ],
     ),
@@ -334,22 +334,22 @@ Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> details) {
         _buildTimelineItem(
           context,
           "Initiated on",
-          details['date_learnt'] ?? 'NA',
+          details['date_initiated'] ?? 'NA',
           Icons.school_outlined,
           isFirst: true,
         ),
         _buildTimelineItem(
           context,
           "Last Reviewed",
-          details['date_revised'] != null && details['date_revised'] != "Unspecified"
-              ? formatDate(details['date_revised'])
+          details['date_updated'] != null && details['date_updated'] != "Unspecified"
+              ? formatDate(details['date_updated'])
               : 'NA',
           Icons.history,
         ),
         _buildTimelineItem(
           context,
           "Next Review",
-          details['date_scheduled'] ?? 'NA',
+          details['scheduled_date'] ?? 'NA',
           Icons.event_outlined,
           isLast: true,
           isHighlighted: true,

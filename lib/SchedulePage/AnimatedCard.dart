@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../widgets/BaseAnimatedCard.dart';
 
 class AnimatedCard extends StatelessWidget {
@@ -38,14 +38,14 @@ class AnimatedCard extends StatelessWidget {
             print('Subtitle changed to: $value');
           },
         ),
-        'date_scheduled': FieldConfig(
+        'scheduled_date': FieldConfig(
           isEditable: true,
           onChanged: (value) {
             // Handle scheduled date change
             print('Scheduled date changed to: $value');
           },
         ),
-        'date_learnt': FieldConfig(
+        'date_initiated': FieldConfig(
           isEditable: true,
           onChanged: (value) {
             // Handle learnt date change

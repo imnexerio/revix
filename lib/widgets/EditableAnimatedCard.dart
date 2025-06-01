@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../widgets/BaseAnimatedCard.dart';
 
 /// Example widget demonstrating how to use the BaseAnimatedCard with full editing capabilities
@@ -32,13 +32,13 @@ class EditableAnimatedCard extends StatelessWidget {
         isEditable: true,
         onChanged: (value) => onFieldChanged?.call('subtitle', value),
       ),
-      'date_scheduled': FieldConfig(
+      'scheduled_date': FieldConfig(
         isEditable: true,
-        onChanged: (value) => onFieldChanged?.call('date_scheduled', value),
+        onChanged: (value) => onFieldChanged?.call('scheduled_date', value),
       ),
-      'date_learnt': FieldConfig(
+      'date_initiated': FieldConfig(
         isEditable: true,
-        onChanged: (value) => onFieldChanged?.call('date_learnt', value),
+        onChanged: (value) => onFieldChanged?.call('date_initiated', value),
       ),
     };
 
@@ -79,7 +79,7 @@ class PartiallyEditableAnimatedCard extends StatelessWidget {
     // Only specified fields are editable
     final fieldConfigs = <String, FieldConfig>{};
     
-    for (final field in ['title', 'subtitle', 'date_scheduled', 'date_learnt']) {
+    for (final field in ['title', 'subtitle', 'scheduled_date', 'date_initiated']) {
       fieldConfigs[field] = FieldConfig(
         isEditable: editableFields.contains(field),
         onChanged: editableFields.contains(field) 

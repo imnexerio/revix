@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'AnimatedCardDetailP.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../SchedulePage/shared_components/FilterButton.dart';
@@ -230,8 +230,8 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                     itemCount: records.length,
                     itemBuilder: (context, index) {
                       final record = records[index];
-                      final bool isCompleted = record['date_learnt'] != null &&
-                          record['date_learnt'].toString().isNotEmpty;
+                      final bool isCompleted = record['date_initiated'] != null &&
+                          record['date_initiated'].toString().isNotEmpty;
 
                       final Animation<double> animation = Tween<double>(
                         begin: 0.0,

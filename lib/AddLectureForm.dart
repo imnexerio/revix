@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:retracker/Utils/date_utils.dart';
@@ -35,13 +35,13 @@ class _AddLectureFormState extends State<AddLectureForm> {
   Map<String, List<String>> _subjectCodes = {};
   String dateScheduled = '';
   String todayDate = '';
-  int no_revision = 0;
+  int completion_counts = 0;
   Map<String, dynamic> _durationData = {
     "type": "forever",
     "numberOfTimes": null,
     "endDate": null
   };
-  String initiated_on = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+  String start_timestamp = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
 
 
   // Custom frequency parameters
@@ -148,7 +148,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         final localDb = LocalDatabaseService();
         
         if (todayDate == 'Unspecified') {
-          no_revision = -1;
+          completion_counts = -1;
           _revisionFrequency = 'No Repetition';
           dateScheduled = 'Unspecified';
           _durationData = {
@@ -157,8 +157,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
             "endDate": null
           };
         } else {
-          if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
-            no_revision = -1;
+          if (DateTime.parse(start_timestamp).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
+            completion_counts = -1;
           }
         }
 
@@ -174,17 +174,17 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
         // Prepare record data for local storage
         Map<String, dynamic> recordData = {
-          'initiated_on': initiated_on,
+          'start_timestamp': start_timestamp,
           'reminder_time': _timeController.text,
-          'lecture_type': _lectureType,
-          'date_learnt': todayDate,
-          'date_revised': todayDate,
-          'date_scheduled': dateScheduled,
+          'entry_type': _lectureType,
+          'date_initiated': todayDate,
+          'date_updated': todayDate,
+          'scheduled_date': dateScheduled,
           'description': _description,
-          'missed_revision': 0,
-          'no_revision': no_revision,
-          'revision_frequency': _revisionFrequency,
-          'revision_data': revisionData,
+          'missed_counts': 0,
+          'completion_counts': completion_counts,
+          'recurrence_frequency': _revisionFrequency,
+          'recurrence_data': revisionData,
           'status': 'Enabled',
           'duration': _durationData,
         };
@@ -204,7 +204,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         final firebaseService = FirebaseDatabaseService();
 
         if (todayDate == 'Unspecified') {
-          no_revision = -1;
+          completion_counts = -1;
           _revisionFrequency = 'No Repetition';
           dateScheduled = 'Unspecified';
           _durationData = {
@@ -213,8 +213,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
             "endDate": null
           };
         } else {
-          if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
-            no_revision = -1;
+          if (DateTime.parse(start_timestamp).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
+            completion_counts = -1;
           }
         }
 
@@ -229,17 +229,17 @@ class _AddLectureFormState extends State<AddLectureForm> {
         }
 
         Map<String, dynamic> recordData = {
-          'initiated_on': initiated_on,
+          'start_timestamp': start_timestamp,
           'reminder_time': _timeController.text,
-          'lecture_type': _lectureType,
-          'date_learnt': todayDate,
-          'date_revised': todayDate,
-          'date_scheduled': dateScheduled,
+          'entry_type': _lectureType,
+          'date_initiated': todayDate,
+          'date_updated': todayDate,
+          'scheduled_date': dateScheduled,
           'description': _description,
-          'missed_revision': 0,
-          'no_revision': no_revision,
-          'revision_frequency': _revisionFrequency,
-          'revision_data': revisionData,
+          'missed_counts': 0,
+          'completion_counts': completion_counts,
+          'recurrence_frequency': _revisionFrequency,
+          'recurrence_data': revisionData,
           'status': 'Enabled',
           'duration': _durationData,
         };
@@ -308,7 +308,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
       setState(() {
         dateScheduled = initialDate.toIso8601String().split('T')[0];
-        if (DateTime.parse(initiated_on).isBefore(DateTime.parse(todayDate))) {
+        if (DateTime.parse(start_timestamp).isBefore(DateTime.parse(todayDate))) {
           dateScheduled= todayDate;
         }
         _scheduleddateController.text = dateScheduled;
@@ -1012,7 +1012,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                                     keyboardType: TextInputType.number,
                                                     decoration: const InputDecoration(
                                                       labelText: 'Number of Times',
-                                                      hintText: 'Enter a value ≥ 1',
+                                                      hintText: 'Enter a value â‰¥ 1',
                                                     ),
                                                     inputFormatters: [
                                                       FilteringTextInputFormatter.digitsOnly,

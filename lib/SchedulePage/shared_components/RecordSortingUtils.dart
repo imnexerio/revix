@@ -1,4 +1,4 @@
-/// Utility class containing common sorting logic for schedule tables
+﻿/// Utility class containing common sorting logic for schedule tables
 class RecordSortingUtils {
   /// Sorts a list of records based on the specified field and direction
   static List<Map<String, dynamic>> sortRecords({
@@ -10,9 +10,9 @@ class RecordSortingUtils {
 
     sortedRecords.sort((a, b) {
       switch (field) {
-        case 'date_learnt':
-          final String? aDate = a['date_learnt'] as String?;
-          final String? bDate = b['date_learnt'] as String?;
+        case 'date_initiated':
+          final String? aDate = a['date_initiated'] as String?;
+          final String? bDate = b['date_initiated'] as String?;
 
           // Handle null dates (null comes first in ascending, last in descending)
           if (aDate == null && bDate == null) return 0;
@@ -22,9 +22,9 @@ class RecordSortingUtils {
           // Compare dates
           return ascending ? aDate.compareTo(bDate) : bDate.compareTo(aDate);
 
-        case 'date_revised':
-          final List<String> aRevised = List<String>.from(a['dates_revised'] ?? []);
-          final List<String> bRevised = List<String>.from(b['dates_revised'] ?? []);
+        case 'date_updated':
+          final List<String> aRevised = List<String>.from(a['dates_updated'] ?? []);
+          final List<String> bRevised = List<String>.from(b['dates_updated'] ?? []);
 
           // Get the most recent revision date
           String? aLatest = aRevised.isNotEmpty
@@ -41,15 +41,15 @@ class RecordSortingUtils {
 
           return ascending ? aLatest.compareTo(bLatest) : bLatest.compareTo(aLatest);
 
-        case 'missed_revision':
-          final int aMissed = a['missed_revision'] as int? ?? 0;
-          final int bMissed = b['missed_revision'] as int? ?? 0;
+        case 'missed_counts':
+          final int aMissed = a['missed_counts'] as int? ?? 0;
+          final int bMissed = b['missed_counts'] as int? ?? 0;
 
           return ascending ? aMissed.compareTo(bMissed) : bMissed.compareTo(aMissed);
 
-        case 'no_revision':
-          final int aRevisions = a['no_revision'] as int? ?? 0;
-          final int bRevisions = b['no_revision'] as int? ?? 0;
+        case 'completion_counts':
+          final int aRevisions = a['completion_counts'] as int? ?? 0;
+          final int bRevisions = b['completion_counts'] as int? ?? 0;
 
           return ascending ? aRevisions.compareTo(bRevisions) : bRevisions.compareTo(aRevisions);
 
@@ -64,7 +64,7 @@ class RecordSortingUtils {
 
           return ascending ? aTime.compareTo(bTime) : bTime.compareTo(aTime);
 
-        case 'revision_frequency':
+        case 'recurrence_frequency':
           // Map priority levels to numeric values for sorting
           const Map<String, int> priorityValues = {
             'High Priority': 3,
@@ -74,8 +74,8 @@ class RecordSortingUtils {
             '': 0, // For empty values
           };
 
-          final int aValue = priorityValues[a['revision_frequency'] ?? ''] ?? 0;
-          final int bValue = priorityValues[b['revision_frequency'] ?? ''] ?? 0;
+          final int aValue = priorityValues[a['recurrence_frequency'] ?? ''] ?? 0;
+          final int bValue = priorityValues[b['recurrence_frequency'] ?? ''] ?? 0;
 
           return ascending ? aValue.compareTo(bValue) : bValue.compareTo(aValue);
 
@@ -91,11 +91,11 @@ class RecordSortingUtils {
   static String getSortFieldDisplayName(String field) {
     switch (field) {
       case 'reminder_time': return 'Reminder Time';
-      case 'date_learnt': return 'Date Initiated';
-      case 'date_revised': return 'Date Reviewed';
-      case 'missed_revision': return 'Overdue Reviews';
-      case 'no_revision': return 'Number of Reviews';
-      case 'revision_frequency': return 'Review Frequency';
+      case 'date_initiated': return 'Date Initiated';
+      case 'date_updated': return 'Date Reviewed';
+      case 'missed_counts': return 'Overdue Reviews';
+      case 'completion_counts': return 'Number of Reviews';
+      case 'recurrence_frequency': return 'Review Frequency';
       default: return field;
     }
   }

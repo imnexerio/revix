@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../RecordForm/CalculateCustomNextDate.dart';
 import '../Utils/CustomSnackBar.dart';
@@ -25,7 +25,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
     // Check duration conditions
     if (durationType == 'specificTimes') {
       int? numberOfTimes = durationData['numberOfTimes'] as int?;
-      int currentRevisions = (details['no_revision'] as num?)?.toInt() ?? 0;
+      int currentRevisions = (details['completion_counts'] as num?)?.toInt() ?? 0;
 
       // Disable if we've reached or exceeded the specified number of revisions
       if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
@@ -81,8 +81,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   static Map<String, dynamic> _extractRevisionData(Map<String, dynamic> details) {
     Map<String, dynamic> revisionData = {};
 
-    if (details['revision_data'] != null) {
-      final rawData = details['revision_data'];
+    if (details['recurrence_data'] != null) {
+      final rawData = details['recurrence_data'];
       revisionData['frequency'] = rawData['frequency'];
 
       if (rawData['custom_params'] != null) {
@@ -129,8 +129,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         throw 'Cannot mark as done when the status is disabled';
       }
 
-      // Handle unspecified date_learnt case
-      if (details['date_learnt'] == 'Unspecified') {
+      // Handle unspecified date_initiated case
+      if (details['date_initiated'] == 'Unspecified') {
         await moveToDeletedData(subject, subjectCode, lectureNo, details);
         Navigator.pop(context);
         Navigator.pop(context);
@@ -142,8 +142,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       }
 
       String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
-      int missedRevision = (details['missed_revision'] as num).toInt();
-      DateTime scheduledDate = DateTime.parse(details['date_scheduled'].toString());
+      int missedRevision = (details['missed_counts'] as num).toInt();
+      DateTime scheduledDate = DateTime.parse(details['scheduled_date'].toString());
 
       // Check if revision was missed
       if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
@@ -155,11 +155,11 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
       }
 
-      List<String> datesRevised = List<String>.from(details['dates_revised'] ?? []);
+      List<String> datesRevised = List<String>.from(details['dates_updated'] ?? []);
       datesRevised.add(dateRevised);
 
       // Handle 'No Repetition' case
-      if (details['revision_frequency'] == 'No Repetition') {
+      if (details['recurrence_frequency'] == 'No Repetition') {
         await moveToDeletedData(subject, subjectCode, lectureNo, details);
         Navigator.pop(context);
         Navigator.pop(context);
@@ -172,43 +172,43 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Calculate next scheduled date
       String dateScheduled;
-      if (details['revision_frequency'] == 'Custom') {
+      if (details['recurrence_frequency'] == 'Custom') {
         Map<String, dynamic> revisionData = _extractRevisionData(details);
         DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
-          DateTime.parse(details['date_scheduled']),
+          DateTime.parse(details['scheduled_date']),
           revisionData,
         );
         dateScheduled = nextDateTime.toIso8601String().split('T')[0];
       } else {
         dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
           scheduledDate,
-          details['revision_frequency'],
-          details['no_revision'] + 1,
+          details['recurrence_frequency'],
+          details['completion_counts'] + 1,
         )).toIso8601String().split('T')[0];
       }
 
       // Handle negative revision case
-      if (details['no_revision'] < 0) {
+      if (details['completion_counts'] < 0) {
         datesRevised = [];
         dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
           DateTime.parse(dateRevised),
-          details['revision_frequency'],
-          details['no_revision'] + 1,
+          details['recurrence_frequency'],
+          details['completion_counts'] + 1,
         )).toIso8601String().split('T')[0];
       }      // Determine enabled status for LectureDetailsModal case
       bool finalEnabledStatus = true;
       if (isEnabled != null) {
         Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(details);
-        updatedDetails['no_revision'] = details['no_revision'] + 1;
+        updatedDetails['completion_counts'] = details['completion_counts'] + 1;
         finalEnabledStatus = MarkAsDoneService.determineEnabledStatus(updatedDetails);
       }
 
       // Create revision data
       Map<String, dynamic> revisionData = {
-        'frequency': details['revision_frequency'],
+        'frequency': details['recurrence_frequency'],
       };
       
-      if (details['revision_frequency'] == 'Custom') {
+      if (details['recurrence_frequency'] == 'Custom') {
         Map<String, dynamic> customParams = _extractRevisionData(details);
         if (customParams['custom_params'] != null) {
           revisionData['custom_params'] = customParams['custom_params'];
@@ -224,7 +224,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
           dateRevised,
           description ?? details['description'],
           details['reminder_time'],
-          details['no_revision'] + 1,
+          details['completion_counts'] + 1,
           dateScheduled,
           datesRevised,
           missedRevision,
@@ -239,12 +239,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
           dateRevised,
           details['description'],
           details['reminder_time'],
-          details['no_revision'] + 1,
+          details['completion_counts'] + 1,
           dateScheduled,
           datesRevised,
           missedRevision,
           datesMissedRevisions,
-          details['revision_frequency'],
+          details['recurrence_frequency'],
           finalEnabledStatus ? 'Enabled' : 'Disabled',
           revisionData,
           durationData ?? {},

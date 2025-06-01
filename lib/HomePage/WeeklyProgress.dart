@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -38,10 +38,10 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     String? dateScheduled;
 
     if (record['details'] != null) {
-      dateLearnt = record['details']['date_learnt'];
-      datesRevised = record['details']['dates_revised'];
+      dateLearnt = record['details']['date_initiated'];
+      datesRevised = record['details']['dates_updated'];
       datesMissedRevisions = record['details']['dates_missed_revisions'];
-      dateScheduled = record['details']['date_scheduled'];
+      dateScheduled = record['details']['scheduled_date'];
     }
 
     // Process lecture date

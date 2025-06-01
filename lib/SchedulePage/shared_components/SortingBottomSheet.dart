@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'SortingComponents.dart';
 import 'RecordSortingUtils.dart';
 
@@ -75,50 +75,50 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                   ),
                   SortFieldBox(
                     label: 'Date Initiated',
-                    field: 'date_learnt',
-                    isSelected: selectedField == 'date_learnt',
+                    field: 'date_initiated',
+                    isSelected: selectedField == 'date_initiated',
                     onTap: () {
-                      setState(() => selectedField = 'date_learnt');
+                      setState(() => selectedField = 'date_initiated');
                       widget.onSortApplied(selectedField, isAscending);
                       Navigator.pop(context);
                     },
                   ),
                   SortFieldBox(
                     label: 'Date Reviewed',
-                    field: 'date_revised',
-                    isSelected: selectedField == 'date_revised',
+                    field: 'date_updated',
+                    isSelected: selectedField == 'date_updated',
                     onTap: () {
-                      setState(() => selectedField = 'date_revised');
+                      setState(() => selectedField = 'date_updated');
                       widget.onSortApplied(selectedField, isAscending);
                       Navigator.pop(context);
                     },
                   ),
                   SortFieldBox(
                     label: 'Overdue Reviews',
-                    field: 'missed_revision',
-                    isSelected: selectedField == 'missed_revision',
+                    field: 'missed_counts',
+                    isSelected: selectedField == 'missed_counts',
                     onTap: () {
-                      setState(() => selectedField = 'missed_revision');
+                      setState(() => selectedField = 'missed_counts');
                       widget.onSortApplied(selectedField, isAscending);
                       Navigator.pop(context);
                     },
                   ),
                   SortFieldBox(
                     label: 'Number of Reviews',
-                    field: 'no_revision',
-                    isSelected: selectedField == 'no_revision',
+                    field: 'completion_counts',
+                    isSelected: selectedField == 'completion_counts',
                     onTap: () {
-                      setState(() => selectedField = 'no_revision');
+                      setState(() => selectedField = 'completion_counts');
                       widget.onSortApplied(selectedField, isAscending);
                       Navigator.pop(context);
                     },
                   ),
                   SortFieldBox(
                     label: 'Review Frequency',
-                    field: 'revision_frequency',
-                    isSelected: selectedField == 'revision_frequency',
+                    field: 'recurrence_frequency',
+                    isSelected: selectedField == 'recurrence_frequency',
                     onTap: () {
-                      setState(() => selectedField = 'revision_frequency');
+                      setState(() => selectedField = 'recurrence_frequency');
                       widget.onSortApplied(selectedField, isAscending);
                       Navigator.pop(context);
                     },

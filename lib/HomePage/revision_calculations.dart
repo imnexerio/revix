@@ -1,12 +1,12 @@
-int calculateMonthlyRevisions(List<Map<String, dynamic>> records) {
+﻿int calculateMonthlyRevisions(List<Map<String, dynamic>> records) {
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
   int count = 0;
 
   for (var record in records) {
-    if (record['details']['dates_revised'] == null) continue;
+    if (record['details']['dates_updated'] == null) continue;
 
-    List<dynamic> revisionDates = record['details']['dates_revised'];
+    List<dynamic> revisionDates = record['details']['dates_updated'];
     for (var dateStr in revisionDates) {
       DateTime date;
       try {
@@ -29,9 +29,9 @@ int calculateWeeklyRevisions(List<Map<String, dynamic>> records) {
 
   int count = 0;
   for (var record in records) {
-    if (record['details']['dates_revised'] == null) continue;
+    if (record['details']['dates_updated'] == null) continue;
 
-    List<dynamic> revisionDates = record['details']['dates_revised'];
+    List<dynamic> revisionDates = record['details']['dates_updated'];
     for (var dateStr in revisionDates) {
       DateTime date;
       try {
@@ -53,9 +53,9 @@ int calculateDailyRevisions(List<Map<String, dynamic>> records) {
 
   int count = 0;
   for (var record in records) {
-    if (record['details']['dates_revised'] == null) continue;
+    if (record['details']['dates_updated'] == null) continue;
 
-    List<dynamic> revisionDates = record['details']['dates_revised'];
+    List<dynamic> revisionDates = record['details']['dates_updated'];
     for (var dateStr in revisionDates) {
       DateTime date;
       try {

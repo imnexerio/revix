@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+﻿package com.imnexerio.retracker
 
 import android.app.Service
 import android.appwidget.AppWidgetManager
@@ -115,10 +115,10 @@ class WidgetRefreshService : Service() {
                     if (codeValue is Map<*, *>) {
                         codeValue.forEach { (recordKey, recordValue) ->
                             if (recordValue is Map<*, *>) {
-                                val dateScheduled = recordValue["date_scheduled"]?.toString()
+                                val dateScheduled = recordValue["scheduled_date"]?.toString()
                                 val status = recordValue["status"]?.toString()
                                 val reminderTime = recordValue["reminder_time"]?.toString()
-                                val revisionFrequency = recordValue["revision_frequency"]?.toString()
+                                val revisionFrequency = recordValue["recurrence_frequency"]?.toString()
 
                                 if (dateScheduled != null && status == "Enabled") {
                                     val scheduledDateStr = dateScheduled.split("T")[0]
@@ -129,8 +129,8 @@ class WidgetRefreshService : Service() {
                                                 "subject_code" to codeKey.toString(),
                                                 "lecture_no" to recordKey.toString(),
                                                 "reminder_time" to (reminderTime ?: "").toString(),
-                                                "date_scheduled" to dateScheduled,
-                                                "revision_frequency" to (revisionFrequency ?: "").toString()
+                                                "scheduled_date" to dateScheduled,
+                                                "recurrence_frequency" to (revisionFrequency ?: "").toString()
                                             )
                                         )
                                     }
@@ -158,11 +158,11 @@ class WidgetRefreshService : Service() {
                         codeValue.forEach { (recordKey, recordValue) ->
                             if (recordValue is Map<*, *>) {
                                 try {
-                                    val dateScheduled = recordValue["date_scheduled"]?.toString()
+                                    val dateScheduled = recordValue["scheduled_date"]?.toString()
                                     val status = recordValue["status"]?.toString()
-                                    val missedRevision = (recordValue["missed_revision"] as? Number)?.toInt() ?: 0
+                                    val missedRevision = (recordValue["missed_counts"] as? Number)?.toInt() ?: 0
                                     val reminderTime = recordValue["reminder_time"]?.toString()
-                                    val revisionFrequency = recordValue["revision_frequency"]?.toString()
+                                    val revisionFrequency = recordValue["recurrence_frequency"]?.toString()
 
                                     // Skip if no scheduled date or not enabled
                                     if (dateScheduled == null || status != "Enabled") {
@@ -170,7 +170,7 @@ class WidgetRefreshService : Service() {
                                     }
 
                                     // Skip records that are marked "Unspecified" for learning date
-                                    if (recordValue["date_learnt"] == "Unspecified") {
+                                    if (recordValue["date_initiated"] == "Unspecified") {
                                         return@forEach
                                     }
 
@@ -184,9 +184,9 @@ class WidgetRefreshService : Service() {
                                                 "subject_code" to codeKey.toString(),
                                                 "lecture_no" to recordKey.toString(),
                                                 "reminder_time" to (reminderTime ?: "").toString(),
-                                                "date_scheduled" to dateScheduled,
-                                                "revision_frequency" to (revisionFrequency ?: "").toString(),
-                                                "missed_revision" to missedRevision.toString()
+                                                "scheduled_date" to dateScheduled,
+                                                "recurrence_frequency" to (revisionFrequency ?: "").toString(),
+                                                "missed_counts" to missedRevision.toString()
                                             )
                                         )
                                     }
@@ -215,10 +215,10 @@ class WidgetRefreshService : Service() {
                     if (codeValue is Map<*, *>) {
                         codeValue.forEach { (recordKey, recordValue) ->
                             if (recordValue is Map<*, *>) {
-                                val dateScheduled = recordValue["date_scheduled"]?.toString()
+                                val dateScheduled = recordValue["scheduled_date"]?.toString()
                                 val status = recordValue["status"]?.toString()
                                 val reminderTime = recordValue["reminder_time"]?.toString()
-                                val revisionFrequency = recordValue["revision_frequency"]?.toString()
+                                val revisionFrequency = recordValue["recurrence_frequency"]?.toString()
 
                                 if (dateScheduled == "Unspecified" && status == "Enabled") {
                                     records.add(
@@ -227,7 +227,7 @@ class WidgetRefreshService : Service() {
                                             "subject_code" to codeKey.toString(),
                                             "lecture_no" to recordKey.toString(),
                                             "reminder_time" to (reminderTime ?: "").toString(),
-                                            "revision_frequency" to (revisionFrequency ?: "").toString()
+                                            "recurrence_frequency" to (revisionFrequency ?: "").toString()
                                         )
                                     )
                                 }

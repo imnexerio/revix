@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:retracker/HomePage/revision_calculations.dart';
 import 'package:retracker/Utils/customSnackBar_error.dart';
@@ -216,7 +216,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             List<Map<String, dynamic>> filteredRecords = _selectedLectureType == 'All'
                 ? allRecords
                 : allRecords.where((record) {
-              return record['details']['lecture_type'] == _selectedLectureType;
+              return record['details']['entry_type'] == _selectedLectureType;
             }).toList();
 
             Map<String, int> subjectDistribution = calculateSubjectDistribution(filteredRecords);
@@ -634,7 +634,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
   double calculatePercentageCompletion(List<Map<String, dynamic>> records, int customCompletionTarget) {
     int completedLectures = records.where((record) =>
-    record['details']['date_learnt'] != null
+    record['details']['date_initiated'] != null
     ).length;
     double percentageCompletion = customCompletionTarget > 0
         ? (completedLectures / customCompletionTarget) * 100

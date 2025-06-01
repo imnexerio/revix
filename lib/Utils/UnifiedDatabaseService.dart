@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:retracker/Utils/platform_utils.dart';
@@ -199,8 +199,8 @@ class CombinedDatabaseService {
         codeValue.forEach((recordKey, recordValue) {
           if (recordValue is! Map) return;
 
-          final dateScheduled = recordValue['date_scheduled'];
-          final dateInitiated = recordValue['initiated_on'];
+          final dateScheduled = recordValue['scheduled_date'];
+          final dateInitiated = recordValue['start_timestamp'];
           final status = recordValue['status'];
 
           if (dateScheduled == null || status != 'Enabled') return;
@@ -209,25 +209,25 @@ class CombinedDatabaseService {
             'subject': subjectKey.toString(),
             'subject_code': codeKey.toString(),
             'lecture_no': recordKey.toString(),
-            'date_scheduled': dateScheduled.toString(),
-            'initiated_on': recordValue['initiated_on'],
+            'scheduled_date': dateScheduled.toString(),
+            'start_timestamp': recordValue['start_timestamp'],
             'reminder_time': recordValue['reminder_time'] ?? 'All Day',
-            'lecture_type': recordValue['lecture_type'],
-            'date_learnt': recordValue['date_learnt'],
-            'date_revised': recordValue['date_revised'],
+            'entry_type': recordValue['entry_type'],
+            'date_initiated': recordValue['date_initiated'],
+            'date_updated': recordValue['date_updated'],
             'description': recordValue['description'],
-            'missed_revision': recordValue['missed_revision'],
+            'missed_counts': recordValue['missed_counts'],
             'dates_missed_revisions': recordValue['dates_missed_revisions'] ?? [],
-            'dates_revised': recordValue['dates_revised'] ?? [],
-            'no_revision': recordValue['no_revision'],
-            'revision_frequency': recordValue['revision_frequency'],
+            'dates_updated': recordValue['dates_updated'] ?? [],
+            'completion_counts': recordValue['completion_counts'],
+            'recurrence_frequency': recordValue['recurrence_frequency'],
             'status': recordValue['status'],
-            'revision_data': recordValue['revision_data'] ?? [],
+            'recurrence_data': recordValue['recurrence_data'] ?? [],
             'duration': recordValue['duration'] ?? 0,
 
           };
 
-          if (recordValue['date_learnt'] == 'Unspecified') {
+          if (recordValue['date_initiated'] == 'Unspecified') {
             noreminderdate.add(record);
             return;
           }

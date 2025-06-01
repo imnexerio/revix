@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+﻿package com.imnexerio.retracker
 
 import android.app.Service
 import android.appwidget.AppWidgetManager
@@ -143,11 +143,11 @@ class RecordUpdateService : Service() {
                 try {
                     val details = snapshot.value as Map<*, *>
 
-                    // Check if today's date is already in dates_revised
+                    // Check if today's date is already in dates_updated
                     val dateRevised = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
                         Date()
                     )
-                    val datesRevised = details["dates_revised"] as? List<*> ?: listOf<String>()
+                    val datesRevised = details["dates_updated"] as? List<*> ?: listOf<String>()
 
                     // Check if the record has been revised today
                     val revisedToday = datesRevised.any {
@@ -185,8 +185,8 @@ class RecordUpdateService : Service() {
         startId: Int
     ) {
         try {
-            // First check for "Unspecified" date_learnt
-            if (details["date_learnt"] == "Unspecified") {
+            // First check for "Unspecified" date_initiated
+            if (details["date_initiated"] == "Unspecified") {
                 moveToDeletedData(subject, subjectCode, lectureNo, details) { success ->
                     if (success) {
                         handler.post {
@@ -212,7 +212,7 @@ class RecordUpdateService : Service() {
             }
 
             // Then check for "No Repetition" revision frequency
-            if (details["revision_frequency"] == "No Repetition") {
+            if (details["recurrence_frequency"] == "No Repetition") {
                 moveToDeletedData(subject, subjectCode, lectureNo, details) { success ->
                     if (success) {
                         handler.post {
@@ -242,24 +242,24 @@ class RecordUpdateService : Service() {
             val currentDate = currentDateTime.split("T")[0]
 
             // Process data
-            val missedRevision = (details["missed_revision"] as? Number)?.toInt() ?: 0
-            val scheduledDate = (details["date_scheduled"] as? String)?.let {
+            val missedRevision = (details["missed_counts"] as? Number)?.toInt() ?: 0
+            val scheduledDate = (details["scheduled_date"] as? String)?.let {
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it)
             } ?: Date()
 
             // Get revision frequency and revision count
-            val revisionFrequency = details["revision_frequency"]?.toString() ?:
-                extras["revision_frequency"] ?: "daily"
+            val revisionFrequency = details["recurrence_frequency"]?.toString() ?:
+                extras["recurrence_frequency"] ?: "daily"
 
-            val noRevision = (details["no_revision"] as? Number)?.toInt() ?: 0
+            val noRevision = (details["completion_counts"] as? Number)?.toInt() ?: 0
 
             // Calculate next revision date based on frequency type
             if (revisionFrequency == "Custom") {
                 // Handle custom revision frequency
                 @Suppress("UNCHECKED_CAST")
-                val revisionData = details["revision_data"] as? Map<String, Any?> ?: emptyMap()
+                val revisionData = details["recurrence_data"] as? Map<String, Any?> ?: emptyMap()
 
-                val dateScheduledStr = details["date_scheduled"] as? String ?: currentDate
+                val dateScheduledStr = details["scheduled_date"] as? String ?: currentDate
                 val dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateScheduledStr)
                 val scheduledCalendar = Calendar.getInstance()
                 scheduledCalendar.time = dateScheduled ?: Date()
@@ -313,8 +313,8 @@ class RecordUpdateService : Service() {
         // Create updated values map
         val updatedValues = HashMap<String, Any>()
 
-        // Update date_revised
-        updatedValues["date_revised"] = currentDateTime
+        // Update date_updated
+        updatedValues["date_updated"] = currentDateTime
 
         // Handle missed revisions if scheduled date is in the past
         var newMissedRevision = missedRevision
@@ -329,27 +329,27 @@ class RecordUpdateService : Service() {
             }
         }
 
-        updatedValues["missed_revision"] = newMissedRevision
+        updatedValues["missed_counts"] = newMissedRevision
         updatedValues["dates_missed_revisions"] = newDatesMissedRevisions
 
-        // Update dates_revised
-        val datesRevised = details["dates_revised"] as? List<*> ?: listOf<String>()
+        // Update dates_updated
+        val datesRevised = details["dates_updated"] as? List<*> ?: listOf<String>()
         val newDatesRevised = ArrayList<String>(datesRevised.map { it.toString() })
         newDatesRevised.add(currentDateTime)
         if (noRevision == -1) {
             newDatesRevised.clear()
         }
-        updatedValues["dates_revised"] = newDatesRevised
+        updatedValues["dates_updated"] = newDatesRevised
 
-        // Update no_revision
-        updatedValues["no_revision"] = noRevision + 1
+        // Update completion_counts
+        updatedValues["completion_counts"] = noRevision + 1
 
-        // Update date_scheduled with next revision date
-        updatedValues["date_scheduled"] = nextRevisionDate
+        // Update scheduled_date with next revision date
+        updatedValues["scheduled_date"] = nextRevisionDate
 
         val newEnabledStatus = determineEnabledStatus(
             details.toMutableMap().apply {
-                this["no_revision"] = noRevision + 1
+                this["completion_counts"] = noRevision + 1
             }
         )
 
@@ -390,7 +390,7 @@ class RecordUpdateService : Service() {
         when (durationType) {
             "specificTimes" -> {
                 val numberOfTimes = (durationData["numberOfTimes"] as? Number)?.toInt()
-                val currentRevisions = (details["no_revision"] as? Number)?.toInt() ?: 0
+                val currentRevisions = (details["completion_counts"] as? Number)?.toInt() ?: 0
                 if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
                     isEnabled = false
                 }

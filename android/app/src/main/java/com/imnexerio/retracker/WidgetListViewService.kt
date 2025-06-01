@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+﻿package com.imnexerio.retracker
 
 import android.content.Context
 import android.content.Intent
@@ -139,12 +139,12 @@ class WidgetListViewFactory(
             rv.setTextViewText(R.id.item_reminder_time, record["reminder_time"])
         }
 
-        if (record.containsKey("date_scheduled")) {
-            rv.setTextViewText(R.id.item_reminder_date, record["date_scheduled"])
+        if (record.containsKey("scheduled_date")) {
+            rv.setTextViewText(R.id.item_reminder_date, record["scheduled_date"])
         }
 
-        if (record.containsKey("revision_frequency")) {
-            rv.setTextViewText(R.id.item_reminder_frequency, record["revision_frequency"])
+        if (record.containsKey("recurrence_frequency")) {
+            rv.setTextViewText(R.id.item_reminder_frequency, record["recurrence_frequency"])
         }
 
         val normalFlags = Paint.ANTI_ALIAS_FLAG
