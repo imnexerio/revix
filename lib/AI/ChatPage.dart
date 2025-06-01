@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:retracker/AI/gemini_service.dart';
 import 'package:uuid/uuid.dart';
@@ -46,13 +46,13 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _fetchScheduleData() async {
     try {
-      // Use the new SubjectDataProvider instead of ScheduleDataProvider
-      _scheduleData = SubjectDataProvider().getScheduleData();
+      // Use the new categoryDataProvider instead of ScheduleDataProvider
+      _scheduleData = categoryDataProvider().getScheduleData();
 
       // If the data isn't already in cache, try to fetch it
       if (_scheduleData == 'No schedule data available') {
-        await SubjectDataProvider().fetchRawData();
-        _scheduleData = SubjectDataProvider().getScheduleData();
+        await categoryDataProvider().fetchRawData();
+        _scheduleData = categoryDataProvider().getScheduleData();
       }
 
       // Update the Gemini service with the new schedule data
@@ -61,7 +61,7 @@ class _ChatPageState extends State<ChatPage> {
       }
 
       // Optional: Subscribe to raw data changes to keep the schedule data updated
-      SubjectDataProvider().rawDataStream.listen((data) {
+      categoryDataProvider().rawDataStream.listen((data) {
         if (data != null) {
           _scheduleData = data.toString();
 

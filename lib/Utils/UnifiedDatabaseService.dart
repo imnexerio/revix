@@ -36,7 +36,7 @@ class CombinedDatabaseService {
   final StreamController<Map<String, dynamic>> _allRecordsController =
   StreamController<Map<String, dynamic>>.broadcast();
 
-  final StreamController<Map<String, dynamic>> _subjectsController =
+  final StreamController<Map<String, dynamic>> _categoriesController =
   StreamController<Map<String, dynamic>>.broadcast();
 
   final StreamController<dynamic> _rawDataController =
@@ -48,12 +48,12 @@ class CombinedDatabaseService {
       _allRecordsController.stream;
 
   Stream<Map<String, dynamic>> get subjectsStream =>
-      _subjectsController.stream;
+      _categoriesController.stream;
 
   Stream<dynamic> get rawDataStream =>
       _isGuestMode ? _localDatabase.rawDataStream : _rawDataController.stream;
 
-  Map<String, dynamic>? _cachedSubjectsData;
+  Map<String, dynamic>? _cachedCategoriesData;
   dynamic _cachedRawData;
   Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;  void initialize() async {
     await _checkGuestMode();
@@ -121,7 +121,7 @@ class CombinedDatabaseService {
       _cachedCategorizedData = emptyData;
       _categorizedRecordsController.add(emptyData);
       _allRecordsController.add({'allRecords': []});
-      _subjectsController.add({'subjects': [], 'subjectCodes': {}});
+      _categoriesController.add({'subjects': [], 'subCategories': {}});
       _rawDataController.add(null);
 
       _updateHomeWidget([], [], []);
@@ -142,7 +142,7 @@ class CombinedDatabaseService {
     List<Map<String, dynamic>> allRecords = _processAllRecords(processedRawData);
     _allRecordsController.add({'allRecords': allRecords});
 
-    _processSubjectsData(processedRawData);
+    _processCategoriesData(processedRawData);
 
     if (PlatformUtils.instance.isAndroid) {
       _updateHomeWidget(categorizedData['today'] ?? [],
@@ -155,26 +155,26 @@ class CombinedDatabaseService {
       HomeWidgetService.updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
   }
 
-  void _processSubjectsData(Map<Object?, Object?> rawData) {
+  void _processCategoriesData(Map<Object?, Object?> rawData) {
     List<String> subjects = rawData.keys
         .map((key) => key.toString())
         .toList();
 
-    Map<String, List<String>> subjectCodes = {};
+    Map<String, List<String>> subCategories = {};
 
     rawData.forEach((subject, value) {
       if (value is Map) {
-        subjectCodes[subject.toString()] =
+        subCategories[subject.toString()] =
             value.keys.map((code) => code.toString()).toList();
       }
     });
 
-    _cachedSubjectsData = {
+    _cachedCategoriesData = {
       'subjects': subjects,
-      'subjectCodes': subjectCodes,
+      'subCategories': subCategories,
     };
 
-    _subjectsController.add(_cachedSubjectsData!);
+    _categoriesController.add(_cachedCategoriesData!);
   }
 
   Map<String, List<Map<String, dynamic>>> _processCategorizedData(Map<Object?, Object?> rawData) {
@@ -297,7 +297,7 @@ class CombinedDatabaseService {
         _rawDataController.add(_cachedRawData);
         
         // Process the data
-        _processSubjectsData(_cachedRawData);
+        _processCategoriesData(_cachedRawData);
         
         Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(_cachedRawData);
         _cachedCategorizedData = categorizedData;
@@ -334,12 +334,12 @@ class CombinedDatabaseService {
   void _addErrorToAllControllers(String errorMsg) {
     _categorizedRecordsController.addError(errorMsg);
     _allRecordsController.addError(errorMsg);
-    _subjectsController.addError(errorMsg);
+    _categoriesController.addError(errorMsg);
     _rawDataController.addError(errorMsg);
   }
 
   void _resetState() {
-    _cachedSubjectsData = null;
+    _cachedCategoriesData = null;
     _cachedRawData = null;
     _cachedCategorizedData = null;
     _databaseRef = null;
@@ -357,7 +357,7 @@ class CombinedDatabaseService {
     stopListening();
     _categorizedRecordsController.close();
     _allRecordsController.close();
-    _subjectsController.close();
+    _categoriesController.close();
     _rawDataController.close();
     
     if (_isGuestMode) {
@@ -366,7 +366,7 @@ class CombinedDatabaseService {
   }
 
   DatabaseReference? get databaseRef => _databaseRef;
-  Map<String, dynamic>? get currentSubjectsData => _cachedSubjectsData;
+  Map<String, dynamic>? get currentSubjectsData => _cachedCategoriesData;
       
   dynamic get currentRawData => _cachedRawData;
       
@@ -378,34 +378,34 @@ class CombinedDatabaseService {
     return 'No schedule data available';
   }
 
-  Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
-    if (_cachedSubjectsData != null) {
-      return _cachedSubjectsData!;
+  Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
+    if (_cachedCategoriesData != null) {
+      return _cachedCategoriesData!;
     }
 
     if (_isGuestMode) {
       // For guest mode, get raw data from local database and process it
       final rawData = await _localDatabase.getRawData();
       if (rawData != null) {
-        _processSubjectsData(rawData);
-        if (_cachedSubjectsData != null) {
-          return _cachedSubjectsData!;
+        _processCategoriesData(rawData);
+        if (_cachedCategoriesData != null) {
+          return _cachedCategoriesData!;
         }
       }    } else {
       User? user = _auth.currentUser;
       if (user == null) {
         // User is not authenticated (logged out), return default data instead of throwing exception
-        return {'subjects': [], 'subjectCodes': {}};
+        return {'subjects': [], 'subCategories': {}};
       }
 
       await forceDataReprocessing();
     }
 
-    if (_cachedSubjectsData == null) {
-      return {'subjects': [], 'subjectCodes': {}};
+    if (_cachedCategoriesData == null) {
+      return {'subjects': [], 'subCategories': {}};
     }
 
-    return _cachedSubjectsData!;
+    return _cachedCategoriesData!;
   }
 
   Future<dynamic> fetchRawData() async {
@@ -428,9 +428,9 @@ class CombinedDatabaseService {
   }
   
   // Add public method for saving records that works in both guest mode and Firebase mode
-  Future<bool> saveRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
+  Future<bool> saveRecord(String subject, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
     if (_isGuestMode) {
-      bool success = await _localDatabase.saveRecord(subject, subjectCode, lectureNo, recordData);
+      bool success = await _localDatabase.saveRecord(subject, subCategory, lectureNo, recordData);
       if (success) {
         // Force refresh data to ensure UI updates
         await forceDataReprocessing();
@@ -441,7 +441,7 @@ class CombinedDatabaseService {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
-        await _databaseRef!.child(subject).child(subjectCode).child(lectureNo).set(recordData);
+        await _databaseRef!.child(subject).child(subCategory).child(lectureNo).set(recordData);
         // Force a data refresh immediately instead of waiting for Firebase event
         await forceDataReprocessing();
         return true;
@@ -453,9 +453,9 @@ class CombinedDatabaseService {
   }
   
   // Add public method for updating records
-  Future<bool> updateRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> updates) async {
+  Future<bool> updateRecord(String subject, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
     if (_isGuestMode) {
-      bool success = await _localDatabase.updateRecord(subject, subjectCode, lectureNo, updates);
+      bool success = await _localDatabase.updateRecord(subject, subCategory, lectureNo, updates);
       if (success) {
         await forceDataReprocessing();
       }
@@ -465,7 +465,7 @@ class CombinedDatabaseService {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
-        await _databaseRef!.child(subject).child(subjectCode).child(lectureNo).update(updates);
+        await _databaseRef!.child(subject).child(subCategory).child(lectureNo).update(updates);
         await forceDataReprocessing();
         return true;
       } catch (e) {
@@ -476,9 +476,9 @@ class CombinedDatabaseService {
   }
   
   // Add public method for deleting records
-  Future<bool> deleteRecord(String subject, String subjectCode, String lectureNo) async {
+  Future<bool> deleteRecord(String subject, String subCategory, String lectureNo) async {
     if (_isGuestMode) {
-      bool success = await _localDatabase.deleteRecord(subject, subjectCode, lectureNo);
+      bool success = await _localDatabase.deleteRecord(subject, subCategory, lectureNo);
       if (success) {
         await forceDataReprocessing();
       }
@@ -488,7 +488,7 @@ class CombinedDatabaseService {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
-        await _databaseRef!.child(subject).child(subjectCode).child(lectureNo).remove();
+        await _databaseRef!.child(subject).child(subCategory).child(lectureNo).remove();
         await forceDataReprocessing();
         return true;
       } catch (e) {
@@ -499,24 +499,24 @@ class CombinedDatabaseService {
   }
 }
 
-Future<Map<String, dynamic>> fetchSubjectsAndCodes() async {
-  return await CombinedDatabaseService().fetchSubjectsAndCodes();
+Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
+  return await CombinedDatabaseService().fetchCategoriesAndSubCategories();
 }
 
-Stream<Map<String, dynamic>> getSubjectsStream() {
+Stream<Map<String, dynamic>> getCategoriesStream() {
   return CombinedDatabaseService().subjectsStream;
 }
 
-class SubjectDataProvider {
-  static final SubjectDataProvider _instance = SubjectDataProvider._internal();
+class categoryDataProvider {
+  static final categoryDataProvider _instance = categoryDataProvider._internal();
 
   final CombinedDatabaseService _service = CombinedDatabaseService();
 
-  factory SubjectDataProvider() {
+  factory categoryDataProvider() {
     return _instance;
   }
 
-  SubjectDataProvider._internal();
+  categoryDataProvider._internal();
 
   Stream<Map<String, dynamic>> get subjectsStream => _service.subjectsStream;
   Stream<dynamic> get rawDataStream => _service.rawDataStream;
@@ -524,7 +524,7 @@ class SubjectDataProvider {
   dynamic get currentRawData => _service.currentRawData;
 
   String getScheduleData() => _service.getScheduleData();
-  Future<Map<String, dynamic>> fetchSubjectsAndCodes() => _service.fetchSubjectsAndCodes();
+  Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() => _service.fetchCategoriesAndSubCategories();
   Future<dynamic> fetchRawData() => _service.fetchRawData();
   void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
 }
@@ -558,16 +558,16 @@ class UnifiedDatabaseService {
   Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _service.currentCategorizedData;
   
   // Add method to save records, forwarding to the appropriate database based on guest mode
-  Future<bool> saveRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> recordData) async {
+  Future<bool> saveRecord(String subject, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
     if (_service._isGuestMode) {
-      return await _service._localDatabase.saveRecord(subject, subjectCode, lectureNo, recordData);
+      return await _service._localDatabase.saveRecord(subject, subCategory, lectureNo, recordData);
     } else {
       try {
         if (_service.databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
         
-        await _service.databaseRef!.child(subject).child(subjectCode).child(lectureNo).set(recordData);
+        await _service.databaseRef!.child(subject).child(subCategory).child(lectureNo).set(recordData);
         await _service.forceDataReprocessing();
         return true;
       } catch (e) {
@@ -578,16 +578,16 @@ class UnifiedDatabaseService {
   }
   
   // Add method to update existing records
-  Future<bool> updateRecord(String subject, String subjectCode, String lectureNo, Map<String, dynamic> updates) async {
+  Future<bool> updateRecord(String subject, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
     if (_service._isGuestMode) {
-      return await _service._localDatabase.updateRecord(subject, subjectCode, lectureNo, updates);
+      return await _service._localDatabase.updateRecord(subject, subCategory, lectureNo, updates);
     } else {
       try {
         if (_service.databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
         
-        await _service.databaseRef!.child(subject).child(subjectCode).child(lectureNo).update(updates);
+        await _service.databaseRef!.child(subject).child(subCategory).child(lectureNo).update(updates);
         await _service.forceDataReprocessing();
         return true;
       } catch (e) {
@@ -598,16 +598,16 @@ class UnifiedDatabaseService {
   }
   
   // Add method to delete records
-  Future<bool> deleteRecord(String subject, String subjectCode, String lectureNo) async {
+  Future<bool> deleteRecord(String subject, String subCategory, String lectureNo) async {
     if (_service._isGuestMode) {
-      return await _service._localDatabase.deleteRecord(subject, subjectCode, lectureNo);
+      return await _service._localDatabase.deleteRecord(subject, subCategory, lectureNo);
     } else {
       try {
         if (_service.databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
         
-        await _service.databaseRef!.child(subject).child(subjectCode).child(lectureNo).remove();
+        await _service.databaseRef!.child(subject).child(subCategory).child(lectureNo).remove();
         await _service.forceDataReprocessing();
         return true;
       } catch (e) {

@@ -10,7 +10,7 @@ import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
-import 'SubjectDistributionCard.dart';
+import 'CategoryDistributionCard.dart';
 import 'WeeklyProgressCard.dart';
 import 'calculation_utils.dart';
 import 'completion_utils.dart';
@@ -662,7 +662,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 selectedLectureType: _selectedLectureType,  // Pass the selected type
               ),
               const SizedBox(height: 32),
-              buildSubjectDistributionCard(
+              buildCategoryDistributionCard(
                 subjectDistribution,
                 cardPadding,
                 context,
@@ -730,7 +730,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           selectedLectureType: _selectedLectureType,
         ),
         const SizedBox(height: 24),
-        buildSubjectDistributionCard(
+        buildCategoryDistributionCard(
           subjectDistribution,
           cardPadding,
           context,

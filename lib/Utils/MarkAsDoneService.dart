@@ -113,7 +113,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
     required BuildContext context,
     required Map<String, dynamic> details,
     required String subject,
-    required String subjectCode,
+    required String subCategory,
     required String lectureNo,
     String? description,
     Map<String, dynamic>? durationData,
@@ -131,12 +131,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Handle unspecified date_initiated case
       if (details['date_initiated'] == 'Unspecified') {
-        await moveToDeletedData(subject, subjectCode, lectureNo, details);
+        await moveToDeletedData(subject, subCategory, lectureNo, details);
         Navigator.pop(context);
         Navigator.pop(context);
         customSnackBar(
           context: context,
-          message: '$subject $subjectCode $lectureNo has been marked as done and moved to deleted data.',
+          message: '$subject $subCategory $lectureNo has been marked as done and moved to deleted data.',
         );
         return;
       }
@@ -160,12 +160,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Handle 'No Repetition' case
       if (details['recurrence_frequency'] == 'No Repetition') {
-        await moveToDeletedData(subject, subjectCode, lectureNo, details);
+        await moveToDeletedData(subject, subCategory, lectureNo, details);
         Navigator.pop(context);
         Navigator.pop(context);
         customSnackBar(
           context: context,
-          message: '$subject $subjectCode $lectureNo has been marked as done and moved to deleted data.',
+          message: '$subject $subCategory $lectureNo has been marked as done and moved to deleted data.',
         );
         return;
       }
@@ -219,7 +219,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       if (useRevisionUpdate) {
         await UpdateRecordsRevision(
           subject,
-          subjectCode,
+          subCategory,
           lectureNo,
           dateRevised,
           description ?? details['description'],
@@ -234,7 +234,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       } else {
         await UpdateRecords(
           subject,
-          subjectCode,
+          subCategory,
           lectureNo,
           dateRevised,
           details['description'],
@@ -256,8 +256,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Show success message
       String successMessage = useRevisionUpdate
-          ? '$subject $subjectCode $lectureNo done and scheduled for $dateScheduled'
-          : '$subject $subjectCode $lectureNo, done. Next schedule is on $dateScheduled.';
+          ? '$subject $subCategory $lectureNo done and scheduled for $dateScheduled'
+          : '$subject $subCategory $lectureNo, done. Next schedule is on $dateScheduled.';
 
       customSnackBar(
         context: context,
@@ -279,7 +279,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
     required BuildContext context,
     required Map<String, dynamic> details,
     required String subject,
-    required String subjectCode,
+    required String subCategory,
     required String lectureNo,
     String? description,
     Map<String, dynamic>? durationData,
@@ -295,7 +295,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         context: context,
         details: details,
         subject: subject,
-        subjectCode: subjectCode,
+        subCategory: subCategory,
         lectureNo: lectureNo,
         description: description,
         durationData: durationData,

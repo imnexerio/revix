@@ -1,8 +1,8 @@
 ﻿import 'FirebaseDatabaseService.dart';
 
 Future<void> UpdateRecords(
-    String selectedSubject,
-    String selectedSubjectCode,
+    String selectedCategory,
+    String selectedCategoryCode,
     String lectureNo,
     String dateRevised,
     String description,
@@ -37,15 +37,15 @@ Future<void> UpdateRecords(
   };
   
   // Update record using centralized service
-  bool success = await firebaseService.updateRecord(selectedSubject, selectedSubjectCode, lectureNo, updateData);
+  bool success = await firebaseService.updateRecord(selectedCategory, selectedCategoryCode, lectureNo, updateData);
   if (!success) {
     throw Exception('Failed to update record');
   }
 }
 
 Future<void> moveToDeletedData(
-    String selectedSubject,
-    String selectedSubjectCode,
+    String selectedCategory,
+    String selectedCategoryCode,
     String lectureNo,
     Map<String, dynamic> lectureData,
 ) async {
@@ -53,15 +53,15 @@ Future<void> moveToDeletedData(
   final firebaseService = FirebaseDatabaseService();
   
   // Move to deleted data using centralized service
-  bool success = await firebaseService.moveToDeletedData(selectedSubject, selectedSubjectCode, lectureNo, lectureData);
+  bool success = await firebaseService.moveToDeletedData(selectedCategory, selectedCategoryCode, lectureNo, lectureData);
   if (!success) {
     throw Exception('Failed to move record to deleted data');
   }
 }
 
 Future<void> UpdateRecordsRevision(
-    String selectedSubject,
-    String selectedSubjectCode,
+    String selectedCategory,
+    String selectedCategoryCode,
     String lectureNo,
     String dateRevised,
     String description,
@@ -90,7 +90,7 @@ Future<void> UpdateRecordsRevision(
   };
   
   // Update record using centralized service
-  bool success = await firebaseService.updateRecord(selectedSubject, selectedSubjectCode, lectureNo, updateData);
+  bool success = await firebaseService.updateRecord(selectedCategory, selectedCategoryCode, lectureNo, updateData);
   if (!success) {
     throw Exception('Failed to update record revision');
   }

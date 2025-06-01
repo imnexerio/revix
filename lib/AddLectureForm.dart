@@ -24,15 +24,15 @@ class _AddLectureFormState extends State<AddLectureForm> {
   final TextEditingController _scheduleddateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  String _selectedSubject = 'DEFAULT_VALUE';
-  String _selectedSubjectCode = '';
+  String _selectedCategory = 'DEFAULT_VALUE';
+  String _selectedCategoryCode = '';
   String _lectureType = 'Lectures';
   String _lectureNo = '';
   String _description = '';
   String _revisionFrequency = 'Default';
   String _duration = 'Forever';
   List<String> _subjects = [];
-  Map<String, List<String>> _subjectCodes = {};
+  Map<String, List<String>> _subCategories = {};
   String dateScheduled = '';
   String todayDate = '';
   int completion_counts = 0;
@@ -47,18 +47,18 @@ class _AddLectureFormState extends State<AddLectureForm> {
   // Custom frequency parameters
   Map<String, dynamic> _customFrequencyParams = {};
 
-  bool _showAddNewSubject = false;
-  bool _showAddNewSubjectCode_ = false;
+  bool _showAddNewCategory = false;
+  bool _showAddNewCategoryCode_ = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSubjectsAndCodes();
+    _loadCategoriesAndSubCategories();
     _setInitialDate();
     _setScheduledDate();
     _timeController.text = 'All Day';
   }
-  Future<void> _loadSubjectsAndCodes() async {
+  Future<void> _loadCategoriesAndSubCategories() async {
     try {
       // Check if user is in guest mode
       if (await GuestAuthService.isGuestMode()) {
@@ -71,61 +71,61 @@ class _AddLectureFormState extends State<AddLectureForm> {
         if (rawData != null && rawData is Map) {
           Map<String, dynamic> data = Map<String, dynamic>.from(rawData);
           
-          // Extract subjects and subject codes from local data
+          // Extract categories and sub categories from local data
           List<String> subjects = [];
-          Map<String, List<String>> subjectCodes = {};
+          Map<String, List<String>> subCategories = {};
           
           for (String subject in data.keys) {
             subjects.add(subject);
-            subjectCodes[subject] = [];
+            subCategories[subject] = [];
             
             if (data[subject] is Map) {
-              Map<String, dynamic> subjectData = Map<String, dynamic>.from(data[subject]);
-              for (String subjectCode in subjectData.keys) {
-                subjectCodes[subject]!.add(subjectCode);
+              Map<String, dynamic> categoryData = Map<String, dynamic>.from(data[subject]);
+              for (String subCategory in categoryData.keys) {
+                subCategories[subject]!.add(subCategory);
               }
             }
           }
           
           setState(() {
             _subjects = subjects;
-            _subjectCodes = subjectCodes;
+            _subCategories = subCategories;
             
             // Set appropriate selection
             if (_subjects.isNotEmpty) {
-              _selectedSubject = _subjects[0];
+              _selectedCategory = _subjects[0];
             } else {
-              _selectedSubject = 'DEFAULT_VALUE';
+              _selectedCategory = 'DEFAULT_VALUE';
             }
           });
         } else {
           // Initialize empty data for new guest users
           setState(() {
             _subjects = [];
-            _subjectCodes = {};
-            _selectedSubject = 'DEFAULT_VALUE';
+            _subCategories = {};
+            _selectedCategory = 'DEFAULT_VALUE';
           });
         }
       } else {
         // Use Firebase for authenticated users (original code)
         // Get the singleton instance
-        final provider = SubjectDataProvider();
+        final provider = categoryDataProvider();
 
         // First check if cached data is available
         Map<String, dynamic>? data = provider.currentData;
 
-        data ??= await provider.fetchSubjectsAndCodes();
+        data ??= await provider.fetchCategoriesAndSubCategories();
 
         // Update state with the retrieved data
         setState(() {
           _subjects = data!['subjects'];
-          _subjectCodes = data['subjectCodes'];
+          _subCategories = data['subCategories'];
 
           // Set appropriate selection
           if (_subjects.isNotEmpty) {
-            _selectedSubject = _subjects[0];
+            _selectedCategory = _subjects[0];
           } else {
-            _selectedSubject = 'DEFAULT_VALUE';
+            _selectedCategory = 'DEFAULT_VALUE';
           }
         });
       }
@@ -136,7 +136,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     } catch (e) {
       customSnackBar_error(
         context: context,
-        message: 'Error loading subjects and codes: $e',
+        message: 'Error loading categories and sub categories: $e',
       );
     }
   }
@@ -190,7 +190,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         };
 
         // Save to local database
-        bool success = await localDb.saveRecord(_selectedSubject, _selectedSubjectCode, _lectureNo, recordData);
+        bool success = await localDb.saveRecord(_selectedCategory, _selectedCategoryCode, _lectureNo, recordData);
         
         if (success) {
           customSnackBar(
@@ -245,7 +245,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         };
 
         // Save record using centralized service
-        bool success = await firebaseService.saveRecord(_selectedSubject, _selectedSubjectCode, _lectureNo, recordData);
+        bool success = await firebaseService.saveRecord(_selectedCategory, _selectedCategoryCode, _lectureNo, recordData);
         
         if (!success) {
           throw Exception('Failed to save record to Firebase');
@@ -448,8 +448,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: DropdownButtonFormField<String>(
-                        value: _selectedSubject == 'DEFAULT_VALUE' && _subjects.isNotEmpty ? _subjects[0] :
-                        (_subjects.contains(_selectedSubject) ? _selectedSubject : null),
+                        value: _selectedCategory == 'DEFAULT_VALUE' && _subjects.isNotEmpty ? _subjects[0] :
+                        (_subjects.contains(_selectedCategory) ? _selectedCategory : null),
                         decoration: const InputDecoration(
                           labelText: 'Category',
                           border: InputBorder.none,
@@ -469,11 +469,11 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         onChanged: (newValue) {
                           setState(() {
                             if (newValue == "Add New Category") {
-                              _showAddNewSubject = true;
+                              _showAddNewCategory = true;
                             } else {
-                              _selectedSubject = newValue!;
-                              _selectedSubjectCode = '';
-                              _showAddNewSubject = false;
+                              _selectedCategory = newValue!;
+                              _selectedCategoryCode = '';
+                              _showAddNewCategory = false;
                             }
                           });
                         },
@@ -481,7 +481,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                     ),
 
                     // New Category input field (conditionally shown)
-                    if (_showAddNewSubject)
+                    if (_showAddNewCategory)
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -499,7 +499,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 ),
                                 onSaved: (value) {
-                                  _selectedSubject = value!;
+                                  _selectedCategory = value!;
                                 },
                               ),
                             ),
@@ -508,7 +508,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
 
                     // New Sub Category input field (when adding new Category)
-                    if (_showAddNewSubject)
+                    if (_showAddNewCategory)
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -526,7 +526,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 ),
                                 onSaved: (value) {
-                                  _selectedSubjectCode = value!;
+                                  _selectedCategoryCode = value!;
                                 },
                               ),
                             ),
@@ -535,7 +535,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
 
                     // Sub Category dropdown (when category is selected)
-                    if (_selectedSubject != 'DEFAULT_VALUE' && !_showAddNewSubject)
+                    if (_selectedCategory != 'DEFAULT_VALUE' && !_showAddNewCategory)
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -544,8 +544,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: _subjectCodes[_selectedSubject]?.contains(_selectedSubjectCode) ?? false
-                              ? _selectedSubjectCode : null,
+                          value: _subCategories[_selectedCategory]?.contains(_selectedCategoryCode) ?? false
+                              ? _selectedCategoryCode : null,
                           decoration: const InputDecoration(
                             labelText: 'Sub Category',
                             border: InputBorder.none,
@@ -553,7 +553,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           ),
                           isExpanded: true,
                           items: [
-                            ...(_subjectCodes[_selectedSubject] ?? []).map((code) => DropdownMenuItem(
+                            ...(_subCategories[_selectedCategory] ?? []).map((code) => DropdownMenuItem(
                               value: code,
                               child: Text(code),
                             )).toList(),
@@ -565,9 +565,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           onChanged: (newValue) {
                             setState(() {
                               if (newValue == "Add New Sub Category") {
-                                _showAddNewSubjectCode_ = true;
+                                _showAddNewCategoryCode_ = true;
                               } else {
-                                _selectedSubjectCode = newValue!;
+                                _selectedCategoryCode = newValue!;
                               }
                             });
                           },
@@ -575,7 +575,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
 
                     // New Sub Category input field (when adding to existing category)
-                    if (_showAddNewSubjectCode_)
+                    if (_showAddNewCategoryCode_)
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -593,7 +593,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 ),
                                 onSaved: (value) {
-                                  _selectedSubjectCode = value!;
+                                  _selectedCategoryCode = value!;
                                 },
                               ),
                             ),

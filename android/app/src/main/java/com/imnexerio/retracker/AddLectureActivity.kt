@@ -45,9 +45,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
     // Data
     private var subjects = mutableListOf<String>()
-    private var subjectCodes = mutableMapOf<String, List<String>>()
-    private var selectedSubject = "DEFAULT_VALUE"
-    private var selectedSubjectCode = ""
+    private var subCategories = mutableMapOf<String, List<String>>()
+    private var selectedCategory = "DEFAULT_VALUE"
+    private var selectedCategoryCode = ""
     private var lectureType = "Lectures"
     private var revisionFrequency = "Default"
     private var todayDate = ""
@@ -157,7 +157,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 updateRevisionFrequencySpinner()
 
                 // Now load subjects
-                loadSubjectsAndCodes()
+                loadCategoriesAndSubCategories()
             }
         }
     }
@@ -419,7 +419,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 } else {
                     addNewCategoryLayout.visibility = View.GONE
                     subCategorySpinner.visibility = View.VISIBLE
-                    selectedSubject = selectedItem
+                    selectedCategory = selectedItem
                     updateSubCategorySpinner()
                 }
             }
@@ -437,7 +437,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     addNewSubCategoryLayout.visibility = View.VISIBLE
                 } else {
                     addNewSubCategoryLayout.visibility = View.GONE
-                    selectedSubjectCode = selectedItem
+                    selectedCategoryCode = selectedItem
                 }
             }
 
@@ -585,7 +585,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    private fun loadSubjectsAndCodes() {
+    private fun loadCategoriesAndSubCategories() {
         val user = auth.currentUser
         if (user == null) {
             Toast.makeText(this, "Please login to continue", Toast.LENGTH_SHORT).show()
@@ -599,20 +599,20 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         dataRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 subjects.clear()
-                subjectCodes.clear()
+                subCategories.clear()
 
                 // Add subjects
                 for (subjectSnapshot in snapshot.children) {
                     val subject = subjectSnapshot.key ?: continue
                     subjects.add(subject)
 
-                    // Add subject codes
+                    // Add sub categories
                     val codesList = mutableListOf<String>()
                     for (codeSnapshot in subjectSnapshot.children) {
                         val code = codeSnapshot.key ?: continue
                         codesList.add(code)
                     }
-                    subjectCodes[subject] = codesList
+                    subCategories[subject] = codesList
                 }
 
                 // Update the spinners
@@ -620,7 +620,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
                 // Set initial selection
                 if (subjects.isNotEmpty()) {
-                    selectedSubject = subjects[0]
+                    selectedCategory = subjects[0]
                     updateSubCategorySpinner()
                 }
 
@@ -648,7 +648,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     }
 
     private fun updateSubCategorySpinner() {
-        val codes = subjectCodes[selectedSubject] ?: listOf()
+        val codes = subCategories[selectedCategory] ?: listOf()
         val spinnerItems = codes + "Add New Sub Category"
         val adapter = ArrayAdapter(
             this,
@@ -659,7 +659,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         subCategorySpinner.adapter = adapter
 
         if (codes.isNotEmpty()) {
-            selectedSubjectCode = codes[0]
+            selectedCategoryCode = codes[0]
         }
     }
 
@@ -823,8 +823,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
         // Handle new category input
         if (addNewCategoryLayout.visibility == View.VISIBLE) {
-            selectedSubject = newCategoryEditText.text.toString().trim()
-            if (selectedSubject.isEmpty()) {
+            selectedCategory = newCategoryEditText.text.toString().trim()
+            if (selectedCategory.isEmpty()) {
                 Toast.makeText(this, "Please enter a category name", Toast.LENGTH_SHORT).show()
                 return
             }
@@ -832,8 +832,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
         // Handle new subcategory input
         if (addNewSubCategoryLayout.visibility == View.VISIBLE) {
-            selectedSubjectCode = newSubCategoryEditText.text.toString().trim()
-            if (selectedSubjectCode.isEmpty()) {
+            selectedCategoryCode = newSubCategoryEditText.text.toString().trim()
+            if (selectedCategoryCode.isEmpty()) {
                 Toast.makeText(this, "Please enter a subcategory name", Toast.LENGTH_SHORT).show()
                 return
             }
@@ -852,8 +852,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
             val uid = user.uid
             val ref = database.getReference("users/$uid/user_data")
-                .child(selectedSubject)
-                .child(selectedSubjectCode)
+                .child(selectedCategory)
+                .child(selectedCategoryCode)
                 .child(title)
 
             // Handle date values based on checkboxes

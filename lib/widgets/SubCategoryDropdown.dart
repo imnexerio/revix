@@ -1,15 +1,15 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-class SubjectCodeDropdown extends StatelessWidget {
-  final Map<String, List<String>> subjectCodes;
-  final String selectedSubject;
-  final String selectedSubjectCode;
+class SubCategoryDropdown extends StatelessWidget {
+  final Map<String, List<String>> subCategories;
+  final String selectedCategory;
+  final String selectedCategoryCode;
   final ValueChanged<String?> onChanged;
 
-  const SubjectCodeDropdown({
-    required this.subjectCodes,
-    required this.selectedSubject,
-    required this.selectedSubjectCode,
+  const SubCategoryDropdown({
+    required this.subCategories,
+    required this.selectedCategory,
+    required this.selectedCategoryCode,
     required this.onChanged,
   });
 
@@ -24,16 +24,16 @@ class SubjectCodeDropdown extends StatelessWidget {
       ),
       child: DropdownButtonFormField<String>(
         decoration: const InputDecoration(
-          labelText: 'Select Subject Code',
+          labelText: 'Select Sub Category',
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
-        value: selectedSubjectCode.isEmpty ? null : selectedSubjectCode,
+        value: selectedCategoryCode.isEmpty ? null : selectedCategoryCode,
         onChanged: onChanged,
-        items: selectedSubject.isEmpty
+        items: selectedCategory.isEmpty
             ? []
             : [
-                ...subjectCodes[selectedSubject]!.map<DropdownMenuItem<String>>((String value) {
+                ...subCategories[selectedCategory]!.map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),

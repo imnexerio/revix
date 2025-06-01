@@ -1,23 +1,23 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
 import 'LectureBar.dart';
 
 class CodeBar extends StatefulWidget {
-  final String selectedSubject;
+  final String selectedCategory;
 
-  CodeBar({required this.selectedSubject});
+  CodeBar({required this.selectedCategory});
 
   @override
   _CodeBarState createState() => _CodeBarState();
 }
 
 class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
-  String? _selectedSubjectCode;
+  String? _selectedCategoryCode;
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
-  Stream<Map<String, dynamic>>? _subjectsStream;
-  Map<String, dynamic>? _subjectData;
+  Stream<Map<String, dynamic>>? _categoriesStream;
+  Map<String, dynamic>? _categoryData;
   bool _isLoading = true;
 
   @override
@@ -32,10 +32,10 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     );
 
     // Subscribe to the stream first
-    _subjectsStream = getSubjectsStream();
+    _categoriesStream = getCategoriesStream();
 
     // Then initialize data
-    _initializeSelectedSubjectCode();
+    _initializeSelectedCategoryCode();
   }
 
   @override
@@ -44,25 +44,25 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  Future<void> _initializeSelectedSubjectCode() async {
+  Future<void> _initializeSelectedCategoryCode() async {
     try {
-      final data = await fetchSubjectsAndCodes();
+      final data = await fetchCategoriesAndSubCategories();
 
       setState(() {
-        _subjectData = data;
+        _categoryData = data;
         _isLoading = false;
 
         // Set the initial code for the selected subject
-        if (data['subjectCodes'].containsKey(widget.selectedSubject)) {
-          final codes = data['subjectCodes'][widget.selectedSubject] as List<dynamic>;
+        if (data['subCategories'].containsKey(widget.selectedCategory)) {
+          final codes = data['subCategories'][widget.selectedCategory] as List<dynamic>;
           if (codes.isNotEmpty) {
-            _selectedSubjectCode = codes.first.toString();
+            _selectedCategoryCode = codes.first.toString();
             _controller.forward();
           }
         }
       });
     } catch (e) {
-      // print('Error initializing subject code: $e');
+      // print('Error initializing Sub Category: $e');
       setState(() {
         _isLoading = false;
       });
@@ -74,21 +74,21 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     super.didUpdateWidget(oldWidget);
 
     // If the subject has changed, we need to update the selected code
-    if (oldWidget.selectedSubject != widget.selectedSubject) {
+    if (oldWidget.selectedCategory != widget.selectedCategory) {
       // Reset the selected code
       setState(() {
-        _selectedSubjectCode = null;
+        _selectedCategoryCode = null;
       });
 
       // Check if we already have data loaded
-      if (_subjectData != null &&
-          _subjectData!['subjectCodes'] != null &&
-          _subjectData!['subjectCodes'][widget.selectedSubject] != null) {
+      if (_categoryData != null &&
+          _categoryData!['subCategories'] != null &&
+          _categoryData!['subCategories'][widget.selectedCategory] != null) {
 
-        final codes = _subjectData!['subjectCodes'][widget.selectedSubject] as List<dynamic>;
+        final codes = _categoryData!['subCategories'][widget.selectedCategory] as List<dynamic>;
         if (codes.isNotEmpty) {
           setState(() {
-            _selectedSubjectCode = codes.first.toString();
+            _selectedCategoryCode = codes.first.toString();
           });
           _controller.reset();
           _controller.forward();
@@ -108,8 +108,8 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
         ),
       )
           : StreamBuilder<Map<String, dynamic>>(
-        stream: _subjectsStream,
-        initialData: _subjectData,
+        stream: _categoriesStream,
+        initialData: _categoryData,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return Center(
@@ -137,8 +137,8 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
               ),
             );
           } else if (!snapshot.hasData ||
-              !snapshot.data!['subjectCodes'].containsKey(widget.selectedSubject) ||
-              (snapshot.data!['subjectCodes'][widget.selectedSubject] as List).isEmpty) {
+              !snapshot.data!['subCategories'].containsKey(widget.selectedCategory) ||
+              (snapshot.data!['subCategories'][widget.selectedCategory] as List).isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -146,7 +146,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                   Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'No subject code found for ${widget.selectedSubject}',
+                    'No sub category found for ${widget.selectedCategory}',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -159,27 +159,27 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
           }
 
           // Prepare list of codes for the selected subject
-          final codes = snapshot.data!['subjectCodes'][widget.selectedSubject] as List<dynamic>;
+          final codes = snapshot.data!['subCategories'][widget.selectedCategory] as List<dynamic>;
 
           // If we have data but no selected subject, select the first one
-          if (_selectedSubjectCode == null && codes.isNotEmpty) {
-            _selectedSubjectCode = codes.first.toString();
+          if (_selectedCategoryCode == null && codes.isNotEmpty) {
+            _selectedCategoryCode = codes.first.toString();
             // Don't call setState here as it can cause rebuild loops
           }
 
           // If selected subject no longer exists in the updated list
-          if (_selectedSubjectCode != null && !codes.contains(_selectedSubjectCode)) {
+          if (_selectedCategoryCode != null && !codes.contains(_selectedCategoryCode)) {
             if (codes.isNotEmpty) {
-              _selectedSubjectCode = codes.first.toString();
+              _selectedCategoryCode = codes.first.toString();
               // Don't call setState here as it can cause rebuild loops
             } else {
-              _selectedSubjectCode = null;
+              _selectedCategoryCode = null;
             }
           }
 
           return Stack(
             children: [
-              if (_selectedSubjectCode != null)
+              if (_selectedCategoryCode != null)
                 Positioned.fill(
                   child: Padding(
                     padding: EdgeInsets.only(
@@ -190,8 +190,8 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                       child: FadeTransition(
                         opacity: _slideAnimation,
                         child: LectureBar(
-                          selectedSubject: widget.selectedSubject,
-                          selectedSubjectCode: _selectedSubjectCode!,
+                          selectedCategory: widget.selectedCategory,
+                          selectedCategoryCode: _selectedCategoryCode!,
                         ),
                       ),
                     ),
@@ -219,7 +219,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                       itemCount: codes.length,
                       itemBuilder: (context, index) {
                         final code = codes[index].toString();
-                        final isSelected = _selectedSubjectCode == code;
+                        final isSelected = _selectedCategoryCode == code;
 
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -229,7 +229,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                             child: InkWell(
                               onTap: () {
                                 setState(() {
-                                  _selectedSubjectCode = code;
+                                  _selectedCategoryCode = code;
                                 });
                                 _controller.reset();
                                 _controller.forward();

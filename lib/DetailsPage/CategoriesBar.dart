@@ -1,19 +1,19 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import 'CodeBar.dart';
 
-class SubjectsBar extends StatefulWidget {
+class CategoriesBar extends StatefulWidget {
   @override
-  _SubjectsBarState createState() => _SubjectsBarState();
+  _CategoriesBarState createState() => _CategoriesBarState();
 }
 
-class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStateMixin {
-  String? _selectedSubject;
+class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProviderStateMixin {
+  String? _selectedCategory;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
   // Stream subscription
-  Stream<Map<String, dynamic>>? _subjectsStream;
+  Stream<Map<String, dynamic>>? _categoriesStream;
   Map<String, dynamic>? _currentData;
 
   @override
@@ -28,10 +28,10 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
     );
 
     // Initialize with current data if available
-    _initializeSelectedSubject();
+    _initializeSelectedCategory();
 
     // Subscribe to the stream
-    _subjectsStream = getSubjectsStream();
+    _categoriesStream = getCategoriesStream();
 
     _controller.forward();
   }
@@ -42,12 +42,12 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
     super.dispose();
   }
 
-  Future<void> _initializeSelectedSubject() async {
+  Future<void> _initializeSelectedCategory() async {
     try {
-      final data = await fetchSubjectsAndCodes();
+      final data = await fetchCategoriesAndSubCategories();
       if (data['subjects'].isNotEmpty) {
         setState(() {
-          _selectedSubject = data['subjects'].first;
+          _selectedCategory = data['subjects'].first;
           _currentData = data;
         });
       }
@@ -61,7 +61,7 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
     return Scaffold(
       body: StreamBuilder<Map<String, dynamic>>(
         // Use the stream instead of future
-        stream: _subjectsStream,
+        stream: _categoriesStream,
         initialData: _currentData,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
@@ -97,7 +97,7 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
                   Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'No subjects found',
+                    'No categories found',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -112,26 +112,26 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
           final subjects = snapshot.data!['subjects'];
 
           // If we have data but no selected subject, select the first one
-          if (_selectedSubject == null && subjects.isNotEmpty) {
-            _selectedSubject = subjects.first;
+          if (_selectedCategory == null && subjects.isNotEmpty) {
+            _selectedCategory = subjects.first;
           }
 
           // If selected subject no longer exists in the updated list
-          if (_selectedSubject != null && !subjects.contains(_selectedSubject)) {
+          if (_selectedCategory != null && !subjects.contains(_selectedCategory)) {
             if (subjects.isNotEmpty) {
-              _selectedSubject = subjects.first;
+              _selectedCategory = subjects.first;
             } else {
-              _selectedSubject = null;
+              _selectedCategory = null;
             }
           }
 
           return Column(
             children: [
-              if (_selectedSubject != null)
+              if (_selectedCategory != null)
                 Expanded(
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: CodeBar(selectedSubject: _selectedSubject!),
+                    child: CodeBar(selectedCategory: _selectedCategory!),
                   ),
                 ),
               Container(
@@ -154,7 +154,7 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
                     itemCount: subjects.length,
                     itemBuilder: (context, index) {
                       final subject = subjects[index];
-                      final isSelected = _selectedSubject == subject;
+                      final isSelected = _selectedCategory == subject;
 
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -164,7 +164,7 @@ class _SubjectsBarState extends State<SubjectsBar> with SingleTickerProviderStat
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _selectedSubject = subject;
+                                _selectedCategory = subject;
                               });
                               _controller.reset();
                               _controller.forward();

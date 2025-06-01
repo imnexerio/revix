@@ -1,9 +1,9 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'PieChartLegend.dart';
 import 'SubjectDistributionPlot.dart';
 
-Widget buildSubjectDistributionCard(Map<String,
+Widget buildCategoryDistributionCard(Map<String,
     int> subjectDistribution,
     double cardPadding,
     BuildContext context,

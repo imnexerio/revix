@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-class SubjectDropdown extends StatelessWidget {
+class CategoryDropdown extends StatelessWidget {
   final List<String> subjects;
-  final String selectedSubject;
+  final String selectedCategory;
   final ValueChanged<String?> onChanged;
 
-  const SubjectDropdown({
+  const CategoryDropdown({
     required this.subjects,
-    required this.selectedSubject,
+    required this.selectedCategory,
     required this.onChanged,
   });
 
@@ -26,7 +26,7 @@ class SubjectDropdown extends StatelessWidget {
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
-        value: selectedSubject.isEmpty ? null : selectedSubject,
+        value: selectedCategory.isEmpty ? null : selectedCategory,
         onChanged: onChanged,
         items: [
           ...subjects.map<DropdownMenuItem<String>>((String value) {

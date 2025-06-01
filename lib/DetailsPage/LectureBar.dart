@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../widgets/LectureDetailsModal.dart';
 import 'ScheduleTableDetailP.dart';
 
 class LectureBar extends StatefulWidget {
-  final String selectedSubject;
-  final String selectedSubjectCode;
+  final String selectedCategory;
+  final String selectedCategoryCode;
 
   LectureBar({
-    required this.selectedSubject,
-    required this.selectedSubjectCode,
+    required this.selectedCategory,
+    required this.selectedCategoryCode,
   });
 
   @override
@@ -35,8 +35,8 @@ class _LectureBarState extends State<LectureBar> {
   @override
   void didUpdateWidget(LectureBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedSubject != widget.selectedSubject ||
-        oldWidget.selectedSubjectCode != widget.selectedSubjectCode) {
+    if (oldWidget.selectedCategory != widget.selectedCategory ||
+        oldWidget.selectedCategoryCode != widget.selectedCategoryCode) {
       // Reapply filter on the already-cached records.
       _applyFilter();
     }
@@ -61,8 +61,8 @@ class _LectureBarState extends State<LectureBar> {
   void _applyFilter() {
     List<MapEntry<String, dynamic>> filteredData = _allRecords
         .where((record) =>
-    record['subject'] == widget.selectedSubject &&
-        record['subject_code'] == widget.selectedSubjectCode)
+    record['subject'] == widget.selectedCategory &&
+        record['subject_code'] == widget.selectedCategoryCode)
         .map<MapEntry<String, dynamic>>((record) =>
         MapEntry(record['lecture_no'] as String, record['details']))
         .toList();
@@ -95,8 +95,8 @@ class _LectureBarState extends State<LectureBar> {
         return LectureDetailsModal(
           lectureNo: lectureNo,
           details: details,
-          selectedSubject: widget.selectedSubject,
-          selectedSubjectCode: widget.selectedSubjectCode,
+          selectedCategory: widget.selectedCategory,
+          selectedCategoryCode: widget.selectedCategoryCode,
         );
       },
     );
@@ -115,7 +115,7 @@ class _LectureBarState extends State<LectureBar> {
         builder: (context, constraints) {
           return ScheduleTableDetailP(
             initialRecords: formattedRecords,
-            title: '${widget.selectedSubject} - ${widget.selectedSubjectCode}',
+            title: '${widget.selectedCategory} - ${widget.selectedCategoryCode}',
             onSelect: (context, record) {
               String lectureNo = record['lecture_no'];
               _showLectureDetails(context, lectureNo, record);

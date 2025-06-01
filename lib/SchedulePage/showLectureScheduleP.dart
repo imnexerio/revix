@@ -193,7 +193,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                           context: context,
                           details: details,
                           subject: details['subject'],
-                          subjectCode: details['subject_code'],
+                          subCategory: details['subject_code'],
                           lectureNo: details['lecture_no'],
                           description: description,
                           useRevisionUpdate: true,

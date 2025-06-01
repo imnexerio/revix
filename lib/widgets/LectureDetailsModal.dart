@@ -13,14 +13,14 @@ import 'RevisionFrequencyDropdown.dart';
 class LectureDetailsModal extends StatefulWidget {
   final String lectureNo;
   final Map<String, dynamic> details;
-  final String selectedSubject;
-  final String selectedSubjectCode;
+  final String selectedCategory;
+  final String selectedCategoryCode;
 
   LectureDetailsModal({
     required this.lectureNo,
     required this.details,
-    required this.selectedSubject,
-    required this.selectedSubjectCode,
+    required this.selectedCategory,
+    required this.selectedCategoryCode,
   });
 
   @override
@@ -144,7 +144,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${widget.selectedSubject} Â· ${widget.selectedSubjectCode} Â· ${widget.lectureNo}',
+                        '${widget.selectedCategory} Â· ${widget.selectedCategoryCode} Â· ${widget.lectureNo}',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -254,8 +254,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       onPressed: () => MarkAsDoneService.markAsDone(
                         context: context,
                         details: widget.details,
-                        subject: widget.selectedSubject,
-                        subjectCode: widget.selectedSubjectCode,
+                        subject: widget.selectedCategory,
+                        subCategory: widget.selectedCategoryCode,
                         lectureNo: widget.lectureNo,
                         durationData: durationData,
                         isEnabled: isEnabled,
@@ -322,8 +322,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           }
 
                           await UpdateRecords(
-                            widget.selectedSubject,
-                            widget.selectedSubjectCode,
+                            widget.selectedCategory,
+                            widget.selectedCategoryCode,
                             widget.lectureNo,
                             widget.details['date_updated'],
                             widget.details['description'],
@@ -345,7 +345,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                             customSnackBar(
                               context: context,
-                              message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
+                              message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
                           );
                         } catch (e) {
                           if (Navigator.canPop(context)) {

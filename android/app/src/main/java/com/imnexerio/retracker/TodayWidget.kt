@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+﻿package com.imnexerio.retracker
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -84,13 +84,13 @@ class TodayWidget : AppWidgetProvider() {
             ACTION_ITEM_CLICK -> {
                 // Extract record details from intent
                 val subject = intent.getStringExtra("subject") ?: ""
-                val subjectCode = intent.getStringExtra("subject_code") ?: ""
+                val subCategory = intent.getStringExtra("subject_code") ?: ""
                 val lectureNo = intent.getStringExtra("lecture_no") ?: ""
 
                 // NEW CODE: Mark this item as being processed
                 val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
                 val processingItems = prefs.getStringSet(PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
-                val itemKey = "${subject}_${subjectCode}_${lectureNo}"
+                val itemKey = "${subject}_${subCategory}_${lectureNo}"
                 val newProcessingItems = processingItems.toMutableSet()
                 newProcessingItems.add(itemKey)
                 prefs.edit().putStringSet(PREF_PROCESSING_ITEMS, newProcessingItems).apply()
@@ -105,7 +105,7 @@ class TodayWidget : AppWidgetProvider() {
                 // Start the service to handle the item click
                 val clickIntent = Intent(context, RecordUpdateService::class.java)
                 clickIntent.putExtra("subject", subject)
-                clickIntent.putExtra("subject_code", subjectCode)
+                clickIntent.putExtra("subject_code", subCategory)
                 clickIntent.putExtra("lecture_no", lectureNo)
 
                 // Pass all additional data from the intent
