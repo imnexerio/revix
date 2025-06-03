@@ -1,13 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:retracker/Utils/DataMigrationService.dart';
 import 'package:retracker/Utils/GuestAuthService.dart';
-// Web-specific imports - only imported when compiled for web
-import 'dart:html' as html show AnchorElement, FileReader, File, FileUploadInputElement, Blob, Url;
+
+// Conditional imports for platform-specific functionality
+import 'web_file_helper.dart' if (dart.library.io) 'mobile_file_helper.dart' as file_helper;
 
 /// Widget for managing guest user data with options to:
 /// 1. Create a new account and automatically upload data to Firebase
@@ -45,76 +44,26 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       });
 
       if (data != null) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final filename = 'retracker_data_$timestamp.json';
+        
         if (kIsWeb) {
-          await _downloadDataOnWeb(data);
+          await file_helper.FileHelper.downloadFile(data, filename);
+          _showSnackBar('Data exported successfully! Check your Downloads folder for $filename');
         } else {
-          await _saveDataToFile(data);
+          final filePath = await file_helper.FileHelper.saveToFile(data, filename);
+          if (filePath != null) {
+            await _showExportSuccessDialog(filePath);
+          }
         }
       } else {
         _showSnackBar('No data to export');
       }
     } catch (e) {
       setState(() {
-        _isExporting = false;
-      });
+        _isExporting = false;      });
       _showSnackBar('Error exporting data: $e');
-    }
-  }
-
-  Future<void> _downloadDataOnWeb(String data) async {
-    try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filename = 'retracker_data_$timestamp.json';
-      
-      final bytes = utf8.encode(data);
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', filename)
-        ..click();
-      
-      html.Url.revokeObjectUrl(url);
-      
-      _showSnackBar('Data exported successfully! Check your Downloads folder for $filename');
-    } catch (e) {
-      _showSnackBar('Error downloading file: $e');
-    }
-  }
-  Future<void> _saveDataToFile(String data) async {
-    try {
-      Directory? directory;
-      
-      if (Platform.isAndroid) {
-        // For Android, use the Downloads directory
-        directory = Directory('/storage/emulated/0/Download');
-        if (!await directory.exists()) {
-          directory = await getExternalStorageDirectory();
-        }
-      } else if (Platform.isIOS) {
-        // For iOS, use the Documents directory
-        directory = await getApplicationDocumentsDirectory();
-      } else {
-        // For other platforms (Windows, macOS, Linux), use Downloads
-        directory = await getDownloadsDirectory();
-      }
-
-      if (directory == null) {
-        _showSnackBar('Unable to access storage directory');
-        return;
-      }
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filename = 'retracker_data_$timestamp.json';
-      final file = File('${directory.path}/$filename');
-      
-      await file.writeAsString(data);
-      
-      await _showExportSuccessDialog(file.path);
-    } catch (e) {
-      _showSnackBar('Error saving file: $e');
-    }
-  }
+    }  }
 
   Future<void> _showExportSuccessDialog(String filePath) async {
     return showDialog(
@@ -180,7 +129,9 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         ],
       ),
     );
-  }  Future<void> _showImportDialog() async {
+  }
+
+  Future<void> _showImportDialog() async {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -192,8 +143,7 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
               'Choose how you want to import your data:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            if (kIsWeb) ...[
+            const SizedBox(height: 16),            if (kIsWeb) ...[
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -254,31 +204,25 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       _showSnackBar('Error picking file: $e');
     }
   }
-
   Future<void> _pickFileOnWeb() async {
-    try {
-      final input = html.FileUploadInputElement()
-        ..accept = '.json'
-        ..click();
+    setState(() {
+      _isImporting = true;
+    });
 
-      await input.onChange.first;
+    try {
+      final content = await file_helper.FileHelper.pickAndReadFile();
       
-      if (input.files?.isNotEmpty ?? false) {
-        final file = input.files!.first;
-        final reader = html.FileReader();
-        
-        reader.onLoadEnd.listen((e) async {
-          final content = reader.result as String;
-          await _importGuestData(content);
-        });
-        
-        reader.onError.listen((e) {
-          _showSnackBar('Error reading file');
-        });
-        
-        reader.readAsText(file);
+      setState(() {
+        _isImporting = false;
+      });
+      
+      if (content != null) {
+        await _importGuestData(content);
       }
     } catch (e) {
+      setState(() {
+        _isImporting = false;
+      });
       _showSnackBar('Error picking file: $e');
     }
   }
@@ -299,13 +243,7 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
             const SizedBox(height: 12),            TextField(
               controller: _importController,
               decoration: InputDecoration(
-                hintText: Platform.isAndroid 
-                    ? '/storage/emulated/0/Download/retracker_data_xxxxx.json'
-                    : Platform.isIOS
-                        ? 'Documents/retracker_data_xxxxx.json'
-                        : Platform.isWindows
-                            ? 'C:\\Users\\YourName\\Downloads\\retracker_data_xxxxx.json'
-                            : '/Users/YourName/Downloads/retracker_data_xxxxx.json',
+                hintText: file_helper.FileHelper.getHintText(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -345,45 +283,41 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       ),
     );
   }
-
   Future<void> _importFromFile(String filePath) async {
     setState(() {
       _isImporting = true;
     });
 
     try {
-      final file = File(filePath);
+      final data = await file_helper.FileHelper.readFromFile(filePath);
       
-      if (!await file.exists()) {
-        _showSnackBar('File not found: $filePath');
+      if (data != null) {
+        // Validate JSON format
+        try {
+          json.decode(data);
+        } catch (e) {
+          _showSnackBar('Invalid JSON format in file');
+          setState(() {
+            _isImporting = false;
+          });
+          return;
+        }
+
+        final success = await DataMigrationService.importGuestData(data);
         setState(() {
           _isImporting = false;
         });
-        return;
-      }
 
-      final data = await file.readAsString();
-      
-      // Validate JSON format
-      try {
-        json.decode(data);
-      } catch (e) {
-        _showSnackBar('Invalid JSON format in file');
-        setState(() {
-          _isImporting = false;
-        });
-        return;
-      }
-
-      final success = await DataMigrationService.importGuestData(data);
-      setState(() {
-        _isImporting = false;
-      });
-
-      if (success) {
-        _showSnackBar('Data imported successfully from file');
+        if (success) {
+          _showSnackBar('Data imported successfully from file');
+        } else {
+          _showSnackBar('Failed to import data from file');
+        }
       } else {
-        _showSnackBar('Failed to import data from file');
+        setState(() {
+          _isImporting = false;
+        });
+        _showSnackBar('Could not read file');
       }
     } catch (e) {
       setState(() {
