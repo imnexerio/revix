@@ -44,14 +44,25 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       });
 
       if (data != null) {
+        // Format the JSON data with proper indentation
+        String formattedData;
+        try {
+          final jsonData = json.decode(data);
+          const encoder = JsonEncoder.withIndent('  '); // 2 spaces indentation
+          formattedData = encoder.convert(jsonData);
+        } catch (e) {
+          // If JSON parsing fails, use original data
+          formattedData = data;
+        }
+        
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final filename = 'retracker_data_$timestamp.json';
         
         if (kIsWeb) {
-          await file_helper.FileHelper.downloadFile(data, filename);
+          await file_helper.FileHelper.downloadFile(formattedData, filename);
           _showSnackBar('Data exported successfully! Check your Downloads folder for $filename');
         } else {
-          final filePath = await file_helper.FileHelper.saveToFile(data, filename);
+          final filePath = await file_helper.FileHelper.saveToFile(formattedData, filename);
           if (filePath != null) {
             await _showExportSuccessDialog(filePath);
           }
@@ -61,9 +72,11 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       }
     } catch (e) {
       setState(() {
-        _isExporting = false;      });
+        _isExporting = false;
+      });
       _showSnackBar('Error exporting data: $e');
-    }  }
+    }
+  }
 
   Future<void> _showExportSuccessDialog(String filePath) async {
     return showDialog(
