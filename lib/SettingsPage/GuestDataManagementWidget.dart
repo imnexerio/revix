@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:retracker/Utils/customSnackBar_error.dart';
 import 'package:retracker/Utils/DataMigrationService.dart';
 import 'package:retracker/Utils/GuestAuthService.dart';
 
@@ -32,7 +34,9 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
   void dispose() {
     _importController.dispose();
     super.dispose();
-  }  Future<void> _exportGuestData() async {
+  }
+  
+  Future<void> _exportGuestData() async {
     setState(() {
       _isExporting = true;
     });
@@ -60,7 +64,10 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         
         if (kIsWeb) {
           await file_helper.FileHelper.downloadFile(formattedData, filename);
-          _showSnackBar('Data exported successfully! Check your Downloads folder for $filename');
+          customSnackBar(
+            context: context,
+            message: 'Data exported successfully! Check your Downloads folder for $filename'
+          );
         } else {
           final filePath = await file_helper.FileHelper.saveToFile(formattedData, filename);
           if (filePath != null) {
@@ -68,13 +75,19 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
           }
         }
       } else {
-        _showSnackBar('No data to export');
+        customSnackBar_error(
+          context: context,
+          message: 'No data to export'
+        );
       }
     } catch (e) {
       setState(() {
         _isExporting = false;
       });
-      _showSnackBar('Error exporting data: $e');
+      customSnackBar_error(
+        context: context,
+        message: 'Error exporting data: $e'
+      );
     }
   }
 
@@ -131,7 +144,10 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: filePath));
-              _showSnackBar('File path copied to clipboard');
+              customSnackBar(
+                context: context,
+                message: 'File path copied to clipboard'
+              );
             },
             child: const Text('Copy Path'),
           ),
@@ -214,7 +230,10 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       // Create a simple file picker dialog for non-web platforms
       await _showFilePickerDialog();
     } catch (e) {
-      _showSnackBar('Error picking file: $e');
+      customSnackBar_error(
+        context: context,
+        message: 'Error picking file: $e'
+      );
     }
   }
   Future<void> _pickFileOnWeb() async {
@@ -228,15 +247,17 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       setState(() {
         _isImporting = false;
       });
-      
-      if (content != null) {
+        if (content != null) {
         await _importGuestData(content);
       }
     } catch (e) {
       setState(() {
         _isImporting = false;
       });
-      _showSnackBar('Error picking file: $e');
+      customSnackBar_error(
+        context: context,
+        message: 'Error picking file: $e'
+      );
     }
   }
 
@@ -281,9 +302,11 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
             child: const Text('Cancel'),
           ),
           FilledButton.icon(
-            onPressed: () async {
-              if (_importController.text.isEmpty) {
-                _showSnackBar('Please enter file path');
+            onPressed: () async {              if (_importController.text.isEmpty) {
+                customSnackBar_error(
+                  context: context,
+                  message: 'Please enter file path'
+                );
                 return;
               }
               Navigator.pop(context);
@@ -301,15 +324,16 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       _isImporting = true;
     });
 
-    try {
-      final data = await file_helper.FileHelper.readFromFile(filePath);
-      
+    try {      final data = await file_helper.FileHelper.readFromFile(filePath);
       if (data != null) {
         // Validate JSON format
         try {
           json.decode(data);
         } catch (e) {
-          _showSnackBar('Invalid JSON format in file');
+          customSnackBar_error(
+            context: context,
+            message: 'Invalid JSON format in file'
+          );
           setState(() {
             _isImporting = false;
           });
@@ -320,23 +344,34 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         setState(() {
           _isImporting = false;
         });
-
+        
         if (success) {
-          _showSnackBar('Data imported successfully from file');
+          customSnackBar(
+            context: context,
+            message: 'Data imported successfully from file'
+          );
         } else {
-          _showSnackBar('Failed to import data from file');
+          customSnackBar_error(
+            context: context,
+            message: 'Failed to import data from file'
+          );
         }
       } else {
         setState(() {
           _isImporting = false;
         });
-        _showSnackBar('Could not read file');
+        customSnackBar_error(
+          context: context,          message: 'Could not read file'
+        );
       }
     } catch (e) {
       setState(() {
         _isImporting = false;
       });
-      _showSnackBar('Error reading file: $e');
+      customSnackBar_error(
+        context: context,
+        message: 'Error reading file: $e'
+      );
     }
   }
 
@@ -374,9 +409,11 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
             child: const Text('Cancel'),
           ),
           FilledButton.icon(
-            onPressed: () async {
-              if (_importController.text.isEmpty) {
-                _showSnackBar('Please paste data to import');
+            onPressed: () async {              if (_importController.text.isEmpty) {
+                customSnackBar_error(
+                  context: context,
+                  message: 'Please paste data to import'
+                );
                 return;
               }
               Navigator.pop(context);
@@ -393,35 +430,43 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
   Future<void> _importGuestData(String data) async {
     setState(() {
       _isImporting = true;
-    });
-
-    try {
+    });    try {
       // Validate JSON format
       try {
         json.decode(data);
       } catch (e) {
-        _showSnackBar('Invalid data format');
+        customSnackBar_error(
+          context: context,
+          message: 'Invalid data format'
+        );
         setState(() {
           _isImporting = false;
         });
         return;
       }
 
-      final success = await DataMigrationService.importGuestData(data);
-      setState(() {
+      final success = await DataMigrationService.importGuestData(data);      setState(() {
         _isImporting = false;
       });
-
+      
       if (success) {
-        _showSnackBar('Data imported successfully');
+        customSnackBar(
+          context: context,
+          message: 'Data imported successfully'
+        );
       } else {
-        _showSnackBar('Failed to import data');
+        customSnackBar_error(
+          context: context,          message: 'Failed to import data'
+        );
       }
     } catch (e) {
       setState(() {
         _isImporting = false;
       });
-      _showSnackBar('Error importing data: $e');
+      customSnackBar_error(
+        context: context,
+        message: 'Error importing data: $e'
+      );
     }
   }
   Future<void> _createAccountAndMigrate() async {
@@ -441,15 +486,13 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       setState(() {
         _isCreatingAccount = false;
       });
-      _showSnackBar('Error creating account: $e');
+      customSnackBar_error(
+        context: context, 
+        message: 'Error creating account: $e'
+      );
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
