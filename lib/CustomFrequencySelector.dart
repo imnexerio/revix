@@ -75,11 +75,13 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   }
 
   int _convertWeekdayToUIIndex(int dateTimeWeekday) {
+    // Convert DateTime.weekday (Monday = 1, Sunday = 7) to UI index (Sunday = 0)
+    // DateTime: Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6, Sun=7
+    // UI:       Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
     return dateTimeWeekday % 7;
   }
-
   String _getMonthAbbreviation(int month) {
-    const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
     return monthAbbreviations[month - 1];
   }
 

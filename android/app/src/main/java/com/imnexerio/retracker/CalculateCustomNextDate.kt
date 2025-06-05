@@ -110,9 +110,7 @@ class CalculateCustomNextDate {
                     when (monthlyOption) {
                         "day" -> {
                             // Specific day of month
-                            val dayOfMonth = customParams["dayOfMonth"] as? Int ?: startDate.get(Calendar.DAY_OF_MONTH)
-
-                            // Calculate the target month
+                            val dayOfMonth = customParams["dayOfMonth"] as? Int ?: startDate.get(Calendar.DAY_OF_MONTH)                            // Calculate the target month
                             val targetMonth = startDate.get(Calendar.MONTH) + value
                             val targetYear = startDate.get(Calendar.YEAR) + targetMonth / 12
                             val adjustedMonth = targetMonth % 12

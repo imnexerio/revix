@@ -147,10 +147,8 @@ class CustomFrequencySelector : DialogFragment() {
     private fun convertWeekdayToUIIndex(dateTimeWeekday: Int): Int {
         // Convert Calendar.DAY_OF_WEEK (Sunday = 1) to our UI index (Sunday = 0)
         return (dateTimeWeekday - 1) % 7
-    }
-
-    private fun getMonthAbbreviation(month: Int): String {
-        val monthAbbreviations = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    }    private fun getMonthAbbreviation(month: Int): String {
+        val monthAbbreviations = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec")
         return monthAbbreviations[month - 1]
     }
 

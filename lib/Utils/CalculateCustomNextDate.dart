@@ -6,10 +6,8 @@ class CalculateCustomNextDate {
       customParams = params['custom_params'];
     } else {
       customParams = params;
-    }
-
-    // Extract base parameters with safe fallbacks
-    String frequencyType = customParams['frequencyType']?.toString()?.toLowerCase() ?? 'week';
+    }    // Extract base parameters with safe fallbacks
+    String frequencyType = customParams['frequencyType']?.toString().toLowerCase() ?? 'week';
     int value = customParams['value'] is int ? customParams['value'] : 1;
     DateTime nextDate = startDate;
 
@@ -44,14 +42,10 @@ class CalculateCustomNextDate {
         // If no days selected, default to same day next week
         if (!daysOfWeek.contains(true)) {
           return startDate.add(Duration(days: 7 * value));
-        }
-
-        // Find the first matching day after startDate
-        int currentWeekday = startDate.weekday % 7; // Convert to 0-6 where 0 = Sunday
-
-        // Fix the mapping: in Dart, DateTime.weekday is 1-7 where 1 is Monday and 7 is Sunday
-        // We need to convert to 0-6 where 0 is Sunday to match our daysOfWeek array
-        currentWeekday = (startDate.weekday == 7) ? 0 : startDate.weekday % 7;
+        }        // Find the first matching day after startDate
+        // In Dart, DateTime.weekday is 1-7 where 1 is Monday and 7 is Sunday
+        // Convert to 0-6 where 0 is Sunday to match our daysOfWeek array
+        int currentWeekday = startDate.weekday % 7;
 
         bool foundInCurrentWeek = false;
 
@@ -102,34 +96,21 @@ class CalculateCustomNextDate {
         switch (monthlyOption) {
           case 'day':
           // Specific day of month
-            int dayOfMonth = customParams['dayOfMonth'] is int ? customParams['dayOfMonth'] : startDate.day;
-
-            // Calculate the target month
+            int dayOfMonth = customParams['dayOfMonth'] is int ? customParams['dayOfMonth'] : startDate.day;            // Calculate the target month
             int targetMonth = startDate.month + value;
-            int targetYear = startDate.year;
-
-            // Adjust year if month exceeds 12
-            while (targetMonth > 12) {
-              targetMonth -= 12;
-              targetYear++;
-            }
+            int targetYear = startDate.year + targetMonth ~/ 12;
+            int adjustedMonth = ((targetMonth - 1) % 12) + 1;
 
             // Calculate next date and handle month length issues
-            int maxDays = DateTime(targetYear, targetMonth + 1, 0).day;
-            nextDate = DateTime(targetYear, targetMonth, dayOfMonth > maxDays ? maxDays : dayOfMonth);
-
-            // Check if the result is before or equal to the start date
+            int maxDays = DateTime(targetYear, adjustedMonth + 1, 0).day;
+            nextDate = DateTime(targetYear, adjustedMonth, dayOfMonth > maxDays ? maxDays : dayOfMonth);            // Check if the result is before or equal to the start date
             if (nextDate.isBefore(startDate) || nextDate.isAtSameMomentAs(startDate)) {
-              targetMonth = startDate.month + value + 1;
-              targetYear = startDate.year;
+              int newTargetMonth = startDate.month + value + 1;
+              int newTargetYear = startDate.year + newTargetMonth ~/ 12;
+              int newAdjustedMonth = ((newTargetMonth - 1) % 12) + 1;
 
-              while (targetMonth > 12) {
-                targetMonth -= 12;
-                targetYear++;
-              }
-
-              maxDays = DateTime(targetYear, targetMonth + 1, 0).day;
-              nextDate = DateTime(targetYear, targetMonth, dayOfMonth > maxDays ? maxDays : dayOfMonth);
+              int newMaxDays = DateTime(newTargetYear, newAdjustedMonth + 1, 0).day;
+              nextDate = DateTime(newTargetYear, newAdjustedMonth, dayOfMonth > newMaxDays ? newMaxDays : dayOfMonth);
             }
             break;
 
@@ -149,19 +130,11 @@ class CalculateCustomNextDate {
               'Saturday': 6, 'saturday': 6, 'sat': 6,
               'Sunday': 7, 'sunday': 7, 'sun': 7
             };
-            int targetWeekday = dayMap[dayOfWeek] ?? 1;
-
-            // Calculate target month and year
+            int targetWeekday = dayMap[dayOfWeek] ?? 1;            // Calculate target month and year
             int targetMonth = startDate.month + value;
-            int targetYear = startDate.year;
-
-            while (targetMonth > 12) {
-              targetMonth -= 12;
-              targetYear++;
-            }
-
-            // Find the first occurrence of the target weekday in the month
-            DateTime firstDayOfMonth = DateTime(targetYear, targetMonth, 1);
+            int targetYear = startDate.year + targetMonth ~/ 12;
+            int adjustedMonth = ((targetMonth - 1) % 12) + 1;            // Find the first occurrence of the target weekday in the month
+            DateTime firstDayOfMonth = DateTime(targetYear, adjustedMonth, 1);
             int daysUntilWeekday = (targetWeekday - firstDayOfMonth.weekday) % 7;
             if (daysUntilWeekday < 0) daysUntilWeekday += 7;
 
@@ -172,28 +145,24 @@ class CalculateCustomNextDate {
             nextDate = firstOccurrence.add(Duration(days: 7 * (weekOfMonth - 1)));
 
             // If this pushes us into the next month, go back to the last occurrence in the target month
-            if (nextDate.month != targetMonth) {
+            if (nextDate.month != adjustedMonth) {
               nextDate = nextDate.subtract(const Duration(days: 7));
             }
 
             // If result is before or on start date, move to the next period
             if (nextDate.isBefore(startDate) || nextDate.isAtSameMomentAs(startDate)) {
-              targetMonth = startDate.month + value + 1;
-              targetYear = startDate.year;
+              int newTargetMonth = startDate.month + value + 1;
+              int newTargetYear = startDate.year + newTargetMonth ~/ 12;
+              int newAdjustedMonth = ((newTargetMonth - 1) % 12) + 1;
 
-              while (targetMonth > 12) {
-                targetMonth -= 12;
-                targetYear++;
-              }
-
-              firstDayOfMonth = DateTime(targetYear, targetMonth, 1);
+              firstDayOfMonth = DateTime(newTargetYear, newAdjustedMonth, 1);
               daysUntilWeekday = (targetWeekday - firstDayOfMonth.weekday) % 7;
               if (daysUntilWeekday < 0) daysUntilWeekday += 7;
 
               firstOccurrence = firstDayOfMonth.add(Duration(days: daysUntilWeekday));
               nextDate = firstOccurrence.add(Duration(days: 7 * (weekOfMonth - 1)));
 
-              if (nextDate.month != targetMonth) {
+              if (nextDate.month != newAdjustedMonth) {
                 nextDate = nextDate.subtract(const Duration(days: 7));
               }
             }
@@ -240,22 +209,16 @@ class CalculateCustomNextDate {
             // Calculate next date
             int maxDays = DateTime(targetYear, targetMonth + 1, 0).day;
             nextDay = nextDay > maxDays ? maxDays : nextDay;
-            nextDate = DateTime(targetYear, targetMonth, nextDay);
-
-            // If result is before or on start date, move to the next period
+            nextDate = DateTime(targetYear, targetMonth, nextDay);            // If result is before or on start date, move to the next period
             if (nextDate.isBefore(startDate) || nextDate.isAtSameMomentAs(startDate)) {
-              targetMonth = startDate.month + value;
-              targetYear = startDate.year;
-
-              while (targetMonth > 12) {
-                targetMonth -= 12;
-                targetYear++;
-              }
+              int newTargetMonth = startDate.month + value;
+              int newTargetYear = startDate.year + newTargetMonth ~/ 12;
+              int newAdjustedMonth = ((newTargetMonth - 1) % 12) + 1;
 
               nextDay = selectedDates.first;
-              maxDays = DateTime(targetYear, targetMonth + 1, 0).day;
-              nextDay = nextDay > maxDays ? maxDays : nextDay;
-              nextDate = DateTime(targetYear, targetMonth, nextDay);
+              int newMaxDays = DateTime(newTargetYear, newAdjustedMonth + 1, 0).day;
+              nextDay = nextDay > newMaxDays ? newMaxDays : nextDay;
+              nextDate = DateTime(newTargetYear, newAdjustedMonth, nextDay);
             }
             break;
         }
@@ -284,10 +247,9 @@ class CalculateCustomNextDate {
         if (!selectedMonths.contains(true)) {
           selectedMonths[startDate.month - 1] = true;
         }
-
         // Find the next month after current month
         int nextMonth = -1;
-        for (int i = startDate.month; i <= 12; i++) {
+        for (int i = startDate.month + 1; i <= 12; i++) {
           if (i <= selectedMonths.length && selectedMonths[i - 1]) {
             nextMonth = i;
             break;
@@ -391,14 +353,11 @@ class CalculateCustomNextDate {
         case 'month':
         // Handle month overflow correctly
           int targetMonth = startDate.month + value;
-          int targetYear = startDate.year;
-          while (targetMonth > 12) {
-            targetMonth -= 12;
-            targetYear++;
-          }
-          int maxDays = DateTime(targetYear, targetMonth + 1, 0).day;
+          int targetYear = startDate.year + targetMonth ~/ 12;
+          int adjustedMonth = ((targetMonth - 1) % 12) + 1;
+          int maxDays = DateTime(targetYear, adjustedMonth + 1, 0).day;
           int day = startDate.day > maxDays ? maxDays : startDate.day;
-          nextDate = DateTime(targetYear, targetMonth, day);
+          nextDate = DateTime(targetYear, adjustedMonth, day);
           break;
         case 'year':
           int maxDays = DateTime(startDate.year + value, startDate.month + 1, 0).day;
