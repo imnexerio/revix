@@ -71,7 +71,7 @@ class AnimatedCardDetailP extends StatelessWidget {
 
                               // Usage
                               Text(
-                                '${formatDate(record['start_timestamp'])} > ${record['completion_counts']} > ${record['missed_counts']}',
+                                '${formatDate(record['start_timestamp'])} · ${record['completion_counts']} · ${record['missed_counts']}',
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                   fontSize: 13,

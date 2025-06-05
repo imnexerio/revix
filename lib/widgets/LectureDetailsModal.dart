@@ -144,7 +144,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${widget.selectedCategory} � ${widget.selectedCategoryCode} � ${widget.lectureNo}',
+                        '${widget.selectedCategory} · ${widget.selectedCategoryCode} · ${widget.lectureNo}',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
