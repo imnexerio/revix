@@ -29,7 +29,9 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="center_vertical"
-            android:orientation="vertical">            <LinearLayout
+            android:orientation="vertical">
+
+            <LinearLayout
                 android:id="@+id/list_item_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -44,11 +46,8 @@
                     android:id="@+id/item_subject"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxWidth="120dp"
                     android:textSize="16sp"
-                    android:textColor="@color/text"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textColor="@color/text" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -59,11 +58,8 @@
                     android:id="@+id/item_subject_code"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxWidth="80dp"
                     android:textSize="16sp"
-                    android:textColor="@color/text"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textColor="@color/text" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -74,13 +70,11 @@
                     android:id="@+id/item_lecture_no"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxWidth="60dp"
                     android:textSize="16sp"
-                    android:textColor="@color/text"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textColor="@color/text" />
 
-            </LinearLayout>            <LinearLayout
+            </LinearLayout>
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
@@ -88,11 +82,8 @@
                     android:id="@+id/item_reminder_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxWidth="80dp"
                     android:textSize="16sp"
-                    android:textColor="@color/text"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textColor="@color/text" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -103,11 +94,8 @@
                     android:id="@+id/item_reminder_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxWidth="100dp"
                     android:textSize="16sp"
-                    android:textColor="@color/text"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textColor="@color/text" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -118,11 +106,8 @@
                     android:id="@+id/item_reminder_frequency"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxWidth="80dp"
                     android:textSize="16sp"
-                    android:textColor="@color/text"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textColor="@color/text" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
