@@ -424,3 +424,4 @@ app.*.map.json
 /android/app/.cxx/Debug/6p5h1ft3/armeabi-v7a/CMakeFiles/TargetDirectories.txt
 /android/app/.cxx/Debug/6p5h1ft3/x86/CMakeFiles/TargetDirectories.txt
 /android/app/.cxx/Debug/6p5h1ft3/x86_64/CMakeFiles/TargetDirectories.txt
+/rename_variables.ps1
