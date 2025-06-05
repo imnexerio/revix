@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
 import 'LectureBar.dart';
@@ -52,7 +52,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
         _categoryData = data;
         _isLoading = false;
 
-        // Set the initial code for the selected subject
+        // Set the initial code for the selected category
         if (data['subCategories'].containsKey(widget.selectedCategory)) {
           final codes = data['subCategories'][widget.selectedCategory] as List<dynamic>;
           if (codes.isNotEmpty) {
@@ -73,7 +73,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   void didUpdateWidget(CodeBar oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // If the subject has changed, we need to update the selected code
+    // If the category has changed, we need to update the selected code
     if (oldWidget.selectedCategory != widget.selectedCategory) {
       // Reset the selected code
       setState(() {
@@ -158,16 +158,16 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
             );
           }
 
-          // Prepare list of codes for the selected subject
+          // Prepare list of codes for the selected category
           final codes = snapshot.data!['subCategories'][widget.selectedCategory] as List<dynamic>;
 
-          // If we have data but no selected subject, select the first one
+          // If we have data but no selected category, select the first one
           if (_selectedCategoryCode == null && codes.isNotEmpty) {
             _selectedCategoryCode = codes.first.toString();
             // Don't call setState here as it can cause rebuild loops
           }
 
-          // If selected subject no longer exists in the updated list
+          // If selected category no longer exists in the updated list
           if (_selectedCategoryCode != null && !codes.contains(_selectedCategoryCode)) {
             if (codes.isNotEmpty) {
               _selectedCategoryCode = codes.first.toString();

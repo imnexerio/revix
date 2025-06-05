@@ -50,7 +50,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Left side with subject information
+                        // Left side with category information
                         Expanded(
                           flex: 3,
                           child: Column(
@@ -58,7 +58,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '${record['entry_type']} · ${record['lecture_no']}',
+                                '${record['entry_type']} · ${record['record_title']}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -105,7 +105,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(
-                                key: ValueKey('chart_${record['subject']}_${record['lecture_no']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_countss']?.length ?? 0}'),
+                                key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_countss']?.length ?? 0}'),
                                 dateLearnt: record['date_initiated'],
                                 datesMissedRevisions: List<String>.from(record['dates_missed_countss'] ?? []),
                                 datesRevised: List<String>.from(record['dates_updated'] ?? []),

@@ -1,4 +1,4 @@
-﻿package com.imnexerio.retracker
+package com.imnexerio.retracker
 
 import android.content.Context
 import android.content.Intent
@@ -72,7 +72,7 @@ class WidgetListViewFactory(
                         }
 
                         // Ensure essential fields are present
-                        val essentialFields = listOf("subject", "subject_code", "lecture_no")
+                        val essentialFields = listOf("category", "sub_category", "record_title")
                         var hasAllEssentialFields = true
 
                         for (field in essentialFields) {
@@ -90,7 +90,7 @@ class WidgetListViewFactory(
                     }
                 }
 
-                // Sort the records based on reminder_time, subject, subject_code, and lecture_no
+                // Sort the records based on reminder_time, category, sub_category, and record_title
                 tempRecords.sortWith(compareBy<Map<String, String>> { map ->
                     val reminderTime = map["reminder_time"] ?: ""
                     when {
@@ -98,9 +98,9 @@ class WidgetListViewFactory(
                         reminderTime == "All Day" -> "99:98" // "All Day" goes last (but before empty times)
                         else -> reminderTime // Regular times are compared normally
                     }
-                }.thenBy { it["subject"] ?: "" }
-                    .thenBy { it["subject_code"] ?: "" }
-                    .thenBy { it["lecture_no"] ?: "" })
+                }.thenBy { it["category"] ?: "" }
+                    .thenBy { it["sub_category"] ?: "" }
+                    .thenBy { it["record_title"] ?: "" })
 
                 // Add all sorted records to the final list
                 recordsList.addAll(tempRecords)
@@ -126,13 +126,13 @@ class WidgetListViewFactory(
 
         // NEW CODE: Check if this item is being processed
         val processingItems = sharedPreferences.getStringSet(TodayWidget.PREF_PROCESSING_ITEMS, emptySet()) ?: emptySet()
-        val itemKey = "${record["subject"]}_${record["subject_code"]}_${record["lecture_no"]}"
+        val itemKey = "${record["category"]}_${record["sub_category"]}_${record["record_title"]}"
         val isProcessing = processingItems.contains(itemKey)
 
         // Set all the available fields to the corresponding TextViews
-        rv.setTextViewText(R.id.item_subject, record["subject"])
-        rv.setTextViewText(R.id.item_subject_code, record["subject_code"])
-        rv.setTextViewText(R.id.item_lecture_no, record["lecture_no"])
+        rv.setTextViewText(R.id.item_subject, record["category"])
+        rv.setTextViewText(R.id.item_subject_code, record["sub_category"])
+        rv.setTextViewText(R.id.item_lecture_no, record["record_title"])
 
         // Check if the fields exist before setting them
         if (record.containsKey("reminder_time")) {

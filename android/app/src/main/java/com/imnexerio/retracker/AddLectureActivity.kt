@@ -1,4 +1,4 @@
-﻿package com.imnexerio.retracker
+package com.imnexerio.retracker
 
 import android.app.AlertDialog
 import android.app.DatePickerDialog
@@ -603,8 +603,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
                 // Add subjects
                 for (subjectSnapshot in snapshot.children) {
-                    val subject = subjectSnapshot.key ?: continue
-                    subjects.add(subject)
+                    val category = subjectSnapshot.key ?: continue
+                    subjects.add(category)
 
                     // Add sub categories
                     val codesList = mutableListOf<String>()
@@ -612,7 +612,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                         val code = codeSnapshot.key ?: continue
                         codesList.add(code)
                     }
-                    subCategories[subject] = codesList
+                    subCategories[category] = codesList
                 }
 
                 // Update the spinners

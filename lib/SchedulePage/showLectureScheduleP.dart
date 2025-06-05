@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 // import '../RecordForm/CalculateCustomNextDate.dart';
 // import '../Utils/CustomSnackBar.dart';
@@ -47,7 +47,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                   ),
                 ),
 
-                // Header with subject and lecture info
+                // Header with category and lecture info
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Row(
@@ -84,7 +84,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${details['subject']} · ${details['subject_code']} · ${details['lecture_no']}',
+                              '${details['category']} · ${details['sub_category']} · ${details['record_title']}',
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -192,9 +192,9 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                         onPressed: () => MarkAsDoneService.markAsDone(
                           context: context,
                           details: details,
-                          subject: details['subject'],
-                          subCategory: details['subject_code'],
-                          lectureNo: details['lecture_no'],
+                          category: details['category'],
+                          subCategory: details['sub_category'],
+                          lectureNo: details['record_title'],
                           description: description,
                           useRevisionUpdate: true,
                         ),

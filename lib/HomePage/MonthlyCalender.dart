@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../SchedulePage/LegendItem.dart';
@@ -59,9 +59,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
 
         _events[key]!.add({
           'type': 'learned',
-          'subject': record['subject'],
-          'subject_code': record['subject_code'],
-          'lecture_no': record['lecture_no'],
+          'category': record['category'],
+          'sub_category': record['sub_category'],
+          'record_title': record['record_title'],
           'description': details['description'],
         });
       }
@@ -78,9 +78,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
 
           _events[key]!.add({
             'type': 'revised',
-            'subject': record['subject'],
-            'subject_code': record['subject_code'],
-            'lecture_no': record['lecture_no'],
+            'category': record['category'],
+            'sub_category': record['sub_category'],
+            'record_title': record['record_title'],
             'description': details['description'],
           });
         }
@@ -98,9 +98,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
 
           _events[key]!.add({
             'type': 'missed',
-            'subject': record['subject'],
-            'subject_code': record['subject_code'],
-            'lecture_no': record['lecture_no'],
+            'category': record['category'],
+            'sub_category': record['sub_category'],
+            'record_title': record['record_title'],
             'description': details['description'],
           });
         }
@@ -119,9 +119,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
 
         _events[key]!.add({
           'type': 'scheduled',
-          'subject': record['subject'],
-          'subject_code': record['subject_code'],
-          'lecture_no': record['lecture_no'],
+          'category': record['category'],
+          'sub_category': record['sub_category'],
+          'record_title': record['record_title'],
           'description': details['description'],
         });
       }
@@ -402,7 +402,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
               ),
             ),
             title: Text(
-              '${event['subject']} (${event['subject_code']}) - ${event['lecture_no']}',
+              '${event['category']} (${event['sub_category']}) - ${event['record_title']}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),

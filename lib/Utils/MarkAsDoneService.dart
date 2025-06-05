@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../RecordForm/CalculateCustomNextDate.dart';
 import '../Utils/CustomSnackBar.dart';
@@ -112,7 +112,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   static Future<void> markAsDone({
     required BuildContext context,
     required Map<String, dynamic> details,
-    required String subject,
+    required String category,
     required String subCategory,
     required String lectureNo,
     String? description,
@@ -131,12 +131,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Handle unspecified date_initiated case
       if (details['date_initiated'] == 'Unspecified') {
-        await moveToDeletedData(subject, subCategory, lectureNo, details);
+        await moveToDeletedData(category, subCategory, lectureNo, details);
         Navigator.pop(context);
         Navigator.pop(context);
         customSnackBar(
           context: context,
-          message: '$subject $subCategory $lectureNo has been marked as done and moved to deleted data.',
+          message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
         );
         return;
       }
@@ -160,12 +160,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Handle 'No Repetition' case
       if (details['recurrence_frequency'] == 'No Repetition') {
-        await moveToDeletedData(subject, subCategory, lectureNo, details);
+        await moveToDeletedData(category, subCategory, lectureNo, details);
         Navigator.pop(context);
         Navigator.pop(context);
         customSnackBar(
           context: context,
-          message: '$subject $subCategory $lectureNo has been marked as done and moved to deleted data.',
+          message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
         );
         return;
       }
@@ -218,7 +218,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Update records based on the update type
       if (useRevisionUpdate) {
         await UpdateRecordsRevision(
-          subject,
+          category,
           subCategory,
           lectureNo,
           dateRevised,
@@ -233,7 +233,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         );
       } else {
         await UpdateRecords(
-          subject,
+          category,
           subCategory,
           lectureNo,
           dateRevised,
@@ -256,8 +256,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Show success message
       String successMessage = useRevisionUpdate
-          ? '$subject $subCategory $lectureNo done and scheduled for $dateScheduled'
-          : '$subject $subCategory $lectureNo, done. Next schedule is on $dateScheduled.';
+          ? '$category $subCategory $lectureNo done and scheduled for $dateScheduled'
+          : '$category $subCategory $lectureNo, done. Next schedule is on $dateScheduled.';
 
       customSnackBar(
         context: context,
@@ -278,7 +278,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   static Widget createMarkAsDoneButton({
     required BuildContext context,
     required Map<String, dynamic> details,
-    required String subject,
+    required String category,
     required String subCategory,
     required String lectureNo,
     String? description,
@@ -294,7 +294,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       onPressed: () => markAsDone(
         context: context,
         details: details,
-        subject: subject,
+        category: category,
         subCategory: subCategory,
         lectureNo: lectureNo,
         description: description,

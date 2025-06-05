@@ -1,4 +1,4 @@
-﻿package com.imnexerio.retracker
+package com.imnexerio.retracker
 
 import android.app.Service
 import android.appwidget.AppWidgetManager
@@ -125,9 +125,9 @@ class WidgetRefreshService : Service() {
                                     if (scheduledDateStr == todayStr) {
                                         records.add(
                                             mapOf(
-                                                "subject" to subjectKey.toString(),
-                                                "subject_code" to codeKey.toString(),
-                                                "lecture_no" to recordKey.toString(),
+                                                "category" to subjectKey.toString(),
+                                                "sub_category" to codeKey.toString(),
+                                                "record_title" to recordKey.toString(),
                                                 "reminder_time" to (reminderTime ?: "").toString(),
                                                 "scheduled_date" to dateScheduled,
                                                 "recurrence_frequency" to (revisionFrequency ?: "").toString()
@@ -180,9 +180,9 @@ class WidgetRefreshService : Service() {
                                     if (scheduledDateStr.compareTo(todayStr) < 0) {
                                         records.add(
                                             mapOf(
-                                                "subject" to subjectKey.toString(),
-                                                "subject_code" to codeKey.toString(),
-                                                "lecture_no" to recordKey.toString(),
+                                                "category" to subjectKey.toString(),
+                                                "sub_category" to codeKey.toString(),
+                                                "record_title" to recordKey.toString(),
                                                 "reminder_time" to (reminderTime ?: "").toString(),
                                                 "scheduled_date" to dateScheduled,
                                                 "recurrence_frequency" to (revisionFrequency ?: "").toString(),
@@ -223,9 +223,9 @@ class WidgetRefreshService : Service() {
                                 if (dateScheduled == "Unspecified" && status == "Enabled") {
                                     records.add(
                                         mapOf(
-                                            "subject" to subjectKey.toString(),
-                                            "subject_code" to codeKey.toString(),
-                                            "lecture_no" to recordKey.toString(),
+                                            "category" to subjectKey.toString(),
+                                            "sub_category" to codeKey.toString(),
+                                            "record_title" to recordKey.toString(),
                                             "reminder_time" to (reminderTime ?: "").toString(),
                                             "recurrence_frequency" to (revisionFrequency ?: "").toString()
                                         )

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../widgets/LectureDetailsModal.dart';
@@ -61,10 +61,10 @@ class _LectureBarState extends State<LectureBar> {
   void _applyFilter() {
     List<MapEntry<String, dynamic>> filteredData = _allRecords
         .where((record) =>
-    record['subject'] == widget.selectedCategory &&
-        record['subject_code'] == widget.selectedCategoryCode)
+    record['category'] == widget.selectedCategory &&
+        record['sub_category'] == widget.selectedCategoryCode)
         .map<MapEntry<String, dynamic>>((record) =>
-        MapEntry(record['lecture_no'] as String, record['details']))
+        MapEntry(record['record_title'] as String, record['details']))
         .toList();
 
     // Debug print for verification
@@ -106,7 +106,7 @@ class _LectureBarState extends State<LectureBar> {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> formattedRecords = _filteredLectureData.map((entry) {
       Map<String, dynamic> record = Map<String, dynamic>.from(entry.value);
-      record['lecture_no'] = entry.key;
+      record['record_title'] = entry.key;
       return record;
     }).toList();
 
@@ -117,7 +117,7 @@ class _LectureBarState extends State<LectureBar> {
             initialRecords: formattedRecords,
             title: '${widget.selectedCategory} - ${widget.selectedCategoryCode}',
             onSelect: (context, record) {
-              String lectureNo = record['lecture_no'];
+              String lectureNo = record['record_title'];
               _showLectureDetails(context, lectureNo, record);
             },
           );

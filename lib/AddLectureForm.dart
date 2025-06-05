@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:retracker/Utils/date_utils.dart';
@@ -75,14 +75,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
           List<String> subjects = [];
           Map<String, List<String>> subCategories = {};
           
-          for (String subject in data.keys) {
-            subjects.add(subject);
-            subCategories[subject] = [];
+          for (String category in data.keys) {
+            subjects.add(category);
+            subCategories[category] = [];
             
-            if (data[subject] is Map) {
-              Map<String, dynamic> categoryData = Map<String, dynamic>.from(data[subject]);
+            if (data[category] is Map) {
+              Map<String, dynamic> categoryData = Map<String, dynamic>.from(data[category]);
               for (String subCategory in categoryData.keys) {
-                subCategories[subject]!.add(subCategory);
+                subCategories[category]!.add(subCategory);
               }
             }
           }
@@ -457,9 +457,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ),
                         isExpanded: true,
                         items: [
-                          ..._subjects.map((subject) => DropdownMenuItem(
-                            value: subject,
-                            child: Text(subject),
+                          ..._subjects.map((category) => DropdownMenuItem(
+                            value: category,
+                            child: Text(category),
                           )).toList(),
                           const DropdownMenuItem(
                             value: "Add New Category",

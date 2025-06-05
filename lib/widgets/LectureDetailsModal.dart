@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../CustomFrequencySelector.dart';
@@ -107,7 +107,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
           ),
 
-          // Header with subject and lecture info
+          // Header with category and lecture info
           Container(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
             child: Row(
@@ -144,7 +144,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${widget.selectedCategory} · ${widget.selectedCategoryCode} · ${widget.lectureNo}',
+                        '${widget.selectedCategory} � ${widget.selectedCategoryCode} � ${widget.lectureNo}',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -254,7 +254,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       onPressed: () => MarkAsDoneService.markAsDone(
                         context: context,
                         details: widget.details,
-                        subject: widget.selectedCategory,
+                        category: widget.selectedCategory,
                         subCategory: widget.selectedCategoryCode,
                         lectureNo: widget.lectureNo,
                         durationData: durationData,
@@ -752,7 +752,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Number of Times',
-                                    hintText: 'Enter a value ‰¥ 1',
+                                    hintText: 'Enter a value >= 1',
                                   ),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,

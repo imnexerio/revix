@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 int calculateTotalLectures(List<Map<String, dynamic>> records) {
   return records.where((record) =>
@@ -54,8 +54,8 @@ Map<String, int> calculateSubjectDistribution(List<Map<String, dynamic>> records
   Map<String, int> subjectCounts = {};
 
   for (var record in records) {
-    String subject = record['subject'];
-    subjectCounts[subject] = (subjectCounts[subject] ?? 0) + 1;
+    String category = record['category'];
+    subjectCounts[category] = (subjectCounts[category] ?? 0) + 1;
   }
 
   return subjectCounts;

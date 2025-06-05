@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'GuestAuthService.dart';
@@ -619,14 +619,14 @@ class FirebaseDatabaseService {
   // ====================================================================================
   
   /// Save a record to user data
-  Future<bool> saveRecord(String subject, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
+  Future<bool> saveRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
     try {
       if (await isGuestMode) {
-        return await _localDatabase.saveRecord(subject, subCategory, lectureNo, recordData);
+        return await _localDatabase.saveRecord(category, subCategory, lectureNo, recordData);
       } else {
         if (currentUserId == null) return false;
         
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$subject/$subCategory/$lectureNo');
+        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
         await ref.set(recordData);
         return true;
       }
@@ -637,14 +637,14 @@ class FirebaseDatabaseService {
   }
   
   /// Update a record in user data
-  Future<bool> updateRecord(String subject, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
+  Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
     try {
       if (await isGuestMode) {
-        return await _localDatabase.updateRecord(subject, subCategory, lectureNo, updates);
+        return await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
       } else {
         if (currentUserId == null) return false;
         
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$subject/$subCategory/$lectureNo');
+        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
         await ref.update(updates);
         return true;
       }
@@ -655,14 +655,14 @@ class FirebaseDatabaseService {
   }
   
   /// Delete a record from user data
-  Future<bool> deleteRecord(String subject, String subCategory, String lectureNo) async {
+  Future<bool> deleteRecord(String category, String subCategory, String lectureNo) async {
     try {
       if (await isGuestMode) {
-        return await _localDatabase.deleteRecord(subject, subCategory, lectureNo);
+        return await _localDatabase.deleteRecord(category, subCategory, lectureNo);
       } else {
         if (currentUserId == null) return false;
         
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$subject/$subCategory/$lectureNo');
+        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
         await ref.remove();
         return true;
       }
@@ -673,7 +673,7 @@ class FirebaseDatabaseService {
   }
   
   /// Move a record to deleted data
-  Future<bool> moveToDeletedData(String subject, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
+  Future<bool> moveToDeletedData(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
     try {
       // Add deletion timestamp
       Map<String, dynamic> deletedData = Map<String, dynamic>.from(recordData);
@@ -681,20 +681,20 @@ class FirebaseDatabaseService {
       
       if (await isGuestMode) {
         // Save to deleted data in local database
-        bool saveSuccess = await _localDatabase.saveDeletedRecord(subject, subCategory, lectureNo, deletedData);
+        bool saveSuccess = await _localDatabase.saveDeletedRecord(category, subCategory, lectureNo, deletedData);
         if (!saveSuccess) return false;
         
         // Remove from original location
-        return await _localDatabase.deleteRecord(subject, subCategory, lectureNo);
+        return await _localDatabase.deleteRecord(category, subCategory, lectureNo);
       } else {
         if (currentUserId == null) return false;
         
         // Save to deleted data in Firebase
-        DatabaseReference deletedRef = _database.ref('users/$currentUserId/deleted_user_data/$subject/$subCategory/$lectureNo');
+        DatabaseReference deletedRef = _database.ref('users/$currentUserId/deleted_user_data/$category/$subCategory/$lectureNo');
         await deletedRef.set(deletedData);
         
         // Remove from original location
-        DatabaseReference originalRef = _database.ref('users/$currentUserId/user_data/$subject/$subCategory/$lectureNo');
+        DatabaseReference originalRef = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
         await originalRef.remove();
         
         return true;
@@ -706,20 +706,20 @@ class FirebaseDatabaseService {
   }
   
   /// Fetch a specific record
-  Future<Map<String, dynamic>?> fetchRecord(String subject, String subCategory, String lectureNo) async {
+  Future<Map<String, dynamic>?> fetchRecord(String category, String subCategory, String lectureNo) async {
     try {
       if (await isGuestMode) {
         final userData = await _localDatabase.getCurrentUserData();
         final userRecords = userData['user_data'] as Map<String, dynamic>? ?? {};
         
-        if (userRecords[subject]?[subCategory]?[lectureNo] != null) {
-          return Map<String, dynamic>.from(userRecords[subject][subCategory][lectureNo]);
+        if (userRecords[category]?[subCategory]?[lectureNo] != null) {
+          return Map<String, dynamic>.from(userRecords[category][subCategory][lectureNo]);
         }
         return null;
       } else {
         if (currentUserId == null) return null;
         
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$subject/$subCategory/$lectureNo');
+        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
         DataSnapshot snapshot = await ref.get();
         
         if (snapshot.exists) {

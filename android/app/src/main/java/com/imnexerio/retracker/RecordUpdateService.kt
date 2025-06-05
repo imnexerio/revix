@@ -1,4 +1,4 @@
-﻿package com.imnexerio.retracker
+package com.imnexerio.retracker
 
 import android.app.Service
 import android.appwidget.AppWidgetManager
@@ -43,11 +43,11 @@ class RecordUpdateService : Service() {
             return START_NOT_STICKY
         }
 
-        val subject = intent.getStringExtra("subject") ?: ""
-        val subCategory = intent.getStringExtra("subject_code") ?: ""
-        val lectureNo = intent.getStringExtra("lecture_no") ?: ""
+        val category = intent.getStringExtra("category") ?: ""
+        val subCategory = intent.getStringExtra("sub_category") ?: ""
+        val lectureNo = intent.getStringExtra("record_title") ?: ""
 
-        if (subject.isEmpty() || subCategory.isEmpty() || lectureNo.isEmpty()) {
+        if (category.isEmpty() || subCategory.isEmpty() || lectureNo.isEmpty()) {
             Toast.makeText(this, "Invalid record information", Toast.LENGTH_SHORT).show()
             finishTask(startId)
             return START_NOT_STICKY
@@ -57,7 +57,7 @@ class RecordUpdateService : Service() {
         val extras = HashMap<String, String>()
         intent.extras?.let { bundle ->
             for (key in bundle.keySet()) {
-                if (key != "subject" && key != "subject_code" && key != "lecture_no") {
+                if (key != "category" && key != "sub_category" && key != "record_title") {
                     val value = bundle.getString(key)
                     if (value != null) {
                         extras[key] = value
@@ -66,7 +66,7 @@ class RecordUpdateService : Service() {
             }
         }
 
-        handleRecordClick(subject, subCategory, lectureNo, extras, startId)
+        handleRecordClick(category, subCategory, lectureNo, extras, startId)
         return START_STICKY
     }
 
@@ -114,7 +114,7 @@ class RecordUpdateService : Service() {
     }
 
     private fun handleRecordClick(
-        subject: String,
+        category: String,
         subCategory: String,
         lectureNo: String,
         extras: Map<String, String>,
@@ -128,7 +128,7 @@ class RecordUpdateService : Service() {
         }
 
         val userId = firebaseAuth.currentUser!!.uid
-        val recordPath = "users/$userId/user_data/$subject/$subCategory/$lectureNo"
+        val recordPath = "users/$userId/user_data/$category/$subCategory/$lectureNo"
         val database = FirebaseDatabase.getInstance()
         val recordRef = database.getReference(recordPath)
 
@@ -157,10 +157,10 @@ class RecordUpdateService : Service() {
                     if (revisedToday) {
                         // Already revised today, just refresh
                         Toast.makeText(applicationContext, "Already revised today. Refreshing data...", Toast.LENGTH_SHORT).show()
-                        clearProcessingState(subject, subCategory, lectureNo) // NEW LINE
+                        clearProcessingState(category, subCategory, lectureNo) // NEW LINE
                         refreshWidgets(startId)
                     } else {
-                        updateRecord(details, subject, subCategory, lectureNo, extras, startId)
+                        updateRecord(details, category, subCategory, lectureNo, extras, startId)
                     }
                 } catch (e: Exception) {
                     Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -178,7 +178,7 @@ class RecordUpdateService : Service() {
 
     private fun updateRecord(
         details: Map<*, *>,
-        subject: String,
+        category: String,
         subCategory: String,
         lectureNo: String,
         extras: Map<String, String>,
@@ -187,12 +187,12 @@ class RecordUpdateService : Service() {
         try {
             // First check for "Unspecified" date_initiated
             if (details["date_initiated"] == "Unspecified") {
-                moveToDeletedData(subject, subCategory, lectureNo, details) { success ->
+                moveToDeletedData(category, subCategory, lectureNo, details) { success ->
                     if (success) {
                         handler.post {
                             Toast.makeText(
                                 applicationContext,
-                                "$subject $subCategory $lectureNo has been marked as done and moved to deleted data.",
+                                "$category $subCategory $lectureNo has been marked as done and moved to deleted data.",
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -213,12 +213,12 @@ class RecordUpdateService : Service() {
 
             // Then check for "No Repetition" revision frequency
             if (details["recurrence_frequency"] == "No Repetition") {
-                moveToDeletedData(subject, subCategory, lectureNo, details) { success ->
+                moveToDeletedData(category, subCategory, lectureNo, details) { success ->
                     if (success) {
                         handler.post {
                             Toast.makeText(
                                 applicationContext,
-                                "$subject $subCategory $lectureNo has been marked as done and moved to deleted data.",
+                                "$category $subCategory $lectureNo has been marked as done and moved to deleted data.",
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -268,7 +268,7 @@ class RecordUpdateService : Service() {
                 val nextRevisionDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
 
                 updateRecordWithNextDate(
-                    details, subject, subCategory, lectureNo,
+                    details, category, subCategory, lectureNo,
                     currentDateTime, currentDate, missedRevision,
                     scheduledDate, noRevision, nextRevisionDate, startId
                 )
@@ -281,7 +281,7 @@ class RecordUpdateService : Service() {
                     scheduledDate
                 ) { nextRevisionDate ->
                     updateRecordWithNextDate(
-                        details, subject, subCategory, lectureNo,
+                        details, category, subCategory, lectureNo,
                         currentDateTime, currentDate, missedRevision,
                         scheduledDate, noRevision, nextRevisionDate, startId
                     )
@@ -299,7 +299,7 @@ class RecordUpdateService : Service() {
     // Helper method to update the record with the calculated next date
     private fun updateRecordWithNextDate(
         details: Map<*, *>,
-        subject: String,
+        category: String,
         subCategory: String,
         lectureNo: String,
         currentDateTime: String,
@@ -359,11 +359,11 @@ class RecordUpdateService : Service() {
 
         // Update the record in Firebase
         val userId = FirebaseAuth.getInstance().currentUser!!.uid
-        val recordPath = "users/$userId/user_data/$subject/$subCategory/$lectureNo"
+        val recordPath = "users/$userId/user_data/$category/$subCategory/$lectureNo"
         FirebaseDatabase.getInstance().getReference(recordPath)
             .updateChildren(updatedValues)
             .addOnSuccessListener {
-                clearProcessingState(subject, subCategory, lectureNo)
+                clearProcessingState(category, subCategory, lectureNo)
                 Toast.makeText(
                     applicationContext,
                     "Record updated successfully! Scheduled for $nextRevisionDate",
@@ -372,7 +372,7 @@ class RecordUpdateService : Service() {
                 refreshWidgets(startId)
             }
             .addOnFailureListener { e ->
-                clearProcessingState(subject, subCategory, lectureNo)
+                clearProcessingState(category, subCategory, lectureNo)
                 Toast.makeText(applicationContext, "Update failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 refreshWidgets(startId)
                 stopSelf(startId)
@@ -430,7 +430,7 @@ class RecordUpdateService : Service() {
     }
 
     private fun moveToDeletedData(
-        subject: String,
+        category: String,
         subCategory: String,
         lectureNo: String,
         details: Map<*, *>,
@@ -446,7 +446,7 @@ class RecordUpdateService : Service() {
         val database = FirebaseDatabase.getInstance()
 
         // Reference to deleted data location
-        val deletedRef = database.getReference("users/$userId/deleted_user_data/$subject/$subCategory/$lectureNo")
+        val deletedRef = database.getReference("users/$userId/deleted_user_data/$category/$subCategory/$lectureNo")
 
         // Convert details to mutable map
         val dataToMove = HashMap<String, Any>()
@@ -463,28 +463,28 @@ class RecordUpdateService : Service() {
         deletedRef.setValue(dataToMove)
             .addOnSuccessListener {
                 // After successful move, delete from original location
-                val originalRef = database.getReference("users/$userId/user_data/$subject/$subCategory/$lectureNo")
+                val originalRef = database.getReference("users/$userId/user_data/$category/$subCategory/$lectureNo")
                 originalRef.removeValue()
                     .addOnSuccessListener {
-                        clearProcessingState(subject, subCategory, lectureNo) // NEW LINE
+                        clearProcessingState(category, subCategory, lectureNo) // NEW LINE
                         callback(true)
                     }
                     .addOnFailureListener {
-                        clearProcessingState(subject, subCategory, lectureNo) // NEW LINE
+                        clearProcessingState(category, subCategory, lectureNo) // NEW LINE
                         callback(false)
                     }
             }
             .addOnFailureListener {
-                clearProcessingState(subject, subCategory, lectureNo) // NEW LINE
+                clearProcessingState(category, subCategory, lectureNo) // NEW LINE
                 callback(false)
             }
 
     }
 
-    private fun clearProcessingState(subject: String, subCategory: String, lectureNo: String) {
+    private fun clearProcessingState(category: String, subCategory: String, lectureNo: String) {
         val prefs = applicationContext.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
         val processingItems = prefs.getStringSet(TodayWidget.PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
-        val itemKey = "${subject}_${subCategory}_${lectureNo}"
+        val itemKey = "${category}_${subCategory}_${lectureNo}"
         val newProcessingItems = processingItems.toMutableSet()
         newProcessingItems.remove(itemKey)
         prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()

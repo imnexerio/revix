@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import 'CodeBar.dart';
 
@@ -111,12 +111,12 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
 
           final subjects = snapshot.data!['subjects'];
 
-          // If we have data but no selected subject, select the first one
+          // If we have data but no selected category, select the first one
           if (_selectedCategory == null && subjects.isNotEmpty) {
             _selectedCategory = subjects.first;
           }
 
-          // If selected subject no longer exists in the updated list
+          // If selected category no longer exists in the updated list
           if (_selectedCategory != null && !subjects.contains(_selectedCategory)) {
             if (subjects.isNotEmpty) {
               _selectedCategory = subjects.first;
@@ -153,8 +153,8 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                     physics: const BouncingScrollPhysics(),
                     itemCount: subjects.length,
                     itemBuilder: (context, index) {
-                      final subject = subjects[index];
-                      final isSelected = _selectedCategory == subject;
+                      final category = subjects[index];
+                      final isSelected = _selectedCategory == category;
 
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -164,7 +164,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _selectedCategory = subject;
+                                _selectedCategory = category;
                               });
                               _controller.reset();
                               _controller.forward();
@@ -212,7 +212,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      subject,
+                                      category,
                                       style: TextStyle(
                                         color: isSelected
                                             ? Theme.of(context).colorScheme.onPrimary
