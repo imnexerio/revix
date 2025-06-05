@@ -1,12 +1,11 @@
-﻿import 'package:flutter/material.dart';
-import '../widgets/BaseAnimatedCard.dart';
+import 'package:flutter/material.dart';
+import 'RevisionGraph.dart';
 
 class AnimatedCard extends StatelessWidget {
   final Animation<double> animation;
   final Map<String, dynamic> record;
   final bool isCompleted;
   final Function(BuildContext, Map<String, dynamic>) onSelect;
-  final bool enableEditing;
 
   const AnimatedCard({
     Key? key,
@@ -14,54 +13,152 @@ class AnimatedCard extends StatelessWidget {
     required this.record,
     required this.isCompleted,
     required this.onSelect,
-    this.enableEditing = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Configure which fields are editable
-    Map<String, FieldConfig> fieldConfigs = {};
-    
-    if (enableEditing) {
-      fieldConfigs = {
-        'title': FieldConfig(
-          isEditable: true,
-          onChanged: (value) {
-            // Handle title change
-            print('Title changed to: $value');
-          },
-        ),
-        'subtitle': FieldConfig(
-          isEditable: true,
-          onChanged: (value) {
-            // Handle subtitle change
-            print('Subtitle changed to: $value');
-          },
-        ),
-        'scheduled_date': FieldConfig(
-          isEditable: true,
-          onChanged: (value) {
-            // Handle scheduled date change
-            print('Scheduled date changed to: $value');
-          },
-        ),
-        'date_initiated': FieldConfig(
-          isEditable: true,
-          onChanged: (value) {
-            // Handle learnt date change
-            print('Learnt date changed to: $value');
-          },
-        ),
-      };
-    }
+    // print('record : $record');
+    // Apply multiple animations
+    final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(animation);
+    final fadeAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(animation);
+    final slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(animation);
 
-    return BaseAnimatedCard(
+    return AnimatedBuilder(
       animation: animation,
-      record: record,
-      isCompleted: isCompleted,
-      onSelect: onSelect,
-      displayMode: CardDisplayMode.schedule,
-      fieldConfigs: fieldConfigs,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: fadeAnimation,
+          child: ScaleTransition(
+            scale: scaleAnimation,
+            child: SlideTransition(
+              position: slideAnimation,
+              child: Card(
+                elevation: 5,
+                margin: const EdgeInsets.all(4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: Theme.of(context).dividerColor.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => onSelect(context, record),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    // child: SingleChildScrollView(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Left side with subject information
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${record['subject']} · ${record['subject_code']} · ${record['lecture_no']}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${record['entry_type']} · ${record['reminder_time']}',
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              _buildDateInfo(
+                                context,
+                                'Scheduled',
+                                record['scheduled_date'] ?? '',
+                                Icons.calendar_today,
+                              ),
+                              if (isCompleted)
+                                _buildDateInfo(
+                                  context,
+                                  'Initiated',
+                                  record['date_initiated'] ?? '',
+                                  Icons.check_circle_outline,
+                                ),
+                              // ],
+                              // ),
+                            ],
+                          ),
+                        ),
+                        // Right side with the revision graph
+                        Expanded(
+                          flex: 2,
+                          child: SizedBox(
+                            // height: 200,
+                            child: Center(
+                              // Add a key to force rebuild of RevisionRadarChart when data changes
+                              child: RevisionRadarChart(
+                                key: ValueKey('chart_${record['subject']}_${record['lecture_no']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}'),
+                                dateLearnt: record['date_initiated'],
+                                datesMissedRevisions: List<String>.from(record['dates_missed_countss'] ?? []),
+                                datesRevised: List<String>.from(record['dates_updated'] ?? []),
+                                showLabels: false,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+              ),
+            ),
+            Text(
+              date,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
