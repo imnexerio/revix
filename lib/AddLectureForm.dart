@@ -1012,7 +1012,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                                     keyboardType: TextInputType.number,
                                                     decoration: const InputDecoration(
                                                       labelText: 'Number of Times',
-                                                      hintText: 'Enter a value â‰¥ 1',
+                                                      hintText: 'Enter a value >= 1',
                                                     ),
                                                     inputFormatters: [
                                                       FilteringTextInputFormatter.digitsOnly,

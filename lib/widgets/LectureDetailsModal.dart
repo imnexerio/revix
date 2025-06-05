@@ -144,7 +144,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${widget.selectedCategory} Â· ${widget.selectedCategoryCode} Â· ${widget.lectureNo}',
+                        '${widget.selectedCategory} · ${widget.selectedCategoryCode} · ${widget.lectureNo}',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -752,7 +752,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Number of Times',
-                                    hintText: 'Enter a value â‰¥ 1',
+                                    hintText: 'Enter a value ‰¥ 1',
                                   ),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,

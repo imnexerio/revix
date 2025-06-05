@@ -245,7 +245,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // Set up the input
         val input = EditText(this)
         input.inputType = InputType.TYPE_CLASS_NUMBER
-        input.hint = "Enter a value â‰¥ 1"
+        input.hint = "Enter a value >= 1"
 
         // Pre-fill with existing value if any
         val existingValue = durationData["numberOfTimes"]

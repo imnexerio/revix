@@ -84,7 +84,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${details['subject']} Â· ${details['subject_code']} Â· ${details['lecture_no']}',
+                              '${details['subject']} · ${details['subject_code']} · ${details['lecture_no']}',
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -92,7 +92,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${details['entry_type']} Â· ${details['reminder_time']}',
+                              '${details['entry_type']} · ${details['reminder_time']}',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Theme.of(context).colorScheme.onSurface,
