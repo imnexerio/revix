@@ -5,110 +5,131 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="8dp"
-    android:background="@drawable/rounded_background">
+    android:background="@drawable/rounded_background"
+    android:gravity="center_vertical">
+
     <ImageView
         android:id="@+id/mark_as_done"
         android:layout_width="20dp"
         android:layout_height="20dp"
-        android:layout_gravity="center_vertical"
         android:src="@drawable/baseline_radio_button_unchecked_24"
         android:layout_marginEnd="10dp"
         android:layout_marginStart="10dp"
         android:contentDescription="Mark as done"
         android:clickable="true"
         android:focusable="true"/>
+
     <LinearLayout
-        android:id="@+id/checkbox_layout"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_vertical"
-        >
+        android:layout_weight="1"
+        android:orientation="vertical">
 
+        <!-- First row: Subject info -->
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:id="@+id/list_item_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/item_subject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textColor="@color/text"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" · "
+                android:textSize="16sp"
+                android:textColor="@color/text" />
+
+            <TextView
+                android:id="@+id/item_subject_code"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textColor="@color/text"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" · "
+                android:textSize="16sp"
+                android:textColor="@color/text" />
+
+            <TextView
+                android:id="@+id/item_lecture_no"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textColor="@color/text"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <!-- Second row: Reminder info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:orientation="vertical">
+            android:layout_marginTop="2dp">
 
-            <LinearLayout
-                android:id="@+id/list_item_container"
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/item_reminder_time"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" "
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:id="@+id/item_subject"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" · "
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:id="@+id/item_subject_code"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" · "
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:id="@+id/item_lecture_no"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
+                android:textSize="14sp"
+                android:textColor="@color/text"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1" />
 
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-                <TextView
-                    android:id="@+id/item_reminder_time"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" · "
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:id="@+id/item_reminder_date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" · "
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-                <TextView
-                    android:id="@+id/item_reminder_frequency"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:textColor="@color/text" />
-            </LinearLayout>
+                android:text=" · "
+                android:textSize="14sp"
+                android:textColor="@color/text" />
+
+            <TextView
+                android:id="@+id/item_reminder_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textColor="@color/text"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" · "
+                android:textSize="14sp"
+                android:textColor="@color/text" />
+
+            <TextView
+                android:id="@+id/item_reminder_frequency"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="14sp"
+                android:textColor="@color/text"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
