@@ -39,37 +39,50 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     'revision': {},
     'completion': {},
     'missed': {},
-  };
-
-  Map<String, int> _completionTargets = {};
-  int get _customCompletionTarget => _completionTargets[_selectedLectureType] ?? 200;
+  };  Map<String, int> _completionTargets = {};
+  int get _customCompletionTarget {
+    final target = _completionTargets[_selectedLectureType] ?? 200;
+    return target;
+  }
+  
+  bool _isLoadingTargets = true;
 
   Size? _previousSize;
 
   @override
   bool get wantKeepAlive => true;
-
   @override
   void initState() {
     super.initState();
     _recordService.initialize();
     _recordsStream = _recordService.allRecordsStream;
-    _loadSavedPreferences();
-    _fetchTrackingTypesAndTargetFromFirebase();
-    _loadAvailableLectureTypes();
+    _initializeData();
   }
 
-  // Load saved preferences from SharedPreferences
+  // Initialize all data in proper order
+  Future<void> _initializeData() async {
+    await _loadSavedPreferences();
+    await _fetchTrackingTypesAndTargetFromFirebase();
+    await _loadAvailableLectureTypes();
+    
+    if (mounted) {
+      setState(() {
+        _isLoadingTargets = false;
+      });
+    }
+  }  // Load saved preferences from SharedPreferences
   Future<void> _loadSavedPreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    setState(() {
-      _lectureViewType = prefs.getString('lectureViewType') ?? 'Total';
-      _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
-      _completionViewType = prefs.getString('completionViewType') ?? 'Total';
-      _missedViewType = prefs.getString('missedViewType') ?? 'Total';
-      _selectedLectureType = prefs.getString('selectedLectureType') ?? 'All'; // Changed default to 'All'
-    });
+    if (mounted) {
+      setState(() {
+        _lectureViewType = prefs.getString('lectureViewType') ?? 'Total';
+        _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
+        _completionViewType = prefs.getString('completionViewType') ?? 'Total';
+        _missedViewType = prefs.getString('missedViewType') ?? 'Total';
+        _selectedLectureType = prefs.getString('selectedLectureType') ?? 'All'; // Changed default to 'All'
+      });
+    }
   }
 
   // Save preferences to SharedPreferences
@@ -114,30 +127,49 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       _selectedLectureType = _availableLectureTypes[nextIndex];
     });
     _savePreferences(); // Save when lecture type changes
-  }
-  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
+  }  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
     try {
       if (await GuestAuthService.isGuestMode()) {
         // Use local database for guest users
         final localDb = LocalDatabaseService();
         final homePageData = await localDb.getProfileData('home_page', defaultValue: {});
-        
-        if (homePageData.isNotEmpty && homePageData is Map<String, dynamic>) {
-          final selectedTypes = homePageData['selectedTrackingTypes'] as Map<String, dynamic>? ?? {};
-          final completionTargets = homePageData['completionTargets'] as Map<String, dynamic>? ?? {};
+          if (homePageData.isNotEmpty && homePageData is Map) {
+          // Safe type casting for local database data
+          final homePageMap = Map<String, dynamic>.from(homePageData);
+          final selectedTypesRaw = homePageMap['selectedTrackingTypes'];
+          final completionTargetsRaw = homePageMap['completionTargets'];
+          
+          // Convert to proper Map<String, dynamic> if needed
+          Map<String, dynamic> selectedTypes = {};
+          Map<String, dynamic> completionTargets = {};
+          
+          if (selectedTypesRaw != null) {
+            if (selectedTypesRaw is Map) {
+              selectedTypes = Map<String, dynamic>.from(selectedTypesRaw);
+            }
+          }
+          
+          if (completionTargetsRaw != null) {
+            if (completionTargetsRaw is Map) {
+              completionTargets = Map<String, dynamic>.from(completionTargetsRaw);
+            }
+          }
 
-          setState(() {
-            selectedTypes.forEach((key, value) {
-              if (_selectedTrackingTypesMap.containsKey(key)) {
-                List<dynamic> valueList = value as List<dynamic>;
-                _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
-              }
-            });
+          if (mounted) {
+            setState(() {
+              selectedTypes.forEach((key, value) {
+                if (_selectedTrackingTypesMap.containsKey(key)) {
+                  List<dynamic> valueList = value as List<dynamic>;
+                  _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+                }
+              });
 
-            completionTargets.forEach((key, value) {
-              _completionTargets[key] = int.tryParse(value.toString()) ?? 200;
+              completionTargets.forEach((key, value) {
+                final parsedValue = int.tryParse(value.toString()) ?? 200;
+                _completionTargets[key] = parsedValue;
+              });
             });
-          });
+          }
         }
       } else {
         // Use centralized Firebase service for authenticated users
@@ -145,25 +177,45 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         final homePageData = await firebaseService.fetchHomePageSettings();
 
         if (homePageData.isNotEmpty) {
-          final selectedTypes = homePageData['selectedTrackingTypes'] as Map<String, dynamic>? ?? {};
-          final completionTargets = homePageData['completionTargets'] as Map<String, dynamic>? ?? {};
+          // Safe type casting for Firebase data
+          final selectedTypesRaw = homePageData['selectedTrackingTypes'];
+          final completionTargetsRaw = homePageData['completionTargets'];
+          
+          // Convert to proper Map<String, dynamic> if needed
+          Map<String, dynamic> selectedTypes = {};
+          Map<String, dynamic> completionTargets = {};
+          
+          if (selectedTypesRaw != null) {
+            if (selectedTypesRaw is Map) {
+              selectedTypes = Map<String, dynamic>.from(selectedTypesRaw);
+            }
+          }
+          
+          if (completionTargetsRaw != null) {
+            if (completionTargetsRaw is Map) {
+              completionTargets = Map<String, dynamic>.from(completionTargetsRaw);
+            }
+          }
 
-          setState(() {
-            selectedTypes.forEach((key, value) {
-              if (_selectedTrackingTypesMap.containsKey(key)) {
-                List<dynamic> valueList = value as List<dynamic>;
-                _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
-              }
-            });
+          if (mounted) {
+            setState(() {
+              selectedTypes.forEach((key, value) {
+                if (_selectedTrackingTypesMap.containsKey(key)) {
+                  List<dynamic> valueList = value as List<dynamic>;
+                  _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+                }
+              });
 
-            completionTargets.forEach((key, value) {
-              _completionTargets[key] = int.tryParse(value.toString()) ?? 200;
+              completionTargets.forEach((key, value) {
+                final parsedValue = int.tryParse(value.toString()) ?? 200;
+                _completionTargets[key] = parsedValue;
+              });
             });
-          });
+          }
         }
       }
     } catch (e) {
-      // Handle error
+      // Handle error silently
     }
   }
 
