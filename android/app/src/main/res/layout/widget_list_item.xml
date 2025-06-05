@@ -24,112 +24,26 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical">
-
         <!-- First row: Subject info -->
-        <LinearLayout
-            android:id="@+id/list_item_container"
+        <TextView
+            android:id="@+id/item_subject_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/item_subject"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="@color/text"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:maxLines="1" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" · "
-                android:textSize="16sp"
-                android:textColor="@color/text" />
-
-            <TextView
-                android:id="@+id/item_subject_code"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="@color/text"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:maxLines="1" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" · "
-                android:textSize="16sp"
-                android:textColor="@color/text" />
-
-            <TextView
-                android:id="@+id/item_lecture_no"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="@color/text"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:maxLines="1" />
-        </LinearLayout>
-
+            android:textSize="16sp"
+            android:textColor="@color/text"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxLines="1" />
         <!-- Second row: Reminder info -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/item_reminder_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="2dp">
-
-            <TextView
-                android:id="@+id/item_reminder_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:textColor="@color/text"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:maxLines="1" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" · "
-                android:textSize="14sp"
-                android:textColor="@color/text" />
-
-            <TextView
-                android:id="@+id/item_reminder_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:textColor="@color/text"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:maxLines="1" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" · "
-                android:textSize="14sp"
-                android:textColor="@color/text" />
-
-            <TextView
-                android:id="@+id/item_reminder_frequency"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="14sp"
-                android:textColor="@color/text"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:maxLines="1" />
-        </LinearLayout>
+            android:textSize="14sp"
+            android:textColor="@color/text"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginTop="2dp" />
     </LinearLayout>
 </LinearLayout>

@@ -127,38 +127,28 @@ class WidgetListViewFactory(
         // NEW CODE: Check if this item is being processed
         val processingItems = sharedPreferences.getStringSet(TodayWidget.PREF_PROCESSING_ITEMS, emptySet()) ?: emptySet()
         val itemKey = "${record["category"]}_${record["sub_category"]}_${record["record_title"]}"
-        val isProcessing = processingItems.contains(itemKey)
-
-        // Set all the available fields to the corresponding TextViews
-        rv.setTextViewText(R.id.item_subject, record["category"])
-        rv.setTextViewText(R.id.item_subject_code, record["sub_category"])
-        rv.setTextViewText(R.id.item_lecture_no, record["record_title"])
-
-        // Check if the fields exist before setting them
-        if (record.containsKey("reminder_time")) {
-            rv.setTextViewText(R.id.item_reminder_time, record["reminder_time"])
+        val isProcessing = processingItems.contains(itemKey)        // Set the combined subject info
+        val subjectInfo = "${record["category"]} · ${record["sub_category"]} · ${record["record_title"]}"
+        rv.setTextViewText(R.id.item_subject_info, subjectInfo)        // Set the combined reminder info
+        val reminderInfoParts = mutableListOf<String>()
+        if (record.containsKey("reminder_time") && !record["reminder_time"].isNullOrEmpty()) {
+            reminderInfoParts.add(record["reminder_time"]!!)
         }
-
-        if (record.containsKey("scheduled_date")) {
-            rv.setTextViewText(R.id.item_reminder_date, record["scheduled_date"])
+        if (record.containsKey("scheduled_date") && !record["scheduled_date"].isNullOrEmpty()) {
+            reminderInfoParts.add(record["scheduled_date"]!!)
         }
-
-        if (record.containsKey("recurrence_frequency")) {
-            rv.setTextViewText(R.id.item_reminder_frequency, record["recurrence_frequency"])
+        if (record.containsKey("recurrence_frequency") && !record["recurrence_frequency"].isNullOrEmpty()) {
+            reminderInfoParts.add(record["recurrence_frequency"]!!)
         }
+        val reminderInfo = reminderInfoParts.joinToString(" · ")
+        rv.setTextViewText(R.id.item_reminder_info, reminderInfo)
 
         val normalFlags = Paint.ANTI_ALIAS_FLAG
-        val strikethroughFlags = Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG
+        val strikethroughFlags = Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG        // Set the paint flags based on whether the item is being processed
+        rv.setInt(R.id.item_subject_info, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
 
-        // Set the paint flags based on whether the item is being processed
-        rv.setInt(R.id.item_subject, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
-        rv.setInt(R.id.item_subject_code, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
-        rv.setInt(R.id.item_lecture_no, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
-
-        // Apply paint flags to the optional fields as well
-        rv.setInt(R.id.item_reminder_time, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
-        rv.setInt(R.id.item_reminder_date, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
-        rv.setInt(R.id.item_reminder_frequency, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
+        // Apply paint flags to the reminder info as well
+        rv.setInt(R.id.item_reminder_info, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
 
         // Create and fill the intent with all record data
         val fillInIntent = Intent()
