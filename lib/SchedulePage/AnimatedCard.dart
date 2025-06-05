@@ -106,7 +106,7 @@ class AnimatedCard extends StatelessWidget {
                               child: RevisionRadarChart(
                                 key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}'),
                                 dateLearnt: record['date_initiated'],
-                                datesMissedRevisions: List<String>.from(record['dates_missed_countss'] ?? []),
+                                datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
                                 datesRevised: List<String>.from(record['dates_updated'] ?? []),
                                 showLabels: false,
                               ),
