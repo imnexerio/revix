@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseAuthService.dart';
+import '../widgets/AnimatedSquareText.dart';
 import 'UrlLauncher.dart';
 
 class ForgotPassPage extends StatefulWidget {
@@ -14,12 +15,11 @@ class _ForgotPassPageState extends State<ForgotPassPage>
     with SingleTickerProviderStateMixin {  final TextEditingController _emailController = TextEditingController();
   final FirebaseAuthService _authService = FirebaseAuthService();
   final _formKey = GlobalKey<FormState>();
-
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _showLogo = false;
   bool _isLoading = false;
   String? _errorMessage;
-
   @override
   void initState() {
     super.initState();
@@ -33,7 +33,17 @@ class _ForgotPassPageState extends State<ForgotPassPage>
         curve: Curves.easeIn,
       ),
     );
+    
     _animationController.forward();
+    
+    // Show logo with a delay to trigger animation
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _showLogo = true;
+        });
+      }
+    });
   }
 
   @override
@@ -115,8 +125,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 20),
-                      Hero(
+                      const SizedBox(height: 20),                      Hero(
                         tag: 'app_logo',
                         child: Container(
                           height: 100,
@@ -131,10 +140,21 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                               ),
                             ],
                           ),
-                          child: Image.asset(
-                            'assets/icon/icon-text.png',
-                            fit: BoxFit.contain,
-                          ),
+                          child: _showLogo ? AnimatedSquareText(
+                            text: 'revix',
+                            size: 100,
+                            borderRadius: 50, // Half of size to make it perfectly round
+                            backgroundColor: const Color(0xFF00FFFC),
+                            textColor: const Color(0xFF06171F),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                            animationDuration: const Duration(milliseconds: 1500),
+                            autoStart: true, // Auto start when widget is created
+                            loop: true, // Enable looping animation
+                            loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops
+                            boxShadow: [], // Remove shadow since container already has it
+                          ) : Container(), // Empty container when not showing
                         ),
                       ),
                       const SizedBox(height: 24),
