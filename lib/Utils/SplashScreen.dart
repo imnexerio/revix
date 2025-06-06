@@ -12,7 +12,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late AnimationController _controller;
   late List<Animation<double>> _letterAnimations;
   late Animation<double> _subtitleAnimation;
-  final String _text = 'REViX';
+  final String _text = 'revix';
   
   @override
   void initState() {
