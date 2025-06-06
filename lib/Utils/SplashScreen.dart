@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -8,33 +7,61 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
+  late List<Animation<double>> _letterAnimations;
+  late Animation<double> _subtitleAnimation;
+  final String _text = 'revix';
+  
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
-    );
+      duration: const Duration(milliseconds: 2000),
+    );    // Create staggered animations for each letter
+    _letterAnimations = List.generate(_text.length, (index) {
+      return Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            index * 0.15, // Stagger each letter by 150ms
+            (index * 0.15) + 0.4, // Each letter animation lasts 400ms
+            curve: Curves.bounceOut,
+          ),
+        ),
+      );
+    });
 
-    _fadeAnimation = Tween<double>(
+    // Subtitle animation starts after letters
+    _subtitleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: Curves.easeIn,
+        curve: const Interval(0.7, 1.0, curve: Curves.easeInOut),
       ),
     );
 
-    _controller.forward().whenComplete(() => _navigateToHome());
+    _startAnimation();
+  }
+
+  void _startAnimation() {
+    _controller.forward().whenComplete(() {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        _navigateToHome();
+      });
+    });
   }
 
   void _navigateToHome() {
-    Navigator.of(context).pushReplacementNamed('/home');
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
   }
 
   @override
@@ -62,63 +89,81 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         ),
         child: SafeArea(
           child: Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withOpacity(0.1),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,              children: [
+                // Animated text with individual letter pop-ins
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: _text.split('').asMap().entries.map((entry) {
+                      int index = entry.key;
+                      String letter = entry.value;
+                      
+                      return AnimatedBuilder(
+                        animation: _letterAnimations[index],
+                        builder: (context, child) {
+                          // Clamp the animation value to prevent overflow
+                          double animationValue = _letterAnimations[index].value.clamp(0.0, 1.0);
+                          
+                          return Transform.scale(
+                            scale: animationValue,
+                            child: Opacity(
+                              opacity: animationValue,
+                              child: Text(
+                                letter,
+                                style: textTheme.displayLarge?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 48,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 30),                // Animated subtitle
+                AnimatedBuilder(
+                  animation: _subtitleAnimation,
+                  builder: (context, child) {
+                    // Clamp the animation value to prevent overflow
+                    double animationValue = _subtitleAnimation.value.clamp(0.0, 1.0);
+                    
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - animationValue)),
+                      child: Opacity(
+                        opacity: animationValue,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: colorScheme.primary.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Track • Analyze • Improve',
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: colorScheme.primary.withOpacity(0.8),
+                              letterSpacing: 1.0,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(24),
-                    child: Lottie.asset(
-                      'assets/revix.json',
-                      controller: _controller,
-                      onLoaded: (composition) {
-                        _controller.duration = composition.duration;
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 40),                  Text(
-                    'revix',
-                    style: textTheme.displayMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Track • Analyze • Improve',
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.primary.withOpacity(0.8),
-                        letterSpacing: 0.5,
-                        fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ),
