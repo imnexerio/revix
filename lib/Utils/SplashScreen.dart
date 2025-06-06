@@ -83,16 +83,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ),
                     padding: const EdgeInsets.all(24),
                     child: Lottie.asset(
-                      'assets/reTracker.json',
+                      'assets/revix.json',
                       controller: _controller,
                       onLoaded: (composition) {
                         _controller.duration = composition.duration;
                       },
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  Text(
-                    'reTracker',
+                  const SizedBox(height: 40),                  Text(
+                    'revix',
                     style: textTheme.displayMedium?.copyWith(
                       color: colorScheme.primary,
                       fontWeight: FontWeight.w600,

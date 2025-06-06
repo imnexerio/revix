@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
+import 'package:revix/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 
 Future<void> uploadProfilePicture(BuildContext context, XFile imageFile) async {

@@ -1,4 +1,4 @@
-﻿int calculateMonthlyLectures(List<Map<String, dynamic>> records) {
+int calculateMonthlyLectures(List<Map<String, dynamic>> records) {
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
 

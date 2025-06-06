@@ -55,7 +55,7 @@ cd retracker
    flutterfire configure
    ```
    - Select the Firebase project you created
-   - **Important**: Use `com.imnexerio.retracker` as the Android package name
+   - **Important**: Use `com.imnexerio.revix` as the Android package name
 6. Update Realtime Database Rules:
    ```json
    {

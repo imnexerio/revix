@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:retracker/Utils/FetchTypesUtils.dart';
+import 'package:revix/Utils/FetchTypesUtils.dart';
 
 class TrackingTypeDropdown extends StatefulWidget {
   final String trackingType;

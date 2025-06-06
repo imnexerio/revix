@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
-import 'package:retracker/Utils/DataMigrationService.dart';
-import 'package:retracker/Utils/GuestAuthService.dart';
+import 'package:revix/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
+import 'package:revix/Utils/DataMigrationService.dart';
+import 'package:revix/Utils/GuestAuthService.dart';
 
 // Conditional imports for platform-specific functionality
 import 'web_file_helper.dart' if (dart.library.io) 'mobile_file_helper.dart' as file_helper;
@@ -60,7 +60,7 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         }
         
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final filename = 'retracker_data_$timestamp.json';
+        final filename = 'revix_data_$timestamp.json';
         
         if (kIsWeb) {
           await file_helper.FileHelper.downloadFile(formattedData, filename);

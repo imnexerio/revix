@@ -1,4 +1,4 @@
-﻿
+
 double calculateMonthlyCompletion(List<Map<String, dynamic>> records,  int customCompletionTarget) {
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);

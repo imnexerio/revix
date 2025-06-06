@@ -120,7 +120,7 @@ class LocalDatabaseService {
       if (usersData[_currentUserId] == null) {
         usersData[_currentUserId] = {
           'profile_data': {
-            'email': 'guest@retracker.local',
+            'email': 'guest@revix.local',
             'name': 'Guest User',
             'createdAt': DateTime.now().toIso8601String(),
             'custom_trackingType': ['Lectures', 'Others'],

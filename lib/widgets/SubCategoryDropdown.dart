@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class SubCategoryDropdown extends StatelessWidget {
   final Map<String, List<String>> subCategories;

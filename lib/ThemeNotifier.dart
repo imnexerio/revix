@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:retracker/theme_data.dart';
+import 'package:revix/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'CustomThemeGenerator.dart';
 import 'Utils/GuestAuthService.dart';

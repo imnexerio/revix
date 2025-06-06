@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:retracker/AI/gemini_service.dart';
+import 'package:revix/AI/gemini_service.dart';
 import 'package:uuid/uuid.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import 'ApiKeyManager.dart';

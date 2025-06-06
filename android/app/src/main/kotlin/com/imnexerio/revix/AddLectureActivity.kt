@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+package com.imnexerio.revix
 
 import android.app.AlertDialog
 import android.app.DatePickerDialog
@@ -13,8 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-import com.imnexerio.retracker.CalculateCustomNextDate.Companion.calculateCustomNextDate
-import com.imnexerio.retracker.utils.RevisionScheduler
 import java.text.SimpleDateFormat
 import java.util.*
 

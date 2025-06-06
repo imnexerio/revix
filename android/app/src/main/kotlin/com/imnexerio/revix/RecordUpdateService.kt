@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+package com.imnexerio.revix
 
 import android.app.Service
 import android.appwidget.AppWidgetManager
@@ -8,15 +8,13 @@ import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.Log
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.imnexerio.retracker.CalculateCustomNextDate.Companion.calculateCustomNextDate
-import com.imnexerio.retracker.utils.RevisionScheduler
+import revix.CalculateCustomNextDate.Companion.calculateCustomNextDate
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date

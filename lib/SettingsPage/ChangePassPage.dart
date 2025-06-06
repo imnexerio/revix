@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, EmailAuthProvider;
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/CustomSnackBar.dart';
 import '../Utils/FirebaseAuthService.dart';
 
 class ChangePasswordPage extends StatefulWidget {

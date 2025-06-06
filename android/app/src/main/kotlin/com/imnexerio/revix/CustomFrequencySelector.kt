@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+package com.imnexerio.revix
 
 import android.content.Context
 import android.os.Bundle
@@ -10,7 +10,7 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
-import com.imnexerio.retracker.databinding.CustomFrequencySelectorBinding
+import revix.databinding.CustomFrequencySelectorBinding
 import java.util.*
 
 class CustomFrequencySelector : DialogFragment() {

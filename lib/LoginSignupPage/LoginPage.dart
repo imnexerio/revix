@@ -2,8 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, Us
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:retracker/LoginSignupPage/ForgotPassPage.dart';
-import 'package:retracker/main.dart';
+import 'package:revix/LoginSignupPage/ForgotPassPage.dart';
+import 'package:revix/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ThemeNotifier.dart';
 import '../Utils/GuestAuthService.dart';

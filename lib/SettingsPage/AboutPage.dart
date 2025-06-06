@@ -57,7 +57,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'reTracker',
+                    'revix',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onBackground,
@@ -149,7 +149,7 @@ class AboutPage extends StatelessWidget {
                       onPressed: () {
                           customSnackBar(
                             context: context,
-                            message: 'Thank you for using reTracker!',
+                            message: 'Thank you for using revix!',
                         );
 
                       },

@@ -1,7 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:retracker/HomePage/revision_calculations.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
+import 'package:revix/HomePage/revision_calculations.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FetchTypesUtils.dart';

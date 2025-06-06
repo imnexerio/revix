@@ -49,13 +49,13 @@ class FileHelper {
   
   static String getHintText() {
     if (Platform.isAndroid) {
-      return '/storage/emulated/0/Download/retracker_data_xxxxx.json';
+      return '/storage/emulated/0/Download/revix_data_xxxxx.json';
     } else if (Platform.isIOS) {
-      return 'Documents/retracker_data_xxxxx.json';
+      return 'Documents/revix_data_xxxxx.json';
     } else if (Platform.isWindows) {
-      return 'C:\\Users\\YourName\\Downloads\\retracker_data_xxxxx.json';
+      return 'C:\\Users\\YourName\\Downloads\\revix_data_xxxxx.json';
     } else {
-      return '/Users/YourName/Downloads/retracker_data_xxxxx.json';
+      return '/Users/YourName/Downloads/revix_data_xxxxx.json';
     }
   }
   

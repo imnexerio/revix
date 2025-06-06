@@ -1,10 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:retracker/AddLectureForm.dart';
-import 'package:retracker/DetailsPage/DetailsPage.dart';
-import 'package:retracker/LoginSignupPage/LoginPage.dart';
-import 'package:retracker/theme_data.dart';
+import 'package:revix/AddLectureForm.dart';
+import 'package:revix/DetailsPage/DetailsPage.dart';
+import 'package:revix/LoginSignupPage/LoginPage.dart';
+import 'package:revix/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -122,7 +122,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, themeNotifier, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'reTracker',
+          title: 'revix',
           theme: themeNotifier.currentTheme,
           darkTheme: themeNotifier.currentTheme,
           themeMode: themeNotifier.currentThemeMode,

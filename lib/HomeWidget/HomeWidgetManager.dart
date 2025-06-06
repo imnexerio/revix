@@ -104,7 +104,7 @@ class HomeWidgetService {
     );
 
     // Notify the native side that data was updated from Flutter
-    var platform = MethodChannel('com.imnexerio.retracker/widget_refresh');
+    var platform = MethodChannel('com.imnexerio.revix/widget_refresh');
     try {
       await platform.invokeMethod('refreshCompleted');
     } catch (e) {

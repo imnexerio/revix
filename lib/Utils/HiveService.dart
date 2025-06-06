@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'GuestAuthService.dart';
 
 class HiveService {
-  static const String _boxName = 'retracker_settings';
+  static const String _boxName = 'revix_settings';
   static Box? _box;
 
   // Initialize Hive and open the box

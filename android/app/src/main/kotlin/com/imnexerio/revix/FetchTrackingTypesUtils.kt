@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+package com.imnexerio.revix
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot

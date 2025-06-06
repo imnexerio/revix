@@ -1,4 +1,4 @@
-﻿import 'FirebaseDatabaseService.dart';
+import 'FirebaseDatabaseService.dart';
 
 Future<void> UpdateRecords(
     String selectedCategory,

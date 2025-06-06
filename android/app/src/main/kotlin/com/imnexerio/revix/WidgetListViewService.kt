@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+package com.imnexerio.revix
 
 import android.content.Context
 import android.content.Intent

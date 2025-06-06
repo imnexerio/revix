@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+package com.imnexerio.revix
 
 import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Bundle
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.imnexerio.retracker/widget_refresh"
+    private val CHANNEL = "revix/widget_refresh"
     private lateinit var batteryOptManager: BatteryOptimizationManager
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

@@ -16,7 +16,7 @@
     </queries>
 
     <application
-        android:label="reTracker"
+        android:label="revix"
         android:icon="@mipmap/ic_launcher">
 
         <receiver
@@ -24,7 +24,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.imnexerio.retracker.ACTION_REFRESH" />
+                <action android:name="revix.ACTION_REFRESH" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -64,7 +64,7 @@
         <activity
             android:name=".AddLectureActivity"
             android:exported="false"
-            android:label="Add New Record(reTracker)"
+            android:label="Add New Record(revix)"
             android:theme="@style/DialogWithCenteredTitle"
             android:windowSoftInputMode="adjustResize">
         </activity>

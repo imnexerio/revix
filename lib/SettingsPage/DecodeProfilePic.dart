@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 
 Future<Image?> decodeProfileImage(BuildContext context) async {

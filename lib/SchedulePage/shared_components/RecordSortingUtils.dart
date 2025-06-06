@@ -1,4 +1,4 @@
-﻿/// Utility class containing common sorting logic for schedule tables
+/// Utility class containing common sorting logic for schedule tables
 class RecordSortingUtils {
   /// Sorts a list of records based on the specified field and direction
   static List<Map<String, dynamic>> sortRecords({

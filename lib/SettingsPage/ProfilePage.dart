@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import 'ProfileImageUpload.dart';
 import 'ProfileProvider.dart';
 import 'ProfileImageWidget.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
+import 'package:revix/Utils/CustomSnackBar.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/FirebaseAuthService.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/CustomSnackBar.dart';
 import '../Utils/FirebaseAuthService.dart';
 
 Future<void> sendVerificationEmail(BuildContext context) async {

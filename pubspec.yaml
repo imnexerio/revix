@@ -1,4 +1,4 @@
-name: retracker
+name: revix
 description: "A cross platform application is to track any task easily."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -101,7 +101,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/reTracker.json
+    - assets/revix.json
     - assets/icon/icon.png
     - assets/github.png
   # To add assets to your application, add an assets section, like this:

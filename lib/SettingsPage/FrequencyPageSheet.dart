@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:retracker/Utils/customSnackBar.dart';
+import 'package:revix/Utils/customSnackBar.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 
 void showAddFrequencySheet(

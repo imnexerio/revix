@@ -1,4 +1,4 @@
-package com.imnexerio.retracker
+package com.imnexerio.revix
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -12,12 +12,11 @@ import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONException
 
-class TodayWidget : AppWidgetProvider() {
-    companion object {
-        const val ACTION_REFRESH = "com.imnexerio.retracker.ACTION_REFRESH"
-        const val ACTION_ITEM_CLICK = "com.imnexerio.retracker.ACTION_ITEM_CLICK"
-        const val ACTION_ADD_RECORD = "com.imnexerio.retracker.ACTION_ADD_RECORD"
-        const val ACTION_SWITCH_VIEW = "com.imnexerio.retracker.ACTION_SWITCH_VIEW"
+class TodayWidget : AppWidgetProvider() {    companion object {
+        const val ACTION_REFRESH = "revix.ACTION_REFRESH"
+        const val ACTION_ITEM_CLICK = "revix.ACTION_ITEM_CLICK"
+        const val ACTION_ADD_RECORD = "revix.ACTION_ADD_RECORD"
+        const val ACTION_SWITCH_VIEW = "revix.ACTION_SWITCH_VIEW"
         const val PREF_PROCESSING_ITEMS = "widget_processing_items"
 
         private const val VIEW_TODAY = "today"

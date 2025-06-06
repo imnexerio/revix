@@ -1,4 +1,4 @@
-﻿int calculateMonthlyRevisions(List<Map<String, dynamic>> records) {
+int calculateMonthlyRevisions(List<Map<String, dynamic>> records) {
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
   int count = 0;
