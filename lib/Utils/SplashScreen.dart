@@ -86,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               children: [                // Animated square container with text using the modular component
                 AnimatedSquareText(
                   text: 'revix',
-                  size: 280,
+                  size: 250,
                   borderRadius: 40,
                   backgroundColor: const Color(0xFF00FFFC),
                   textColor: const Color(0xFF06171F),
@@ -106,11 +106,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     return Transform.translate(
                       offset: Offset(0, 20 * (1 - animationValue)),
                       child: Opacity(
-                        opacity: animationValue,
-                        child: Container(
+                        opacity: animationValue,                        child: Container(
+                          width: 250, // Same width as the square
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 35,
-                            vertical: 10,
+                            horizontal: 20,
+                            vertical: 12,
                           ),
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
@@ -122,6 +122,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ),
                           child: Text(
                             'Track • Analyze • Improve',
+                            textAlign: TextAlign.center, // Center the text within the container
                             style: GoogleFonts.nunito(
                               color: colorScheme.primary.withOpacity(0.8),
                               letterSpacing: 1.0,
