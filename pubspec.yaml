@@ -103,6 +103,7 @@ flutter:
   assets:
     - assets/revix.json
     - assets/icon/icon.png
+    - assets/icon/icon-text.png
     - assets/github.png
   # To add assets to your application, add an assets section, like this:
   # assets:

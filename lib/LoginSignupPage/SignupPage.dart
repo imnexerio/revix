@@ -222,7 +222,7 @@ class _SignupPageState extends State<SignupPage>
                             ],
                           ),
                           child: Image.asset(
-                            'assets/icon/icon.png',
+                            'assets/icon/icon-text.png',
                             fit: BoxFit.contain,
                           ),
                         ),

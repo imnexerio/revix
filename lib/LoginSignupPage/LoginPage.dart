@@ -226,7 +226,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             ],
                           ),
                           child: Image.asset(
-                            'assets/icon/icon.png', // Make sure to add your logo in assets
+                            'assets/icon/icon-text.png', // Make sure to add your logo in assets
                             fit: BoxFit.contain,
                           ),
                         ),

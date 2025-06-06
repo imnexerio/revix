@@ -132,7 +132,7 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                             ],
                           ),
                           child: Image.asset(
-                            'assets/icon/icon.png',
+                            'assets/icon/icon-text.png',
                             fit: BoxFit.contain,
                           ),
                         ),
