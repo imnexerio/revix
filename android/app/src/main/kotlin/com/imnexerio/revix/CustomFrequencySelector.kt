@@ -10,7 +10,8 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
-import revix.databinding.CustomFrequencySelectorBinding
+import com.imnexerio.revix.R
+import com.imnexerio.revix.databinding.CustomFrequencySelectorBinding
 import java.util.*
 
 class CustomFrequencySelector : DialogFragment() {

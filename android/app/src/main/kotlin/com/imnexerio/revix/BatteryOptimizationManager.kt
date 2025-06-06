@@ -10,6 +10,7 @@ import android.provider.Settings
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.app.AlertDialog
+import com.imnexerio.revix.R
 
 class BatteryOptimizationManager(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("BatteryOptPrefs", Context.MODE_PRIVATE)

@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import java.text.SimpleDateFormat
 import java.util.*
+import com.imnexerio.revix.R
 
 class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
     private lateinit var categorySpinner: Spinner
@@ -690,12 +691,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             revisionData["frequency"] = "Custom"
             revisionData["custom_params"] = customFrequencyData
             recordData["recurrence_data"] = revisionData
-
             try {
                 val dateScheduled_ = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayDate)
                 val scheduledCalendar_ = Calendar.getInstance()
                 scheduledCalendar_.time = dateScheduled_ ?: Date()
-                val nextDate = calculateCustomNextDate(scheduledCalendar_, revisionData)
+                val nextDate = CalculateCustomNextDate.calculateCustomNextDate(scheduledCalendar_, revisionData)
                 dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
                 scheduledDateEditText.setText(dateScheduled)
             } catch (e: Exception) {

@@ -8,6 +8,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import android.content.SharedPreferences
 import android.graphics.Paint
+import com.imnexerio.revix.R
 
 class WidgetListViewService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {

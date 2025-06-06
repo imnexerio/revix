@@ -14,7 +14,6 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import revix.CalculateCustomNextDate.Companion.calculateCustomNextDate
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -262,7 +261,7 @@ class RecordUpdateService : Service() {
                 val scheduledCalendar = Calendar.getInstance()
                 scheduledCalendar.time = dateScheduled ?: Date()
 
-                val nextDate = calculateCustomNextDate(scheduledCalendar, revisionData)
+                val nextDate = CalculateCustomNextDate.calculateCustomNextDate(scheduledCalendar, revisionData)
                 val nextRevisionDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
 
                 updateRecordWithNextDate(
