@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/AnimatedSquareText.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -9,79 +10,43 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _controller;
-  late List<Animation<double>> _letterAnimations;
+  late AnimationController _subtitleController;
   late Animation<double> _subtitleAnimation;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _containerAnimation;
-  final String _text = 'revix';
-    @override
+  @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    
+    // Controller for subtitle animation only
+    _subtitleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 800),
     );
 
-    // Container animation - starts with app icon size and expands
-    _containerAnimation = Tween<double>(
-      begin: 0.3,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOutBack),
-      ),
-    );
-
-    // Scale animation for the entire content
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.2, 0.6, curve: Curves.elasticOut),
-      ),
-    );
-
-    // Create staggered animations for each letter
-    _letterAnimations = List.generate(_text.length, (index) {
-      return Tween<double>(
-        begin: 0.0,
-        end: 1.0,
-      ).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(
-            0.3 + (index * 0.1), // Stagger each letter
-            0.3 + (index * 0.1) + 0.3, // Each letter animation duration
-            curve: Curves.bounceOut,
-          ),
-        ),
-      );
-    });
-
-    // Subtitle animation starts after letters
+    // Subtitle animation
     _subtitleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.8, 1.0, curve: Curves.easeInOut),
+        parent: _subtitleController,
+        curve: Curves.easeInOut,
       ),
     );
 
-    // Start animation immediately when splash screen loads
-    _startAnimation();
+    // Start subtitle animation after square animation completes
+    _scheduleSubtitleAnimation();
     
     // Set minimum splash screen duration and navigate after app is ready
     _scheduleNavigation();
   }
 
-  void _startAnimation() {
-    _controller.forward();
+  void _scheduleSubtitleAnimation() {
+    // Start subtitle animation after the square animation (2 seconds)
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        _subtitleController.forward();
+      }
+    });
   }
   void _scheduleNavigation() {
     // Wait for at least 3.5 seconds to show the full animation and give app time to load
@@ -95,12 +60,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       Navigator.of(context).pushReplacementNamed('/home');
     }
   }
-
   @override
   void dispose() {
-    _controller.dispose();
+    _subtitleController.dispose();
     super.dispose();
-  }  @override
+  }@override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
@@ -116,79 +80,36 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             ],
           ),
         ),        child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Animated square container with text
-                    Transform.scale(
-                      scale: _containerAnimation.value,
-                      child: Container(
-                        width: 280,
-                        height: 280,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00FFFC), // Cyan background for square
-                          borderRadius: BorderRadius.circular(40), // Round-edged square
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              spreadRadius: 5,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Transform.scale(
-                          scale: _scaleAnimation.value,
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: _text.split('').asMap().entries.map((entry) {
-                                int index = entry.key;
-                                String letter = entry.value;
-                                
-                                return AnimatedBuilder(
-                                  animation: _letterAnimations[index],
-                                  builder: (context, child) {
-                                    double animationValue = _letterAnimations[index].value.clamp(0.0, 1.0);
-                                    
-                                    return Transform.scale(
-                                      scale: animationValue,
-                                      child: Opacity(
-                                        opacity: animationValue,
-                                        child: Text(
-                                          letter,
-                                          style: GoogleFonts.nunito(
-                                            color: const Color(0xFF06171F), // Dark text color
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 48,
-                                            letterSpacing: 2.0,
-                                            height: 1.0,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    // Animated subtitle outside the square
-                    Transform.translate(
-                      offset: Offset(0, 20 * (1 - _subtitleAnimation.value.clamp(0.0, 1.0))),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [                // Animated square container with text using the modular component
+                AnimatedSquareText(
+                  text: 'revix',
+                  size: 280,
+                  borderRadius: 40,
+                  backgroundColor: const Color(0xFF00FFFC),
+                  textColor: const Color(0xFF06171F),
+                  fontSize: 48,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.0,
+                  animationDuration: const Duration(milliseconds: 2000),
+                  autoStart: true,
+                ),
+                const SizedBox(height: 40),
+                // Animated subtitle outside the square
+                AnimatedBuilder(
+                  animation: _subtitleAnimation,
+                  builder: (context, child) {
+                    double animationValue = _subtitleAnimation.value.clamp(0.0, 1.0);
+                    
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - animationValue)),
                       child: Opacity(
-                        opacity: _subtitleAnimation.value.clamp(0.0, 1.0),
+                        opacity: animationValue,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
+                            horizontal: 35,
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
@@ -210,11 +131,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
+              ],
+            ),
           ),
         ),
       ),
