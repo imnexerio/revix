@@ -12,7 +12,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late AnimationController _controller;
   late List<Animation<double>> _letterAnimations;
   late Animation<double> _subtitleAnimation;
-  final String _text = 'REVIX';
+  final String _text = 'REViX';
   
   @override
   void initState() {
@@ -45,17 +45,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.7, 1.0, curve: Curves.easeInOut),
-      ),
-    );
+      ),    );
 
+    // Start animation immediately when splash screen loads
     _startAnimation();
+    
+    // Set minimum splash screen duration and navigate after app is ready
+    _scheduleNavigation();
   }
 
   void _startAnimation() {
-    _controller.forward().whenComplete(() {
-      Future.delayed(const Duration(milliseconds: 800), () {
-        _navigateToHome();
-      });
+    _controller.forward();
+  }
+
+  void _scheduleNavigation() {
+    // Wait for at least 3 seconds to show the full animation and give app time to load
+    Future.delayed(const Duration(milliseconds: 3000), () {
+      _navigateToHome();
     });
   }
 
