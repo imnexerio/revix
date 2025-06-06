@@ -10,6 +10,7 @@ import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/FirebaseAuthService.dart';
+import '../widgets/AnimatedSquareText.dart';
 import 'SignupPage.dart';
 import 'UrlLauncher.dart';
 
@@ -28,6 +29,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _showLogo = false;
 
   bool _passwordVisibility = false;
   bool _isLoading = false;
@@ -36,9 +38,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   Future<String> _getAppVersion() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     return '${packageInfo.version}+${packageInfo.buildNumber}';
-  }
-
-  @override
+  }  @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
@@ -51,7 +51,17 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         curve: Curves.easeIn,
       ),
     );
+    
     _animationController.forward();
+    
+    // Show logo with a delay to trigger animation
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _showLogo = true;
+        });
+      }
+    });
   }
 
   @override
@@ -208,8 +218,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 40),
-                      // Logo
+                      const SizedBox(height: 40),                      // Logo
                       Hero(
                         tag: 'app_logo',
                         child: Container(
@@ -224,11 +233,21 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                 offset: const Offset(0, 4),
                               ),
                             ],
-                          ),
-                          child: Image.asset(
-                            'assets/icon/icon-text.png', // Make sure to add your logo in assets
-                            fit: BoxFit.contain,
-                          ),
+                          ),                          child: _showLogo ? AnimatedSquareText(
+                            text: 'revix',
+                            size: 120,
+                            borderRadius: 60, // Half of size to make it perfectly round
+                            backgroundColor: const Color(0xFF00FFFC),
+                            textColor: const Color(0xFF06171F),
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                            animationDuration: const Duration(milliseconds: 1500),
+                            autoStart: true, // Auto start when widget is created
+                            loop: true, // Enable looping animation
+                            loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops
+                            boxShadow: [], // Remove shadow since container already has it
+                          ) : Container(), // Empty container when not showing
                         ),
                       ),
                       const SizedBox(height: 24),

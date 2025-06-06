@@ -12,6 +12,8 @@ class AnimatedSquareText extends StatefulWidget {
   final double letterSpacing;
   final Duration animationDuration;
   final bool autoStart;
+  final bool loop;
+  final Duration? loopDelay;
   final VoidCallback? onAnimationComplete;
   final List<BoxShadow>? boxShadow;
   
@@ -27,6 +29,8 @@ class AnimatedSquareText extends StatefulWidget {
     this.letterSpacing = 2.0,
     this.animationDuration = const Duration(milliseconds: 2000),
     this.autoStart = true,
+    this.loop = false,
+    this.loopDelay = const Duration(milliseconds: 1000),
     this.onAnimationComplete,
     this.boxShadow,
   }) : super(key: key);
@@ -37,27 +41,37 @@ class AnimatedSquareText extends StatefulWidget {
 
 class _AnimatedSquareTextState extends State<AnimatedSquareText>
     with TickerProviderStateMixin {
-  late AnimationController _controller;
+  late AnimationController _containerController;
+  late AnimationController _textController;
   late List<Animation<double>> _letterAnimations;
   late Animation<double> _scaleAnimation;
   late Animation<double> _containerAnimation;
+  
+  bool _hasContainerAnimated = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    
+    // Separate controllers for container and text
+    _containerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    
+    _textController = AnimationController(
       vsync: this,
       duration: widget.animationDuration,
     );
 
-    // Container animation - starts small and expands
+    // Container animation - starts small and expands (only once)
     _containerAnimation = Tween<double>(
       begin: 0.3,
       end: 1.0,
     ).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOutBack),
+        parent: _containerController,
+        curve: Curves.easeOutBack,
       ),
     );
 
@@ -67,8 +81,8 @@ class _AnimatedSquareTextState extends State<AnimatedSquareText>
       end: 1.0,
     ).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.2, 0.6, curve: Curves.elasticOut),
+        parent: _textController,
+        curve: const Interval(0.0, 0.4, curve: Curves.elasticOut),
       ),
     );
 
@@ -79,20 +93,41 @@ class _AnimatedSquareTextState extends State<AnimatedSquareText>
         end: 1.0,
       ).animate(
         CurvedAnimation(
-          parent: _controller,
+          parent: _textController,
           curve: Interval(
-            0.3 + (index * 0.1), // Stagger each letter
-            0.3 + (index * 0.1) + 0.3, // Each letter animation duration
+            0.2 + (index * 0.1), // Stagger each letter
+            0.2 + (index * 0.1) + 0.3, // Each letter animation duration
             curve: Curves.bounceOut,
           ),
         ),
       );
     });
 
-    // Listen for animation completion
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed && widget.onAnimationComplete != null) {
-        widget.onAnimationComplete!();
+    // Listen for container animation completion
+    _containerController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _hasContainerAnimated = true;
+        // Start text animation immediately after container animation
+        _textController.forward();
+      }
+    });
+
+    // Listen for text animation completion
+    _textController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (widget.onAnimationComplete != null) {
+          widget.onAnimationComplete!();
+        }
+        
+        // Handle looping - only reset and replay text animation
+        if (widget.loop && mounted) {
+          Future.delayed(widget.loopDelay ?? const Duration(milliseconds: 1000), () {
+            if (mounted) {
+              _textController.reset();
+              _textController.forward();
+            }
+          });
+        }
       }
     });
 
@@ -107,34 +142,41 @@ class _AnimatedSquareTextState extends State<AnimatedSquareText>
   /// Start the animation
   void startAnimation() {
     if (mounted) {
-      _controller.forward();
+      if (!_hasContainerAnimated) {
+        _containerController.forward();
+      } else {
+        _textController.forward();
+      }
     }
   }
 
   /// Reset the animation
   void resetAnimation() {
     if (mounted) {
-      _controller.reset();
+      _containerController.reset();
+      _textController.reset();
+      _hasContainerAnimated = false;
     }
   }
 
   /// Reverse the animation
   void reverseAnimation() {
     if (mounted) {
-      _controller.reverse();
+      _textController.reverse();
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _containerController.dispose();
+    _textController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge([_containerController, _textController]),
       builder: (context, child) {
         return Transform.scale(
           scale: _containerAnimation.value,
@@ -182,8 +224,7 @@ class _AnimatedSquareTextState extends State<AnimatedSquareText>
                                 height: 1.0,
                               ),
                             ),
-                          ),
-                        );
+                          ),                        );
                       },
                     );
                   }).toList(),
@@ -224,10 +265,10 @@ class AnimatedSquareController {
   }
   
   bool get isAnimating {
-    return _key.currentState?._controller.isAnimating ?? false;
+    return _key.currentState?._textController.isAnimating ?? false;
   }
   
   bool get isCompleted {
-    return _key.currentState?._controller.isCompleted ?? false;
+    return _key.currentState?._textController.isCompleted ?? false;
   }
 }
