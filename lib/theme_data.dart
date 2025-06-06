@@ -24,8 +24,8 @@ class AppThemes {
   ];
 }
 
-final ThemeData defaultLightTheme = CustomThemeGenerator.generateLightTheme(const Color.fromARGB(255, 0, 241, 245));
-final ThemeData defaultDarkTheme = CustomThemeGenerator.generateDarkTheme(const Color.fromARGB(255, 0, 241, 255));
+final ThemeData defaultLightTheme = CustomThemeGenerator.generateLightTheme(const Color.fromARGB(255, 0, 255, 252));
+final ThemeData defaultDarkTheme = CustomThemeGenerator.generateDarkTheme(const Color.fromARGB(255, 0, 255, 252));
 
 final ThemeData seaLightTheme = CustomThemeGenerator.generateLightTheme(const Color.fromARGB(255, 10, 128, 200));
 final ThemeData seaDarkTheme = CustomThemeGenerator.generateDarkTheme(const Color.fromARGB(255, 10, 128, 200));
