@@ -20,7 +20,7 @@ class AnimatedSquareText extends StatefulWidget {
   const AnimatedSquareText({
     Key? key,
     required this.text,
-    this.size = 280,
+    this.size = 0,
     this.borderRadius = 40,
     this.backgroundColor = const Color(0xFF00FFFC),
     this.textColor = const Color(0xFF06171F),
