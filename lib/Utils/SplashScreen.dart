@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -11,7 +12,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late AnimationController _controller;
   late List<Animation<double>> _letterAnimations;
   late Animation<double> _subtitleAnimation;
-  final String _text = 'revix';
+  final String _text = 'REVIX';
   
   @override
   void initState() {
@@ -109,14 +110,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           return Transform.scale(
                             scale: animationValue,
                             child: Opacity(
-                              opacity: animationValue,
-                              child: Text(
+                              opacity: animationValue,                              child: Text(
                                 letter,
-                                style: textTheme.displayLarge?.copyWith(
+                                style: GoogleFonts.nunito(
                                   color: colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 48,
-                                  letterSpacing: 1.0,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 58,
+                                  letterSpacing: 1.5,
+                                  height: 1.0,
                                 ),
                               ),
                             ),
