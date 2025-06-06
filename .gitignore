@@ -241,9 +241,6 @@ app.*.map.json
 /android/app/.cxx/RelWithDebInfo/4j6e4d5z/armeabi-v7a/.cmake/api/v1/reply/directory-.-RelWithDebInfo-d0094a50bb2071803777.json
 /android/app/.cxx/RelWithDebInfo/4j6e4d5z/x86/.cmake/api/v1/reply/directory-.-RelWithDebInfo-d0094a50bb2071803777.json
 /android/app/.cxx/RelWithDebInfo/4j6e4d5z/x86_64/.cmake/api/v1/reply/directory-.-RelWithDebInfo-d0094a50bb2071803777.json
-/firebase.json
-/lib/firebase_options.dart
-/android/app/google-services.json
 /GUEST_DATA_MIGRATION_FEATURE.md
 /android/app/.cxx/Debug/6p5h1ft3/hash_key.txt
 /android/app/.cxx/RelWithDebInfo/4j6e4d5z/hash_key.txt
@@ -296,9 +293,6 @@ app.*.map.json
 /android/app/.cxx/RelWithDebInfo/4j6e4d5z/x86/CMakeFiles/TargetDirectories.txt
 /android/app/.cxx/RelWithDebInfo/4j6e4d5z/x86_64/CMakeFiles/TargetDirectories.txt
 /.vscode/tasks.json
-/firebase.json
-/lib/firebase_options.dart
-/android/app/google-services.json
 /android/app/.cxx/Debug/6p5h1ft3/arm64-v8a/additional_project_files.txt
 /android/app/.cxx/Debug/6p5h1ft3/armeabi-v7a/additional_project_files.txt
 /android/app/.cxx/Debug/6p5h1ft3/x86/additional_project_files.txt
