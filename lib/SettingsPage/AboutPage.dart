@@ -40,9 +40,10 @@ class _AboutPageState extends State<AboutPage> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [                  Container(
-                    width: 80,
-                    height: 80,
+                children: [
+                  Container(
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -53,20 +54,22 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                       ],
                     ),
-                    child: _showLogo ? AnimatedSquareText(
-                      text: 'revix',
-                      size: 80,
-                      borderRadius: 40, // Half of size to make it perfectly round
-                      backgroundColor: const Color(0xFF00FFFC),
-                      textColor: const Color(0xFF06171F),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                      animationDuration: const Duration(milliseconds: 1500),
-                      autoStart: true, // Auto start when widget is created
-                      loop: false, // No looping for About page
-                      boxShadow: [], // Remove shadow since container already has it
-                    ) : Container(), // Empty container when not showing
+                    child: Center(
+                      child: _showLogo ? AnimatedSquareText(
+                        text: 'revix',
+                        size: 80,
+                        borderRadius: 40, // Half of size to make it perfectly round
+                        backgroundColor: const Color(0xFF00FFFC),
+                        textColor: const Color(0xFF06171F),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                        animationDuration: const Duration(milliseconds: 1500),
+                        autoStart: true, // Auto start when widget is created
+                        loop: false, // No looping for About page
+                        boxShadow: [], // Remove shadow since container already has it
+                      ) : Container(), // Empty container when not showing
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(

@@ -216,10 +216,9 @@ class _SignupPageState extends State<SignupPage>
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 20),                      Hero(
-                        tag: 'app_logo',
-                        child: Container(
-                          height: 100,
-                          width: 100,
+                        tag: 'app_logo',                        child: Container(
+                          height: 115,
+                          width: 115,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             boxShadow: [
@@ -230,21 +229,22 @@ class _SignupPageState extends State<SignupPage>
                               ),
                             ],
                           ),
-                          child: _showLogo ? AnimatedSquareText(
-                            text: 'revix',
-                            size: 100,
-                            borderRadius: 50, // Half of size to make it perfectly round
-                            backgroundColor: const Color(0xFF00FFFC),
-                            textColor: const Color(0xFF06171F),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                            animationDuration: const Duration(milliseconds: 1500),
-                            autoStart: true, // Auto start when widget is created
-                            loop: true, // Enable looping animation
-                            loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops
-                            boxShadow: [], // Remove shadow since container already has it
-                          ) : Container(), // Empty container when not showing
+                          child: Center(
+                            child: _showLogo ? AnimatedSquareText(
+                              text: 'revix',
+                              size: 100,
+                              borderRadius: 50, // Half of size to make it perfectly round
+                              backgroundColor: const Color(0xFF00FFFC),
+                              textColor: const Color(0xFF06171F),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,                              letterSpacing: 1.2,
+                              animationDuration: const Duration(milliseconds: 1500),
+                              autoStart: true, // Auto start when widget is created
+                              loop: true, // Enable looping animation
+                              loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops
+                              boxShadow: [], // Remove shadow since container already has it
+                            ) : Container(), // Empty container when not showing
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

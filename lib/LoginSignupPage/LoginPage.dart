@@ -222,8 +222,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       Hero(
                         tag: 'app_logo',
                         child: Container(
-                          height: 120,
-                          width: 120,
+                          height: 135,
+                          width: 135,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             boxShadow: [
@@ -233,21 +233,23 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                 offset: const Offset(0, 4),
                               ),
                             ],
-                          ),                          child: _showLogo ? AnimatedSquareText(
-                            text: 'revix',
-                            size: 120,
-                            borderRadius: 60, // Half of size to make it perfectly round
-                            backgroundColor: const Color(0xFF00FFFC),
-                            textColor: const Color(0xFF06171F),
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5,
-                            animationDuration: const Duration(milliseconds: 1500),
-                            autoStart: true, // Auto start when widget is created
-                            loop: true, // Enable looping animation
-                            loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops
-                            boxShadow: [], // Remove shadow since container already has it
-                          ) : Container(), // Empty container when not showing
+                          ),
+                          child: Center(
+                            child: _showLogo ? AnimatedSquareText(
+                              text: 'revix',
+                              size: 120,
+                              borderRadius: 60, // Half of size to make it perfectly round
+                              backgroundColor: const Color(0xFF00FFFC),
+                              textColor: const Color(0xFF06171F),
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5,
+                              animationDuration: const Duration(milliseconds: 1500),
+                              autoStart: true, // Auto start when widget is created
+                              loop: true, // Enable looping animation
+                              loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops                              boxShadow: [], // Remove shadow since container already has it
+                            ) : Container(), // Empty container when not showing
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
