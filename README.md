@@ -1,12 +1,12 @@
-# reTracker
+# revix
 
-![reTracker Logo](https://github.com/user-attachments/assets/3402207c-4d9c-4572-a392-c4c9994816e1)
+![revix Logo](https://github.com/user-attachments/assets/3402207c-4d9c-4572-a392-c4c9994816e1)
 
 A Flutter-based task scheduling application integrated with Firebase for secure data storage and authentication.
 
 ## 📋 Overview
 
-reTracker helps you organize, schedule, and track your tasks efficiently. Built with Flutter and powered by Firebase, it provides a seamless experience across Android devices.
+revix helps you organize, schedule, and track your tasks efficiently. Built with Flutter and powered by Firebase, it provides a seamless experience across Android devices.
 
 ## ✨ Features
 
@@ -31,8 +31,8 @@ Before getting started, ensure you have the following installed on your developm
 ### Step 1: Clone the Repository
 
 ```sh
-git clone https://github.com/imnexerio/retracker.git
-cd retracker
+git clone https://github.com/imnexerio/revix.git
+cd revix
 ```
 
 ### Step 2: Set Up Firebase
@@ -88,7 +88,7 @@ flutter run
 
 1. **Firebase Connection Issues**
    - Verify that `flutterfire configure` completed successfully
-   - Check that the package name matches `com.imnexerio.retracker`
+   - Check that the package name matches `com.imnexerio.revix`
    - Ensure the Firebase configuration files are in the correct locations
 
 2. **Build Failures**
@@ -118,4 +118,4 @@ This project is licensed under the GNU General Public License - see the [LICENSE
 
 Developer: [imnexerio](https://github.com/imnexerio)
 
-Project Link: [https://github.com/imnexerio/retracker](https://github.com/imnexerio/retracker)
+Project Link: [https://github.com/imnexerio/revix](https://github.com/imnexerio/revix)
