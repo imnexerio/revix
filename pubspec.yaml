@@ -61,7 +61,7 @@ dependencies:
   google_fonts: ^6.1.0
 
 flutter_launcher_icons:
-
+  android: true
   ios: true
   image_path: "assets/icon/icon.png"
   web:

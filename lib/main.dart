@@ -129,14 +129,25 @@ class _MyAppState extends State<MyApp> {
     }
   }
   @override
-  Widget build(BuildContext context) {
-    // Show splash screen with default theme while initializing
+  Widget build(BuildContext context) {    // Show splash screen with default theme while initializing
     if (!_isInitialized || _themeNotifier == null || _profileProvider == null) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'revix',
         theme: AppThemes.themes[0], // Default light theme
-        home: const SplashScreen(),
+        home: SplashScreen(
+          isLoggedIn: _isLoggedIn,
+          isInitialized: _isInitialized,
+        ),
+        onUnknownRoute: (settings) {
+          // Handle unknown routes by redirecting to splash screen
+          return MaterialPageRoute(
+            builder: (context) => SplashScreen(
+              isLoggedIn: _isLoggedIn,
+              isInitialized: _isInitialized,
+            ),
+          );
+        },
       );
     }
 
@@ -154,10 +165,18 @@ class _MyAppState extends State<MyApp> {
             theme: themeNotifier.currentTheme,
             darkTheme: themeNotifier.currentTheme,
             themeMode: themeNotifier.currentThemeMode,
-            initialRoute: '/',
-            routes: {
-              '/': (context) => const SplashScreen(),
-              '/home': (context) => _isLoggedIn ? const MyHomePage() : LoginPage(),
+            home: SplashScreen(
+              isLoggedIn: _isLoggedIn,
+              isInitialized: _isInitialized,
+            ),
+            onUnknownRoute: (settings) {
+              // Handle unknown routes by redirecting to splash screen
+              return MaterialPageRoute(
+                builder: (context) => SplashScreen(
+                  isLoggedIn: _isLoggedIn,
+                  isInitialized: _isInitialized,
+                ),
+              );
             },
           );
         },

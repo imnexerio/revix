@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/AnimatedSquareText.dart';
+import '../main.dart';
+import '../LoginSignupPage/LoginPage.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  final bool isLoggedIn;
+  final bool isInitialized;
+  
+  const SplashScreen({
+    Key? key, 
+    required this.isLoggedIn, 
+    required this.isInitialized
+  }) : super(key: key);
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
@@ -48,16 +57,37 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       }
     });
   }  void _scheduleNavigation() {
-    // Wait for square animation + subtitle animation to complete
-    // Square: 2800ms + Subtitle: 800ms + Buffer: 400ms = 4000ms total
+    // Wait for both animations to complete AND app initialization
+    // Minimum splash duration: 4 seconds or until app is fully initialized
     Future.delayed(const Duration(milliseconds: 4000), () {
-      _navigateToHome();
+      _checkAndNavigate();
     });
   }
 
-  void _navigateToHome() {
+  void _checkAndNavigate() {
+
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      // Wait until app is fully initialized before navigating
+      if (widget.isInitialized) {
+        _navigateToNextScreen();
+      } else {
+        // If not initialized yet, check again after a short delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _checkAndNavigate();
+        });
+      }
+    }
+  }
+
+  void _navigateToNextScreen() {
+    if (mounted) {
+      Widget nextScreen = widget.isLoggedIn 
+          ? const MyHomePage() 
+          : LoginPage();
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => nextScreen),
+      );
     }
   }
   @override
