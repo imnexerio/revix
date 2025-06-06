@@ -239,7 +239,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               text: 'revix',
                               size: 120,
                               borderRadius: 60, // Half of size to make it perfectly round
-                              backgroundColor: const Color(0xFF00FFFC),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               textColor: const Color(0xFF06171F),
                               fontSize: 24,
                               fontWeight: FontWeight.w800,

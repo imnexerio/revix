@@ -16,13 +16,12 @@ class AnimatedSquareText extends StatefulWidget {
   final Duration? loopDelay;
   final VoidCallback? onAnimationComplete;
   final List<BoxShadow>? boxShadow;
-  
   const AnimatedSquareText({
     Key? key,
     required this.text,
     this.size = 0,
     this.borderRadius = 40,
-    this.backgroundColor = const Color(0xFF00FFFC),
+    required this.backgroundColor, // Now required, no default
     this.textColor = const Color(0xFF06171F),
     this.fontSize = 48,
     this.fontWeight = FontWeight.w800,

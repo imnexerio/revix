@@ -140,12 +140,11 @@ class _ForgotPassPageState extends State<ForgotPassPage>
                               ),
                             ],
                           ),
-                          child: Center(
-                            child: _showLogo ? AnimatedSquareText(
+                          child: Center(                            child: _showLogo ? AnimatedSquareText(
                               text: 'revix',
                               size: 100,
                               borderRadius: 50, // Half of size to make it perfectly round
-                              backgroundColor: const Color(0xFF00FFFC),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               textColor: const Color(0xFF06171F),
                               fontSize: 20,
                               fontWeight: FontWeight.w800,

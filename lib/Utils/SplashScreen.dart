@@ -88,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   text: 'revix',
                   size: 230,
                   borderRadius: 40,
-                  backgroundColor: const Color(0xFF00FFFC),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   textColor: const Color(0xFF06171F),
                   fontSize: 48,
                   fontWeight: FontWeight.w800,

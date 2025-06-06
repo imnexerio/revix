@@ -234,7 +234,7 @@ class _SignupPageState extends State<SignupPage>
                               text: 'revix',
                               size: 100,
                               borderRadius: 50, // Half of size to make it perfectly round
-                              backgroundColor: const Color(0xFF00FFFC),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               textColor: const Color(0xFF06171F),
                               fontSize: 20,
                               fontWeight: FontWeight.w800,                              letterSpacing: 1.2,

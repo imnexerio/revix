@@ -54,12 +54,11 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: _showLogo ? AnimatedSquareText(
+                    child: Center(                      child: _showLogo ? AnimatedSquareText(
                         text: 'revix',
                         size: 80,
                         borderRadius: 40, // Half of size to make it perfectly round
-                        backgroundColor: const Color(0xFF00FFFC),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         textColor: const Color(0xFF06171F),
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
