@@ -124,7 +124,7 @@ class CombinedDatabaseService {
       _categoriesController.add({'subjects': [], 'subCategories': {}});
       _rawDataController.add(null);
 
-      if (PlatformUtils.instance.isAndroid && !_isGuestMode) {
+      if (PlatformUtils.instance.isAndroid ) {
         _updateHomeWidget([], [], []);
       }
       return;
@@ -146,7 +146,7 @@ class CombinedDatabaseService {
 
     _processCategoriesData(processedRawData);
 
-    if (PlatformUtils.instance.isAndroid && !_isGuestMode) {
+    if (PlatformUtils.instance.isAndroid ) {
       _updateHomeWidget(categorizedData['today'] ?? [],
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? []);
@@ -308,7 +308,7 @@ class CombinedDatabaseService {
         List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
         _allRecordsController.add({'allRecords': allRecords});
         
-        if (PlatformUtils.instance.isAndroid && !_isGuestMode) {
+        if (PlatformUtils.instance.isAndroid ) {
           _updateHomeWidget(categorizedData['today'] ?? [],
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? []);

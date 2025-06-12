@@ -98,9 +98,8 @@ class RecordUpdateService : Service() {
             }
             context.sendBroadcast(intent)
 
-            // Start refresh service after handling our task
-            val refreshIntent = Intent(this, WidgetRefreshService::class.java)
-            startService(refreshIntent)
+            // Widget refresh will be handled by Flutter background callback
+            // No need for separate service
 
             // Complete this task
             finishTask(startId)

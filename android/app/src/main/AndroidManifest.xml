@@ -32,10 +32,6 @@
         </receiver>
 
         <service
-            android:name=".WidgetRefreshService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-        <service
             android:name=".RecordUpdateService"
             android:exported="false" />
 

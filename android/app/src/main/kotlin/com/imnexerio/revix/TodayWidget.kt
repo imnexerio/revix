@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.RemoteViews
 import android.widget.Toast
 import org.json.JSONArray
@@ -60,25 +61,27 @@ class TodayWidget : AppWidgetProvider() {    companion object {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-
         when (intent.action) {
             ACTION_REFRESH -> {
-                // Use foreground service for Android 8+ to ensure reliable execution
-                val serviceIntent = Intent(context, WidgetRefreshService::class.java)
-                context.startService(serviceIntent)
+                // Trigger Flutter background callback for refresh
+                try {
+                    Log.d("TodayWidget", "Refreshing widget data...")
+                    val views = RemoteViews(context.packageName, R.layout.today_widget)
+                    views.setTextViewText(R.id.title_text_n_refresh, "Refreshing...")
 
-                // Update the refresh button to show it's working
-                val views = RemoteViews(context.packageName, R.layout.today_widget)
-                views.setTextViewText(R.id.title_text_n_refresh, "Refreshing...")
+                    val appWidgetManager = AppWidgetManager.getInstance(context)
+                    val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                        ComponentName(context, TodayWidget::class.java)
+                    )
 
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                    ComponentName(context, TodayWidget::class.java)
-                )
-
-                // Update each widget
-                for (appWidgetId in appWidgetIds) {
-                    appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                    // Update each widget to show refreshing state
+                    for (appWidgetId in appWidgetIds) {
+                        appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                    }
+                } catch (e: Exception) {
+                    Log.e("TodayWidget", "Error updating widget during refresh: ${e.message}")
+                    Toast.makeText(context, "Error refreshing widget: ${e.message}", Toast.LENGTH_SHORT).show()
+                    // Handle any errors during refresh
                 }
             }
             ACTION_ITEM_CLICK -> {
@@ -161,8 +164,8 @@ class TodayWidget : AppWidgetProvider() {    companion object {
 
     // Other methods remain unchanged
     override fun onEnabled(context: Context) {
-        val serviceIntent = Intent(context, WidgetRefreshService::class.java)
-        context.startService(serviceIntent)
+        // Widget enabled - trigger initial data load through Flutter
+        // The data will be loaded when the app next starts or through background callback
     }
 
     override fun onDisabled(context: Context) {

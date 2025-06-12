@@ -24,11 +24,21 @@ class MainActivity : FlutterActivity() {
                 TodayWidget.updateWidgets(this)
                 result.success(true)
             } else if (call.method == "manualRefresh") {
-                // Trigger manual refresh from Flutter side
-                val serviceIntent = Intent(this, WidgetRefreshService::class.java)
-                startService(serviceIntent)
-                result.success(true)
-            } else {
+                // Trigger refresh through Flutter background callback
+                try {
+                    // The refresh will be handled by Flutter's background callback
+                    // Just trigger the widget update mechanism
+                    val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                    val editor = sharedPreferences.edit()
+                    editor.putLong("lastUpdated", System.currentTimeMillis())
+                    editor.apply()
+                    
+                    TodayWidget.updateWidgets(this)
+                    result.success(true)
+                } catch (e: Exception) {
+                    result.error("REFRESH_ERROR", "Failed to refresh widget: ${e.message}", null)
+                }
+            }else {
                 result.notImplemented()
             }
         }
