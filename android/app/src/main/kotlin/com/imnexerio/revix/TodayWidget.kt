@@ -61,8 +61,7 @@ class TodayWidget : AppWidgetProvider() {    companion object {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        when (intent.action) {
-            ACTION_REFRESH -> {
+        when (intent.action) {            ACTION_REFRESH -> {
                 // Trigger Flutter background callback for refresh
                 try {
                     Log.d("TodayWidget", "Refreshing widget data...")
@@ -77,6 +76,19 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                     // Update each widget to show refreshing state
                     for (appWidgetId in appWidgetIds) {
                         appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                    }                    // Use the home_widget plugin's built-in background callback mechanism
+                    try {
+                        val uri = Uri.parse("homeWidget://widget_refresh")
+                        val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
+                            context,
+                            uri
+                        )
+                        backgroundIntent.send()
+                        Log.d("TodayWidget", "Background callback triggered for data refresh")
+                    } catch (e: Exception) {
+                        Log.e("TodayWidget", "Error triggering background callback: ${e.message}")
+                        // Fallback: just update the widget with current data
+                        updateWidgets(context)
                     }
                 } catch (e: Exception) {
                     Log.e("TodayWidget", "Error updating widget during refresh: ${e.message}")

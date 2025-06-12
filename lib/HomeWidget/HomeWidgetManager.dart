@@ -35,9 +35,7 @@ class HomeWidgetService {
     }
 
     _isInitialized = true;
-  }
-
-  // This callback will be called when the widget triggers a refresh
+  }  // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
     print('Background callback triggered: ${uri?.host}');
@@ -48,12 +46,42 @@ class HomeWidgetService {
 
     if (uri?.host == 'widget_refresh') {
       try {
-        // Process data using CombinedDatabaseService without launching app
+        print('Starting widget background refresh...');
+        
+        // Initialize and process data using CombinedDatabaseService without launching app
         final service = CombinedDatabaseService();
+        print('CombinedDatabaseService created');
+        
+        // Initialize the service first
+        service.initialize();
+        print('Service initialized');
+        
         await service.forceDataReprocessing();
-        print('Widget background refresh completed');
+        print('Data reprocessing completed');
+        
+        // Get the processed data from the service
+        final categorizedData = service.currentCategorizedData;
+        print('Categorized data retrieved: ${categorizedData?.keys.toList()}');
+        
+        if (categorizedData != null) {
+          final todayRecords = categorizedData['today'] ?? [];
+          final missedRecords = categorizedData['missed'] ?? [];
+          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+          
+          print('Records found - Today: ${todayRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');
+          
+          // Update widget with the new data
+          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+          print('Widget background refresh completed with data');
+        } else {
+          print('No categorized data available, using empty data');
+          // Fallback to empty data if no data available
+          await _updateWidgetWithEmptyData();
+          print('Widget background refresh completed with empty data');
+        }
       } catch (e) {
         print('Error in background widget refresh: $e');
+        print('Error details: ${e.toString()}');
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
       }
