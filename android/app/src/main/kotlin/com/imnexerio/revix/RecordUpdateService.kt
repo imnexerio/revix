@@ -215,7 +215,7 @@ class RecordUpdateService : Service() {
                         handler.post {
                             Toast.makeText(
                                 applicationContext,
-                                "$category $subCategory $lectureNo has been marked as done and moved to deleted data.",
+                                "$category $subCategory $lectureNo has been marked as done and deleted.",
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -224,7 +224,7 @@ class RecordUpdateService : Service() {
                         handler.post {
                             Toast.makeText(
                                 applicationContext,
-                                "Failed to move record to deleted data",
+                                "Failed to deleted data",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
