@@ -1030,7 +1030,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 // If no data was found or parsed, provide default frequencies
                 if (data.isEmpty()) {
                     Log.d("AddLectureActivity", "No frequency data found, using defaults")
-                    data.putAll(getDefaultFrequencies())
                 }
 
                 Log.d("AddLectureActivity", "Final frequency data: $data")
@@ -1042,23 +1041,14 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             } catch (e: Exception) {
                 Log.e("AddLectureActivity", "Error fetching frequencies: ${e.message}", e)
                 // Fallback to default frequencies
-                runOnUiThread {
-                    callback(getDefaultFrequencies())
-                }
+//                runOnUiThread {
+//                    callback(getDefaultFrequencies())
+//                }
             }
         }
     }
 
-    // Get default frequencies when no custom ones are available
-    private fun getDefaultFrequencies(): Map<String, List<Int>> {
-        return mapOf(
-            "Default" to listOf(1, 3, 7, 14, 30),
-            "Intensive" to listOf(1, 2, 4, 8, 16),
-            "Relaxed" to listOf(3, 7, 21, 45, 90),
-            "Weekly" to listOf(7, 14, 28, 56),
-            "Monthly" to listOf(30, 60, 90, 180)
-        )
-    }    // Utility function to get a list of frequency names
+//    }    // Utility function to get a list of frequency names
     private fun getFrequencyNames(frequenciesMap: Map<String, List<Int>>): List<String> {
         return frequenciesMap.keys.toList()
     }
