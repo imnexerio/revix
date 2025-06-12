@@ -60,51 +60,6 @@ class HomeWidgetService {
     }
   }
 
-  // New method for background widget updates
-  static Future<void> updateWidgetDataFromBackground(
-    List<Map<String, dynamic>> todayRecords,
-    List<Map<String, dynamic>> missedRecords,
-    List<Map<String, dynamic>> noReminderDateRecords, {
-    bool? isLoggedIn,
-  }) async {
-    try {
-      // Initialize home_widget if not already done
-      await _ensureInitialized();
-
-      final bool loginStatus =
-          isLoggedIn ?? FirebaseDatabaseService().isAuthenticated;
-      await HomeWidget.saveWidgetData(isLoggedInKey, loginStatus);
-
-      // Format and save all three data categories
-      await HomeWidget.saveWidgetData(
-        todayRecordsKey,
-        jsonEncode(_formatRecords(todayRecords)),
-      );
-
-      await HomeWidget.saveWidgetData(
-        missedRecordsKey,
-        jsonEncode(_formatRecords(missedRecords)),
-      );
-
-      await HomeWidget.saveWidgetData(
-        noReminderDateRecordsKey,
-        jsonEncode(_formatRecords(noReminderDateRecords)),
-      );
-
-      // Add timestamp
-      await HomeWidget.saveWidgetData(
-        'lastUpdated',
-        DateTime.now().millisecondsSinceEpoch,
-      );
-
-      // Update widget without launching app
-      await _updateWidgetSilently();
-      print('Background widget update completed');
-    } catch (e) {
-      print('Error in background widget update: $e');
-    }
-  }
-
   static Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
       HomeWidget.setAppGroupId(appGroupId);
