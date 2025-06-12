@@ -126,10 +126,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // Set initial checkbox states
         initiationDateCheckbox.isChecked = false
         reviewFrequencyCheckbox.isChecked = false
-    }
-
-    private fun loadCustomData() {
+    }    private fun loadCustomData() {
         // Show a loading indicator if needed
+
+        // First, trigger a frequency data refresh to ensure we have the latest data
+        refreshFrequencyData()
 
         // Fetch tracking types
         FetchTrackingTypesUtils.fetchTrackingTypes { types ->
@@ -139,23 +140,26 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             // Update UI with tracking types
             updateLectureTypeSpinner()
 
-            // Fetch frequencies using method channel instead of FetchFrequenciesUtils
-            fetchFrequenciesFromFlutter { frequenciesMap ->
-                frequencies.clear()
-                frequencies.putAll(frequenciesMap)
+            // Add a small delay to allow frequency data to be refreshed by Flutter
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                // Fetch frequencies using SharedPreferences approach like TodayWidget
+                fetchFrequenciesFromFlutter { frequenciesMap ->
+                    frequencies.clear()
+                    frequencies.putAll(frequenciesMap)
 
-                // Get frequency names for spinner
-                frequencyNames.clear()
-                frequencyNames.addAll(getFrequencyNames(frequenciesMap))
-                frequencyNames.add("Custom")
-                frequencyNames.add("No Repetition")
+                    // Get frequency names for spinner
+                    frequencyNames.clear()
+                    frequencyNames.addAll(getFrequencyNames(frequenciesMap))
+                    frequencyNames.add("Custom")
+                    frequencyNames.add("No Repetition")
 
-                // Update UI with frequencies
-                updateRevisionFrequencySpinner()
+                    // Update UI with frequencies
+                    updateRevisionFrequencySpinner()
 
-                // Now load subjects
-                loadCategoriesAndSubCategories()
-            }
+                    // Now load subjects
+                    loadCategoriesAndSubCategories()
+                }
+            }, 500) // Wait 500ms for Flutter to process the frequency refresh
         }
     }
 
@@ -947,30 +951,53 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-    }    // Method channel communication methods for frequency data
+    }
+
+    // Add method to refresh frequency data, similar to widget refresh
+    private fun refreshFrequencyData() {
+        try {
+            Log.d("AddLectureActivity", "Triggering frequency data refresh...")
+
+            // Use the same background callback mechanism as TodayWidget
+            val uri = android.net.Uri.parse("homeWidget://frequency_refresh")
+            val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
+                this,
+                uri
+            )
+            backgroundIntent.send()
+            Log.d("AddLectureActivity", "Background callback triggered for frequency data refresh")
+        } catch (e: Exception) {
+            Log.e("AddLectureActivity", "Error triggering frequency data refresh: ${e.message}")
+            // Fallback: just use current data
+        }
+    }
+
+    // Method channel communication methods for frequency data
     private fun fetchFrequenciesFromFlutter(callback: (Map<String, List<Int>>) -> Unit) {
         // Since AddLectureActivity doesn't have direct access to Flutter engine,
         // we'll use the widget data approach through SharedPreferences
         // which is updated by HomeWidgetManager.dart that has access to the frequency data
-        
+
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 // Try to get frequency data from SharedPreferences that Flutter stores
                 val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
                 val frequencyDataJson = sharedPrefs.getString("frequencyData", null)
-                
+
                 val data = mutableMapOf<String, List<Int>>()
-                
-                if (frequencyDataJson != null && frequencyDataJson.isNotEmpty()) {
+
+                if (frequencyDataJson != null && frequencyDataJson.isNotEmpty() && frequencyDataJson != "{}") {
                     try {
+                        Log.d("AddLectureActivity", "Raw frequency data from SharedPrefs: $frequencyDataJson")
+
                         // Parse JSON data - expecting format like {"Default": [1,3,7,14,30], "Intensive": [1,2,4,8,16]}
                         val jsonData = org.json.JSONObject(frequencyDataJson)
                         val keys = jsonData.keys()
-                        
+
                         while (keys.hasNext()) {
                             val key = keys.next()
                             val value = jsonData.get(key)
-                            
+
                             when (value) {
                                 is org.json.JSONArray -> {
                                     val intList = mutableListOf<Int>()
@@ -978,6 +1005,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                                         intList.add(value.getInt(i))
                                     }
                                     data[key] = intList
+                                    Log.d("AddLectureActivity", "Parsed frequency $key: $intList")
                                 }
                                 is String -> {
                                     // Handle string representation like "[1, 3, 7, 14]"
@@ -987,30 +1015,51 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                                         val intList = parts.mapNotNull { it.toIntOrNull() }
                                         if (intList.isNotEmpty()) {
                                             data[key] = intList
+                                            Log.d("AddLectureActivity", "Parsed frequency $key from string: $intList")
                                         }
                                     } catch (e: Exception) {
-                                        println("Error parsing frequency value for $key: $value")
+                                        Log.e("AddLectureActivity", "Error parsing frequency value for $key: $value", e)
                                     }
                                 }
                             }
                         }
                     } catch (e: Exception) {
-                        println("Error parsing frequency JSON data: $e")
+                        Log.e("AddLectureActivity", "Error parsing frequency JSON data", e)
                     }
                 }
 
-                
+                // If no data was found or parsed, provide default frequencies
+                if (data.isEmpty()) {
+                    Log.d("AddLectureActivity", "No frequency data found, using defaults")
+                    data.putAll(getDefaultFrequencies())
+                }
+
+                Log.d("AddLectureActivity", "Final frequency data: $data")
+
                 // Switch back to main thread for callback
                 runOnUiThread {
                     callback(data)
                 }
             } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error fetching frequencies: ${e.message}")
+                Log.e("AddLectureActivity", "Error fetching frequencies: ${e.message}", e)
+                // Fallback to default frequencies
+                runOnUiThread {
+                    callback(getDefaultFrequencies())
+                }
             }
         }
     }
-    
-    // Utility function to get a list of frequency names
+
+    // Get default frequencies when no custom ones are available
+    private fun getDefaultFrequencies(): Map<String, List<Int>> {
+        return mapOf(
+            "Default" to listOf(1, 3, 7, 14, 30),
+            "Intensive" to listOf(1, 2, 4, 8, 16),
+            "Relaxed" to listOf(3, 7, 21, 45, 90),
+            "Weekly" to listOf(7, 14, 28, 56),
+            "Monthly" to listOf(30, 60, 90, 180)
+        )
+    }    // Utility function to get a list of frequency names
     private fun getFrequencyNames(frequenciesMap: Map<String, List<Int>>): List<String> {
         return frequenciesMap.keys.toList()
     }

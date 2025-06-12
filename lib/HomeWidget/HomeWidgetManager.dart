@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -21,7 +22,6 @@ class HomeWidgetService {
   static const String frequencyDataKey = 'frequencyData';
   static bool _isInitialized = false;
   static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
-
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -34,6 +34,9 @@ class HomeWidgetService {
 
     // Initialize frequency data for AddLectureActivity access
     await _updateFrequencyData();
+    
+    // Check for any pending frequency data requests
+    await monitorFrequencyDataRequests();
 
     if (!isLoggedIn) {
       await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
@@ -55,6 +58,11 @@ class HomeWidgetService {
       // Save empty data as fallback
       await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({}));
     }
+  }
+
+  /// Public method to update frequency data - can be called from other parts of the app
+  static Future<void> updateFrequencyDataStatic() async {
+    await _updateFrequencyData();
   }
 
   // This callback will be called when the widget triggers a refresh
@@ -79,11 +87,12 @@ class HomeWidgetService {
         await _updateWidgetWithEmptyData();
         return;
       }
-    }
-
-    if (uri?.host == 'widget_refresh') {
+    }    if (uri?.host == 'widget_refresh') {
       try {
         print('Starting widget background refresh...');
+        
+        // Check for frequency data update requests from native code
+        await monitorFrequencyDataRequests();
         
         // First, let's check what authentication state we have
         final firebaseService = FirebaseDatabaseService();
@@ -130,6 +139,16 @@ class HomeWidgetService {
         print('Error details: ${e.toString()}');
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
+      }
+    } else if (uri?.host == 'frequency_refresh') {
+      try {
+        print('Starting frequency data refresh...');
+        
+        // Just update frequency data without full widget refresh
+        await _updateFrequencyData();
+        print('Frequency data refresh completed');
+      } catch (e) {
+        print('Error in frequency data refresh: $e');
       }
     }
   }
@@ -267,5 +286,24 @@ class HomeWidgetService {
 
     // The actual refresh will happen in the Kotlin service
     await _updateWidget();
+  }
+
+  /// Method to monitor and respond to frequency data requests from native code
+  static Future<void> monitorFrequencyDataRequests() async {
+    try {
+      // Check if native code has requested frequency data update
+      final prefs = await SharedPreferences.getInstance();
+      final requestTime = prefs.getInt('frequencyDataRequested');
+      final lastUpdateTime = prefs.getInt('frequencyDataLastUpdated') ?? 0;
+      
+      if (requestTime != null && requestTime > lastUpdateTime) {
+        print('Frequency data update requested by native code');
+        await _updateFrequencyData();
+        await prefs.setInt('frequencyDataLastUpdated', DateTime.now().millisecondsSinceEpoch);
+        print('Frequency data updated in response to native request');
+      }
+    } catch (e) {
+      print('Error monitoring frequency data requests: $e');
+    }
   }
 }
