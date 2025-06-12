@@ -688,25 +688,12 @@ class FirebaseDatabaseService {
   /// Move a record to deleted data
   Future<bool> moveToDeletedData(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
     try {
-      // Add deletion timestamp
-      Map<String, dynamic> deletedData = Map<String, dynamic>.from(recordData);
-      deletedData['deleted_at'] = DateTime.now().toIso8601String();
       
       if (await isGuestMode) {
-        // Save to deleted data in local database
-        bool saveSuccess = await _localDatabase.saveDeletedRecord(category, subCategory, lectureNo, deletedData);
-        if (!saveSuccess) return false;
-        
-        // Remove from original location
         return await _localDatabase.deleteRecord(category, subCategory, lectureNo);
       } else {
         if (currentUserId == null) return false;
-        
-        // Save to deleted data in Firebase
-        DatabaseReference deletedRef = _database.ref('users/$currentUserId/deleted_user_data/$category/$subCategory/$lectureNo');
-        await deletedRef.set(deletedData);
-        
-        // Remove from original location
+
         DatabaseReference originalRef = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
         await originalRef.remove();
         
@@ -783,28 +770,7 @@ class FirebaseDatabaseService {
   // ====================================================================================
   // DELETED DATA OPERATIONS
   // ====================================================================================
-  
-  /// Fetch all deleted user data
-  Future<Map<String, dynamic>> fetchAllDeletedData() async {
-    try {
-      if (await isGuestMode) {
-        return await _localDatabase.getDeletedUserData();
-      } else {
-        if (currentUserId == null) return {};
-        
-        DatabaseReference ref = _database.ref('users/$currentUserId/deleted_user_data');
-        DataSnapshot snapshot = await ref.get();
-        
-        if (snapshot.exists) {
-          return Map<String, dynamic>.from(snapshot.value as Map);
-        }
-        return {};
-      }
-    } catch (e) {
-      print('Error fetching deleted data: $e');
-      return {};
-    }
-  }
+
   
   // ====================================================================================
   // UTILITY METHODS

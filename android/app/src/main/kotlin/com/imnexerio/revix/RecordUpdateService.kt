@@ -440,39 +440,17 @@ class RecordUpdateService : Service() {
         val userId = firebaseAuth.currentUser!!.uid
         val database = FirebaseDatabase.getInstance()
 
-        // Reference to deleted data location
-        val deletedRef = database.getReference("users/$userId/deleted_user_data/$category/$subCategory/$lectureNo")
-
-        // Convert details to mutable map
-        val dataToMove = HashMap<String, Any>()
-        details.forEach { (key, value) ->
-            if (key != null && value != null) {
-                dataToMove[key.toString()] = value
-            }
-        }
-
-        // Add deletion timestamp
-        dataToMove["deleted_at"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
-
-        // Move to deleted data
-        deletedRef.setValue(dataToMove)
+        val originalRef = database.getReference("users/$userId/user_data/$category/$subCategory/$lectureNo")
+        originalRef.removeValue()
             .addOnSuccessListener {
-                // After successful move, delete from original location
-                val originalRef = database.getReference("users/$userId/user_data/$category/$subCategory/$lectureNo")
-                originalRef.removeValue()
-                    .addOnSuccessListener {
-                        clearProcessingState(category, subCategory, lectureNo) // NEW LINE
-                        callback(true)
-                    }
-                    .addOnFailureListener {
-                        clearProcessingState(category, subCategory, lectureNo) // NEW LINE
-                        callback(false)
-                    }
+                clearProcessingState(category, subCategory, lectureNo) // NEW LINE
+                callback(true)
             }
             .addOnFailureListener {
                 clearProcessingState(category, subCategory, lectureNo) // NEW LINE
                 callback(false)
             }
+
 
     }
 

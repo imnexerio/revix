@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provides simple local database functionality using Hive for guest mode.
 /// This service handles data storage and retrieval in Firebase-compatible structure.
-/// Data is stored in the format: users/{userId}/{user_data, profile_data, deleted_user_data}
 class LocalDatabaseService {
   static const String _usersBoxName = 'users_data';
   static const String _errorLogBoxName = 'error_logs';
@@ -138,8 +137,7 @@ class LocalDatabaseService {
               'completionTargets': {},
             }
           },
-          'user_data': {},
-          'deleted_user_data': {}
+          'user_data': {}
         };
         
         await _usersBox!.put('users', usersData);
@@ -158,8 +156,7 @@ class LocalDatabaseService {
               'name': 'Guest User',
               'theme_data': {'themeMode': 'ThemeMode.system'},
             },
-            'user_data': {},
-            'deleted_user_data': {}
+            'user_data': {}
           };
           await _usersBox!.put('users', usersData);
         }
@@ -263,31 +260,7 @@ class LocalDatabaseService {
       return false;
     }
   }
-  Future<bool> saveDeletedRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
-    try {
-      final usersData = await getUsersData();
-      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
-      final deletedData = (userData['deleted_user_data'] ?? {}).cast<String, dynamic>();
-      
-      if (deletedData[category] == null) {
-        deletedData[category] = <String, dynamic>{};
-      }
-      if (deletedData[category][subCategory] == null) {
-        deletedData[category][subCategory] = <String, dynamic>{};
-      }
-      
-      deletedData[category][subCategory][lectureNo] = recordData;
-      
-      userData['deleted_user_data'] = deletedData;
-      usersData[_currentUserId] = userData;
-      
-      await _usersBox!.put('users', usersData);
-      return true;
-    } catch (e) {
-      _logError('Error saving deleted record: $e');
-      return false;
-    }
-  }
+
     // Profile data operations - Firebase-compatible structure
   Future<bool> saveProfileData(String key, dynamic value) async {
     try {
@@ -401,16 +374,6 @@ class LocalDatabaseService {
     }
   }
 
-  /// Gets deleted user data
-  Future<Map<String, dynamic>> getDeletedUserData() async {
-    try {
-      final userData = await getCurrentUserData();
-      return (userData['deleted_user_data'] ?? {}).cast<String, dynamic>();
-    } catch (e) {
-      _logError('Error getting deleted user data: $e');
-      return {};
-    }
-  }
 
   /// Imports Firebase data structure directly into local storage
   Future<bool> importFirebaseData(Map<String, dynamic> firebaseData) async {

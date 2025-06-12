@@ -70,12 +70,7 @@ class DataMigrationService {
           await profileRef.set(userData['profile_data']);
         }
       }
-      
-      // Migrate deleted data if it exists
-      if (userData['deleted_user_data'] != null && userData['deleted_user_data'].isNotEmpty) {
-        DatabaseReference deletedRef = _database.ref('users/${currentUser.uid}/deleted_user_data');
-        await deletedRef.set(userData['deleted_user_data']);
-      }
+
       
       // The profile data migration is handled above, as we now store everything in the users/{userId} structure
       // Adding extra clean-up for any legacy profile data that might exist
@@ -556,12 +551,6 @@ class DataMigrationService {
         }
       }
 
-      // Migrate deleted data if it exists
-      if (guestData['deleted_user_data'] != null && guestData['deleted_user_data'].isNotEmpty) {
-        DatabaseReference deletedRef = _database.ref('users/$userId/deleted_user_data');
-        await deletedRef.set(guestData['deleted_user_data']);
-      }
-
       return true;
     } catch (e) {
       print("Error migrating guest data to new account: $e");
@@ -642,7 +631,6 @@ class DataMigrationService {
       // Create a map with all data
       Map<String, dynamic> exportData = {
         'profile_data': userData['profile_data'] ?? {},
-        'deleted_user_data': userData['deleted_user_data'] ?? {},
         'user_data': userData['user_data'] ?? {}
       };
       
@@ -677,8 +665,7 @@ class DataMigrationService {
       // Prepare the user data structure
       Map<String, dynamic> userData = {
         'user_data': importData['user_data'] ?? {},
-        'profile_data': importData['profile_data'] ?? {},
-        'deleted_user_data': importData['deleted_user_data'] ?? {},
+        'profile_data': importData['profile_data'] ?? {}
       };
       
       // Import the data
