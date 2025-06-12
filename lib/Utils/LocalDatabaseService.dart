@@ -433,4 +433,27 @@ class LocalDatabaseService {
   void dispose() {
     _rawDataController.close();
   }
+
+  // Get a specific record
+  Future<Map<String, dynamic>?> getRecord(String category, String subCategory, String lectureNo) async {
+    try {
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
+      
+      if (currentData[category] != null && 
+          currentData[category][subCategory] != null && 
+          currentData[category][subCategory][lectureNo] != null) {
+        final record = currentData[category][subCategory][lectureNo];
+        if (record is Map) {
+          return Map<String, dynamic>.from(record);
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      _logError('Error getting record: $e');
+      return null;
+    }
+  }
 }

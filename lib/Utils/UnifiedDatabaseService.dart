@@ -501,6 +501,40 @@ class CombinedDatabaseService {
       }
     }
   }
+
+  // Add public method for getting data from a particular location
+  Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String lectureNo) async {
+    if (_isGuestMode) {
+      try {
+        return await _localDatabase.getRecord(category, subCategory, lectureNo);
+      } catch (e) {
+        _addErrorToAllControllers('Failed to get local record: $e');
+        return null;
+      }
+    } else {
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        
+        DatabaseEvent event = await _databaseRef!.child(category).child(subCategory).child(lectureNo).once();
+        
+        if (!event.snapshot.exists) {
+          return null;
+        }
+        
+        final data = event.snapshot.value;
+        if (data is Map<Object?, Object?>) {
+          return Map<String, dynamic>.from(data);
+        }
+        
+        return null;
+      } catch (e) {
+        _addErrorToAllControllers('Failed to get Firebase record: $e');
+        return null;
+      }
+    }
+  }
 }
 
 Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
@@ -531,6 +565,11 @@ class categoryDataProvider {
   Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() => _service.fetchCategoriesAndSubCategories();
   Future<dynamic> fetchRawData() => _service.fetchRawData();
   void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
+
+  // Add method to get data from a particular location
+  Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String lectureNo) async {
+    return await _service.getDataAtLocation(category, subCategory, lectureNo);
+  }
 }
 
 class UnifiedDatabaseService {
