@@ -658,6 +658,61 @@ class categoryDataProvider {
   Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String lectureNo) async {
     return await _service.getDataAtLocation(category, subCategory, lectureNo);
   }
+
+  // Method to load categories and subcategories for forms
+  Future<Map<String, dynamic>> loadCategoriesAndSubCategories() async {
+    try {
+      // Check if user is in guest mode
+      if (await GuestAuthService.isGuestMode()) {
+        // Use local database for guest users
+        final localDb = LocalDatabaseService();
+        
+        // Get cached data directly from local database
+        final rawData = await localDb.getRawData();
+        
+        if (rawData != null && rawData is Map) {
+          Map<String, dynamic> data = Map<String, dynamic>.from(rawData);
+          
+          // Extract categories and sub categories from local data
+          List<String> subjects = [];
+          Map<String, List<String>> subCategories = {};
+          
+          for (String category in data.keys) {
+            subjects.add(category);
+            subCategories[category] = [];
+            
+            if (data[category] is Map) {
+              Map<String, dynamic> categoryData = Map<String, dynamic>.from(data[category]);
+              for (String subCategory in categoryData.keys) {
+                subCategories[category]!.add(subCategory);
+              }
+            }
+          }
+          
+          return {
+            'subjects': subjects,
+            'subCategories': subCategories,
+          };
+        } else {
+          // Return empty data for new guest users
+          return {
+            'subjects': <String>[],
+            'subCategories': <String, List<String>>{},
+          };
+        }
+      } else {
+        // Use Firebase for authenticated users (original code)
+        // First check if cached data is available
+        Map<String, dynamic>? data = currentData;
+
+        data ??= await fetchCategoriesAndSubCategories();
+
+        return data;
+      }
+    } catch (e) {
+      throw Exception('Error loading categories and sub categories: $e');
+    }
+  }
 }
 
 class UnifiedDatabaseService {

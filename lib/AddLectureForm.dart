@@ -57,78 +57,24 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _setInitialDate();
     _setScheduledDate();
     _timeController.text = 'All Day';
-  }
-  Future<void> _loadCategoriesAndSubCategories() async {
+  }  Future<void> _loadCategoriesAndSubCategories() async {
     try {
-      // Check if user is in guest mode
-      if (await GuestAuthService.isGuestMode()) {
-        // Use local database for guest users
-        final localDb = LocalDatabaseService();
-        
-        // Get cached data directly from local database
-        final rawData = await localDb.getRawData();
-        
-        if (rawData != null && rawData is Map) {
-          Map<String, dynamic> data = Map<String, dynamic>.from(rawData);
-          
-          // Extract categories and sub categories from local data
-          List<String> subjects = [];
-          Map<String, List<String>> subCategories = {};
-          
-          for (String category in data.keys) {
-            subjects.add(category);
-            subCategories[category] = [];
-            
-            if (data[category] is Map) {
-              Map<String, dynamic> categoryData = Map<String, dynamic>.from(data[category]);
-              for (String subCategory in categoryData.keys) {
-                subCategories[category]!.add(subCategory);
-              }
-            }
-          }
-          
-          setState(() {
-            _subjects = subjects;
-            _subCategories = subCategories;
-            
-            // Set appropriate selection
-            if (_subjects.isNotEmpty) {
-              _selectedCategory = _subjects[0];
-            } else {
-              _selectedCategory = 'DEFAULT_VALUE';
-            }
-          });
+      // Get the singleton instance and use the new loadCategoriesAndSubCategories method
+      final provider = categoryDataProvider();
+      final data = await provider.loadCategoriesAndSubCategories();
+
+      // Update state with the retrieved data
+      setState(() {
+        _subjects = data['subjects'];
+        _subCategories = data['subCategories'];
+
+        // Set appropriate selection
+        if (_subjects.isNotEmpty) {
+          _selectedCategory = _subjects[0];
         } else {
-          // Initialize empty data for new guest users
-          setState(() {
-            _subjects = [];
-            _subCategories = {};
-            _selectedCategory = 'DEFAULT_VALUE';
-          });
+          _selectedCategory = 'DEFAULT_VALUE';
         }
-      } else {
-        // Use Firebase for authenticated users (original code)
-        // Get the singleton instance
-        final provider = categoryDataProvider();
-
-        // First check if cached data is available
-        Map<String, dynamic>? data = provider.currentData;
-
-        data ??= await provider.fetchCategoriesAndSubCategories();
-
-        // Update state with the retrieved data
-        setState(() {
-          _subjects = data!['subjects'];
-          _subCategories = data['subCategories'];
-
-          // Set appropriate selection
-          if (_subjects.isNotEmpty) {
-            _selectedCategory = _subjects[0];
-          } else {
-            _selectedCategory = 'DEFAULT_VALUE';
-          }
-        });
-      }
+      });
 
       // No need to set up a listener here since this is part of a form
       // that's not constantly visible in the UI
