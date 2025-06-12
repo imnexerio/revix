@@ -18,17 +18,22 @@ class HomeWidgetService {
   static const String missedRecordsKey = 'missedRecords';
   static const String noReminderDateRecordsKey = 'noreminderdate';
   static const String isLoggedInKey = 'isLoggedIn';
+  static const String frequencyDataKey = 'frequencyData';
   static bool _isInitialized = false;
   static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    HomeWidget.setAppGroupId(appGroupId);    // Set up widget background callback handling
+    HomeWidget.setAppGroupId(appGroupId);    
+    // Set up widget background callback handling
     HomeWidget.registerBackgroundCallback(backgroundCallback);
 
     final bool isLoggedIn = _databaseService.isAuthenticated;
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+
+    // Initialize frequency data for AddLectureActivity access
+    await _updateFrequencyData();
 
     if (!isLoggedIn) {
       await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
@@ -38,7 +43,21 @@ class HomeWidgetService {
     }
 
     _isInitialized = true;
-  }  // This callback will be called when the widget triggers a refresh
+  }
+  
+  // Update frequency data in SharedPreferences for native access
+  static Future<void> _updateFrequencyData() async {
+    try {
+      final frequencyData = await _databaseService.fetchCustomFrequencies();
+      await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode(frequencyData));
+    } catch (e) {
+      print('Error updating frequency data: $e');
+      // Save empty data as fallback
+      await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({}));
+    }
+  }
+
+  // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
     print('Background callback triggered: ${uri?.host}');    // Ensure Flutter engine is initialized for background work
@@ -158,8 +177,10 @@ class HomeWidgetService {
       final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
       
       print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
-      
-      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+        await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+
+      // Update frequency data for AddLectureActivity access
+      await _updateFrequencyData();
 
       // Format and save all three data categories
       await HomeWidget.saveWidgetData(

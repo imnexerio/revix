@@ -17,6 +17,7 @@ import 'SettingsPage/SettingsPage.dart';
 import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
+import 'Utils/FrequencyMethodChannelHandler.dart';
 import 'firebase_options.dart';
 import 'HomeWidget/HomeWidgetManager.dart';
 
@@ -26,6 +27,9 @@ void main() async {
   
   // Only do minimal initialization here for fast splash screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize FrequencyMethodChannelHandler for native communication
+  FrequencyMethodChannelHandler.initialize();
   
   // Initialize HomeWidget service for background callbacks
   if (PlatformUtils.instance.isAndroid) {

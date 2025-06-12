@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Utils/fetchFrequencies_utils.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import '../SettingsPage/FrequencyPageSheet.dart';
 
 class RevisionFrequencyDropdown extends StatefulWidget {
@@ -26,9 +26,9 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
     super.initState();
     _fetchFrequencies();
   }
-
   Future<void> _fetchFrequencies() async {
-    Map<String, dynamic> frequencies = await FetchFrequenciesUtils.fetchFrequencies();
+    final databaseService = FirebaseDatabaseService();
+    Map<String, dynamic> frequencies = await databaseService.fetchCustomFrequencies();
     List<DropdownMenuItem<String>> items = frequencies.keys.map((key) {
       String frequency = frequencies[key].toString();
       return DropdownMenuItem<String>(

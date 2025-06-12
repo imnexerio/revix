@@ -6,6 +6,7 @@ import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.*
@@ -16,6 +17,7 @@ import com.google.firebase.database.*
 import java.text.SimpleDateFormat
 import java.util.*
 import com.imnexerio.revix.R
+import kotlinx.coroutines.*
 
 class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
     private lateinit var categorySpinner: Spinner
@@ -62,14 +64,10 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     }
 
     private var previousDuration = "Forever"
-
-
     private var trackingTypes = mutableListOf<String>()
     private var frequencies = mutableMapOf<String, List<Int>>()
     private var frequencyNames = mutableListOf<String>()
-    private var customFrequencyData: HashMap<String, Any> = HashMap()
-
-    // Database reference
+    private var customFrequencyData: HashMap<String, Any> = HashMap()    // Database reference
     private lateinit var database: FirebaseDatabase
     private lateinit var auth: FirebaseAuth
     private var revisionData: MutableMap<String, Any?> = mutableMapOf()
@@ -141,14 +139,14 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             // Update UI with tracking types
             updateLectureTypeSpinner()
 
-            // Fetch frequencies next
-            FetchFrequenciesUtils.fetchFrequencies { frequenciesMap ->
+            // Fetch frequencies using method channel instead of FetchFrequenciesUtils
+            fetchFrequenciesFromFlutter { frequenciesMap ->
                 frequencies.clear()
                 frequencies.putAll(frequenciesMap)
 
                 // Get frequency names for spinner
                 frequencyNames.clear()
-                frequencyNames.addAll(FetchFrequenciesUtils.getFrequencyNames(frequenciesMap))
+                frequencyNames.addAll(getFrequencyNames(frequenciesMap))
                 frequencyNames.add("Custom")
                 frequencyNames.add("No Repetition")
 
@@ -949,5 +947,71 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+    }    // Method channel communication methods for frequency data
+    private fun fetchFrequenciesFromFlutter(callback: (Map<String, List<Int>>) -> Unit) {
+        // Since AddLectureActivity doesn't have direct access to Flutter engine,
+        // we'll use the widget data approach through SharedPreferences
+        // which is updated by HomeWidgetManager.dart that has access to the frequency data
+        
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                // Try to get frequency data from SharedPreferences that Flutter stores
+                val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
+                val frequencyDataJson = sharedPrefs.getString("frequencyData", null)
+                
+                val data = mutableMapOf<String, List<Int>>()
+                
+                if (frequencyDataJson != null && frequencyDataJson.isNotEmpty()) {
+                    try {
+                        // Parse JSON data - expecting format like {"Default": [1,3,7,14,30], "Intensive": [1,2,4,8,16]}
+                        val jsonData = org.json.JSONObject(frequencyDataJson)
+                        val keys = jsonData.keys()
+                        
+                        while (keys.hasNext()) {
+                            val key = keys.next()
+                            val value = jsonData.get(key)
+                            
+                            when (value) {
+                                is org.json.JSONArray -> {
+                                    val intList = mutableListOf<Int>()
+                                    for (i in 0 until value.length()) {
+                                        intList.add(value.getInt(i))
+                                    }
+                                    data[key] = intList
+                                }
+                                is String -> {
+                                    // Handle string representation like "[1, 3, 7, 14]"
+                                    try {
+                                        val cleanValue = value.replace(Regex("[\\[\\]]"), "")
+                                        val parts = cleanValue.split(",").map { it.trim() }
+                                        val intList = parts.mapNotNull { it.toIntOrNull() }
+                                        if (intList.isNotEmpty()) {
+                                            data[key] = intList
+                                        }
+                                    } catch (e: Exception) {
+                                        println("Error parsing frequency value for $key: $value")
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        println("Error parsing frequency JSON data: $e")
+                    }
+                }
+
+                
+                // Switch back to main thread for callback
+                runOnUiThread {
+                    callback(data)
+                }
+            } catch (e: Exception) {
+                Log.e("AddLectureActivity", "Error fetching frequencies: ${e.message}")
+            }
+        }
+    }
+    
+    // Utility function to get a list of frequency names
+    private fun getFrequencyNames(frequenciesMap: Map<String, List<Int>>): List<String> {
+        return frequenciesMap.keys.toList()
     }
 }
