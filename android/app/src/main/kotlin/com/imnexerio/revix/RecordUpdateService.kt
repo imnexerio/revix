@@ -11,7 +11,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import io.flutter.plugin.common.MethodChannel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -192,9 +191,7 @@ class RecordUpdateService : Service() {
             }
         }
         return null
-    }
-
-    private fun updateRecord(
+    }    private fun updateRecord(
         details: Map<*, *>,
         category: String,
         subCategory: String,
@@ -205,53 +202,13 @@ class RecordUpdateService : Service() {
         try {
             // First check for "Unspecified" date_initiated
             if (details["date_initiated"] == "Unspecified") {
-                moveToDeletedData(category, subCategory, lectureNo, details) { success ->
-                    if (success) {
-                        handler.post {
-                            Toast.makeText(
-                                applicationContext,
-                                "$category $subCategory $lectureNo has been marked as done and moved to deleted data.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                        refreshWidgets(startId)
-                    } else {
-                        handler.post {
-                            Toast.makeText(
-                                applicationContext,
-                                "Failed to move record to deleted data",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        stopSelf(startId)
-                    }
-                }
+                processRecordDeletion(category, subCategory, lectureNo, details, startId, "marked as done and moved to deleted data")
                 return
             }
 
             // Then check for "No Repetition" revision frequency
             if (details["recurrence_frequency"] == "No Repetition") {
-                moveToDeletedData(category, subCategory, lectureNo, details) { success ->
-                    if (success) {
-                        handler.post {
-                            Toast.makeText(
-                                applicationContext,
-                                "$category $subCategory $lectureNo has been marked as done and deleted.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                        refreshWidgets(startId)
-                    } else {
-                        handler.post {
-                            Toast.makeText(
-                                applicationContext,
-                                "Failed to deleted data",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        stopSelf(startId)
-                    }
-                }
+                processRecordDeletion(category, subCategory, lectureNo, details, startId, "marked as done and deleted")
                 return
             }
 
@@ -302,7 +259,7 @@ class RecordUpdateService : Service() {
                 val nextDate = CalculateCustomNextDate.calculateCustomNextDate(scheduledCalendar, revisionData)
                 val nextRevisionDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
 
-                updateRecordWithNextDate(
+                processRecordUpdate(
                     details, category, subCategory, lectureNo,
                     currentDateTime, currentDate, missedRevision,
                     scheduledDate, noRevision, nextRevisionDate, startId
@@ -315,7 +272,7 @@ class RecordUpdateService : Service() {
                     noRevision + 1,
                     scheduledDate
                 ) { nextRevisionDate ->
-                    updateRecordWithNextDate(
+                    processRecordUpdate(
                         details, category, subCategory, lectureNo,
                         currentDateTime, currentDate, missedRevision,
                         scheduledDate, noRevision, nextRevisionDate, startId
@@ -328,9 +285,60 @@ class RecordUpdateService : Service() {
             e.printStackTrace()
             stopSelf(startId)
         }
+    }    private fun processRecordDeletion(
+        category: String,
+        subCategory: String,
+        lectureNo: String,
+        details: Map<*, *>,
+        startId: Int,
+        actionDescription: String
+    ) {
+        // Use background callback mechanism like TodayWidget
+        try {
+            // Trigger background callback to handle record deletion
+            val uri = android.net.Uri.parse("homeWidget://record_delete")
+                .buildUpon()
+                .appendQueryParameter("category", category)
+                .appendQueryParameter("sub_category", subCategory)
+                .appendQueryParameter("record_title", lectureNo)
+                .appendQueryParameter("action", actionDescription)
+                .build()
+
+            val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
+                applicationContext,
+                uri
+            )
+            backgroundIntent.send()
+
+            // Show success message immediately
+            handler.post {
+                Toast.makeText(
+                    applicationContext,
+                    "$category $subCategory $lectureNo has been $actionDescription.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+            // Clear processing state and refresh widgets
+            clearProcessingState(category, subCategory, lectureNo)
+            refreshWidgets(startId)
+
+        } catch (e: Exception) {
+            Log.e("RecordUpdateService", "Error triggering background deletion: ${e.message}")
+            handler.post {
+                Toast.makeText(
+                    applicationContext,
+                    "Failed to process deletion",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            clearProcessingState(category, subCategory, lectureNo)
+            refreshWidgets(startId)
+            stopSelf(startId)
+        }
     }
-    // Helper method to update the record with the calculated next date
-    private fun updateRecordWithNextDate(
+
+    private fun processRecordUpdate(
         details: Map<*, *>,
         category: String,
         subCategory: String,
@@ -343,7 +351,65 @@ class RecordUpdateService : Service() {
         nextRevisionDate: String,
         startId: Int
     ) {
-        // Create updated values map
+        try {
+            // Use background callback mechanism for record updates
+            val updateData = createUpdateData(
+                details, currentDateTime, currentDate, missedRevision,
+                scheduledDate, noRevision, nextRevisionDate
+            )
+
+            // Create URI with update data
+            val uriBuilder = android.net.Uri.parse("homeWidget://record_update")
+                .buildUpon()
+                .appendQueryParameter("category", category)
+                .appendQueryParameter("sub_category", subCategory)
+                .appendQueryParameter("record_title", lectureNo)
+                .appendQueryParameter("next_revision_date", nextRevisionDate)
+                .appendQueryParameter("update_data", org.json.JSONObject(updateData).toString())
+
+            val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
+                applicationContext,
+                uriBuilder.build()
+            )
+            backgroundIntent.send()
+
+            // Show success message immediately
+            handler.post {
+                Toast.makeText(
+                    applicationContext,
+                    "Record updated successfully! Scheduled for $nextRevisionDate",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            // Clear processing state and refresh widgets
+            clearProcessingState(category, subCategory, lectureNo)
+            refreshWidgets(startId)
+
+        } catch (e: Exception) {
+            Log.e("RecordUpdateService", "Error triggering background update: ${e.message}")
+            handler.post {
+                Toast.makeText(
+                    applicationContext,
+                    "Update failed: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            clearProcessingState(category, subCategory, lectureNo)
+            refreshWidgets(startId)
+            stopSelf(startId)
+        }
+    }
+
+    private fun createUpdateData(
+        details: Map<*, *>,
+        currentDateTime: String,
+        currentDate: String,
+        missedRevision: Int,
+        scheduledDate: Date,
+        noRevision: Int,
+        nextRevisionDate: String
+    ): Map<String, Any> {
         val updatedValues = HashMap<String, Any>()
 
         // Update date_updated
@@ -404,12 +470,7 @@ class RecordUpdateService : Service() {
             updatedValues["status"] = "Disabled"
         }
 
-        // Update the record using Dart UpdateRecordsRevision function
-        callUpdateRecordsRevision(
-            category, subCategory, lectureNo,
-            currentDateTime, currentDate, missedRevision,
-            scheduledDate, noRevision, nextRevisionDate, details, startId
-        )
+        return updatedValues
     }
 
     private fun determineEnabledStatus(details: Map<*, *>): Boolean {
@@ -476,147 +537,7 @@ class RecordUpdateService : Service() {
         }
 
         return isEnabled
-    }
-
-    private fun moveToDeletedData(
-        category: String,
-        subCategory: String,
-        lectureNo: String,
-        details: Map<*, *>,
-        callback: (Boolean) -> Unit
-    ) {
-        val channel = MainActivity.updateRecordsChannel
-        if (channel == null) {
-            Log.e("RecordUpdateService", "Update records channel not available")
-            callback(false)
-            return
-        }
-
-        // Convert details map to proper format for Dart
-        val lectureData = mutableMapOf<String, Any?>()
-        for ((key, value) in details) {
-            lectureData[key.toString()] = value
-        }
-
-        val arguments = mapOf(
-            "category" to category,
-            "subCategory" to subCategory,
-            "lectureNo" to lectureNo,
-            "lectureData" to lectureData
-        )
-
-        channel.invokeMethod("moveToDeletedData", arguments, object : MethodChannel.Result {
-            override fun success(result: Any?) {
-                clearProcessingState(category, subCategory, lectureNo)
-                callback(result as? Boolean ?: false)
-            }
-
-            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
-                clearProcessingState(category, subCategory, lectureNo)
-                Log.e("RecordUpdateService", "Error calling moveToDeletedData: $errorMessage")
-                callback(false)
-            }
-
-            override fun notImplemented() {
-                clearProcessingState(category, subCategory, lectureNo)
-                Log.e("RecordUpdateService", "moveToDeletedData method not implemented")
-                callback(false)
-            }
-        })
-    }
-
-    private fun callUpdateRecordsRevision(
-        category: String,
-        subCategory: String,
-        lectureNo: String,
-        currentDateTime: String,
-        currentDate: String,
-        missedRevision: Int,
-        scheduledDate: Date,
-        noRevision: Int,
-        nextRevisionDate: String,
-        details: Map<*, *>,
-        startId: Int
-    ) {
-        val channel = MainActivity.updateRecordsChannel
-        if (channel == null) {
-            Log.e("RecordUpdateService", "Update records channel not available")
-            Toast.makeText(applicationContext, "Update channel not available", Toast.LENGTH_SHORT).show()
-            refreshWidgets(startId)
-            stopSelf(startId)
-            return
-        }
-
-        // Parse dates_updated
-        val datesRevisedStr = details["dates_updated"] as? String ?: "[]"
-        val datesRevised = try {
-            val jsonArray = org.json.JSONArray(datesRevisedStr)
-            mutableListOf<String>().apply {
-                for (i in 0 until jsonArray.length()) {
-                    add(jsonArray.getString(i))
-                }
-                add(currentDate) // Add today's date
-            }
-        } catch (e: Exception) {
-            mutableListOf(currentDate)
-        }
-
-        // Parse dates_missed_revisions
-        val datesMissedRevisionsStr = details["dates_missed_revisions"] as? String ?: "[]"
-        val datesMissedRevisions = try {
-            val jsonArray = org.json.JSONArray(datesMissedRevisionsStr)
-            mutableListOf<String>().apply {
-                for (i in 0 until jsonArray.length()) {
-                    add(jsonArray.getString(i))
-                }
-            }
-        } catch (e: Exception) {
-            mutableListOf<String>()
-        }
-
-        val arguments = mapOf(
-            "category" to category,
-            "subCategory" to subCategory,
-            "lectureNo" to lectureNo,
-            "dateRevised" to currentDateTime,
-            "description" to (details["description"] ?: ""),
-            "reminderTime" to (details["reminder_time"] ?: ""),
-            "noRevision" to (noRevision + 1),
-            "dateScheduled" to nextRevisionDate,
-            "datesRevised" to datesRevised,
-            "missedRevision" to missedRevision,
-            "datesMissedRevisions" to datesMissedRevisions,
-            "status" to (details["status"] ?: "Enabled")
-        )
-
-        channel.invokeMethod("updateRecordsRevision", arguments, object : MethodChannel.Result {
-            override fun success(result: Any?) {
-                clearProcessingState(category, subCategory, lectureNo)
-                Toast.makeText(
-                    applicationContext,
-                    "Record updated successfully! Scheduled for $nextRevisionDate",
-                    Toast.LENGTH_SHORT
-                ).show()
-                refreshWidgets(startId)
-            }
-
-            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
-                clearProcessingState(category, subCategory, lectureNo)
-                Toast.makeText(applicationContext, "Update failed: $errorMessage", Toast.LENGTH_SHORT).show()
-                refreshWidgets(startId)
-                stopSelf(startId)
-            }
-
-            override fun notImplemented() {
-                clearProcessingState(category, subCategory, lectureNo)
-                Toast.makeText(applicationContext, "Update method not implemented", Toast.LENGTH_SHORT).show()
-                refreshWidgets(startId)
-                stopSelf(startId)
-            }
-        })
-    }
-
-    private fun clearProcessingState(category: String, subCategory: String, lectureNo: String) {
+    }    private fun clearProcessingState(category: String, subCategory: String, lectureNo: String) {
         val prefs = applicationContext.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
         val processingItems = prefs.getStringSet(TodayWidget.PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
         val itemKey = "${category}_${subCategory}_${lectureNo}"

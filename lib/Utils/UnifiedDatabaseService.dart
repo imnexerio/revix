@@ -502,6 +502,94 @@ class CombinedDatabaseService {
     }
   }
 
+  // Add public method for moving records to deleted data
+  Future<bool> moveToDeletedData(String category, String subCategory, String lectureNo) async {
+    if (_isGuestMode) {
+      // For guest mode, we simply delete the record since there's no separate deleted data storage
+      bool success = await _localDatabase.deleteRecord(category, subCategory, lectureNo);
+      if (success) {
+        await forceDataReprocessing();
+      }
+      return success;
+    } else {
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        
+        // Get the record data first
+        DatabaseEvent event = await _databaseRef!.child(category).child(subCategory).child(lectureNo).once();
+        
+        if (!event.snapshot.exists) {
+          return false; // Record doesn't exist
+        }
+        
+        final recordData = event.snapshot.value;
+        if (recordData is Map<Object?, Object?>) {
+          // Add deletion timestamp
+          final dataToMove = Map<String, dynamic>.from(recordData);
+          dataToMove['deleted_at'] = DateTime.now().toIso8601String();
+          
+          // Get user ID from Firebase Auth
+          final user = _auth.currentUser;
+          if (user == null) return false;
+          
+          // Move to deleted_user_data
+          final deletedRef = _database.ref('users/${user.uid}/deleted_user_data/$category/$subCategory/$lectureNo');
+          await deletedRef.set(dataToMove);
+          
+          // Remove from original location
+          await _databaseRef!.child(category).child(subCategory).child(lectureNo).remove();
+          
+          await forceDataReprocessing();
+          return true;
+        }
+        
+        return false;
+      } catch (e) {
+        _addErrorToAllControllers('Failed to move record to deleted data: $e');
+        return false;
+      }
+    }
+  }
+  
+  // Add public method for updating record revision data
+  Future<bool> updateRecordRevision(
+    String category,
+    String subCategory,
+    String lectureNo,
+    String dateRevised,
+    String description,
+    String reminderTime,
+    int noRevision,
+    String dateScheduled,
+    List<String> datesRevised,
+    int missedRevision,
+    List<String> datesMissedRevisions,
+    String status,
+  ) async {
+    try {
+      // Prepare update data
+      Map<String, dynamic> updateData = {
+        'reminder_time': reminderTime,
+        'date_updated': dateRevised,
+        'completion_counts': noRevision,
+        'scheduled_date': dateScheduled,
+        'missed_counts': missedRevision,
+        'dates_missed_revisions': datesMissedRevisions,
+        'dates_updated': datesRevised,
+        'description': description,
+        'status': status,
+      };
+      
+      // Update the record using the existing updateRecord method
+      return await updateRecord(category, subCategory, lectureNo, updateData);
+    } catch (e) {
+      _addErrorToAllControllers('Failed to update record revision: $e');
+      return false;
+    }
+  }
+  
   // Add public method for getting data from a particular location
   Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String lectureNo) async {
     if (_isGuestMode) {

@@ -78,7 +78,6 @@ class HomeWidgetService {
   static Future<void> updateFrequencyDataStatic() async {
     await _updateFrequencyData();
   }
-
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
@@ -101,7 +100,9 @@ class HomeWidgetService {
         await _updateWidgetWithEmptyData();
         return;
       }
-    }    if (uri?.host == 'widget_refresh') {
+    }
+
+    if (uri?.host == 'widget_refresh') {
       try {
         print('Starting widget background refresh...');
         
@@ -154,7 +155,8 @@ class HomeWidgetService {
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
       }
-    } else if (uri?.host == 'frequency_refresh') {      try {
+    } else if (uri?.host == 'frequency_refresh') {
+      try {
         print('Starting frequency data refresh...');
         
         // Update both frequency data and tracking types
@@ -163,6 +165,106 @@ class HomeWidgetService {
         print('Frequency and tracking types data refresh completed');
       } catch (e) {
         print('Error in frequency data refresh: $e');
+      }
+    } else if (uri?.host == 'record_delete') {
+      try {
+        print('Starting record deletion background processing...');
+        
+        // Extract parameters from URI
+        final category = uri?.queryParameters['category'] ?? '';
+        final subCategory = uri?.queryParameters['sub_category'] ?? '';
+        final recordTitle = uri?.queryParameters['record_title'] ?? '';
+        final action = uri?.queryParameters['action'] ?? 'deleted';
+        
+        print('Deleting record: $category - $subCategory - $recordTitle');
+        
+        // Initialize database service
+        final service = CombinedDatabaseService();
+        service.initialize();
+        
+        // Move record to deleted data
+        await service.moveToDeletedData(category, subCategory, recordTitle);
+        
+        print('Record deletion completed successfully');
+        
+        // Refresh widget data after deletion
+        await service.forceDataReprocessing();
+        final categorizedData = service.currentCategorizedData;
+        
+        if (categorizedData != null) {
+          final todayRecords = categorizedData['today'] ?? [];
+          final missedRecords = categorizedData['missed'] ?? [];
+          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+          
+          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+          print('Widget refreshed after record deletion');
+        }
+        
+      } catch (e) {
+        print('Error in background record deletion: $e');
+      }
+    } else if (uri?.host == 'record_update') {
+      try {
+        print('Starting record update background processing...');
+        
+        // Extract parameters from URI
+        final category = uri?.queryParameters['category'] ?? '';
+        final subCategory = uri?.queryParameters['sub_category'] ?? '';
+        final recordTitle = uri?.queryParameters['record_title'] ?? '';
+        final nextRevisionDate = uri?.queryParameters['next_revision_date'] ?? '';
+        final updateDataStr = uri?.queryParameters['update_data'] ?? '{}';
+        
+        print('Updating record: $category - $subCategory - $recordTitle');
+        print('Next revision date: $nextRevisionDate');
+        
+        // Parse update data
+        Map<String, dynamic> updateData = {};
+        try {
+          updateData = Map<String, dynamic>.from(
+            json.decode(updateDataStr) as Map
+          );
+        } catch (e) {
+          print('Error parsing update data: $e');
+          return;
+        }
+        
+        // Initialize database service
+        final service = CombinedDatabaseService();
+        service.initialize();
+        
+        // Update the record
+        await service.updateRecordRevision(
+          category,
+          subCategory,
+          recordTitle,
+          updateData['date_updated']?.toString() ?? '',
+          '', // description - not changed during revision
+          '', // reminder_time - not changed during revision
+          updateData['completion_counts'] as int? ?? 0,
+          updateData['scheduled_date']?.toString() ?? '',
+          List<String>.from(updateData['dates_updated'] ?? []),
+          updateData['missed_counts'] as int? ?? 0,
+          List<String>.from(updateData['dates_missed_revisions'] ?? []),
+          updateData['status']?.toString() ?? 'Enabled',
+        );
+        
+        print('Record update completed successfully');
+        
+        // Refresh widget data after update
+        await service.forceDataReprocessing();
+        final categorizedData = service.currentCategorizedData;
+        
+        if (categorizedData != null) {
+          final todayRecords = categorizedData['today'] ?? [];
+          final missedRecords = categorizedData['missed'] ?? [];
+          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+          
+          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+          print('Widget refreshed after record update');
+        }
+        
+      } catch (e) {
+        print('Error in background record update: $e');
       }
     }
   }
