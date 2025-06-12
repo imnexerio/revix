@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -267,11 +268,9 @@ class RecordUpdateService : Service() {
                     details, category, subCategory, lectureNo,
                     currentDateTime, currentDate, missedRevision,
                     scheduledDate, noRevision, nextRevisionDate, startId
-                )
-            } else {
-                // Use the standard revision scheduler for non-custom frequencies
-                RevisionScheduler.calculateNextRevisionDate(
-                    applicationContext,
+                )            } else {
+                // Use the direct frequency calculation for non-custom frequencies
+                calculateNextRevisionDateDirect(
                     revisionFrequency,
                     noRevision + 1,
                     scheduledDate
@@ -485,4 +484,104 @@ class RecordUpdateService : Service() {
         newProcessingItems.remove(itemKey)
         prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()
     }
+
+    /**
+     * Calculate next revision date using cached frequency data from SharedPreferences
+     * This replaces RevisionScheduler.calculateNextRevisionDate for better performance
+     */
+    private fun calculateNextRevisionDateDirect(
+        frequency: String,
+        noRevision: Int,
+        scheduledDate: Date,
+        callback: (String) -> Unit
+    ) {
+        fetchCustomFrequencies { frequencyData ->
+            try {
+                if (frequencyData.containsKey(frequency)) {
+                    val intervals = frequencyData[frequency] ?: emptyList()
+                    
+                    if (intervals.isNotEmpty()) {
+                        val nextInterval = if (noRevision < intervals.size) intervals[noRevision] else intervals.last()
+                        
+                        val calendar = Calendar.getInstance()
+                        calendar.time = scheduledDate
+                        calendar.add(Calendar.DAY_OF_YEAR, nextInterval)
+                        
+                        val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+                        callback(nextDate)
+                        return@fetchCustomFrequencies
+                    }
+                }
+                
+                // Default fallback
+                val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(scheduledDate)
+                callback(nextDate)
+                
+            } catch (e: Exception) {
+                Log.e("RecordUpdateService", "Error calculating next revision date: ${e.message}")
+                val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(scheduledDate)
+                callback(nextDate)
+            }
+        }
+    }
+
+    /**
+     * Fetch custom frequencies directly from SharedPreferences
+     * This replaces the need for RevisionScheduler by using cached data
+     */
+    private fun fetchCustomFrequencies(callback: (Map<String, List<Int>>) -> Unit) {
+        try {
+            // Get frequency data from SharedPreferences that HomeWidgetManager updates
+            val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
+            val frequencyDataJson = sharedPrefs.getString("frequencyData", null)
+
+            val data = mutableMapOf<String, List<Int>>()
+
+            if (frequencyDataJson != null && frequencyDataJson.isNotEmpty() && frequencyDataJson != "{}") {
+                try {
+                    Log.d("RecordUpdateService", "Fetching frequency data from SharedPrefs: $frequencyDataJson")
+
+                    val jsonData = org.json.JSONObject(frequencyDataJson)
+                    val keys = jsonData.keys()
+
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        val value = jsonData.get(key)
+
+                        when (value) {
+                            is org.json.JSONArray -> {
+                                val intList = mutableListOf<Int>()
+                                for (i in 0 until value.length()) {
+                                    intList.add(value.getInt(i))
+                                }
+                                data[key] = intList
+                            }
+                            is String -> {
+                                // Handle string representation like "[1, 3, 7, 14]"
+                                try {
+                                    val cleanValue = value.replace(Regex("[\\[\\]]"), "")
+                                    val parts = cleanValue.split(",").map { it.trim() }
+                                    val intList = parts.mapNotNull { it.toIntOrNull() }
+                                    if (intList.isNotEmpty()) {
+                                        data[key] = intList
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("RecordUpdateService", "Error parsing frequency value for $key: $value", e)
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("RecordUpdateService", "Error parsing frequency JSON data", e)
+                }
+            }
+
+            Log.d("RecordUpdateService", "Fetched frequency data: $data")
+            callback(data)
+        } catch (e: Exception) {
+            Log.e("RecordUpdateService", "Error fetching custom frequencies: ${e.message}", e)
+            callback(emptyMap())
+        }
+    }
+
 }
