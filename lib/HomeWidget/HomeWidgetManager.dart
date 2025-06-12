@@ -3,9 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:home_widget/home_widget.dart';
 import 'dart:ui';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/GuestAuthService.dart';
+import '../Utils/platform_utils.dart';
+import '../firebase_options.dart';
 
 @pragma('vm:entry-point')
 class HomeWidgetService {
@@ -37,18 +41,44 @@ class HomeWidgetService {
   }  // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
-    print('Background callback triggered: ${uri?.host}');
-
-    // Ensure Flutter engine is initialized for background work
+    print('Background callback triggered: ${uri?.host}');    // Ensure Flutter engine is initialized for background work
     WidgetsFlutterBinding.ensureInitialized();
     DartPluginRegistrant.ensureInitialized();
+
+    // Initialize PlatformUtils for background context
+    PlatformUtils.init();
+
+    // Initialize Firebase for background context
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      print('Firebase initialized in background context');
+    } catch (e) {
+      if (e.toString().contains('already initialized')) {
+        print('Firebase already initialized');
+      } else {
+        print('Error initializing Firebase: $e');
+        await _updateWidgetWithEmptyData();
+        return;
+      }
+    }
 
     if (uri?.host == 'widget_refresh') {
       try {
         print('Starting widget background refresh...');
-          // Initialize and process data using CombinedDatabaseService without launching app
+        
+        // First, let's check what authentication state we have
+        final firebaseService = FirebaseDatabaseService();
+        final isFirebaseAuthenticated = firebaseService.isAuthenticated;
+        print('Firebase authenticated: $isFirebaseAuthenticated');
+        
+        // Check guest mode
+        final isGuestMode = await GuestAuthService.isGuestMode();
+        print('Guest mode: $isGuestMode');
+        
+        // Initialize and process data using CombinedDatabaseService without launching app
         final service = CombinedDatabaseService();
         print('CombinedDatabaseService created');
+        
         // Initialize the service first
         service.initialize();
         print('Service initialized');
@@ -99,24 +129,36 @@ class HomeWidgetService {
       iOSName: 'TodayWidget',
     );
   }
-
   static Future<void> _updateWidgetWithEmptyData() async {
     await _ensureInitialized();
+    
+    // Check both Firebase authentication and guest mode
+    final bool isFirebaseAuthenticated = _databaseService.isAuthenticated;
+    final bool isGuestMode = await GuestAuthService.isGuestMode();
+    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
+    
+    print('Widget empty data update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
+    
     await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-    await HomeWidget.saveWidgetData(isLoggedInKey, false);
+    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
     await _updateWidgetSilently();
   }
-
   static Future<void> updateWidgetData(
     List<Map<String, dynamic>> todayRecords,
     List<Map<String, dynamic>> missedRecords,
     List<Map<String, dynamic>> noReminderDateRecords,
   ) async {
     try {
-      final bool isLoggedIn = _databaseService.isAuthenticated;
+      // Check both Firebase authentication and guest mode
+      final bool isFirebaseAuthenticated = _databaseService.isAuthenticated;
+      final bool isGuestMode = await GuestAuthService.isGuestMode();
+      final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
+      
+      print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
+      
       await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
       // Format and save all three data categories

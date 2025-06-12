@@ -7,6 +7,9 @@ class PlatformUtils {
   static final PlatformUtils _instance = PlatformUtils._();
   static PlatformUtils get instance => _instance;
 
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+
   late final bool isWeb;
   late final bool isAndroid;
   late final bool isIOS;
@@ -17,6 +20,8 @@ class PlatformUtils {
 
   // Initialize platform checks
   static void init() {
+    if (_instance._isInitialized) return; // Prevent re-initialization
+
     _instance.isWeb = kIsWeb;
 
     if (!kIsWeb) {
@@ -35,5 +40,7 @@ class PlatformUtils {
       _instance.isLinux = false;
       _instance.isFuchsia = false;
     }
+
+    _instance._isInitialized = true;
   }
 }

@@ -112,8 +112,12 @@ class CombinedDatabaseService {
     _databaseRef = _database.ref('users/$uid/user_data');
     _setupDataListener();
   }
-
   void _processDataChange(dynamic rawData) {
+    // Ensure PlatformUtils is initialized for background contexts
+    if (!PlatformUtils.instance.isInitialized) {
+      PlatformUtils.init();
+    }
+
     if (rawData == null) {
       Map<String, List<Map<String, dynamic>>> emptyData = {
         'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': [], 'noreminderdate': []
