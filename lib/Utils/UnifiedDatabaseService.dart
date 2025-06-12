@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:revix/Utils/platform_utils.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
+import 'FirebaseDatabaseService.dart';
+import 'CustomSnackBar.dart';
 
 class CombinedDatabaseService {
   static final CombinedDatabaseService _instance = CombinedDatabaseService._internal();
@@ -623,6 +626,83 @@ class CombinedDatabaseService {
       }
     }
   }
+
+  // Add UpdateRecords method for unified record saving
+  Future<void> updateRecords(
+    BuildContext context,
+    String selectedCategory,
+    String selectedCategoryCode,
+    String lectureNo,
+    String startTimestamp,
+    String timeController,
+    String lectureType,
+    String todayDate,
+    String dateScheduled,
+    String description,
+    String revisionFrequency,
+    Map<String, dynamic> durationData,
+    Map<String, dynamic> customFrequencyParams,
+  ) async {
+    try {
+      int completionCounts = 0;
+      
+      if (todayDate == 'Unspecified') {
+        completionCounts = -1;
+        revisionFrequency = 'No Repetition';
+        dateScheduled = 'Unspecified';
+        durationData = {
+          "type": "forever",
+          "numberOfTimes": null,
+          "endDate": null
+        };
+      } else {
+        if (DateTime.parse(startTimestamp).isBefore(DateTime.parse(todayDate)) || revisionFrequency == 'No Repetition') {
+          completionCounts = -1;
+        }
+      }
+
+      // Create a map to store all revision parameters including custom ones
+      Map<String, dynamic> revisionData = {
+        'frequency': revisionFrequency,
+      };
+
+      // Add custom frequency parameters if present
+      if (customFrequencyParams.isNotEmpty) {
+        revisionData['custom_params'] = customFrequencyParams;
+      }
+
+      // Prepare record data for storage
+      Map<String, dynamic> recordData = {
+        'start_timestamp': startTimestamp,
+        'reminder_time': timeController,
+        'entry_type': lectureType,
+        'date_initiated': todayDate,
+        'date_updated': todayDate,
+        'scheduled_date': dateScheduled,
+        'description': description,
+        'missed_counts': 0,
+        'completion_counts': completionCounts,
+        'recurrence_frequency': revisionFrequency,
+        'recurrence_data': revisionData,
+        'status': 'Enabled',
+        'duration': durationData,
+      };
+
+      // Save record using unified service
+      bool success = await saveRecord(selectedCategory, selectedCategoryCode, lectureNo, recordData);
+      
+      if (success) {
+        customSnackBar(
+          context: context,
+          message: 'Record added successfully',
+        );
+      } else {
+        throw Exception('Failed to save record');
+      }
+    } catch (e) {
+      throw Exception('Failed to save lecture: $e');
+    }
+  }
 }
 
 Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
@@ -808,5 +888,38 @@ class UnifiedDatabaseService {
         return false;
       }
     }
+  }
+
+  // Add UpdateRecords method wrapper
+  Future<void> updateRecords(
+    BuildContext context,
+    String selectedCategory,
+    String selectedCategoryCode,
+    String lectureNo,
+    String startTimestamp,
+    String timeController,
+    String lectureType,
+    String todayDate,
+    String dateScheduled,
+    String description,
+    String revisionFrequency,
+    Map<String, dynamic> durationData,
+    Map<String, dynamic> customFrequencyParams,
+  ) async {
+    return await _service.updateRecords(
+      context,
+      selectedCategory,
+      selectedCategoryCode,
+      lectureNo,
+      startTimestamp,
+      timeController,
+      lectureType,
+      todayDate,
+      dateScheduled,
+      description,
+      revisionFrequency,
+      durationData,
+      customFrequencyParams,
+    );
   }
 }

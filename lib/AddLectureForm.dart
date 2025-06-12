@@ -9,9 +9,6 @@ import 'Utils/CalculateCustomNextDate.dart';
 import 'Utils/CustomSnackBar.dart';
 import 'Utils/UnifiedDatabaseService.dart';
 import 'Utils/customSnackBar_error.dart';
-import 'Utils/GuestAuthService.dart';
-import 'Utils/LocalDatabaseService.dart';
-import 'Utils/FirebaseDatabaseService.dart';
 
 class AddLectureForm extends StatefulWidget {
   @override
@@ -29,13 +26,11 @@ class _AddLectureFormState extends State<AddLectureForm> {
   String _lectureType = 'Lectures';
   String _lectureNo = '';
   String _description = '';
-  String _revisionFrequency = 'Default';
-  String _duration = 'Forever';
+  String _revisionFrequency = 'Default';  String _duration = 'Forever';
   List<String> _subjects = [];
   Map<String, List<String>> _subCategories = {};
   String dateScheduled = '';
   String todayDate = '';
-  int completion_counts = 0;
   Map<String, dynamic> _durationData = {
     "type": "forever",
     "numberOfTimes": null,
@@ -86,123 +81,25 @@ class _AddLectureFormState extends State<AddLectureForm> {
         message: 'Error loading categories and sub categories: $e',
       );
     }
-  }
-  Future<void> UpdateRecords(BuildContext context) async {
+  }  Future<void> UpdateRecords(BuildContext context) async {
     try {
-      // Check if user is in guest mode
-      if (await GuestAuthService.isGuestMode()) {
-        // Use local database for guest users
-        final localDb = LocalDatabaseService();
-        
-        if (todayDate == 'Unspecified') {
-          completion_counts = -1;
-          _revisionFrequency = 'No Repetition';
-          dateScheduled = 'Unspecified';
-          _durationData = {
-            "type": "forever",
-            "numberOfTimes": null,
-            "endDate": null
-          };
-        } else {
-          if (DateTime.parse(start_timestamp).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
-            completion_counts = -1;
-          }
-        }
-
-        // Create a map to store all revision parameters including custom ones
-        Map<String, dynamic> revisionData = {
-          'frequency': _revisionFrequency,
-        };
-
-        // Add custom frequency parameters if present
-        if (_customFrequencyParams.isNotEmpty) {
-          revisionData['custom_params'] = _customFrequencyParams;
-        }
-
-        // Prepare record data for local storage
-        Map<String, dynamic> recordData = {
-          'start_timestamp': start_timestamp,
-          'reminder_time': _timeController.text,
-          'entry_type': _lectureType,
-          'date_initiated': todayDate,
-          'date_updated': todayDate,
-          'scheduled_date': dateScheduled,
-          'description': _description,
-          'missed_counts': 0,
-          'completion_counts': completion_counts,
-          'recurrence_frequency': _revisionFrequency,
-          'recurrence_data': revisionData,
-          'status': 'Enabled',
-          'duration': _durationData,
-        };
-
-        // Save to local database
-        bool success = await localDb.saveRecord(_selectedCategory, _selectedCategoryCode, _lectureNo, recordData);
-        
-        if (success) {
-          customSnackBar(
-            context: context,
-            message: 'Record added successfully',
-          );
-        } else {
-          throw Exception('Failed to save record to local database');
-        }      } else {
-        // Use Firebase for authenticated users via centralized service
-        final firebaseService = FirebaseDatabaseService();
-
-        if (todayDate == 'Unspecified') {
-          completion_counts = -1;
-          _revisionFrequency = 'No Repetition';
-          dateScheduled = 'Unspecified';
-          _durationData = {
-            "type": "forever",
-            "numberOfTimes": null,
-            "endDate": null
-          };
-        } else {
-          if (DateTime.parse(start_timestamp).isBefore(DateTime.parse(todayDate)) || _revisionFrequency == 'No Repetition') {
-            completion_counts = -1;
-          }
-        }
-
-        // Create a map to store all revision parameters including custom ones
-        Map<String, dynamic> revisionData = {
-          'frequency': _revisionFrequency,
-        };
-
-        // Add custom frequency parameters if present
-        if (_customFrequencyParams.isNotEmpty) {
-          revisionData['custom_params'] = _customFrequencyParams;
-        }
-
-        Map<String, dynamic> recordData = {
-          'start_timestamp': start_timestamp,
-          'reminder_time': _timeController.text,
-          'entry_type': _lectureType,
-          'date_initiated': todayDate,
-          'date_updated': todayDate,
-          'scheduled_date': dateScheduled,
-          'description': _description,
-          'missed_counts': 0,
-          'completion_counts': completion_counts,
-          'recurrence_frequency': _revisionFrequency,
-          'recurrence_data': revisionData,
-          'status': 'Enabled',
-          'duration': _durationData,
-        };
-
-        // Save record using centralized service
-        bool success = await firebaseService.saveRecord(_selectedCategory, _selectedCategoryCode, _lectureNo, recordData);
-        
-        if (!success) {
-          throw Exception('Failed to save record to Firebase');
-        }
-
-        customSnackBar(
-          context: context,
-          message: 'Record added successfully',
-        );
-      }
+      final unifiedService = UnifiedDatabaseService();
+      
+      await unifiedService.updateRecords(
+        context,
+        _selectedCategory,
+        _selectedCategoryCode,
+        _lectureNo,
+        start_timestamp,
+        _timeController.text,
+        _lectureType,
+        todayDate,
+        dateScheduled,
+        _description,
+        _revisionFrequency,
+        _durationData,
+        _customFrequencyParams,
+      );
     } catch (e) {
       throw Exception('Failed to save lecture: $e');
     }
