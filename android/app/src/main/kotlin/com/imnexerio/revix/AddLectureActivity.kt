@@ -811,17 +811,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
         // Save to Firebase
         try {
-            val user = auth.currentUser
-            if (user == null) {
-                Toast.makeText(this, "No authenticated user", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            val uid = user.uid
-            val ref = database.getReference("users/$uid/user_data")
-                .child(selectedCategory)
-                .child(selectedCategoryCode)
-                .child(title)
 
             // Handle date values based on checkboxes
             val isUnspecifiedInitiationDate = initiationDateCheckbox.isChecked
@@ -890,6 +879,18 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 revisionData["frequency"] = "No Repetition"
                 recordData["recurrence_data"] = revisionData
             }
+
+            val user = auth.currentUser
+            if (user == null) {
+                Toast.makeText(this, "No authenticated user", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            val uid = user.uid
+            val ref = database.getReference("users/$uid/user_data")
+                .child(selectedCategory)
+                .child(selectedCategoryCode)
+                .child(title)
 
             // Save to Firebase
             ref.setValue(recordData)
