@@ -7,6 +7,7 @@ import 'dart:ui';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 
+@pragma('vm:entry-point')
 class HomeWidgetService {
   static const String appGroupId = 'HomeWidgetPreferences';
   static const String todayRecordsKey = 'todayRecords';

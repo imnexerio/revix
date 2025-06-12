@@ -18,6 +18,7 @@ import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
 import 'firebase_options.dart';
+import 'HomeWidget/HomeWidgetManager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,11 @@ void main() async {
   
   // Only do minimal initialization here for fast splash screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize HomeWidget service for background callbacks
+  if (PlatformUtils.instance.isAndroid) {
+    await HomeWidgetService.initialize();
+  }
   
   runApp(const MyApp());
 }
