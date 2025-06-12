@@ -19,10 +19,8 @@ class HomeWidgetService {
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    HomeWidget.setAppGroupId(appGroupId);
-
-    // Set up widget background callback handling
-    HomeWidget.registerInteractivityCallback(backgroundCallback);
+    HomeWidget.setAppGroupId(appGroupId);    // Set up widget background callback handling
+    HomeWidget.registerBackgroundCallback(backgroundCallback);
 
     final bool isLoggedIn = _databaseService.isAuthenticated;
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
@@ -47,11 +45,9 @@ class HomeWidgetService {
     if (uri?.host == 'widget_refresh') {
       try {
         print('Starting widget background refresh...');
-        
-        // Initialize and process data using CombinedDatabaseService without launching app
+          // Initialize and process data using CombinedDatabaseService without launching app
         final service = CombinedDatabaseService();
         print('CombinedDatabaseService created');
-        
         // Initialize the service first
         service.initialize();
         print('Service initialized');
