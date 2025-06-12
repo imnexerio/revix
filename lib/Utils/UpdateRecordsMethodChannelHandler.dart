@@ -9,8 +9,7 @@ class UpdateRecordsMethodChannelHandler {
   static void initialize() {
     _channel.setMethodCallHandler(_handleMethodCall);
   }
-  
-  /// Handle method calls from native code
+    /// Handle method calls from native code
   static Future<dynamic> _handleMethodCall(MethodCall call) async {
     try {
       switch (call.method) {
@@ -81,8 +80,7 @@ class UpdateRecordsMethodChannelHandler {
         datesMissedRevisions,
         status,
       );
-      return true;
-    } catch (e) {
+      return true;    } catch (e) {
       print('Error in UpdateRecordsRevision: $e');
       return false;
     }

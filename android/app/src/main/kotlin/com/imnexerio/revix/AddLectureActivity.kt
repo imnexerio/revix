@@ -12,8 +12,6 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.*
@@ -61,24 +59,17 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         put("numberOfTimes", null)
         put("endDate", null)
     }
-
     private var previousDuration = "Forever"
     private var trackingTypes = mutableListOf<String>()
     private var frequencies = mutableMapOf<String, List<Int>>()
     private var frequencyNames = mutableListOf<String>()
-    private var customFrequencyData: HashMap<String, Any> = HashMap()    // Database reference
-    private lateinit var database: FirebaseDatabase
-    private lateinit var auth: FirebaseAuth
+    private var customFrequencyData: HashMap<String, Any> = HashMap()
     private var revisionData: MutableMap<String, Any?> = mutableMapOf()
     val recordData = HashMap<String, Any>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_lecture)
-
-        // Initialize Firebase
-        database = FirebaseDatabase.getInstance()
-        auth = FirebaseAuth.getInstance()
 
         // Initialize UI elements
         initializeViews()
@@ -877,44 +868,60 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             } else {
                 // For "Unspecified" or "No Repetition", set minimal revision data
                 revisionData["frequency"] = "No Repetition"
-                recordData["recurrence_data"] = revisionData
-            }
-
-            val user = auth.currentUser
-            if (user == null) {
-                Toast.makeText(this, "No authenticated user", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            val uid = user.uid
-            val ref = database.getReference("users/$uid/user_data")
-                .child(selectedCategory)
-                .child(selectedCategoryCode)
-                .child(title)
-
-            // Save to Firebase
-            ref.setValue(recordData)
-                .addOnSuccessListener {
-                    val successMessage = if (isUnspecifiedInitiationDate) {
-                        "Record added successfully with unspecified initiation date"
-                    } else if (isNoRepetition) {
-                        "Record added successfully with no repetition"
-                    } else {
-                        "Record added successfully, scheduled for $dateScheduled"
-                    }
-                    Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show()
-
-                    // Refresh the widget
-                    val intent = Intent(this, TodayWidget::class.java)
-                    intent.action = TodayWidget.ACTION_REFRESH
-                    sendBroadcast(intent)
-
-                    // Close the activity
-                    finish()
+                recordData["recurrence_data"] = revisionData            }            // Use HomeWidget background callback to save record via Dart
+            try {
+                // Create URI with all record data as query parameters
+                val durationDataJson = org.json.JSONObject(recordData["duration"] as Map<String, Any?>).toString()
+                val customFrequencyParamsJson = if (revisionFrequency == "Custom") {
+                    org.json.JSONObject(customFrequencyData as Map<String, Any>).toString()
+                } else {
+                    "{}"
                 }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this, "Failed to save record: ${e.message}", Toast.LENGTH_SHORT).show()
+                
+                val uri = android.net.Uri.parse("homeWidget://record_create").buildUpon()
+                    .appendQueryParameter("selectedCategory", selectedCategory)
+                    .appendQueryParameter("selectedCategoryCode", selectedCategoryCode)
+                    .appendQueryParameter("title", title)
+                    .appendQueryParameter("startTimestamp", recordData["start_timestamp"]?.toString() ?: "")
+                    .appendQueryParameter("reminderTime", reminderTime)
+                    .appendQueryParameter("lectureType", lectureType)
+                    .appendQueryParameter("todayDate", todayDate)
+                    .appendQueryParameter("dateScheduled", dateScheduled)
+                    .appendQueryParameter("description", description)
+                    .appendQueryParameter("revisionFrequency", revisionFrequency)
+                    .appendQueryParameter("durationData", durationDataJson)
+                    .appendQueryParameter("customFrequencyParams", customFrequencyParamsJson)
+                    .build()
+                
+                // Trigger background callback
+                val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
+                    this,
+                    uri
+                )
+                backgroundIntent.send()
+                
+                // Show success message immediately (background processing will handle the actual save)
+                val successMessage = if (isUnspecifiedInitiationDate) {
+                    "Record added successfully with unspecified initiation date"
+                } else if (isNoRepetition) {
+                    "Record added successfully with no repetition"
+                } else {
+                    "Record added successfully, scheduled for $dateScheduled"
                 }
+                Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show()
+
+                // Refresh the widget (the background callback will also refresh it)
+                val intent = Intent(this, TodayWidget::class.java)
+                intent.action = TodayWidget.ACTION_REFRESH
+                sendBroadcast(intent)
+
+                // Close the activity
+                finish()
+                
+            } catch (e: Exception) {
+                Log.e("AddLectureActivity", "Error triggering background record creation: ${e.message}")
+                Toast.makeText(this, "Error saving record: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
 
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()

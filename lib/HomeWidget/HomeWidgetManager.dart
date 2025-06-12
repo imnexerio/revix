@@ -307,6 +307,75 @@ class HomeWidgetService {
       } catch (e) {
         print('Error in background record update: $e');
       }
+    } else if (uri?.host == 'record_create') {
+      try {
+        print('Starting record creation background processing...');
+        
+        // Extract parameters from URI query parameters
+        final selectedCategory = uri?.queryParameters['selectedCategory'] ?? '';
+        final selectedCategoryCode = uri?.queryParameters['selectedCategoryCode'] ?? '';
+        final title = uri?.queryParameters['title'] ?? '';
+        final startTimestamp = uri?.queryParameters['startTimestamp'] ?? '';
+        final reminderTime = uri?.queryParameters['reminderTime'] ?? '';
+        final lectureType = uri?.queryParameters['lectureType'] ?? '';
+        final todayDate = uri?.queryParameters['todayDate'] ?? '';
+        final dateScheduled = uri?.queryParameters['dateScheduled'] ?? '';
+        final description = uri?.queryParameters['description'] ?? '';
+        final revisionFrequency = uri?.queryParameters['revisionFrequency'] ?? '';
+        final durationDataStr = uri?.queryParameters['durationData'] ?? '{}';
+        final customFrequencyParamsStr = uri?.queryParameters['customFrequencyParams'] ?? '{}';
+        
+        print('Creating record: $selectedCategory - $selectedCategoryCode - $title');
+        
+        // Parse JSON data
+        Map<String, dynamic> durationData = {};
+        Map<String, dynamic> customFrequencyParams = {};
+        try {
+          durationData = Map<String, dynamic>.from(json.decode(durationDataStr) as Map);
+          customFrequencyParams = Map<String, dynamic>.from(json.decode(customFrequencyParamsStr) as Map);
+        } catch (e) {
+          print('Error parsing JSON data: $e');
+          return;
+        }
+        
+        // Initialize database service
+        final service = CombinedDatabaseService();
+        service.initialize();
+        
+        // Create the record using updateRecordsWithoutContext
+        await service.updateRecordsWithoutContext(
+          selectedCategory,
+          selectedCategoryCode,
+          title,
+          startTimestamp,
+          reminderTime,
+          lectureType,
+          todayDate,
+          dateScheduled,
+          description,
+          revisionFrequency,
+          durationData,
+          customFrequencyParams,
+        );
+        
+        print('Record creation completed successfully');
+        
+        // Refresh widget data after creation
+        await service.forceDataReprocessing();
+        final categorizedData = service.currentCategorizedData;
+        
+        if (categorizedData != null) {
+          final todayRecords = categorizedData['today'] ?? [];
+          final missedRecords = categorizedData['missed'] ?? [];
+          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+          
+          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+          print('Widget refreshed after record creation');
+        }
+        
+      } catch (e) {
+        print('Error in background record creation: $e');
+      }
     }
   }
 

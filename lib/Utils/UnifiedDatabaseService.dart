@@ -703,6 +703,77 @@ class CombinedDatabaseService {
       throw Exception('Failed to save lecture: $e');
     }
   }
+
+  // Add UpdateRecords method without context for method channel calls
+  Future<void> updateRecordsWithoutContext(
+    String selectedCategory,
+    String selectedCategoryCode,
+    String lectureNo,
+    String startTimestamp,
+    String timeController,
+    String lectureType,
+    String todayDate,
+    String dateScheduled,
+    String description,
+    String revisionFrequency,
+    Map<String, dynamic> durationData,
+    Map<String, dynamic> customFrequencyParams,
+  ) async {
+    try {
+      int completionCounts = 0;
+      
+      if (todayDate == 'Unspecified') {
+        completionCounts = -1;
+        revisionFrequency = 'No Repetition';
+        dateScheduled = 'Unspecified';
+        durationData = {
+          "type": "forever",
+          "numberOfTimes": null,
+          "endDate": null
+        };
+      } else {
+        if (DateTime.parse(startTimestamp).isBefore(DateTime.parse(todayDate)) || revisionFrequency == 'No Repetition') {
+          completionCounts = -1;
+        }
+      }
+
+      // Create a map to store all revision parameters including custom ones
+      Map<String, dynamic> revisionData = {
+        'frequency': revisionFrequency,
+      };
+
+      // Add custom frequency parameters if present
+      if (customFrequencyParams.isNotEmpty) {
+        revisionData['custom_params'] = customFrequencyParams;
+      }
+
+      // Prepare record data for storage
+      Map<String, dynamic> recordData = {
+        'start_timestamp': startTimestamp,
+        'reminder_time': timeController,
+        'entry_type': lectureType,
+        'date_initiated': todayDate,
+        'date_updated': todayDate,
+        'scheduled_date': dateScheduled,
+        'description': description,
+        'missed_counts': 0,
+        'completion_counts': completionCounts,
+        'recurrence_frequency': revisionFrequency,
+        'recurrence_data': revisionData,
+        'status': 'Enabled',
+        'duration': durationData,
+      };
+
+      // Save record using unified service
+      bool success = await saveRecord(selectedCategory, selectedCategoryCode, lectureNo, recordData);
+      
+      if (!success) {
+        throw Exception('Failed to save record');
+      }
+    } catch (e) {
+      throw Exception('Failed to save lecture: $e');
+    }
+  }
 }
 
 Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
