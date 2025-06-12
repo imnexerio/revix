@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -108,9 +109,7 @@ class RecordUpdateService : Service() {
             // Handle any exceptions that occur during the refresh
             Toast.makeText(this, "Error refreshing widgets: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun handleRecordClick(
+    }    private fun handleRecordClick(
         category: String,
         subCategory: String,
         lectureNo: String,
@@ -124,56 +123,85 @@ class RecordUpdateService : Service() {
             return
         }
 
-        val userId = firebaseAuth.currentUser!!.uid
-        val recordPath = "users/$userId/user_data/$category/$subCategory/$lectureNo"
-        val database = FirebaseDatabase.getInstance()
-        val recordRef = database.getReference(recordPath)
+        // Get record data from TodayWidget's SharedPreferences instead of Firebase
+        val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+        val recordDetails = getRecordFromWidget(category, subCategory, lectureNo, sharedPreferences)
 
-        recordRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (!snapshot.exists()) {
-                    Toast.makeText(applicationContext, "Record not found", Toast.LENGTH_SHORT).show()
-                    stopSelf(startId)
-                    return
+        if (recordDetails == null) {
+            Toast.makeText(applicationContext, "Record not found in widget data", Toast.LENGTH_SHORT).show()
+            stopSelf(startId)
+            return
+        }
+
+        try {
+            // Convert the record details to the expected format
+            val details = recordDetails.toMutableMap<String, Any>()
+
+            // Check if today's date is already in dates_updated
+            val dateRevised = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val datesRevisedString = details["dates_updated"] as? String ?: "[]"
+            val datesRevised = try {
+                org.json.JSONArray(datesRevisedString).let { jsonArray ->
+                    (0 until jsonArray.length()).map { jsonArray.getString(it) }
                 }
-
-                try {
-                    val details = snapshot.value as Map<*, *>
-
-                    // Check if today's date is already in dates_updated
-                    val dateRevised = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
-                        Date()
-                    )
-                    val datesRevised = details["dates_updated"] as? List<*> ?: listOf<String>()
-
-                    // Check if the record has been revised today
-                    val revisedToday = datesRevised.any {
-                        (it as? String)?.startsWith(dateRevised) == true
-                    }
-
-                    if (revisedToday) {
-                        // Already revised today, just refresh
-                        Toast.makeText(applicationContext, "Already revised today. Refreshing data...", Toast.LENGTH_SHORT).show()
-                        clearProcessingState(category, subCategory, lectureNo) // NEW LINE
-                        refreshWidgets(startId)
-                    } else {
-                        updateRecord(details, category, subCategory, lectureNo, extras, startId)
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    e.printStackTrace()
-                    stopSelf(startId)
-                }
+            } catch (e: Exception) {
+                listOf<String>()
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(applicationContext, "Database error: ${error.message}", Toast.LENGTH_SHORT).show()
-                stopSelf(startId)
+            // Check if the record has been revised today
+            val revisedToday = datesRevised.any { it.startsWith(dateRevised) }
+
+            if (revisedToday) {
+                // Already revised today, just refresh
+                Toast.makeText(applicationContext, "Already revised today. Refreshing data...", Toast.LENGTH_SHORT).show()
+                clearProcessingState(category, subCategory, lectureNo)
+                refreshWidgets(startId)
+            } else {
+                updateRecord(details, category, subCategory, lectureNo, extras, startId)
             }
-        })
+        } catch (e: Exception) {
+            Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+            stopSelf(startId)
+        }
     }
 
-    private fun updateRecord(
+    private fun getRecordFromWidget(
+        category: String,
+        subCategory: String,
+        lectureNo: String,
+        sharedPreferences: SharedPreferences
+    ): Map<String, String>? {
+        // Check all possible widget data sources
+        val dataSources = listOf("todayRecords", "missedRecords", "noreminderdate")
+        
+        for (dataSource in dataSources) {
+            val jsonData = sharedPreferences.getString(dataSource, "[]") ?: "[]"
+            try {
+                val jsonArray = org.json.JSONArray(jsonData)
+                for (i in 0 until jsonArray.length()) {
+                    val jsonObject = jsonArray.getJSONObject(i)
+                    val recordCategory = jsonObject.optString("category", "")
+                    val recordSubCategory = jsonObject.optString("sub_category", "")
+                    val recordTitle = jsonObject.optString("record_title", "")
+                    
+                    if (recordCategory == category && recordSubCategory == subCategory && recordTitle == lectureNo) {
+                        // Found the record, convert it to a map
+                        val record = mutableMapOf<String, String>()
+                        val keys = jsonObject.keys()
+                        while (keys.hasNext()) {
+                            val key = keys.next()
+                            record[key] = jsonObject.optString(key, "")
+                        }
+                        return record
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("RecordUpdateService", "Error parsing JSON data from $dataSource: ${e.message}")
+            }
+        }
+        return null
+    }    private fun updateRecord(
         details: Map<*, *>,
         category: String,
         subCategory: String,
@@ -238,28 +266,45 @@ class RecordUpdateService : Service() {
             val currentDateTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Date())
             val currentDate = currentDateTime.split("T")[0]
 
-            // Process data
-            val missedRevision = (details["missed_counts"] as? Number)?.toInt() ?: 0
-            val scheduledDate = (details["scheduled_date"] as? String)?.let {
-                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it)
-            } ?: Date()
+            // Process data - convert string values to appropriate types
+            val missedRevision = (details["missed_counts"] as? String)?.toIntOrNull() ?: 0
+            val scheduledDateStr = details["scheduled_date"] as? String ?: currentDate
+            val scheduledDate = try {
+                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(scheduledDateStr) ?: Date()
+            } catch (e: Exception) {
+                Date()
+            }
 
             // Get revision frequency and revision count
             val revisionFrequency = details["recurrence_frequency"]?.toString() ?:
                 extras["recurrence_frequency"] ?: "daily"
 
-            val noRevision = (details["completion_counts"] as? Number)?.toInt() ?: 0
+            val noRevision = (details["completion_counts"] as? String)?.toIntOrNull() ?: 0
 
             // Calculate next revision date based on frequency type
             if (revisionFrequency == "Custom") {
                 // Handle custom revision frequency
-                @Suppress("UNCHECKED_CAST")
-                val revisionData = details["recurrence_data"] as? Map<String, Any?> ?: emptyMap()
+                val revisionDataStr = details["recurrence_data"] as? String ?: "{}"
+                val revisionData = try {
+                    val jsonObject = org.json.JSONObject(revisionDataStr)
+                    val map = mutableMapOf<String, Any?>()
+                    val keys = jsonObject.keys()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        map[key] = jsonObject.get(key)
+                    }
+                    map
+                } catch (e: Exception) {
+                    emptyMap<String, Any?>()
+                }
 
-                val dateScheduledStr = details["scheduled_date"] as? String ?: currentDate
-                val dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateScheduledStr)
+                val dateScheduled = try {
+                    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(scheduledDateStr) ?: Date()
+                } catch (e: Exception) {
+                    Date()
+                }
                 val scheduledCalendar = Calendar.getInstance()
-                scheduledCalendar.time = dateScheduled ?: Date()
+                scheduledCalendar.time = dateScheduled
 
                 val nextDate = CalculateCustomNextDate.calculateCustomNextDate(scheduledCalendar, revisionData)
                 val nextRevisionDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
@@ -268,7 +313,9 @@ class RecordUpdateService : Service() {
                     details, category, subCategory, lectureNo,
                     currentDateTime, currentDate, missedRevision,
                     scheduledDate, noRevision, nextRevisionDate, startId
-                )            } else {                // Use the direct frequency calculation for non-custom frequencies
+                )
+            } else {
+                // Use the direct frequency calculation for non-custom frequencies
                 FrequencyCalculationUtils.calculateNextRevisionDate(
                     this,
                     revisionFrequency,
@@ -289,8 +336,6 @@ class RecordUpdateService : Service() {
             stopSelf(startId)
         }
     }
-
-
     // Helper method to update the record with the calculated next date
     private fun updateRecordWithNextDate(
         details: Map<*, *>,
@@ -313,28 +358,41 @@ class RecordUpdateService : Service() {
 
         // Handle missed revisions if scheduled date is in the past
         var newMissedRevision = missedRevision
-        val datesMissedRevisions = details["dates_missed_revisions"] as? List<*> ?: listOf<String>()
-        val newDatesMissedRevisions = ArrayList<String>(datesMissedRevisions.map { it.toString() })
+        val datesMissedRevisionsStr = details["dates_missed_revisions"] as? String ?: "[]"
+        val datesMissedRevisions = try {
+            org.json.JSONArray(datesMissedRevisionsStr).let { jsonArray ->
+                (0 until jsonArray.length()).map { jsonArray.getString(it) }.toMutableList()
+            }
+        } catch (e: Exception) {
+            mutableListOf<String>()
+        }
 
         val scheduledDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(scheduledDate)
         if (scheduledDateStr.compareTo(currentDate) < 0) {
             newMissedRevision += 1
-            if (!newDatesMissedRevisions.contains(scheduledDateStr)) {
-                newDatesMissedRevisions.add(scheduledDateStr)
+            if (!datesMissedRevisions.contains(scheduledDateStr)) {
+                datesMissedRevisions.add(scheduledDateStr)
             }
         }
 
         updatedValues["missed_counts"] = newMissedRevision
-        updatedValues["dates_missed_revisions"] = newDatesMissedRevisions
+        updatedValues["dates_missed_revisions"] = datesMissedRevisions
 
         // Update dates_updated
-        val datesRevised = details["dates_updated"] as? List<*> ?: listOf<String>()
-        val newDatesRevised = ArrayList<String>(datesRevised.map { it.toString() })
-        newDatesRevised.add(currentDateTime)
-        if (noRevision == -1) {
-            newDatesRevised.clear()
+        val datesRevisedStr = details["dates_updated"] as? String ?: "[]"
+        val datesRevised = try {
+            org.json.JSONArray(datesRevisedStr).let { jsonArray ->
+                (0 until jsonArray.length()).map { jsonArray.getString(it) }.toMutableList()
+            }
+        } catch (e: Exception) {
+            mutableListOf<String>()
         }
-        updatedValues["dates_updated"] = newDatesRevised
+        
+        datesRevised.add(currentDateTime)
+        if (noRevision == -1) {
+            datesRevised.clear()
+        }
+        updatedValues["dates_updated"] = datesRevised
 
         // Update completion_counts
         updatedValues["completion_counts"] = noRevision + 1
@@ -342,11 +400,12 @@ class RecordUpdateService : Service() {
         // Update scheduled_date with next revision date
         updatedValues["scheduled_date"] = nextRevisionDate
 
-        val newEnabledStatus = determineEnabledStatus(
-            details.toMutableMap().apply {
-                this["completion_counts"] = noRevision + 1
-            }
-        )
+        // Convert details to proper format for status determination
+        val detailsForStatus = details.toMutableMap().apply {
+            this["completion_counts"] = (noRevision + 1).toString()
+        }
+
+        val newEnabledStatus = determineEnabledStatus(detailsForStatus)
 
         if (!newEnabledStatus && (details["status"] as? String) == "Enabled") {
             updatedValues["status"] = "Disabled"
@@ -372,20 +431,34 @@ class RecordUpdateService : Service() {
                 refreshWidgets(startId)
                 stopSelf(startId)
             }
-    }
-
-    private fun determineEnabledStatus(details: Map<*, *>): Boolean {
+    }    private fun determineEnabledStatus(details: Map<*, *>): Boolean {
         var isEnabled = (details["status"] as? String) == "Enabled"
-        val durationData = (details["duration"] as? Map<*, *>)?.let {
-            it.mapKeys { entry -> entry.key.toString() }
-        } ?: mapOf("type" to "forever")
+        
+        // Parse duration data from JSON string
+        val durationDataStr = details["duration"] as? String ?: "{\"type\":\"forever\"}"
+        val durationData = try {
+            val jsonObject = org.json.JSONObject(durationDataStr)
+            val map = mutableMapOf<String, Any?>()
+            val keys = jsonObject.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                map[key] = jsonObject.get(key)
+            }
+            map
+        } catch (e: Exception) {
+            mapOf("type" to "forever")
+        }
 
         val durationType = durationData["type"] as? String ?: "forever"
 
         when (durationType) {
             "specificTimes" -> {
-                val numberOfTimes = (durationData["numberOfTimes"] as? Number)?.toInt()
-                val currentRevisions = (details["completion_counts"] as? Number)?.toInt() ?: 0
+                val numberOfTimes = when (val times = durationData["numberOfTimes"]) {
+                    is Number -> times.toInt()
+                    is String -> times.toIntOrNull()
+                    else -> null
+                }
+                val currentRevisions = (details["completion_counts"] as? String)?.toIntOrNull() ?: 0
                 if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
                     isEnabled = false
                 }
