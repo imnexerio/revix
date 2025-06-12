@@ -12,10 +12,7 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -109,7 +106,9 @@ class RecordUpdateService : Service() {
             // Handle any exceptions that occur during the refresh
             Toast.makeText(this, "Error refreshing widgets: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-    }    private fun handleRecordClick(
+    }
+
+    private fun handleRecordClick(
         category: String,
         subCategory: String,
         lectureNo: String,
@@ -201,7 +200,9 @@ class RecordUpdateService : Service() {
             }
         }
         return null
-    }    private fun updateRecord(
+    }
+
+    private fun updateRecord(
         details: Map<*, *>,
         category: String,
         subCategory: String,
@@ -431,7 +432,9 @@ class RecordUpdateService : Service() {
                 refreshWidgets(startId)
                 stopSelf(startId)
             }
-    }    private fun determineEnabledStatus(details: Map<*, *>): Boolean {
+    }
+
+    private fun determineEnabledStatus(details: Map<*, *>): Boolean {
         var isEnabled = (details["status"] as? String) == "Enabled"
         
         // Parse duration data from JSON string
