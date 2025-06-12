@@ -16,7 +16,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import java.text.SimpleDateFormat
 import java.util.*
-import com.imnexerio.revix.R
 import kotlinx.coroutines.*
 
 class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
@@ -132,16 +131,16 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // First, trigger a frequency data refresh to ensure we have the latest data
         refreshFrequencyData()
 
-        // Fetch tracking types
-        FetchTrackingTypesUtils.fetchTrackingTypes { types ->
-            trackingTypes.clear()
-            trackingTypes.addAll(types)
+        // Add a small delay to allow frequency data to be refreshed by Flutter
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            // Fetch tracking types using SharedPreferences approach like frequency data
+            fetchTrackingTypesFromFlutter { types ->
+                trackingTypes.clear()
+                trackingTypes.addAll(types)
 
-            // Update UI with tracking types
-            updateLectureTypeSpinner()
+                // Update UI with tracking types
+                updateLectureTypeSpinner()
 
-            // Add a small delay to allow frequency data to be refreshed by Flutter
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 // Fetch frequencies using SharedPreferences approach like TodayWidget
                 fetchFrequenciesFromFlutter { frequenciesMap ->
                     frequencies.clear()
@@ -159,8 +158,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     // Now load subjects
                     loadCategoriesAndSubCategories()
                 }
-            }, 500) // Wait 500ms for Flutter to process the frequency refresh
-        }
+            }
+        }, 500) // Wait 500ms for Flutter to process the frequency refresh
     }
 
     private fun updateLectureTypeSpinner() {
@@ -1062,5 +1061,55 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     }    // Utility function to get a list of frequency names
     private fun getFrequencyNames(frequenciesMap: Map<String, List<Int>>): List<String> {
         return frequenciesMap.keys.toList()
+    }
+
+    // Fetch tracking types from SharedPreferences (similar to frequency data)
+    private fun fetchTrackingTypesFromFlutter(callback: (List<String>) -> Unit) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                // Get tracking types data from SharedPreferences that Flutter stores
+                val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
+                val trackingTypesJson = sharedPrefs.getString("trackingTypes", null)
+                
+                val data = mutableListOf<String>()
+                
+                if (trackingTypesJson != null && trackingTypesJson.isNotEmpty()) {
+                    try {
+                        // Parse JSON data - expecting array format like ["Lectures", "Handouts", "Others"]
+                        val jsonArray = org.json.JSONArray(trackingTypesJson)
+                        
+                        for (i in 0 until jsonArray.length()) {
+                            val value = jsonArray.getString(i)
+                            data.add(value)
+                        }
+                        
+                        Log.d("AddLectureActivity", "Parsed tracking types: $data")
+                    } catch (e: Exception) {
+                        Log.e("AddLectureActivity", "Error parsing tracking types JSON data: $e")
+                    }
+                }
+                
+                // If no valid data was parsed, use default tracking types
+                if (data.isEmpty()) {
+                    data.addAll(getDefaultTrackingTypes())
+                    Log.d("AddLectureActivity", "No tracking types data found, using defaults: $data")
+                }
+                
+                // Switch back to main thread for callback
+                runOnUiThread {
+                    callback(data)
+                }
+            } catch (e: Exception) {
+                Log.e("AddLectureActivity", "Error fetching tracking types: ${e.message}", e)
+                runOnUiThread {
+                    callback(getDefaultTrackingTypes())
+                }
+            }
+        }
+    }
+
+    // Get default tracking types when Flutter communication fails
+    private fun getDefaultTrackingTypes(): List<String> {
+        return listOf("Lectures", "Handouts", "Others")
     }
 }

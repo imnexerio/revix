@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'FetchTypesUtils.dart';
+import 'FirebaseDatabaseService.dart';
 
 class LectureColors {
   static Future<Color> getLectureTypeColor(BuildContext context, String type) async {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    List<String> trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
+    final databaseService = FirebaseDatabaseService();
+    List<String> trackingTypes = await databaseService.fetchCustomTrackingTypes();
 
     if (trackingTypes.contains(type)) {
       return _generateColorFromString(type);

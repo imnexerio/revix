@@ -20,6 +20,7 @@ class HomeWidgetService {
   static const String noReminderDateRecordsKey = 'noreminderdate';
   static const String isLoggedInKey = 'isLoggedIn';
   static const String frequencyDataKey = 'frequencyData';
+  static const String trackingTypesKey = 'trackingTypes';
   static bool _isInitialized = false;
   static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   static Future<void> initialize() async {
@@ -30,10 +31,11 @@ class HomeWidgetService {
     HomeWidget.registerBackgroundCallback(backgroundCallback);
 
     final bool isLoggedIn = _databaseService.isAuthenticated;
-    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
-
-    // Initialize frequency data for AddLectureActivity access
+    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);    // Initialize frequency data for AddLectureActivity access
     await _updateFrequencyData();
+    
+    // Initialize tracking types data for AddLectureActivity access
+    await _updateTrackingTypesData();
     
     // Check for any pending frequency data requests
     await monitorFrequencyDataRequests();
@@ -57,6 +59,18 @@ class HomeWidgetService {
       print('Error updating frequency data: $e');
       // Save empty data as fallback
       await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({}));
+    }
+  }
+  
+  // Update tracking types data in SharedPreferences for native access
+  static Future<void> _updateTrackingTypesData() async {
+    try {
+      final trackingTypes = await _databaseService.fetchCustomTrackingTypes();
+      await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(trackingTypes));
+    } catch (e) {
+      print('Error updating tracking types data: $e');
+      // Save empty data as fallback
+      await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode([]));
     }
   }
 
@@ -140,13 +154,13 @@ class HomeWidgetService {
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
       }
-    } else if (uri?.host == 'frequency_refresh') {
-      try {
+    } else if (uri?.host == 'frequency_refresh') {      try {
         print('Starting frequency data refresh...');
         
-        // Just update frequency data without full widget refresh
+        // Update both frequency data and tracking types
         await _updateFrequencyData();
-        print('Frequency data refresh completed');
+        await _updateTrackingTypesData();
+        print('Frequency and tracking types data refresh completed');
       } catch (e) {
         print('Error in frequency data refresh: $e');
       }
@@ -196,10 +210,11 @@ class HomeWidgetService {
       final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
       
       print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
-        await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
-
-      // Update frequency data for AddLectureActivity access
+        await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);      // Update frequency data for AddLectureActivity access
       await _updateFrequencyData();
+      
+      // Update tracking types data for AddLectureActivity access
+      await _updateTrackingTypesData();
 
       // Format and save all three data categories
       await HomeWidget.saveWidgetData(

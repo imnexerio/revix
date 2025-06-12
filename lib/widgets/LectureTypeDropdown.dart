@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Utils/FetchTypesUtils.dart'; // Adjust the import path as necessary
+import '../Utils/FirebaseDatabaseService.dart'; // Adjust the import path as necessary
 import '../SettingsPage/AddTrackingTypeSheet.dart'; // Adjust the import path as necessary
 
 class LectureTypeDropdown extends StatefulWidget {
@@ -26,7 +26,8 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
   }
 
   Future<void> _fetchLectureTypes() async {
-    List<String> types = await FetchtrackingTypeUtils.fetchtrackingType();
+    final databaseService = FirebaseDatabaseService();
+    List<String> types = await databaseService.fetchCustomTrackingTypes();
     setState(() {
       _lectureTypes = types;
       _lectureTypes.add('Add new'); // Add the 'Add new' option

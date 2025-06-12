@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Utils/FetchTypesUtils.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'AddTrackingTypeSheet.dart';
 
 class TrackingTypePage extends StatefulWidget {
@@ -20,7 +20,8 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
 
   void fetchtrackingType() async {
     try {
-      List<String> data = await FetchtrackingTypeUtils.fetchtrackingType();
+      final databaseService = FirebaseDatabaseService();
+      List<String> data = await databaseService.fetchCustomTrackingTypes();
       setState(() {
         trackingtype = data.map((trackingTitle) {
           return {

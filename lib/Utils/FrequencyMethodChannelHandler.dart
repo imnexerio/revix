@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'FirebaseDatabaseService.dart';
 
-/// Method channel handler for frequency data communication between Flutter and native code
+/// Method channel handler for frequency and tracking type data communication between Flutter and native code
 class FrequencyMethodChannelHandler {
   static const MethodChannel _channel = MethodChannel('revix/frequency_data');
   static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
@@ -19,8 +19,12 @@ class FrequencyMethodChannelHandler {
           return await _getFrequencyData();
         case 'getFrequencyNames':
           return await _getFrequencyNames();
+        case 'getTrackingTypes':
+          return await _getTrackingTypes();
         case 'getDefaultFrequencies':
           return _getDefaultFrequencies();
+        case 'getDefaultTrackingTypes':
+          return _getDefaultTrackingTypes();
         default:
           throw PlatformException(
             code: 'UNIMPLEMENTED',
@@ -97,6 +101,23 @@ class FrequencyMethodChannelHandler {
     }
   }
   
+  /// Get tracking types from Firebase/Local database
+  static Future<List<String>> _getTrackingTypes() async {
+    try {
+      final trackingTypes = await _databaseService.fetchCustomTrackingTypes();
+      
+      // If no custom tracking types exist, provide defaults
+      if (trackingTypes.isEmpty) {
+        return _getDefaultTrackingTypes();
+      }
+      
+      return trackingTypes;
+    } catch (e) {
+      print('Error fetching tracking types: $e');
+      return _getDefaultTrackingTypes();
+    }
+  }
+  
   /// Get default frequencies when no custom ones are available
   static Map<String, List<int>> _getDefaultFrequencies() {
     return {
@@ -108,6 +129,11 @@ class FrequencyMethodChannelHandler {
     };
   }
   
+  /// Get default tracking types when no custom ones are available
+  static List<String> _getDefaultTrackingTypes() {
+    return ['Lectures', 'Handouts', 'Others'];
+  }
+  
   /// Static method to call from native code for getting frequency data
   static Future<Map<String, List<int>>> getFrequencyDataStatic() async {
     final data = await _getFrequencyData();
@@ -117,5 +143,10 @@ class FrequencyMethodChannelHandler {
   /// Static method to call from native code for getting frequency names
   static Future<List<String>> getFrequencyNamesStatic() async {
     return await _getFrequencyNames();
+  }
+  
+  /// Static method to call from native code for getting tracking types
+  static Future<List<String>> getTrackingTypesStatic() async {
+    return await _getTrackingTypes();
   }
 }

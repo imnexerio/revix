@@ -4,7 +4,6 @@ import 'package:revix/HomePage/revision_calculations.dart';
 import 'package:revix/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
-import '../Utils/FetchTypesUtils.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
@@ -99,7 +98,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   // Modified method to load available lecture types
   Future<void> _loadAvailableLectureTypes() async {
     try {
-      final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
+      final databaseService = FirebaseDatabaseService();
+      final trackingTypes = await databaseService.fetchCustomTrackingTypes();
       setState(() {
         // Ensure 'All' is always the first option and then add other tracking types
         List<String> types = ['All']; // Start with 'All'
