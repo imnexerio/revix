@@ -9,10 +9,18 @@ import android.os.Bundle
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "revix/widget_refresh"
+    private val UPDATE_RECORDS_CHANNEL = "revix/update_records"
     private lateinit var batteryOptManager: BatteryOptimizationManager
+
+    companion object {
+        @JvmStatic
+        var updateRecordsChannel: MethodChannel? = null
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
+        // Widget refresh channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "refreshCompleted") {
                 val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
@@ -42,6 +50,9 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+        
+        // Initialize update records channel for communication with services
+        updateRecordsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_RECORDS_CHANNEL)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
