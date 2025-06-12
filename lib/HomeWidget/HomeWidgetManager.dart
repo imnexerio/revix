@@ -21,6 +21,7 @@ class HomeWidgetService {
   static const String isLoggedInKey = 'isLoggedIn';
   static const String frequencyDataKey = 'frequencyData';
   static const String trackingTypesKey = 'trackingTypes';
+  static const String categoriesDataKey = 'categoriesData';
   static bool _isInitialized = false;
   static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   static Future<void> initialize() async {
@@ -36,6 +37,9 @@ class HomeWidgetService {
     
     // Initialize tracking types data for AddLectureActivity access
     await _updateTrackingTypesData();
+    
+    // Initialize categories data for AddLectureActivity access
+    await _updateCategoriesData();
     
     // Check for any pending frequency data requests
     await monitorFrequencyDataRequests();
@@ -73,10 +77,47 @@ class HomeWidgetService {
       await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode([]));
     }
   }
-
+  // Update categories data in SharedPreferences for native access
+  static Future<void> _updateCategoriesData() async {
+    try {
+      // Get all user data and extract categories
+      final allUserData = await _databaseService.fetchAllUserData();
+      
+      // Extract categories and subcategories from user data
+      List<String> subjects = [];
+      Map<String, List<String>> subCategories = {};
+      
+      for (String category in allUserData.keys) {
+        subjects.add(category);
+        subCategories[category] = [];
+        
+        if (allUserData[category] is Map) {
+          Map<String, dynamic> categoryData = Map<String, dynamic>.from(allUserData[category]);
+          for (String subCategory in categoryData.keys) {
+            subCategories[category]!.add(subCategory);
+          }
+        }
+      }
+      
+      final categoriesData = {
+        'subjects': subjects,
+        'subCategories': subCategories,
+      };
+      
+      await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode(categoriesData));
+    } catch (e) {
+      print('Error updating categories data: $e');
+      // Save empty data as fallback
+      await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode({
+        'subjects': [],
+        'subCategories': {},
+      }));
+    }
+  }
   /// Public method to update frequency data - can be called from other parts of the app
   static Future<void> updateFrequencyDataStatic() async {
     await _updateFrequencyData();
+    await _updateCategoriesData();
   }
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
@@ -154,15 +195,15 @@ class HomeWidgetService {
         print('Error details: ${e.toString()}');
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
-      }
-    } else if (uri?.host == 'frequency_refresh') {
+      }    } else if (uri?.host == 'frequency_refresh') {
       try {
         print('Starting frequency data refresh...');
         
         // Update both frequency data and tracking types
         await _updateFrequencyData();
         await _updateTrackingTypesData();
-        print('Frequency and tracking types data refresh completed');
+        await _updateCategoriesData();
+        print('Frequency, tracking types, and categories data refresh completed');
       } catch (e) {
         print('Error in frequency data refresh: $e');
       }
@@ -310,13 +351,15 @@ class HomeWidgetService {
       final bool isFirebaseAuthenticated = _databaseService.isAuthenticated;
       final bool isGuestMode = await GuestAuthService.isGuestMode();
       final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
-      
-      print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
+        print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
         await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);      // Update frequency data for AddLectureActivity access
       await _updateFrequencyData();
       
       // Update tracking types data for AddLectureActivity access
       await _updateTrackingTypesData();
+      
+      // Update categories data for AddLectureActivity access
+      await _updateCategoriesData();
 
       // Format and save all three data categories
       await HomeWidget.saveWidgetData(
@@ -412,12 +455,12 @@ class HomeWidgetService {
       final prefs = await SharedPreferences.getInstance();
       final requestTime = prefs.getInt('frequencyDataRequested');
       final lastUpdateTime = prefs.getInt('frequencyDataLastUpdated') ?? 0;
-      
-      if (requestTime != null && requestTime > lastUpdateTime) {
+        if (requestTime != null && requestTime > lastUpdateTime) {
         print('Frequency data update requested by native code');
         await _updateFrequencyData();
+        await _updateCategoriesData();
         await prefs.setInt('frequencyDataLastUpdated', DateTime.now().millisecondsSinceEpoch);
-        print('Frequency data updated in response to native request');
+        print('Frequency and categories data updated in response to native request');
       }
     } catch (e) {
       print('Error monitoring frequency data requests: $e');

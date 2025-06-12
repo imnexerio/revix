@@ -57,7 +57,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _setInitialDate();
     _setScheduledDate();
     _timeController.text = 'All Day';
-  }  Future<void> _loadCategoriesAndSubCategories() async {
+  }
+  Future<void> _loadCategoriesAndSubCategories() async {
     try {
       // Get the singleton instance and use the new loadCategoriesAndSubCategories method
       final provider = categoryDataProvider();

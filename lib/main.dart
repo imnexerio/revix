@@ -19,6 +19,7 @@ import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
 import 'Utils/FrequencyMethodChannelHandler.dart';
 import 'Utils/UpdateRecordsMethodChannelHandler.dart';
+import 'Utils/CategoriesMethodChannelHandler.dart';
 import 'firebase_options.dart';
 import 'HomeWidget/HomeWidgetManager.dart';
 
@@ -34,6 +35,9 @@ void main() async {
   
   // Initialize UpdateRecordsMethodChannelHandler for native communication
   UpdateRecordsMethodChannelHandler.initialize();
+  
+  // Initialize CategoriesMethodChannelHandler for native communication
+  CategoriesMethodChannelHandler.initialize();
   
   // Initialize HomeWidget service for background callbacks
   if (PlatformUtils.instance.isAndroid) {

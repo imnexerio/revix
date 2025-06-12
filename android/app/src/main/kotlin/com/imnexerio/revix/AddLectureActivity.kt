@@ -579,57 +579,30 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             // Let the spinner selection determine the frequency
             revisionFrequency = revisionFrequencySpinner.selectedItem.toString()
         }
-    }
+    }    private fun loadCategoriesAndSubCategories() {
+        // Use CategoriesDataUtils to fetch data from SharedPreferences instead of direct Firebase call
+        CategoriesDataUtils.fetchCategoriesAndSubCategories(this) { subjectsList, subCategoriesMap ->
+            subjects.clear()
+            subCategories.clear()
 
-    private fun loadCategoriesAndSubCategories() {
-        val user = auth.currentUser
-        if (user == null) {
-            Toast.makeText(this, "Please login to continue", Toast.LENGTH_SHORT).show()
-            finish()
-            return
+            // Add subjects
+            subjects.addAll(subjectsList)
+
+            // Add sub categories
+            subCategories.putAll(subCategoriesMap)
+
+            // Update the spinners
+            updateCategorySpinner()
+
+            // Set initial selection
+            if (subjects.isNotEmpty()) {
+                selectedCategory = subjects[0]
+                updateSubCategorySpinner()
+            }
+
+            // Set up all listeners after data is loaded
+            setupListeners()
         }
-
-        val uid = user.uid
-        val dataRef = database.getReference("users/$uid/user_data")
-
-        dataRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                subjects.clear()
-                subCategories.clear()
-
-                // Add subjects
-                for (subjectSnapshot in snapshot.children) {
-                    val category = subjectSnapshot.key ?: continue
-                    subjects.add(category)
-
-                    // Add sub categories
-                    val codesList = mutableListOf<String>()
-                    for (codeSnapshot in subjectSnapshot.children) {
-                        val code = codeSnapshot.key ?: continue
-                        codesList.add(code)
-                    }
-                    subCategories[category] = codesList
-                }
-
-                // Update the spinners
-                updateCategorySpinner()
-
-                // Set initial selection
-                if (subjects.isNotEmpty()) {
-                    selectedCategory = subjects[0]
-                    updateSubCategorySpinner()
-                }
-
-                // Set up all listeners after data is loaded
-                setupListeners()
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@AddLectureActivity,
-                    "Error loading data: ${error.message}",
-                    Toast.LENGTH_SHORT).show()
-            }
-        })
     }
 
     private fun updateCategorySpinner() {

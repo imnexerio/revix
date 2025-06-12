@@ -743,6 +743,13 @@ class UnifiedDatabaseService {
       
   Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _service.currentCategorizedData;
   
+  // Add methods for categories data
+  Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() => _service.fetchCategoriesAndSubCategories();
+  
+  Future<Map<String, dynamic>> loadCategoriesAndSubCategories() async {
+    return await _service.fetchCategoriesAndSubCategories();
+  }
+  
   // Add method to save records, forwarding to the appropriate database based on guest mode
   Future<bool> saveRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
     if (_service._isGuestMode) {
