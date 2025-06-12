@@ -140,13 +140,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
                 // Update UI with tracking types
                 updateLectureTypeSpinner()                // Fetch frequencies using SharedPreferences approach like TodayWidget
-                fetchCustomFrequencies { frequenciesMap ->
+                FrequencyCalculationUtils.fetchCustomFrequencies(this) { frequenciesMap ->
                     frequencies.clear()
-                    frequencies.putAll(frequenciesMap)
-
-                    // Get frequency names for spinner
+                    frequencies.putAll(frequenciesMap)                    // Get frequency names for spinner
                     frequencyNames.clear()
-                    frequencyNames.addAll(getFrequencyNames(frequenciesMap))
+                    frequencyNames.addAll(FrequencyCalculationUtils.getFrequencyNames(frequenciesMap))
                     frequencyNames.add("Custom")
                     frequencyNames.add("No Repetition")
 
@@ -714,7 +712,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
                 val currentCalendar = Calendar.getInstance()
                 val currentDate = dateFormat.parse(dateFormat.format(currentCalendar.time))
-                calculateNextRevisionDateDirect(
+                FrequencyCalculationUtils.calculateNextRevisionDate(
+                    this,
                     revisionFrequency,
                     0, // Initial revision
                     initialDate
@@ -946,145 +945,19 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    /**
-     * Calculate next revision date using cached frequency data from SharedPreferences
-     * This replaces RevisionScheduler.calculateNextRevisionDate for better performance
-     */
-    private fun calculateNextRevisionDateDirect(
-        frequency: String,
-        noRevision: Int,
-        scheduledDate: Date,
-        callback: (String) -> Unit
-    ) {
-        fetchCustomFrequencies { frequencyData ->
-            try {
-                if (frequencyData.containsKey(frequency)) {
-                    val intervals = frequencyData[frequency] ?: emptyList()
-                    
-                    if (intervals.isNotEmpty()) {
-                        val nextInterval = if (noRevision < intervals.size) intervals[noRevision] else intervals.last()
-                        
-                        val calendar = Calendar.getInstance()
-                        calendar.time = scheduledDate
-                        calendar.add(Calendar.DAY_OF_YEAR, nextInterval)
-                        
-                        val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
-                        callback(nextDate)
-                        return@fetchCustomFrequencies
-                    }
-                }
-                
-                // Default fallback
-                val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(scheduledDate)
-                callback(nextDate)
-                
-            } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error calculating next revision date: ${e.message}")
-                val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(scheduledDate)
-                callback(nextDate)
-            }
-        }
-    }
-
-    /**
-     * Fetch custom frequencies directly from SharedPreferences
-     * This replaces the need for RevisionScheduler by using cached data
-     */
-    private fun fetchCustomFrequencies(callback: (Map<String, List<Int>>) -> Unit) {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                // Get frequency data from SharedPreferences that HomeWidgetManager updates
-                val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
-                val frequencyDataJson = sharedPrefs.getString("frequencyData", null)
-
-                val data = mutableMapOf<String, List<Int>>()
-
-                if (frequencyDataJson != null && frequencyDataJson.isNotEmpty() && frequencyDataJson != "{}") {
-                    try {
-                        Log.d("AddLectureActivity", "Fetching frequency data from SharedPrefs: $frequencyDataJson")
-
-                        val jsonData = org.json.JSONObject(frequencyDataJson)
-                        val keys = jsonData.keys()
-
-                        while (keys.hasNext()) {
-                            val key = keys.next()
-                            val value = jsonData.get(key)
-
-                            when (value) {
-                                is org.json.JSONArray -> {
-                                    val intList = mutableListOf<Int>()
-                                    for (i in 0 until value.length()) {
-                                        intList.add(value.getInt(i))
-                                    }
-                                    data[key] = intList
-                                }
-                                is String -> {
-                                    // Handle string representation like "[1, 3, 7, 14]"
-                                    try {
-                                        val cleanValue = value.replace(Regex("[\\[\\]]"), "")
-                                        val parts = cleanValue.split(",").map { it.trim() }
-                                        val intList = parts.mapNotNull { it.toIntOrNull() }
-                                        if (intList.isNotEmpty()) {
-                                            data[key] = intList
-                                        }
-                                    } catch (e: Exception) {
-                                        Log.e("AddLectureActivity", "Error parsing frequency value for $key: $value", e)
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e("AddLectureActivity", "Error parsing frequency JSON data", e)
-                    }
-                }
-
-                Log.d("AddLectureActivity", "Fetched frequency data: $data")
-
-                // Switch back to main thread for callback
-                runOnUiThread {
-                    callback(data)
-                }
-            } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error fetching custom frequencies: ${e.message}", e)
-                runOnUiThread {
-                    callback(emptyMap())
-                }
-            }
-        }
-    }
-
-    private fun refreshFrequencyData() {
-        try {
-            Log.d("AddLectureActivity", "Refreshing frequency data directly...")
-
-            // Trigger HomeWidgetManager to update frequency data
-            val uri = android.net.Uri.parse("homeWidget://frequency_refresh")
-            val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
-                this,
-                uri
-            )
-            backgroundIntent.send()
+    }private fun refreshFrequencyData() {
+        FrequencyCalculationUtils.refreshFrequencyData(this)
+        
+        // Give a small delay for the background update to complete, then refresh our local cache
+        GlobalScope.launch(Dispatchers.Main) {
+            delay(100) // Small delay to ensure background update completes
             
-            // Give a small delay for the background update to complete, then refresh our local cache
-            GlobalScope.launch(Dispatchers.Main) {
-                delay(100) // Small delay to ensure background update completes
-                
-                fetchCustomFrequencies { frequencyData ->
-                    Log.d("AddLectureActivity", "Frequency data refreshed: $frequencyData")
-                    // Data is now updated in our local cache via SharedPreferences
-                    // Any subsequent calls to fetchCustomFrequencies will get the fresh data
-                }
+            FrequencyCalculationUtils.fetchCustomFrequencies(this@AddLectureActivity) { frequencyData ->
+                Log.d("AddLectureActivity", "Frequency data refreshed: $frequencyData")
+                // Data is now updated in our local cache via SharedPreferences
+                // Any subsequent calls to fetchCustomFrequencies will get the fresh data
             }
-            
-            Log.d("AddLectureActivity", "Frequency data refresh triggered")
-        } catch (e: Exception) {
-            Log.e("AddLectureActivity", "Error refreshing frequency data: ${e.message}")
         }
-    }    // Utility function to get a list of frequency names
-    private fun getFrequencyNames(frequenciesMap: Map<String, List<Int>>): List<String> {
-        return frequenciesMap.keys.toList()
     }
 
     // Fetch tracking types from SharedPreferences (similar to frequency data)
