@@ -5,6 +5,7 @@ import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
+import '../Utils/UnifiedDatabaseService.dart';
 
 class MarkAsDoneService {  /// Determines if the lecture should be enabled based on duration settings
   static bool determineEnabledStatus(Map<String, dynamic> details) {
@@ -79,7 +80,6 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
     return revisionData;
   }
-
   /// Main function to mark a lecture as done
   static Future<void> markAsDone({
     required BuildContext context,
@@ -89,15 +89,25 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   }) async {
     try {
 
-      // Check if not enabled for LectureDetailsModal case
-      if (isEnabled != null && !isEnabled) {
+      // Get the unified database service instance
+      final CombinedDatabaseService dbService = CombinedDatabaseService();
+      
+      // Fetch current lecture data from database
+      Map<String, dynamic>? details = await dbService.getDataAtLocation(category, subCategory, lectureNo);
+      
+      if (details == null) {
         Navigator.pop(context);
-        throw 'Cannot mark as done when the status is disabled';
+        throw 'Lecture data not found';
       }
 
-      // Handle unspecified date_initiated case
+      // Check if not enabled
+      bool isCurrentlyEnabled = details['status'] == 'Enabled';
+      if (!isCurrentlyEnabled) {
+        Navigator.pop(context);
+        throw 'Cannot mark as done when the status is disabled';
+      }      // Handle unspecified date_initiated case
       if (details['date_initiated'] == 'Unspecified') {
-        await moveToDeletedData(category, subCategory, lectureNo, details);
+        await dbService.moveToDeletedData(category, subCategory, lectureNo);
         Navigator.pop(context);
         Navigator.pop(context);
         customSnackBar(
@@ -122,11 +132,9 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       }
 
       List<String> datesRevised = List<String>.from(details['dates_updated'] ?? []);
-      datesRevised.add(dateRevised);
-
-      // Handle 'No Repetition' case
+      datesRevised.add(dateRevised);      // Handle 'No Repetition' case
       if (details['recurrence_frequency'] == 'No Repetition') {
-        await moveToDeletedData(category, subCategory, lectureNo, details);
+        await dbService.moveToDeletedData(category, subCategory, lectureNo);
         Navigator.pop(context);
         Navigator.pop(context);
         customSnackBar(
@@ -161,27 +169,9 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
           details['recurrence_frequency'],
           details['completion_counts'] + 1,
         )).toIso8601String().split('T')[0];
-      }      // Determine enabled status for LectureDetailsModal case
-      bool finalEnabledStatus = true;
-      if (isEnabled != null) {
-        Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(details);
-        updatedDetails['completion_counts'] = details['completion_counts'] + 1;
-        finalEnabledStatus = MarkAsDoneService.determineEnabledStatus(updatedDetails);
       }
 
-      // Create revision data
-      Map<String, dynamic> revisionData = {
-        'frequency': details['recurrence_frequency'],
-      };
-      
-      if (details['recurrence_frequency'] == 'Custom') {
-        Map<String, dynamic> customParams = _extractRevisionData(details);
-        if (customParams['custom_params'] != null) {
-          revisionData['custom_params'] = customParams['custom_params'];
-        }
-      }
-
-
+      // Use the efficient UpdateRecordsRevision for partial update
       await UpdateRecordsRevision(
         category,
         subCategory,
@@ -195,16 +185,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       );
 
       Navigator.pop(context);
-      Navigator.pop(context);
+      // Navigator.pop(context);
 
       // Show success message
-      String successMessage = useRevisionUpdate
-          ? '$category $subCategory $lectureNo done and scheduled for $dateScheduled'
-          : '$category $subCategory $lectureNo, done. Next schedule is on $dateScheduled.';
-
       customSnackBar(
         context: context,
-        message: successMessage,
+        message: '$category $subCategory $lectureNo done and scheduled for $dateScheduled',
       );
     } catch (e) {
       if (Navigator.canPop(context)) {

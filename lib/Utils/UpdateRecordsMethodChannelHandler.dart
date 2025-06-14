@@ -71,14 +71,11 @@ class UpdateRecordsMethodChannelHandler {
         subCategory,
         lectureNo,
         dateRevised,
-        description,
-        reminderTime,
         noRevision,
         dateScheduled,
         datesRevised,
         missedRevision,
         datesMissedRevisions,
-        status,
       );
       return true;    } catch (e) {
       print('Error in UpdateRecordsRevision: $e');
