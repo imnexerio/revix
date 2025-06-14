@@ -45,16 +45,8 @@ class HomeWidgetService {
     final bool isGuestMode = await GuestAuthService.isGuestMode();
     final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
     
-    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
-
-    // Initialize frequency data for AddLectureActivity access
-    await _updateFrequencyData();
-    
-    // Initialize tracking types data for AddLectureActivity access
-    await _updateTrackingTypesData();
-    
-    // Initialize categories data for AddLectureActivity access
-    await _updateCategoriesData();
+    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);    // Initialize data for AddLectureActivity access using existing database services
+    await _initializeWidgetData();
     
     // Check for any pending frequency data requests
     await monitorFrequencyDataRequests();
@@ -77,104 +69,70 @@ class HomeWidgetService {
     } catch (e) {
       return false;
     }
-  }
-  // Update frequency data in SharedPreferences for native access
-  static Future<void> _updateFrequencyData() async {
+  }  // Initialize all widget data using existing database services
+  static Future<void> _initializeWidgetData() async {
     try {
-      // For frequency data, Android expects a simple map of frequency names
+      // Initialize frequency data for AddLectureActivity access
+      await _updateFrequencyDataFromService();
+      
+      // Initialize tracking types data for AddLectureActivity access  
+      await _updateTrackingTypesFromService();
+      
+      // Initialize categories data for AddLectureActivity access
+      await _updateCategoriesFromService();
+    } catch (e) {
+      print('Error initializing widget data: $e');
+    }
+  }
+
+  // Update frequency data using existing FirebaseDatabaseService
+  static Future<void> _updateFrequencyDataFromService() async {
+    try {
       Map<String, dynamic> frequencyData = {};
       
-      // Check if we're in guest mode
-      final isGuestMode = await GuestAuthService.isGuestMode();
-      
-      if (!isGuestMode) {
-        // Try to get frequency data from Firebase service
-        try {
-          final firebaseService = FirebaseDatabaseService();
-          final firebaseFrequencyData = await firebaseService.fetchCustomFrequencies();
-          frequencyData = firebaseFrequencyData;
-        } catch (e) {
-          print('Error fetching Firebase frequency data: $e');
-          // Use default frequency data as fallback
-          frequencyData = {};
-        }
-      }
-      
-      // Always include default frequency options (for both modes)
-      frequencyData.addAll({
-        'Daily': 'Daily',
-        'Weekly': 'Weekly', 
-        'Monthly': 'Monthly',
-        'Custom': 'Custom',
-        'No Repetition': 'No Repetition',
-      });
+      // Use existing FirebaseDatabaseService method
+      final firebaseService = FirebaseDatabaseService();
+      final customFrequencies = await firebaseService.fetchCustomFrequencies();
+      frequencyData.addAll(customFrequencies);
+
       
       await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode(frequencyData));
     } catch (e) {
-      print('Error updating frequency data: $e');
-      // Save default frequency data as fallback
-      await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({
-        'Daily': 'Daily',
-        'Weekly': 'Weekly',
-        'Monthly': 'Monthly', 
-        'Custom': 'Custom',
-        'No Repetition': 'No Repetition',
-      }));
+      print('Error updating frequency data from service: $e');
     }
-  }  // Update tracking types data in SharedPreferences for native access
-  static Future<void> _updateTrackingTypesData() async {
+  }
+
+  // Update tracking types using existing FirebaseDatabaseService
+  static Future<void> _updateTrackingTypesFromService() async {
     try {
-      // For tracking types, Android expects a simple list of strings
-      List<String> trackingTypes = [];
-      
-      // Check if we're in guest mode
-      final isGuestMode = await GuestAuthService.isGuestMode();
-      
-      if (!isGuestMode) {
-        // Try to get tracking types from Firebase service
-        try {
-          final firebaseService = FirebaseDatabaseService();
-          trackingTypes = await firebaseService.fetchCustomTrackingTypes();
-        } catch (e) {
-          print('Error fetching Firebase tracking types: $e');
-          // Use default tracking types as fallback
-          trackingTypes = [];
-        }
-      }
-      
-      // Always include default tracking types (for both modes)
-      trackingTypes.addAll(['Lecture', 'Assignment', 'Project', 'Reading']);
+      // Use existing FirebaseDatabaseService method
+      final firebaseService = FirebaseDatabaseService();
+      List<String> trackingTypes = await firebaseService.fetchCustomTrackingTypes();
+
       
       // Remove duplicates
       trackingTypes = trackingTypes.toSet().toList();
       
       await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(trackingTypes));
     } catch (e) {
-      print('Error updating tracking types data: $e');
-      // Save default tracking types as fallback
-      await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(['Lecture', 'Assignment', 'Project', 'Reading']));
+      print('Error updating tracking types from service: $e');
     }
-  }// Update categories data in SharedPreferences for native access
-  static Future<void> _updateCategoriesData() async {
+  }
+  // Update categories using existing UnifiedDatabaseService
+  static Future<void> _updateCategoriesFromService() async {
     try {
-      // Use the unified service to get categories and subcategories
+      // Use existing UnifiedDatabaseService method
       final categoriesData = await _databaseService.fetchCategoriesAndSubCategories();
       
-      // The data is already in the correct format from the unified service
       await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode(categoriesData));
     } catch (e) {
-      print('Error updating categories data: $e');
-      // Save empty data as fallback
-      await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode({
-        'subjects': [],
-        'subCategories': {},
-      }));
-    }  }
-  
-  /// Public method to update frequency data - can be called from other parts of the app
+      print('Error updating categories from service: $e');
+    }
+  }
+
+    /// Public method to update all widget data - can be called from other parts of the app
   static Future<void> updateFrequencyDataStatic() async {
-    await _updateFrequencyData();
-    await _updateCategoriesData();
+    await _initializeWidgetData();
   }
     // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
@@ -264,14 +222,12 @@ class HomeWidgetService {
       try {
         print('Starting frequency data refresh...');
         
-        // Update both frequency data and tracking types
-        await _updateFrequencyData();
-        await _updateTrackingTypesData();
-        await _updateCategoriesData();
-        print('Frequency, tracking types, and categories data refresh completed');
+        // Update all widget data using existing database services
+        await _initializeWidgetData();
+        print('All widget data refresh completed');
       } catch (e) {
-        print('Error in frequency data refresh: $e');
-      }    } else if (uri?.host == 'record_delete') {
+        print('Error in widget data refresh: $e');
+      }} else if (uri?.host == 'record_delete') {
       try {
         print('Starting record deletion background processing...');
         
@@ -502,7 +458,8 @@ class HomeWidgetService {
             print('Error parsing JSON data: $e');
             saveResult = 'ERROR:Failed to parse save data';
             errorMessage = 'Failed to parse save data: $e';
-          }          if (saveResult == 'SUCCESS') {
+          }
+          if (saveResult == 'SUCCESS') {
             try {
               print('Initializing database service for record creation...');
               
@@ -682,14 +639,8 @@ class HomeWidgetService {
       final bool isGuestMode = await GuestAuthService.isGuestMode();
       final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
         print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
-        await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);      // Update frequency data for AddLectureActivity access
-      await _updateFrequencyData();
-      
-      // Update tracking types data for AddLectureActivity access
-      await _updateTrackingTypesData();
-      
-      // Update categories data for AddLectureActivity access
-      await _updateCategoriesData();
+        await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);      // Update all widget data for AddLectureActivity access
+      await _initializeWidgetData();
 
       // Format and save all three data categories
       await HomeWidget.saveWidgetData(
@@ -716,7 +667,7 @@ class HomeWidgetService {
       // Request widget update
       await _updateWidget();
     } catch (e) {
-      // debugPrint('Error updating widget data: $e');
+      debugPrint('Error updating widget data: $e');
     }
   }
 
@@ -748,6 +699,7 @@ class HomeWidgetService {
     try {
       await platform.invokeMethod('refreshCompleted');
     } catch (e) {
+      print('Error notifying native side about widget refresh: $e');
       // Channel might not be initialized yet, which is fine
     }
   }
@@ -786,13 +738,11 @@ class HomeWidgetService {
       // Check if native code has requested frequency data update
       final prefs = await SharedPreferences.getInstance();
       final requestTime = prefs.getInt('frequencyDataRequested');
-      final lastUpdateTime = prefs.getInt('frequencyDataLastUpdated') ?? 0;
-        if (requestTime != null && requestTime > lastUpdateTime) {
-        print('Frequency data update requested by native code');
-        await _updateFrequencyData();
-        await _updateCategoriesData();
+      final lastUpdateTime = prefs.getInt('frequencyDataLastUpdated') ?? 0;      if (requestTime != null && requestTime > lastUpdateTime) {
+        print('Widget data update requested by native code');
+        await _initializeWidgetData();
         await prefs.setInt('frequencyDataLastUpdated', DateTime.now().millisecondsSinceEpoch);
-        print('Frequency and categories data updated in response to native request');
+        print('All widget data updated in response to native request');
       }
     } catch (e) {
       print('Error monitoring frequency data requests: $e');
