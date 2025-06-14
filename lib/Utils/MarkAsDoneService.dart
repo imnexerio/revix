@@ -80,6 +80,35 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
     return revisionData;
   }
+
+  static void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text(
+                  "Updating...",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
   /// Main function to mark a lecture as done
   static Future<void> markAsDone({
     BuildContext? context, // Made nullable for background processing
@@ -89,9 +118,9 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   }) async {
     try {
       // Show loading dialog only if context is available
-      // if (context != null) {
-      //   _showLoadingDialog(context);
-      // }
+      if (context != null) {
+        _showLoadingDialog(context);
+      }
 
       // Get the unified database service instance
       final CombinedDatabaseService dbService = CombinedDatabaseService();

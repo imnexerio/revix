@@ -539,34 +539,11 @@ class CombinedDatabaseService {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
-        
-        // Get the record data first
-        DatabaseEvent event = await _databaseRef!.child(category).child(subCategory).child(lectureNo).once();
-        
-        if (!event.snapshot.exists) {
-          return false; // Record doesn't exist
-        }
-        
-        final recordData = event.snapshot.value;
-        if (recordData is Map<Object?, Object?>) {
-          // Add deletion timestamp
-          final dataToMove = Map<String, dynamic>.from(recordData);
-          dataToMove['deleted_at'] = DateTime.now().toIso8601String();
-          
-          // Get user ID from Firebase Auth
-          final user = _auth.currentUser;
-          if (user == null) return false;
-          
-          // Move to deleted_user_data
-          final deletedRef = _database.ref('users/${user.uid}/deleted_user_data/$category/$subCategory/$lectureNo');
-          await deletedRef.set(dataToMove);
-          
-          // Remove from original location
-          await _databaseRef!.child(category).child(subCategory).child(lectureNo).remove();
-          
-          await forceDataReprocessing();
-          return true;
-        }
+        // Remove from original location
+        await _databaseRef!.child(category).child(subCategory).child(lectureNo).remove();
+
+        await forceDataReprocessing();
+        return true;
         
         return false;
       } catch (e) {

@@ -5,16 +5,11 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 
 class RecordUpdateService : Service() {
@@ -234,127 +229,6 @@ class RecordUpdateService : Service() {
         } catch (e: Exception) {
             Toast.makeText(applicationContext, "Error updating record: ${e.message}", Toast.LENGTH_SHORT).show()
             Log.e("RecordUpdateService", "Error triggering background update: ${e.message}")
-            clearProcessingState(category, subCategory, lectureNo)
-            refreshWidgets(startId)
-            stopSelf(startId)
-        }
-    }
-    private fun processRecordDeletion(
-        category: String,
-        subCategory: String,
-        lectureNo: String,
-        details: Map<*, *>,
-        startId: Int,
-        actionDescription: String
-    ) {
-        // Use background callback mechanism like TodayWidget
-        try {
-            // Show processing message
-            handler.post {
-                Toast.makeText(
-                    applicationContext,
-                    "Processing deletion...",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-
-            // Create unique request ID for tracking this delete operation
-            val requestId = System.currentTimeMillis().toString()
-            
-            // Trigger background callback to handle record deletion
-            val uri = android.net.Uri.parse("homeWidget://record_delete")
-                .buildUpon()
-                .appendQueryParameter("category", category)
-                .appendQueryParameter("sub_category", subCategory)
-                .appendQueryParameter("record_title", lectureNo)
-                .appendQueryParameter("action", actionDescription)
-                .appendQueryParameter("requestId", requestId)
-                .build()
-
-            val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
-                applicationContext,
-                uri
-            )
-            backgroundIntent.send()
-
-            // Wait for deletion result in background thread
-            Thread {
-                var retryCount = 0
-                val maxRetries = 50 // 10 seconds max wait time
-                var deleteCompleted = false
-                var deleteSuccess = false
-                var errorMessage = ""
-                
-                while (retryCount < maxRetries && !deleteCompleted) {
-                    try {
-                        Thread.sleep(200) // Wait 200ms between checks
-                        
-                        val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                        val resultKey = "record_delete_result_$requestId"
-                        val result = prefs.getString(resultKey, null)
-                        
-                        if (result != null) {
-                            deleteCompleted = true
-                            if (result.startsWith("SUCCESS")) {
-                                deleteSuccess = true
-                            } else if (result.startsWith("ERROR:")) {
-                                deleteSuccess = false
-                                errorMessage = result.substring(6) // Remove "ERROR:" prefix
-                            }
-                            
-                            // Clean up the result from preferences
-                            prefs.edit().remove(resultKey).apply()
-                            break
-                        }
-                        
-                        retryCount++
-                    } catch (e: InterruptedException) {
-                        Log.e("RecordUpdateService", "Delete result waiting interrupted: ${e.message}")
-                        break
-                    }
-                }
-                
-                // Show result on main thread
-                handler.post {
-                    if (deleteCompleted) {
-                        if (deleteSuccess) {
-                            Toast.makeText(
-                                applicationContext,
-                                "$category $subCategory $lectureNo has been $actionDescription.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } else {
-                            val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
-                            Toast.makeText(
-                                applicationContext,
-                                "Failed to process deletion: $displayError",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } else {
-                        // Timeout occurred
-                        Toast.makeText(
-                            applicationContext,
-                            "Delete operation timed out. Please try again.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-                  // Clear processing state and refresh widgets
-                clearProcessingState(category, subCategory, lectureNo)
-                refreshWidgets(startId)
-                
-            }.start()
-
-        } catch (e: Exception) {
-            Log.e("RecordUpdateService", "Error triggering background deletion: ${e.message}")
-            handler.post {
-                Toast.makeText(
-                    applicationContext,
-                    "Failed to process deletion: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
             clearProcessingState(category, subCategory, lectureNo)
             refreshWidgets(startId)
             stopSelf(startId)
