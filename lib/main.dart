@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:revix/AddLectureForm.dart';
 import 'package:revix/DetailsPage/DetailsPage.dart';
-import 'package:revix/LoginSignupPage/LoginPage.dart';
 import 'package:revix/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive/hive.dart';
@@ -18,7 +17,6 @@ import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
 import 'Utils/FrequencyMethodChannelHandler.dart';
-import 'Utils/UpdateRecordsMethodChannelHandler.dart';
 import 'Utils/CategoriesMethodChannelHandler.dart';
 import 'firebase_options.dart';
 import 'HomeWidget/HomeWidgetManager.dart';
@@ -32,9 +30,6 @@ void main() async {
   
   // Initialize FrequencyMethodChannelHandler for native communication
   FrequencyMethodChannelHandler.initialize();
-  
-  // Initialize UpdateRecordsMethodChannelHandler for native communication
-  UpdateRecordsMethodChannelHandler.initialize();
   
   // Initialize CategoriesMethodChannelHandler for native communication
   CategoriesMethodChannelHandler.initialize();
