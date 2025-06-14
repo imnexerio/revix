@@ -34,7 +34,7 @@ class HomeWidgetService {
 
     HomeWidget.setAppGroupId(appGroupId);    
     // Set up widget background callback handling
-    HomeWidget.registerBackgroundCallback(backgroundCallback);    // Initialize the unified database service (handles both guest and Firebase modes)
+    HomeWidget.registerInteractivityCallback(backgroundCallback);
     _databaseService.initialize();
     
     // Give a small delay for the service to initialize properly
@@ -218,7 +218,8 @@ class HomeWidgetService {
         print('Error details: ${e.toString()}');
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
-      }    } else if (uri?.host == 'frequency_refresh') {
+      }
+    } else if (uri?.host == 'frequency_refresh') {
       try {
         print('Starting frequency data refresh...');
         
@@ -393,7 +394,8 @@ class HomeWidgetService {
                     final missedRecords = categorizedData['missed'] ?? [];
                     final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
                     
-                    await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);                    print('Widget refreshed after record update');
+                    await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                    print('Widget refreshed after record update');
                   }
                 } catch (e) {
                   updateResult = 'ERROR:${e.toString()}';
@@ -423,7 +425,8 @@ class HomeWidgetService {
           await HomeWidget.saveWidgetData('record_update_result_$requestId', 'ERROR:${e.toString()}');
         }
       }
-    } else if (uri?.host == 'record_create') {
+    }
+    else if (uri?.host == 'record_create') {
       try {
         print('Starting record creation background processing...');
         
@@ -445,8 +448,7 @@ class HomeWidgetService {
         print('Creating record: $selectedCategory - $selectedCategoryCode - $title (RequestID: $requestId)');
         
         String saveResult = 'SUCCESS';
-        String errorMessage = '';
-        
+
         try {
           // Parse JSON data
           Map<String, dynamic> durationData = {};
@@ -457,7 +459,6 @@ class HomeWidgetService {
           } catch (e) {
             print('Error parsing JSON data: $e');
             saveResult = 'ERROR:Failed to parse save data';
-            errorMessage = 'Failed to parse save data: $e';
           }
           if (saveResult == 'SUCCESS') {
             try {
@@ -473,7 +474,6 @@ class HomeWidgetService {
               
               if (!isServiceReady) {
                 saveResult = 'ERROR:Database service initialization timeout';
-                errorMessage = 'Database service failed to initialize within timeout period';
               } else {
                 print('Database service ready, creating record...');
                 
@@ -510,14 +510,12 @@ class HomeWidgetService {
               }
             } catch (e) {
               saveResult = 'ERROR:${e.toString()}';
-              errorMessage = e.toString();
               print('Record creation failed: $e');
             }
           }
         } catch (e) {
           print('Error in background record creation: $e');
           saveResult = 'ERROR:${e.toString()}';
-          errorMessage = e.toString();
         }
           // Save the result to SharedPreferences for the Android side to read
         if (requestId.isNotEmpty) {
@@ -612,7 +610,8 @@ class HomeWidgetService {
       androidName: 'TodayWidget',
       iOSName: 'TodayWidget',
     );
-  }  static Future<void> _updateWidgetWithEmptyData() async {
+  }
+  static Future<void> _updateWidgetWithEmptyData() async {
     await _ensureInitialized();
     
     // Check both Firebase authentication and guest mode
@@ -634,12 +633,7 @@ class HomeWidgetService {
     List<Map<String, dynamic>> missedRecords,
     List<Map<String, dynamic>> noReminderDateRecords,
   ) async {
-    try {      // Check both Firebase authentication and guest mode
-      final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
-      final bool isGuestMode = await GuestAuthService.isGuestMode();
-      final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
-        print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
-        await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);      // Update all widget data for AddLectureActivity access
+    try {
       await _initializeWidgetData();
 
       // Format and save all three data categories
@@ -703,34 +697,6 @@ class HomeWidgetService {
       // Channel might not be initialized yet, which is fine
     }
   }
-  static Future<void> updateLoginStatus() async {
-    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
-    final bool isGuestMode = await GuestAuthService.isGuestMode();
-    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
-    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
-    await _updateWidget();
-    // debugPrint('Login status updated: $isLoggedIn');
-  }
-
-  static Future<void> refreshWidgetFromExternal() async {
-    await initialize();
-    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
-    final bool isGuestMode = await GuestAuthService.isGuestMode();
-    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
-
-    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
-
-    if (!isLoggedIn) {
-      await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
-      await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
-      await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-      await _updateWidget();
-      return;
-    }
-
-    // The actual refresh will happen in the Kotlin service
-    await _updateWidget();
-  }
 
   /// Method to monitor and respond to frequency data requests from native code
   static Future<void> monitorFrequencyDataRequests() async {
@@ -738,7 +704,8 @@ class HomeWidgetService {
       // Check if native code has requested frequency data update
       final prefs = await SharedPreferences.getInstance();
       final requestTime = prefs.getInt('frequencyDataRequested');
-      final lastUpdateTime = prefs.getInt('frequencyDataLastUpdated') ?? 0;      if (requestTime != null && requestTime > lastUpdateTime) {
+      final lastUpdateTime = prefs.getInt('frequencyDataLastUpdated') ?? 0;
+      if (requestTime != null && requestTime > lastUpdateTime) {
         print('Widget data update requested by native code');
         await _initializeWidgetData();
         await prefs.setInt('frequencyDataLastUpdated', DateTime.now().millisecondsSinceEpoch);

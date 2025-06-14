@@ -123,9 +123,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         await _databaseService.signOut();
       }
 
-      if (PlatformUtils.instance.isAndroid) {
-        await HomeWidgetService.updateLoginStatus();
-      }
 
       // Clear all shared preferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
