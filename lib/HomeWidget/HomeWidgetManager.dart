@@ -7,6 +7,8 @@ import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
@@ -25,16 +27,27 @@ class HomeWidgetService {
   static const String trackingTypesKey = 'trackingTypes';
   static const String categoriesDataKey = 'categoriesData';
   static bool _isInitialized = false;
-  static final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();
+
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
     HomeWidget.setAppGroupId(appGroupId);    
     // Set up widget background callback handling
-    HomeWidget.registerBackgroundCallback(backgroundCallback);
+    HomeWidget.registerBackgroundCallback(backgroundCallback);    // Initialize the unified database service (handles both guest and Firebase modes)
+    _databaseService.initialize();
+    
+    // Give a small delay for the service to initialize properly
+    await Future.delayed(Duration(milliseconds: 100));
 
-    final bool isLoggedIn = _databaseService.isAuthenticated;
-    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);    // Initialize frequency data for AddLectureActivity access
+    // Check authentication status using both Firebase and guest mode
+    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
+    final bool isGuestMode = await GuestAuthService.isGuestMode();
+    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
+    
+    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+
+    // Initialize frequency data for AddLectureActivity access
     await _updateFrequencyData();
     
     // Initialize tracking types data for AddLectureActivity access
@@ -55,11 +68,44 @@ class HomeWidgetService {
 
     _isInitialized = true;
   }
-  
-  // Update frequency data in SharedPreferences for native access
+
+  // Helper method to check Firebase authentication
+  static Future<bool> _isFirebaseAuthenticated() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      return user != null;
+    } catch (e) {
+      return false;
+    }
+  }
+    // Update frequency data in SharedPreferences for native access
   static Future<void> _updateFrequencyData() async {
     try {
-      final frequencyData = await _databaseService.fetchCustomFrequencies();
+      // For frequency data, we'll use a simplified approach that works for both modes
+      Map<String, dynamic> frequencyData = {};
+      
+      // Check if we're in guest mode
+      final isGuestMode = await GuestAuthService.isGuestMode();
+      
+      if (!isGuestMode) {
+        // Try to get frequency data from Firebase service
+        try {
+          final firebaseService = FirebaseDatabaseService();
+          frequencyData = await firebaseService.fetchCustomFrequencies();
+        } catch (e) {
+          print('Error fetching Firebase frequency data: $e');
+          // Use empty data as fallback
+          frequencyData = {};
+        }
+      } else {
+        // For guest mode, provide default frequency options
+        frequencyData = {
+          'daily': {'label': 'Daily', 'value': 1},
+          'weekly': {'label': 'Weekly', 'value': 7},
+          'monthly': {'label': 'Monthly', 'value': 30},
+        };
+      }
+      
       await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode(frequencyData));
     } catch (e) {
       print('Error updating frequency data: $e');
@@ -67,45 +113,53 @@ class HomeWidgetService {
       await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({}));
     }
   }
-  
-  // Update tracking types data in SharedPreferences for native access
+    // Update tracking types data in SharedPreferences for native access
   static Future<void> _updateTrackingTypesData() async {
     try {
-      final trackingTypes = await _databaseService.fetchCustomTrackingTypes();
+      // For tracking types, we'll use a simplified approach that works for both modes
+      List<Map<String, dynamic>> trackingTypes = [];
+      
+      // Check if we're in guest mode
+      final isGuestMode = await GuestAuthService.isGuestMode();
+      
+      if (!isGuestMode) {
+        // Try to get tracking types from Firebase service
+        try {
+          final firebaseService = FirebaseDatabaseService();
+          final List<String> firebaseTrackingTypes = await firebaseService.fetchCustomTrackingTypes();
+          // Convert List<String> to List<Map<String, dynamic>>
+          trackingTypes = firebaseTrackingTypes.map((type) => {
+            'name': type,
+            'icon': 'default', // Default icon since we only have names from Firebase
+          }).toList();
+        } catch (e) {
+          print('Error fetching Firebase tracking types: $e');
+          // Use default tracking types as fallback
+          trackingTypes = [];
+        }
+      } else {
+        // For guest mode, provide default tracking types
+        trackingTypes = [
+          {'name': 'Lecture', 'icon': 'school'},
+          {'name': 'Assignment', 'icon': 'assignment'},
+          {'name': 'Project', 'icon': 'work'},
+          {'name': 'Reading', 'icon': 'book'},
+        ];
+      }
+      
       await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(trackingTypes));
     } catch (e) {
       print('Error updating tracking types data: $e');
       // Save empty data as fallback
       await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode([]));
     }
-  }
-  // Update categories data in SharedPreferences for native access
+  }// Update categories data in SharedPreferences for native access
   static Future<void> _updateCategoriesData() async {
     try {
-      // Get all user data and extract categories
-      final allUserData = await _databaseService.fetchAllUserData();
+      // Use the unified service to get categories and subcategories
+      final categoriesData = await _databaseService.fetchCategoriesAndSubCategories();
       
-      // Extract categories and subcategories from user data
-      List<String> subjects = [];
-      Map<String, List<String>> subCategories = {};
-      
-      for (String category in allUserData.keys) {
-        subjects.add(category);
-        subCategories[category] = [];
-        
-        if (allUserData[category] is Map) {
-          Map<String, dynamic> categoryData = Map<String, dynamic>.from(allUserData[category]);
-          for (String subCategory in categoryData.keys) {
-            subCategories[category]!.add(subCategory);
-          }
-        }
-      }
-      
-      final categoriesData = {
-        'subjects': subjects,
-        'subCategories': subCategories,
-      };
-      
+      // The data is already in the correct format from the unified service
       await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode(categoriesData));
     } catch (e) {
       print('Error updating categories data: $e');
@@ -114,14 +168,14 @@ class HomeWidgetService {
         'subjects': [],
         'subCategories': {},
       }));
-    }
-  }
+    }  }
+  
   /// Public method to update frequency data - can be called from other parts of the app
   static Future<void> updateFrequencyDataStatic() async {
     await _updateFrequencyData();
-    await _updateCategoriesData();  }
-  
-  // This callback will be called when the widget triggers a refresh
+    await _updateCategoriesData();
+  }
+    // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
     print('Background callback triggered: ${uri?.host}');
@@ -133,27 +187,35 @@ class HomeWidgetService {
     // Initialize PlatformUtils for background context
     PlatformUtils.init();
 
+    // Initialize Hive for background context (required for LocalDatabaseService)
+    try {
+      if (!Hive.isBoxOpen('userDataBox')) {
+        final appDocumentDir = await getApplicationDocumentsDirectory();
+        Hive.init(appDocumentDir.path);
+        print('Hive initialized for background context');
+      }
+    } catch (e) {
+      print('Error initializing Hive: $e');
+    }
+
     // Check guest mode first to avoid unnecessary Firebase initialization
     final isGuestMode = await GuestAuthService.isGuestMode();
     print('Background callback - Guest mode: $isGuestMode');
 
-    // Only initialize Firebase if not in guest mode
-    if (!isGuestMode) {
-      try {
-        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-        print('Firebase initialized in background context');
-      } catch (e) {
-        if (e.toString().contains('already initialized')) {
-          print('Firebase already initialized');
-        } else {
-          print('Error initializing Firebase: $e');
-          await _updateWidgetWithEmptyData();
-          return;
-        }
+    // Always initialize Firebase for CombinedDatabaseService to work properly
+    // Even in guest mode, CombinedDatabaseService constructor accesses FirebaseAuth.instance
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      print('Firebase initialized in background context');
+    } catch (e) {
+      if (e.toString().contains('already initialized')) {
+        print('Firebase already initialized');
+      } else {
+        print('Error initializing Firebase: $e');
+        await _updateWidgetWithEmptyData();
+        return;
       }
-    } else {
-      print('Skipping Firebase initialization - running in guest mode');
-    }    if (uri?.host == 'widget_refresh') {
+    }if (uri?.host == 'widget_refresh') {
       try {
         print('Starting widget background refresh...');
         
@@ -592,12 +654,11 @@ class HomeWidgetService {
       androidName: 'TodayWidget',
       iOSName: 'TodayWidget',
     );
-  }
-  static Future<void> _updateWidgetWithEmptyData() async {
+  }  static Future<void> _updateWidgetWithEmptyData() async {
     await _ensureInitialized();
     
     // Check both Firebase authentication and guest mode
-    final bool isFirebaseAuthenticated = _databaseService.isAuthenticated;
+    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
     final bool isGuestMode = await GuestAuthService.isGuestMode();
     final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
     
@@ -615,9 +676,8 @@ class HomeWidgetService {
     List<Map<String, dynamic>> missedRecords,
     List<Map<String, dynamic>> noReminderDateRecords,
   ) async {
-    try {
-      // Check both Firebase authentication and guest mode
-      final bool isFirebaseAuthenticated = _databaseService.isAuthenticated;
+    try {      // Check both Firebase authentication and guest mode
+      final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
       final bool isGuestMode = await GuestAuthService.isGuestMode();
       final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
         print('Widget update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
@@ -690,9 +750,10 @@ class HomeWidgetService {
       // Channel might not be initialized yet, which is fine
     }
   }
-
   static Future<void> updateLoginStatus() async {
-    final bool isLoggedIn = _databaseService.isAuthenticated;
+    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
+    final bool isGuestMode = await GuestAuthService.isGuestMode();
+    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
     await _updateWidget();
     // debugPrint('Login status updated: $isLoggedIn');
@@ -700,8 +761,9 @@ class HomeWidgetService {
 
   static Future<void> refreshWidgetFromExternal() async {
     await initialize();
-    final user = _databaseService.currentUser;
-    final bool isLoggedIn = user != null;
+    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
+    final bool isGuestMode = await GuestAuthService.isGuestMode();
+    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
 
     await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
