@@ -295,6 +295,18 @@ class RecordUpdateService : Service() {
     ) {
         // Use background callback mechanism like TodayWidget
         try {
+            // Show processing message
+            handler.post {
+                Toast.makeText(
+                    applicationContext,
+                    "Processing deletion...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            // Create unique request ID for tracking this delete operation
+            val requestId = System.currentTimeMillis().toString()
+            
             // Trigger background callback to handle record deletion
             val uri = android.net.Uri.parse("homeWidget://record_delete")
                 .buildUpon()
@@ -302,6 +314,7 @@ class RecordUpdateService : Service() {
                 .appendQueryParameter("sub_category", subCategory)
                 .appendQueryParameter("record_title", lectureNo)
                 .appendQueryParameter("action", actionDescription)
+                .appendQueryParameter("requestId", requestId)
                 .build()
 
             val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
@@ -310,25 +323,81 @@ class RecordUpdateService : Service() {
             )
             backgroundIntent.send()
 
-            // Show success message immediately
-            handler.post {
-                Toast.makeText(
-                    applicationContext,
-                    "$category $subCategory $lectureNo has been $actionDescription.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-
-            // Clear processing state and refresh widgets
-            clearProcessingState(category, subCategory, lectureNo)
-            refreshWidgets(startId)
+            // Wait for deletion result in background thread
+            Thread {
+                var retryCount = 0
+                val maxRetries = 50 // 10 seconds max wait time
+                var deleteCompleted = false
+                var deleteSuccess = false
+                var errorMessage = ""
+                
+                while (retryCount < maxRetries && !deleteCompleted) {
+                    try {
+                        Thread.sleep(200) // Wait 200ms between checks
+                        
+                        val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                        val resultKey = "record_delete_result_$requestId"
+                        val result = prefs.getString(resultKey, null)
+                        
+                        if (result != null) {
+                            deleteCompleted = true
+                            if (result.startsWith("SUCCESS")) {
+                                deleteSuccess = true
+                            } else if (result.startsWith("ERROR:")) {
+                                deleteSuccess = false
+                                errorMessage = result.substring(6) // Remove "ERROR:" prefix
+                            }
+                            
+                            // Clean up the result from preferences
+                            prefs.edit().remove(resultKey).apply()
+                            break
+                        }
+                        
+                        retryCount++
+                    } catch (e: InterruptedException) {
+                        Log.e("RecordUpdateService", "Delete result waiting interrupted: ${e.message}")
+                        break
+                    }
+                }
+                
+                // Show result on main thread
+                handler.post {
+                    if (deleteCompleted) {
+                        if (deleteSuccess) {
+                            Toast.makeText(
+                                applicationContext,
+                                "$category $subCategory $lectureNo has been $actionDescription.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
+                            Toast.makeText(
+                                applicationContext,
+                                "Failed to process deletion: $displayError",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        // Timeout occurred
+                        Toast.makeText(
+                            applicationContext,
+                            "Delete operation timed out. Please try again.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                  // Clear processing state and refresh widgets
+                clearProcessingState(category, subCategory, lectureNo)
+                refreshWidgets(startId)
+                
+            }.start()
 
         } catch (e: Exception) {
             Log.e("RecordUpdateService", "Error triggering background deletion: ${e.message}")
             handler.post {
                 Toast.makeText(
                     applicationContext,
-                    "Failed to process deletion",
+                    "Failed to process deletion: ${e.message}",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -336,9 +405,7 @@ class RecordUpdateService : Service() {
             refreshWidgets(startId)
             stopSelf(startId)
         }
-    }
-
-    private fun processRecordUpdate(
+    }private fun processRecordUpdate(
         details: Map<*, *>,
         category: String,
         subCategory: String,
@@ -352,13 +419,23 @@ class RecordUpdateService : Service() {
         startId: Int
     ) {
         try {
+            // Show processing message
+            handler.post {
+                Toast.makeText(
+                    applicationContext,
+                    "Updating record...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
             // Use background callback mechanism for record updates
             val updateData = createUpdateData(
                 details, currentDateTime, currentDate, missedRevision,
                 scheduledDate, noRevision, nextRevisionDate
             )
 
-            // Create URI with update data
+            // Create URI with update data and request ID for tracking
+            val requestId = System.currentTimeMillis().toString()
             val uriBuilder = android.net.Uri.parse("homeWidget://record_update")
                 .buildUpon()
                 .appendQueryParameter("category", category)
@@ -366,6 +443,7 @@ class RecordUpdateService : Service() {
                 .appendQueryParameter("record_title", lectureNo)
                 .appendQueryParameter("next_revision_date", nextRevisionDate)
                 .appendQueryParameter("update_data", org.json.JSONObject(updateData).toString())
+                .appendQueryParameter("requestId", requestId)
 
             val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
                 applicationContext,
@@ -373,18 +451,74 @@ class RecordUpdateService : Service() {
             )
             backgroundIntent.send()
 
-            // Show success message immediately
-            handler.post {
-                Toast.makeText(
-                    applicationContext,
-                    "Record updated successfully! Scheduled for $nextRevisionDate",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-
-            // Clear processing state and refresh widgets
-            clearProcessingState(category, subCategory, lectureNo)
-            refreshWidgets(startId)
+            // Wait for update result in background thread
+            Thread {
+                var retryCount = 0
+                val maxRetries = 50 // 10 seconds max wait time
+                var updateCompleted = false
+                var updateSuccess = false
+                var errorMessage = ""
+                
+                while (retryCount < maxRetries && !updateCompleted) {
+                    try {
+                        Thread.sleep(200) // Wait 200ms between checks
+                        
+                        val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                        val resultKey = "record_update_result_$requestId"
+                        val result = prefs.getString(resultKey, null)
+                        
+                        if (result != null) {
+                            updateCompleted = true
+                            if (result.startsWith("SUCCESS")) {
+                                updateSuccess = true
+                            } else if (result.startsWith("ERROR:")) {
+                                updateSuccess = false
+                                errorMessage = result.substring(6) // Remove "ERROR:" prefix
+                            }
+                            
+                            // Clean up the result from preferences
+                            prefs.edit().remove(resultKey).apply()
+                            break
+                        }
+                        
+                        retryCount++
+                    } catch (e: InterruptedException) {
+                        Log.e("RecordUpdateService", "Update result waiting interrupted: ${e.message}")
+                        break
+                    }
+                }
+                
+                // Show result on main thread
+                handler.post {
+                    if (updateCompleted) {
+                        if (updateSuccess) {
+                            Toast.makeText(
+                                applicationContext,
+                                "Record updated successfully! Scheduled for $nextRevisionDate",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
+                            Toast.makeText(
+                                applicationContext,
+                                "Update failed: $displayError",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        // Timeout occurred
+                        Toast.makeText(
+                            applicationContext,
+                            "Update operation timed out. Please try again.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                  // Clear processing state and refresh widgets
+                clearProcessingState(category, subCategory, lectureNo)
+                refreshWidgets(startId)
+                
+            }.start()
 
         } catch (e: Exception) {
             Log.e("RecordUpdateService", "Error triggering background update: ${e.message}")
@@ -544,4 +678,43 @@ class RecordUpdateService : Service() {
         val newProcessingItems = processingItems.toMutableSet()
         newProcessingItems.remove(itemKey)
         prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()
-    }}
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up any stale result entries
+        cleanupOldResults()
+    }
+
+    private fun cleanupOldResults() {
+        try {
+            val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            val editor = prefs.edit()
+            val allKeys = prefs.all.keys
+            val currentTime = System.currentTimeMillis()
+            
+            // Remove result entries older than 1 minute
+            for (key in allKeys) {
+                if (key.startsWith("record_save_result_") || 
+                    key.startsWith("record_update_result_") || 
+                    key.startsWith("record_delete_result_")) {
+                    try {
+                        val parts = key.split("_")
+                        if (parts.size >= 4) {
+                            val timestamp = parts[3].toLongOrNull()
+                            if (timestamp != null && (currentTime - timestamp) > 60000) { // 1 minute
+                                editor.remove(key)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // If we can't parse the timestamp, remove the entry
+                        editor.remove(key)
+                    }
+                }
+            }
+            editor.apply()
+        } catch (e: Exception) {
+            Log.e("RecordUpdateService", "Error cleaning up old results: ${e.message}")
+        }
+    }
+}

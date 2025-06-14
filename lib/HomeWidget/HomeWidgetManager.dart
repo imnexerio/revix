@@ -127,9 +127,7 @@ class HomeWidgetService {
     DartPluginRegistrant.ensureInitialized();
 
     // Initialize PlatformUtils for background context
-    PlatformUtils.init();
-
-    // Initialize Firebase for background context
+    PlatformUtils.init();    // Initialize Firebase for background context
     try {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       print('Firebase initialized in background context');
@@ -142,6 +140,9 @@ class HomeWidgetService {
         return;
       }
     }
+    
+    // Give Firebase a moment to fully initialize
+    await Future.delayed(Duration(milliseconds: 300));
 
     if (uri?.host == 'widget_refresh') {
       try {
@@ -206,8 +207,7 @@ class HomeWidgetService {
         print('Frequency, tracking types, and categories data refresh completed');
       } catch (e) {
         print('Error in frequency data refresh: $e');
-      }
-    } else if (uri?.host == 'record_delete') {
+      }    } else if (uri?.host == 'record_delete') {
       try {
         print('Starting record deletion background processing...');
         
@@ -216,35 +216,79 @@ class HomeWidgetService {
         final subCategory = uri?.queryParameters['sub_category'] ?? '';
         final recordTitle = uri?.queryParameters['record_title'] ?? '';
         final action = uri?.queryParameters['action'] ?? 'deleted';
+        final requestId = uri?.queryParameters['requestId'] ?? '';
         
-        print('Deleting record: $category - $subCategory - $recordTitle');
+        print('Deleting record: $category - $subCategory - $recordTitle (RequestID: $requestId)');
         
-        // Initialize database service
-        final service = CombinedDatabaseService();
-        service.initialize();
-        
-        // Move record to deleted data
-        await service.moveToDeletedData(category, subCategory, recordTitle);
-        
-        print('Record deletion completed successfully');
-        
-        // Refresh widget data after deletion
-        await service.forceDataReprocessing();
-        final categorizedData = service.currentCategorizedData;
-        
-        if (categorizedData != null) {
-          final todayRecords = categorizedData['today'] ?? [];
-          final missedRecords = categorizedData['missed'] ?? [];
-          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+        String deleteResult = 'SUCCESS';
+        String errorMessage = '';
+          try {
+          // Initialize database service with retry logic
+          final service = CombinedDatabaseService();
+          service.initialize();
           
-          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-          print('Widget refreshed after record deletion');
+          // Wait a moment for Firebase to be fully ready
+          await Future.delayed(Duration(milliseconds: 500));
+          
+          // Ensure Firebase is authenticated before proceeding
+          int retryCount = 0;
+          const maxRetries = 3;
+          bool operationSuccessful = false;
+          
+          while (retryCount < maxRetries && !operationSuccessful) {
+            try {
+              print('Attempting record deletion (attempt ${retryCount + 1}/$maxRetries)');
+              
+              // Move record to deleted data
+              await service.moveToDeletedData(category, subCategory, recordTitle);
+              
+              operationSuccessful = true;
+              print('Record deletion completed successfully');
+              
+              // Refresh widget data after deletion
+              await service.forceDataReprocessing();
+              final categorizedData = service.currentCategorizedData;
+              
+              if (categorizedData != null) {
+                final todayRecords = categorizedData['today'] ?? [];
+                final missedRecords = categorizedData['missed'] ?? [];
+                final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+                
+                await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                print('Widget refreshed after record deletion');
+              }
+            } catch (e) {
+              retryCount++;
+              print('Record deletion attempt $retryCount failed: $e');
+              
+              if (retryCount < maxRetries) {
+                print('Retrying in ${retryCount * 1000}ms...');
+                await Future.delayed(Duration(milliseconds: retryCount * 1000));
+              } else {
+                throw e; // Re-throw on final failure
+              }
+            }
+          }
+        } catch (e) {
+          print('Error in background record deletion: $e');
+          deleteResult = 'ERROR:${e.toString()}';
+          errorMessage = e.toString();
+        }
+          // Save the result to SharedPreferences for the Android side to read
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('record_delete_result_$requestId', deleteResult);
+          print('Delete result stored for requestId $requestId: $deleteResult');
         }
         
       } catch (e) {
-        print('Error in background record deletion: $e');
-      }
-    } else if (uri?.host == 'record_update') {
+        print('Error in record deletion background callback: $e');
+        
+        // If we have a requestId, save the error result
+        final requestId = uri?.queryParameters['requestId'] ?? '';
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('record_delete_result_$requestId', 'ERROR:${e.toString()}');
+        }
+      }} else if (uri?.host == 'record_update') {
       try {
         print('Starting record update background processing...');
         
@@ -254,60 +298,118 @@ class HomeWidgetService {
         final recordTitle = uri?.queryParameters['record_title'] ?? '';
         final nextRevisionDate = uri?.queryParameters['next_revision_date'] ?? '';
         final updateDataStr = uri?.queryParameters['update_data'] ?? '{}';
+        final requestId = uri?.queryParameters['requestId'] ?? '';
         
-        print('Updating record: $category - $subCategory - $recordTitle');
+        print('Updating record: $category - $subCategory - $recordTitle (RequestID: $requestId)');
         print('Next revision date: $nextRevisionDate');
         
-        // Parse update data
-        Map<String, dynamic> updateData = {};
+        String updateResult = 'SUCCESS';
+        String errorMessage = '';
+        
         try {
-          updateData = Map<String, dynamic>.from(
-            json.decode(updateDataStr) as Map
-          );
+          // Parse update data
+          Map<String, dynamic> updateData = {};
+          try {
+            updateData = Map<String, dynamic>.from(
+              json.decode(updateDataStr) as Map
+            );
+          } catch (e) {
+            print('Error parsing update data: $e');
+            updateResult = 'ERROR:Failed to parse update data';
+            errorMessage = 'Failed to parse update data: $e';
+          }
+            if (updateResult == 'SUCCESS') {
+            // Initialize database service with retry logic
+            final service = CombinedDatabaseService();
+            service.initialize();
+            
+            // Wait a moment for Firebase to be fully ready
+            await Future.delayed(Duration(milliseconds: 500));
+            
+            // Ensure Firebase is authenticated before proceeding
+            int retryCount = 0;
+            const maxRetries = 3;
+            bool operationSuccessful = false;
+            
+            while (retryCount < maxRetries && !operationSuccessful) {
+              try {
+                print('Attempting record update (attempt ${retryCount + 1}/$maxRetries)');
+                
+                // Update the record
+                await service.updateRecordRevision(
+                  category,
+                  subCategory,
+                  recordTitle,
+                  updateData['date_updated']?.toString() ?? '',
+                  '', // description - not changed during revision
+                  '', // reminder_time - not changed during revision
+                  updateData['completion_counts'] as int? ?? 0,
+                  updateData['scheduled_date']?.toString() ?? '',
+                  List<String>.from(updateData['dates_updated'] ?? []),
+                  updateData['missed_counts'] as int? ?? 0,
+                  List<String>.from(updateData['dates_missed_revisions'] ?? []),
+                  updateData['status']?.toString() ?? 'Enabled',
+                );
+                
+                operationSuccessful = true;
+                print('Record update completed successfully');
+                
+                // Refresh widget data after update
+                await service.forceDataReprocessing();
+                final categorizedData = service.currentCategorizedData;
+                
+                if (categorizedData != null) {
+                  final todayRecords = categorizedData['today'] ?? [];
+                  final missedRecords = categorizedData['missed'] ?? [];
+                  final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+                  
+                  await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                  print('Widget refreshed after record update');
+                }
+              } catch (e) {
+                retryCount++;
+                print('Record update attempt $retryCount failed: $e');
+                
+                if (retryCount < maxRetries) {
+                  print('Retrying in ${retryCount * 1000}ms...');
+                  await Future.delayed(Duration(milliseconds: retryCount * 1000));
+                } else {
+                  throw e; // Re-throw on final failure
+                }
+              }
+            }
+            await service.forceDataReprocessing();
+            final categorizedData = service.currentCategorizedData;
+            
+            if (categorizedData != null) {
+              final todayRecords = categorizedData['today'] ?? [];
+              final missedRecords = categorizedData['missed'] ?? [];
+              final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+              
+              await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+              print('Widget refreshed after record update');
+            }
+          }
         } catch (e) {
-          print('Error parsing update data: $e');
-          return;
+          print('Error in background record update: $e');
+          updateResult = 'ERROR:${e.toString()}';
+          errorMessage = e.toString();
         }
-        
-        // Initialize database service
-        final service = CombinedDatabaseService();
-        service.initialize();
-        
-        // Update the record
-        await service.updateRecordRevision(
-          category,
-          subCategory,
-          recordTitle,
-          updateData['date_updated']?.toString() ?? '',
-          '', // description - not changed during revision
-          '', // reminder_time - not changed during revision
-          updateData['completion_counts'] as int? ?? 0,
-          updateData['scheduled_date']?.toString() ?? '',
-          List<String>.from(updateData['dates_updated'] ?? []),
-          updateData['missed_counts'] as int? ?? 0,
-          List<String>.from(updateData['dates_missed_revisions'] ?? []),
-          updateData['status']?.toString() ?? 'Enabled',
-        );
-        
-        print('Record update completed successfully');
-        
-        // Refresh widget data after update
-        await service.forceDataReprocessing();
-        final categorizedData = service.currentCategorizedData;
-        
-        if (categorizedData != null) {
-          final todayRecords = categorizedData['today'] ?? [];
-          final missedRecords = categorizedData['missed'] ?? [];
-          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-          
-          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-          print('Widget refreshed after record update');
+          // Save the result to SharedPreferences for the Android side to read
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('record_update_result_$requestId', updateResult);
+          print('Update result stored for requestId $requestId: $updateResult');
         }
         
       } catch (e) {
-        print('Error in background record update: $e');
-      }
-    } else if (uri?.host == 'record_create') {
+        print('Error in record update background callback: $e');
+        
+        // If we have a requestId, save the error result
+        final requestId = uri?.queryParameters['requestId'] ?? '';
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('record_update_result_$requestId', 'ERROR:${e.toString()}');
+        }
+      }} else if (uri?.host == 'record_create') {
       try {
         print('Starting record creation background processing...');
         
@@ -324,57 +426,104 @@ class HomeWidgetService {
         final revisionFrequency = uri?.queryParameters['revisionFrequency'] ?? '';
         final durationDataStr = uri?.queryParameters['durationData'] ?? '{}';
         final customFrequencyParamsStr = uri?.queryParameters['customFrequencyParams'] ?? '{}';
+        final requestId = uri?.queryParameters['requestId'] ?? '';
         
-        print('Creating record: $selectedCategory - $selectedCategoryCode - $title');
+        print('Creating record: $selectedCategory - $selectedCategoryCode - $title (RequestID: $requestId)');
         
-        // Parse JSON data
-        Map<String, dynamic> durationData = {};
-        Map<String, dynamic> customFrequencyParams = {};
+        String saveResult = 'SUCCESS';
+        String errorMessage = '';
+        
         try {
-          durationData = Map<String, dynamic>.from(json.decode(durationDataStr) as Map);
-          customFrequencyParams = Map<String, dynamic>.from(json.decode(customFrequencyParamsStr) as Map);
+          // Parse JSON data
+          Map<String, dynamic> durationData = {};
+          Map<String, dynamic> customFrequencyParams = {};
+          try {
+            durationData = Map<String, dynamic>.from(json.decode(durationDataStr) as Map);
+            customFrequencyParams = Map<String, dynamic>.from(json.decode(customFrequencyParamsStr) as Map);
+          } catch (e) {
+            print('Error parsing JSON data: $e');
+            saveResult = 'ERROR:Failed to parse save data';
+            errorMessage = 'Failed to parse save data: $e';
+          }
+            if (saveResult == 'SUCCESS') {
+            // Initialize database service with retry logic
+            final service = CombinedDatabaseService();
+            service.initialize();
+            
+            // Wait a moment for Firebase to be fully ready
+            await Future.delayed(Duration(milliseconds: 500));
+            
+            // Ensure Firebase is authenticated before proceeding
+            int retryCount = 0;
+            const maxRetries = 3;
+            bool operationSuccessful = false;
+            
+            while (retryCount < maxRetries && !operationSuccessful) {
+              try {
+                print('Attempting record creation (attempt ${retryCount + 1}/$maxRetries)');
+                
+                // Create the record using updateRecordsWithoutContext
+                await service.updateRecordsWithoutContext(
+                  selectedCategory,
+                  selectedCategoryCode,
+                  title,
+                  startTimestamp,
+                  reminderTime,
+                  lectureType,
+                  todayDate,
+                  dateScheduled,
+                  description,
+                  revisionFrequency,
+                  durationData,
+                  customFrequencyParams,
+                );
+                
+                operationSuccessful = true;
+                print('Record creation completed successfully');
+                
+                // Refresh widget data after creation
+                await service.forceDataReprocessing();
+                final categorizedData = service.currentCategorizedData;
+                
+                if (categorizedData != null) {
+                  final todayRecords = categorizedData['today'] ?? [];
+                  final missedRecords = categorizedData['missed'] ?? [];
+                  final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+                  
+                  await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                  print('Widget refreshed after record creation');
+                }
+              } catch (e) {
+                retryCount++;
+                print('Record creation attempt $retryCount failed: $e');
+                
+                if (retryCount < maxRetries) {
+                  print('Retrying in ${retryCount * 1000}ms...');
+                  await Future.delayed(Duration(milliseconds: retryCount * 1000));
+                } else {
+                  throw e; // Re-throw on final failure
+                }
+              }
+            }
+          }
         } catch (e) {
-          print('Error parsing JSON data: $e');
-          return;
+          print('Error in background record creation: $e');
+          saveResult = 'ERROR:${e.toString()}';
+          errorMessage = e.toString();
         }
-        
-        // Initialize database service
-        final service = CombinedDatabaseService();
-        service.initialize();
-        
-        // Create the record using updateRecordsWithoutContext
-        await service.updateRecordsWithoutContext(
-          selectedCategory,
-          selectedCategoryCode,
-          title,
-          startTimestamp,
-          reminderTime,
-          lectureType,
-          todayDate,
-          dateScheduled,
-          description,
-          revisionFrequency,
-          durationData,
-          customFrequencyParams,
-        );
-        
-        print('Record creation completed successfully');
-        
-        // Refresh widget data after creation
-        await service.forceDataReprocessing();
-        final categorizedData = service.currentCategorizedData;
-        
-        if (categorizedData != null) {
-          final todayRecords = categorizedData['today'] ?? [];
-          final missedRecords = categorizedData['missed'] ?? [];
-          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-          
-          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-          print('Widget refreshed after record creation');
+          // Save the result to SharedPreferences for the Android side to read
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('record_save_result_$requestId', saveResult);
+          print('Save result stored for requestId $requestId: $saveResult');
         }
         
       } catch (e) {
-        print('Error in background record creation: $e');
+        print('Error in record creation background callback: $e');
+          // If we have a requestId, save the error result
+        final requestId = uri?.queryParameters['requestId'] ?? '';
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('record_save_result_$requestId', 'ERROR:${e.toString()}');
+        }
       }
     }
   }

@@ -3,6 +3,7 @@ package com.imnexerio.revix
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
@@ -870,6 +871,12 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 revisionData["frequency"] = "No Repetition"
                 recordData["recurrence_data"] = revisionData            }            // Use HomeWidget background callback to save record via Dart
             try {
+                // Show processing message first
+                Toast.makeText(this, "Saving record...", Toast.LENGTH_SHORT).show()
+                
+                // Create unique request ID for tracking this save operation
+                val requestId = System.currentTimeMillis().toString()
+                
                 // Create URI with all record data as query parameters
                 val durationDataJson = org.json.JSONObject(recordData["duration"] as Map<String, Any?>).toString()
                 val customFrequencyParamsJson = if (revisionFrequency == "Custom") {
@@ -891,6 +898,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     .appendQueryParameter("revisionFrequency", revisionFrequency)
                     .appendQueryParameter("durationData", durationDataJson)
                     .appendQueryParameter("customFrequencyParams", customFrequencyParamsJson)
+                    .appendQueryParameter("requestId", requestId) // Add request ID for tracking
                     .build()
                 
                 // Trigger background callback
@@ -900,23 +908,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 )
                 backgroundIntent.send()
                 
-                // Show success message immediately (background processing will handle the actual save)
-                val successMessage = if (isUnspecifiedInitiationDate) {
-                    "Record added successfully with unspecified initiation date"
-                } else if (isNoRepetition) {
-                    "Record added successfully with no repetition"
-                } else {
-                    "Record added successfully, scheduled for $dateScheduled"
-                }
-                Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show()
-
-                // Refresh the widget (the background callback will also refresh it)
-                val intent = Intent(this, TodayWidget::class.java)
-                intent.action = TodayWidget.ACTION_REFRESH
-                sendBroadcast(intent)
-
-                // Close the activity
-                finish()
+                // Wait for the save operation to complete and show result
+                waitForSaveResult(requestId, isUnspecifiedInitiationDate, isNoRepetition, dateScheduled)
                 
             } catch (e: Exception) {
                 Log.e("AddLectureActivity", "Error triggering background record creation: ${e.message}")
@@ -926,7 +919,85 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-    }private fun refreshFrequencyData() {
+    }
+
+    // Method to wait for the Flutter background callback to complete and provide feedback
+    private fun waitForSaveResult(
+        requestId: String, 
+        isUnspecifiedInitiationDate: Boolean, 
+        isNoRepetition: Boolean, 
+        dateScheduled: String
+    ) {
+        // Use a background thread to monitor the save result
+        Thread {
+            var retryCount = 0
+            val maxRetries = 50 // 10 seconds max wait time (50 * 200ms)
+            var saveCompleted = false
+            var saveSuccess = false
+            var errorMessage = ""
+            
+            while (retryCount < maxRetries && !saveCompleted) {
+                try {
+                    Thread.sleep(200) // Wait 200ms between checks
+                    
+                    val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                    val resultKey = "record_save_result_$requestId"
+                    val result = prefs.getString(resultKey, null)
+                    
+                    if (result != null) {
+                        saveCompleted = true
+                        if (result.startsWith("SUCCESS")) {
+                            saveSuccess = true
+                        } else if (result.startsWith("ERROR:")) {
+                            saveSuccess = false
+                            errorMessage = result.substring(6) // Remove "ERROR:" prefix
+                        }
+                        
+                        // Clean up the result from preferences
+                        prefs.edit().remove(resultKey).apply()
+                        break
+                    }
+                    
+                    retryCount++
+                } catch (e: InterruptedException) {
+                    Log.e("AddLectureActivity", "Save result waiting interrupted: ${e.message}")
+                    break
+                }
+            }
+            
+            // Show result on main thread
+            runOnUiThread {
+                if (saveCompleted) {
+                    if (saveSuccess) {
+                        val successMessage = if (isUnspecifiedInitiationDate) {
+                            "Record added successfully with unspecified initiation date"
+                        } else if (isNoRepetition) {
+                            "Record added successfully with no repetition"
+                        } else {
+                            "Record added successfully, scheduled for $dateScheduled"
+                        }
+                        Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show()
+                        
+                        // Refresh the widget
+                        val intent = Intent(this, TodayWidget::class.java)
+                        intent.action = TodayWidget.ACTION_REFRESH
+                        sendBroadcast(intent)
+                        
+                        // Close the activity
+                        finish()
+                    } else {
+                        val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
+                        Toast.makeText(this, "Failed to save record: $displayError", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    // Timeout occurred
+                    Toast.makeText(this, "Save operation timed out. Please try again.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }.start()
+    }
+
+    private fun refreshFrequencyData() {
         FrequencyCalculationUtils.refreshFrequencyData(this)
         
         // Give a small delay for the background update to complete, then refresh our local cache
@@ -989,5 +1060,43 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     // Get default tracking types when Flutter communication fails
     private fun getDefaultTrackingTypes(): List<String> {
         return listOf("Lectures", "Handouts", "Others")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up any stale save result entries
+        cleanupOldSaveResults()
+    }
+
+    private fun cleanupOldSaveResults() {
+        try {
+            val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            val editor = prefs.edit()
+            val allKeys = prefs.all.keys
+            val currentTime = System.currentTimeMillis()
+            
+            // Remove save result entries older than 1 minute
+            for (key in allKeys) {
+                if (key.startsWith("record_save_result_") || 
+                    key.startsWith("record_update_result_") || 
+                    key.startsWith("record_delete_result_")) {
+                    try {
+                        val parts = key.split("_")
+                        if (parts.size >= 4) {
+                            val timestamp = parts[3].toLongOrNull()
+                            if (timestamp != null && (currentTime - timestamp) > 60000) { // 1 minute
+                                editor.remove(key)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // If we can't parse the timestamp, remove the entry
+                        editor.remove(key)
+                    }
+                }
+            }
+            editor.apply()
+        } catch (e: Exception) {
+            Log.e("AddLectureActivity", "Error cleaning up old save results: ${e.message}")
+        }
     }
 }
