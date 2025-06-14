@@ -58,31 +58,51 @@ class CombinedDatabaseService {
 
   Map<String, dynamic>? _cachedCategoriesData;
   dynamic _cachedRawData;
-  Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;  void initialize() async {
-    await _checkGuestMode();
-    if (_isGuestMode) {
-      await _initializeLocalDatabase();
-    } else {
-      User? user = _auth.currentUser;
-      if (user == null) {
-        _addErrorToAllControllers('No authenticated user');
-        return;
+  Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;  Future<void> initialize() async {
+    try {
+      await _checkGuestMode();
+      if (_isGuestMode) {
+        await _initializeLocalDatabase();
+      } else {
+        User? user = _auth.currentUser;
+        if (user == null) {
+          _addErrorToAllControllers('No authenticated user');
+          return;
+        }
+        _initialize(user.uid);
       }
-      _initialize(user.uid);
+    } catch (e) {
+      print('Error in CombinedDatabaseService.initialize(): $e');
+      _addErrorToAllControllers('Failed to initialize database service: $e');
     }
   }
 
   Future<void> _checkGuestMode() async {
     _isGuestMode = await GuestAuthService.isGuestMode();
   }  Future<void> _initializeLocalDatabase() async {
-    await LocalDatabaseService.initialize(); // Make sure Hive boxes are initialized
-    await _localDatabase.initializeWithDefaultData();
-    
-    // Set up stream subscription for local database changes
-    _setupDataListener();
-    
-    // Initial data load
-    await forceDataReprocessing();
+    try {
+      await LocalDatabaseService.initialize(); // Make sure Hive boxes are initialized
+      await _localDatabase.initializeWithDefaultData();
+      
+      // Set up stream subscription for local database changes
+      _setupDataListener();
+      
+      // Initial data load
+      await forceDataReprocessing();
+    } catch (e) {
+      print('Error initializing local database: $e');
+      // Try to recover by reinitializing
+      try {
+        await Future.delayed(Duration(milliseconds: 500));
+        await LocalDatabaseService.initialize();
+        await _localDatabase.initializeWithDefaultData();
+        _setupDataListener();
+        await forceDataReprocessing();
+      } catch (retryError) {
+        print('Failed to recover local database initialization: $retryError');
+        throw Exception('Local database initialization failed: $retryError');
+      }
+    }
   }
   void _setupDataListener() {
     _dataSubscription?.cancel();

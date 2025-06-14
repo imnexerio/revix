@@ -39,10 +39,19 @@ class LocalDatabaseService {
   static String getCurrentUserId() {
     return _currentUserId;
   }
-  
-  /// Gets the complete users data structure
+    /// Gets the complete users data structure
   Future<Map<String, dynamic>> getUsersData() async {
     try {
+      // Ensure initialization is complete before accessing the box
+      if (_usersBox == null) {
+        await initialize();
+      }
+      
+      if (_usersBox == null) {
+        _logError('Users box is still null after initialization attempt');
+        return {};
+      }
+      
       return (_usersBox!.get('users', defaultValue: {}) ?? {}).cast<String, dynamic>();
     } catch (e) {
       _logError('Error getting users data: $e');
@@ -59,18 +68,46 @@ class LocalDatabaseService {
       _logError('Error getting current user data: $e');
       return {};
     }
-  }    /// Initializes all Hive boxes needed for the application
+  }  /// Initializes all Hive boxes needed for the application
   static Future<void> initialize() async {
     try {
-      if (!Hive.isBoxOpen(_usersBoxName)) {
-        _usersBox = await Hive.openBox<Map>(_usersBoxName);
+      // Use a more robust approach with retries
+      int maxRetries = 3;
+      int attempt = 0;
+      
+      while (attempt < maxRetries && (_usersBox == null || _errorLogBox == null)) {
+        attempt++;
+        
+        try {
+          if (_usersBox == null && !Hive.isBoxOpen(_usersBoxName)) {
+            _usersBox = await Hive.openBox<Map>(_usersBoxName);
+          }
+          if (_errorLogBox == null && !Hive.isBoxOpen(_errorLogBoxName)) {
+            _errorLogBox = await Hive.openBox<String>(_errorLogBoxName);
+          }
+          
+          // Verify boxes are properly opened
+          if (_usersBox != null && _errorLogBox != null) {
+            break;
+          }
+          
+          if (attempt < maxRetries) {
+            await Future.delayed(Duration(milliseconds: 100 * attempt));
+          }
+        } catch (e) {
+          _logError('Error initializing Hive boxes (attempt $attempt): $e');
+          if (attempt == maxRetries) {
+            await _recoverFromHiveError();
+          }
+        }
       }
-      if (!Hive.isBoxOpen(_errorLogBoxName)) {
-        _errorLogBox = await Hive.openBox<String>(_errorLogBoxName);
+      
+      if (_usersBox == null || _errorLogBox == null) {
+        throw Exception('Failed to initialize Hive boxes after $maxRetries attempts');
       }
     } catch (e) {
-      _logError('Error initializing Hive boxes: $e');
-      await _recoverFromHiveError();
+      _logError('Critical error initializing Hive boxes: $e');
+      rethrow;
     }
   }
   /// Attempts to recover from a Hive error by clearing corrupted data
@@ -108,10 +145,17 @@ class LocalDatabaseService {
       debugPrint('Error logging error: $e');
       debugPrint('Original error: $error');
     }
-  }    /// Initializes the database with default data for new guest users
+  }  /// Initializes the database with default data for new guest users
   Future<void> initializeWithDefaultData() async {
     try {
+      // Ensure initialization is complete
       await initialize();
+      
+      // Double-check that the box is ready
+      if (_usersBox == null) {
+        _logError('Failed to initialize users box');
+        return;
+      }
       
       final usersData = await getUsersData();
       
@@ -149,6 +193,13 @@ class LocalDatabaseService {
       _logError('Error initializing default data: $e');
       // Create basic empty data structures if we couldn't initialize properly
       try {
+        // Ensure box is available for fallback
+        await initialize();
+        if (_usersBox == null) {
+          _logError('Cannot recover - users box unavailable');
+          return;
+        }
+        
         final usersData = await getUsersData();
         if (usersData[_currentUserId] == null) {
           usersData[_currentUserId] = {

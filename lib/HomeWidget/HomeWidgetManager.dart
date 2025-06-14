@@ -10,6 +10,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../Utils/LocalDatabaseService.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/GuestAuthService.dart';
@@ -35,7 +36,7 @@ class HomeWidgetService {
     HomeWidget.setAppGroupId(appGroupId);    
     // Set up widget background callback handling
     HomeWidget.registerInteractivityCallback(backgroundCallback);
-    _databaseService.initialize();
+    await _databaseService.initialize();
     
     // Give a small delay for the service to initialize properly
     await Future.delayed(Duration(milliseconds: 100));
@@ -144,17 +145,25 @@ class HomeWidgetService {
     DartPluginRegistrant.ensureInitialized();
 
     // Initialize PlatformUtils for background context
-    PlatformUtils.init();
-
-    // Initialize Hive for background context (required for LocalDatabaseService)
+    PlatformUtils.init();    // Initialize Hive for background context (required for LocalDatabaseService)
     try {
       if (!Hive.isBoxOpen('userDataBox')) {
         final appDocumentDir = await getApplicationDocumentsDirectory();
         Hive.init(appDocumentDir.path);
         print('Hive initialized for background context');
       }
+      
+      // Ensure LocalDatabaseService is properly initialized
+      await LocalDatabaseService.initialize();
+      print('LocalDatabaseService initialized for background context');
     } catch (e) {
-      print('Error initializing Hive: $e');
+      print('Error initializing Hive/LocalDatabaseService: $e');
+      // If we can't initialize Hive, we should return early for guest mode operations
+      final isGuestMode = await GuestAuthService.isGuestMode();
+      if (isGuestMode) {
+        print('Critical error: Cannot initialize local database for guest mode');
+        return;
+      }
     }
 
     // Check guest mode first to avoid unnecessary Firebase initialization
@@ -185,9 +194,8 @@ class HomeWidgetService {
         // The service internally handles guest vs Firebase mode
         final service = CombinedDatabaseService();
         print('CombinedDatabaseService created');
-        
-        // Initialize the service (it will handle guest mode detection internally)
-        service.initialize();
+          // Initialize the service (it will handle guest mode detection internally)
+        await service.initialize();
         print('Service initialized');
         
         await service.forceDataReprocessing();
@@ -242,7 +250,6 @@ class HomeWidgetService {
         print('Deleting record: $category - $subCategory - $recordTitle (RequestID: $requestId)');
         
         String deleteResult = 'SUCCESS';
-        String errorMessage = '';
         try {
           // Wait for Firebase to be properly initialized
           print('Waiting for Firebase to be ready...');
@@ -250,11 +257,10 @@ class HomeWidgetService {
           
           if (!isFirebaseReady) {
             deleteResult = 'ERROR:Firebase initialization timeout';
-            errorMessage = 'Firebase failed to initialize within timeout period';
           } else {
             // Initialize database service
             final service = CombinedDatabaseService();
-            service.initialize();
+            await service.initialize();
               // Wait for database service to be ready (shorter timeout for guest mode)
             print('Waiting for database service to be ready...');
             final isGuestMode = await GuestAuthService.isGuestMode();
@@ -263,7 +269,6 @@ class HomeWidgetService {
             
             if (!isServiceReady) {
               deleteResult = 'ERROR:Database service initialization timeout';
-              errorMessage = 'Database service failed to initialize within timeout period';
             } else {
               try {
                 print('All services ready, deleting record...');
@@ -287,7 +292,6 @@ class HomeWidgetService {
                 }
               } catch (e) {
                 deleteResult = 'ERROR:${e.toString()}';
-                errorMessage = e.toString();
                 print('Record deletion failed: $e');
               }
             }
@@ -295,7 +299,6 @@ class HomeWidgetService {
         } catch (e) {
           print('Error in background record deletion: $e');
           deleteResult = 'ERROR:${e.toString()}';
-          errorMessage = e.toString();
         }
           // Save the result to SharedPreferences for the Android side to read
         if (requestId.isNotEmpty) {
@@ -347,13 +350,12 @@ class HomeWidgetService {
             print('Waiting for Firebase to be ready...');
             final isFirebaseReady = await _waitForFirebaseReady();
             
-            if (!isFirebaseReady) {
-              updateResult = 'ERROR:Firebase initialization timeout';
-              errorMessage = 'Firebase failed to initialize within timeout period';
+            if (!isFirebaseReady) {            updateResult = 'ERROR:Firebase initialization timeout';
+            errorMessage = 'Firebase failed to initialize within timeout period';
             } else {
               // Initialize database service
               final service = CombinedDatabaseService();
-              service.initialize();
+              await service.initialize();
                 // Wait for database service to be ready (shorter timeout for guest mode)
               print('Waiting for database service to be ready...');
               final isGuestMode = await GuestAuthService.isGuestMode();
@@ -466,16 +468,19 @@ class HomeWidgetService {
               
               // Initialize database service - it will handle guest vs Firebase mode internally
               final service = CombinedDatabaseService();
-              service.initialize();
+              await service.initialize();
               
               // Wait for database service to be ready with a reasonable timeout
               print('Waiting for database service to be ready...');
-              final isServiceReady = await _waitForDatabaseServiceReady(service, maxWaitSeconds: 8);
+              final isServiceReady = await _waitForDatabaseServiceReady(service, maxWaitSeconds: 10);
               
               if (!isServiceReady) {
                 saveResult = 'ERROR:Database service initialization timeout';
               } else {
                 print('Database service ready, creating record...');
+                
+                // Add an extra safety delay to ensure all initialization is complete
+                await Future.delayed(Duration(milliseconds: 250));
                 
                 // Create the record using updateRecordsWithoutContext
                 await service.updateRecordsWithoutContext(
@@ -581,10 +586,24 @@ class HomeWidgetService {
     while (stopwatch.elapsedMilliseconds < maxWaitSeconds * 1000) {
       try {
         if (isGuestMode) {
-          // For guest mode, just verify the service is initialized
-          // Guest mode uses LocalDatabaseService which is always available
-          print('Guest mode - service ready');
-          return true;        } else {
+          // For guest mode, test the LocalDatabaseService more thoroughly
+          try {
+            // Try to initialize and get user data to ensure everything is working
+            await LocalDatabaseService.initialize();
+            final localService = LocalDatabaseService();
+            await localService.initializeWithDefaultData();
+            
+            // Test that we can actually get data without errors
+            final userData = await localService.getCurrentUserData();
+            if (userData.isNotEmpty || userData.isEmpty) { // Even empty data means it's working
+              print('Guest mode - LocalDatabaseService is ready');
+              return true;
+            }
+          } catch (e) {
+            print('Guest mode - LocalDatabaseService not ready: $e');
+            // Continue trying
+          }
+        } else {
           // For Firebase mode, test if the service can access user data
           final testData = service.currentRawData;
           if (testData != null) {
