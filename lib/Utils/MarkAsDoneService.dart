@@ -82,12 +82,16 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   }
   /// Main function to mark a lecture as done
   static Future<void> markAsDone({
-    required BuildContext context,
+    BuildContext? context, // Made nullable for background processing
     required String category,
     required String subCategory,
     required String lectureNo,
   }) async {
     try {
+      // Show loading dialog only if context is available
+      // if (context != null) {
+      //   _showLoadingDialog(context);
+      // }
 
       // Get the unified database service instance
       final CombinedDatabaseService dbService = CombinedDatabaseService();
@@ -96,24 +100,28 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       Map<String, dynamic>? details = await dbService.getDataAtLocation(category, subCategory, lectureNo);
       
       if (details == null) {
-        Navigator.pop(context);
+        if (context != null) Navigator.pop(context);
         throw 'Lecture data not found';
       }
 
       // Check if not enabled
       bool isCurrentlyEnabled = details['status'] == 'Enabled';
       if (!isCurrentlyEnabled) {
-        Navigator.pop(context);
+        if (context != null) Navigator.pop(context);
         throw 'Cannot mark as done when the status is disabled';
-      }      // Handle unspecified date_initiated case
+      }
+
+      // Handle unspecified date_initiated case
       if (details['date_initiated'] == 'Unspecified') {
         await dbService.moveToDeletedData(category, subCategory, lectureNo);
-        Navigator.pop(context);
-        Navigator.pop(context);
-        customSnackBar(
-          context: context,
-          message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
-        );
+        if (context != null) {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          customSnackBar(
+            context: context,
+            message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
+          );
+        }
         return;
       }
 
@@ -135,12 +143,14 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       datesRevised.add(dateRevised);      // Handle 'No Repetition' case
       if (details['recurrence_frequency'] == 'No Repetition') {
         await dbService.moveToDeletedData(category, subCategory, lectureNo);
-        Navigator.pop(context);
-        Navigator.pop(context);
-        customSnackBar(
-          context: context,
-          message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
-        );
+        if (context != null) {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          customSnackBar(
+            context: context,
+            message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
+          );
+        }
         return;
       }
 
@@ -181,25 +191,32 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         dateScheduled,
         datesRevised,
         missedRevision,
-        datesMissedRevisions,
-      );
+        datesMissedRevisions,      );
 
-      Navigator.pop(context);
-      // Navigator.pop(context);
-
-      // Show success message
-      customSnackBar(
-        context: context,
-        message: '$category $subCategory $lectureNo done and scheduled for $dateScheduled',
-      );
-    } catch (e) {
-      if (Navigator.canPop(context)) {
+      // Handle UI operations only if context is available
+      if (context != null) {
         Navigator.pop(context);
+        Navigator.pop(context);
+
+        // Show success message
+        customSnackBar(
+          context: context,
+          message: '$category $subCategory $lectureNo done and scheduled for $dateScheduled',
+        );
       }
-      customSnackBar_error(
-        context: context,
-        message: 'Failed to mark as done: ${e.toString()}',
-      );
+    } catch (e) {
+      if (context != null) {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        customSnackBar_error(
+          context: context,
+          message: 'Failed to mark as done: ${e.toString()}',
+        );
+      } else {
+        // For background processing, just rethrow the error
+        rethrow;
+      }
     }
   }
 }
