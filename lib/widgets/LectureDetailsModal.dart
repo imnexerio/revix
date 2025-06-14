@@ -253,13 +253,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       label: const Text('MARK AS DONE'),
                       onPressed: () => MarkAsDoneService.markAsDone(
                         context: context,
-                        details: widget.details,
                         category: widget.selectedCategory,
                         subCategory: widget.selectedCategoryCode,
                         lectureNo: widget.lectureNo,
-                        durationData: durationData,
-                        isEnabled: isEnabled,
-                        useRevisionUpdate: false,
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,

@@ -64,29 +64,23 @@ Future<void> UpdateRecordsRevision(
     String selectedCategoryCode,
     String lectureNo,
     String dateRevised,
-    String description,
-    String reminderTime,
     int noRevision,
     String dateScheduled,
     List<String> datesRevised,
     int missedRevision,
     List<String> datesMissedRevisions,
-    String status,
     ) async {
   
   final firebaseService = FirebaseDatabaseService();
   
   // Prepare update data
   Map<String, dynamic> updateData = {
-    'reminder_time': reminderTime,
     'date_updated': dateRevised,
     'completion_counts': noRevision,
     'scheduled_date': dateScheduled,
     'missed_counts': missedRevision,
     'dates_missed_revisions': datesMissedRevisions,
     'dates_updated': datesRevised,
-    'description': description,
-    'status': status,
   };
   
   // Update record using centralized service

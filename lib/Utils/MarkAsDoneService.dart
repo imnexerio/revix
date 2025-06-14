@@ -47,35 +47,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
     return isEnabled;
   }
-  /// Shows a loading dialog
-  static void _showLoadingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Center(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(
-                  "Updating...",
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   /// Extracts revision data from details for custom frequency
   static Map<String, dynamic> _extractRevisionData(Map<String, dynamic> details) {
@@ -111,17 +83,11 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   /// Main function to mark a lecture as done
   static Future<void> markAsDone({
     required BuildContext context,
-    required Map<String, dynamic> details,
     required String category,
     required String subCategory,
     required String lectureNo,
-    String? description,
-    Map<String, dynamic>? durationData,
-    bool? isEnabled,
-    bool useRevisionUpdate = false,
   }) async {
     try {
-      _showLoadingDialog(context);
 
       // Check if not enabled for LectureDetailsModal case
       if (isEnabled != null && !isEnabled) {
@@ -215,41 +181,18 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         }
       }
 
-      // Update records based on the update type
-      if (useRevisionUpdate) {
-        await UpdateRecordsRevision(
-          category,
-          subCategory,
-          lectureNo,
-          dateRevised,
-          description ?? details['description'],
-          details['reminder_time'],
-          details['completion_counts'] + 1,
-          dateScheduled,
-          datesRevised,
-          missedRevision,
-          datesMissedRevisions,
-          finalEnabledStatus ? 'Enabled' : 'Disabled',
-        );
-      } else {
-        await UpdateRecords(
-          category,
-          subCategory,
-          lectureNo,
-          dateRevised,
-          details['description'],
-          details['reminder_time'],
-          details['completion_counts'] + 1,
-          dateScheduled,
-          datesRevised,
-          missedRevision,
-          datesMissedRevisions,
-          details['recurrence_frequency'],
-          finalEnabledStatus ? 'Enabled' : 'Disabled',
-          revisionData,
-          durationData ?? {},
-        );
-      }
+
+      await UpdateRecordsRevision(
+        category,
+        subCategory,
+        lectureNo,
+        dateRevised,
+        details['completion_counts'] + 1,
+        dateScheduled,
+        datesRevised,
+        missedRevision,
+        datesMissedRevisions,
+      );
 
       Navigator.pop(context);
       Navigator.pop(context);

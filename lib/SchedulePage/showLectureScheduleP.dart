@@ -191,12 +191,9 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                         label: const Text('MARK AS DONE'),
                         onPressed: () => MarkAsDoneService.markAsDone(
                           context: context,
-                          details: details,
                           category: details['category'],
                           subCategory: details['sub_category'],
                           lectureNo: details['record_title'],
-                          description: description,
-                          useRevisionUpdate: true,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.primary,
