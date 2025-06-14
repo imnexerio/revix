@@ -78,10 +78,10 @@ class HomeWidgetService {
       return false;
     }
   }
-    // Update frequency data in SharedPreferences for native access
+  // Update frequency data in SharedPreferences for native access
   static Future<void> _updateFrequencyData() async {
     try {
-      // For frequency data, we'll use a simplified approach that works for both modes
+      // For frequency data, Android expects a simple map of frequency names
       Map<String, dynamic> frequencyData = {};
       
       // Check if we're in guest mode
@@ -91,33 +91,41 @@ class HomeWidgetService {
         // Try to get frequency data from Firebase service
         try {
           final firebaseService = FirebaseDatabaseService();
-          frequencyData = await firebaseService.fetchCustomFrequencies();
+          final firebaseFrequencyData = await firebaseService.fetchCustomFrequencies();
+          frequencyData = firebaseFrequencyData;
         } catch (e) {
           print('Error fetching Firebase frequency data: $e');
-          // Use empty data as fallback
+          // Use default frequency data as fallback
           frequencyData = {};
         }
-      } else {
-        // For guest mode, provide default frequency options
-        frequencyData = {
-          'daily': {'label': 'Daily', 'value': 1},
-          'weekly': {'label': 'Weekly', 'value': 7},
-          'monthly': {'label': 'Monthly', 'value': 30},
-        };
       }
+      
+      // Always include default frequency options (for both modes)
+      frequencyData.addAll({
+        'Daily': 'Daily',
+        'Weekly': 'Weekly', 
+        'Monthly': 'Monthly',
+        'Custom': 'Custom',
+        'No Repetition': 'No Repetition',
+      });
       
       await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode(frequencyData));
     } catch (e) {
       print('Error updating frequency data: $e');
-      // Save empty data as fallback
-      await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({}));
+      // Save default frequency data as fallback
+      await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({
+        'Daily': 'Daily',
+        'Weekly': 'Weekly',
+        'Monthly': 'Monthly', 
+        'Custom': 'Custom',
+        'No Repetition': 'No Repetition',
+      }));
     }
-  }
-    // Update tracking types data in SharedPreferences for native access
+  }  // Update tracking types data in SharedPreferences for native access
   static Future<void> _updateTrackingTypesData() async {
     try {
-      // For tracking types, we'll use a simplified approach that works for both modes
-      List<Map<String, dynamic>> trackingTypes = [];
+      // For tracking types, Android expects a simple list of strings
+      List<String> trackingTypes = [];
       
       // Check if we're in guest mode
       final isGuestMode = await GuestAuthService.isGuestMode();
@@ -126,32 +134,25 @@ class HomeWidgetService {
         // Try to get tracking types from Firebase service
         try {
           final firebaseService = FirebaseDatabaseService();
-          final List<String> firebaseTrackingTypes = await firebaseService.fetchCustomTrackingTypes();
-          // Convert List<String> to List<Map<String, dynamic>>
-          trackingTypes = firebaseTrackingTypes.map((type) => {
-            'name': type,
-            'icon': 'default', // Default icon since we only have names from Firebase
-          }).toList();
+          trackingTypes = await firebaseService.fetchCustomTrackingTypes();
         } catch (e) {
           print('Error fetching Firebase tracking types: $e');
           // Use default tracking types as fallback
           trackingTypes = [];
         }
-      } else {
-        // For guest mode, provide default tracking types
-        trackingTypes = [
-          {'name': 'Lecture', 'icon': 'school'},
-          {'name': 'Assignment', 'icon': 'assignment'},
-          {'name': 'Project', 'icon': 'work'},
-          {'name': 'Reading', 'icon': 'book'},
-        ];
       }
+      
+      // Always include default tracking types (for both modes)
+      trackingTypes.addAll(['Lecture', 'Assignment', 'Project', 'Reading']);
+      
+      // Remove duplicates
+      trackingTypes = trackingTypes.toSet().toList();
       
       await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(trackingTypes));
     } catch (e) {
       print('Error updating tracking types data: $e');
-      // Save empty data as fallback
-      await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode([]));
+      // Save default tracking types as fallback
+      await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(['Lecture', 'Assignment', 'Project', 'Reading']));
     }
   }// Update categories data in SharedPreferences for native access
   static Future<void> _updateCategoriesData() async {
