@@ -5,6 +5,8 @@ import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
@@ -117,54 +119,53 @@ class HomeWidgetService {
   /// Public method to update frequency data - can be called from other parts of the app
   static Future<void> updateFrequencyDataStatic() async {
     await _updateFrequencyData();
-    await _updateCategoriesData();
-  }
+    await _updateCategoriesData();  }
+  
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
-    print('Background callback triggered: ${uri?.host}');    // Ensure Flutter engine is initialized for background work
+    print('Background callback triggered: ${uri?.host}');
+    
+    // Ensure Flutter engine is initialized for background work
     WidgetsFlutterBinding.ensureInitialized();
     DartPluginRegistrant.ensureInitialized();
 
     // Initialize PlatformUtils for background context
-    PlatformUtils.init();    // Initialize Firebase for background context
-    try {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-      print('Firebase initialized in background context');
-    } catch (e) {
-      if (e.toString().contains('already initialized')) {
-        print('Firebase already initialized');
-      } else {
-        print('Error initializing Firebase: $e');
-        await _updateWidgetWithEmptyData();
-        return;
-      }
-    }
-    
-    // Give Firebase a moment to fully initialize
-    await Future.delayed(Duration(milliseconds: 300));
+    PlatformUtils.init();
 
-    if (uri?.host == 'widget_refresh') {
+    // Check guest mode first to avoid unnecessary Firebase initialization
+    final isGuestMode = await GuestAuthService.isGuestMode();
+    print('Background callback - Guest mode: $isGuestMode');
+
+    // Only initialize Firebase if not in guest mode
+    if (!isGuestMode) {
+      try {
+        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+        print('Firebase initialized in background context');
+      } catch (e) {
+        if (e.toString().contains('already initialized')) {
+          print('Firebase already initialized');
+        } else {
+          print('Error initializing Firebase: $e');
+          await _updateWidgetWithEmptyData();
+          return;
+        }
+      }
+    } else {
+      print('Skipping Firebase initialization - running in guest mode');
+    }    if (uri?.host == 'widget_refresh') {
       try {
         print('Starting widget background refresh...');
         
         // Check for frequency data update requests from native code
         await monitorFrequencyDataRequests();
         
-        // First, let's check what authentication state we have
-        final firebaseService = FirebaseDatabaseService();
-        final isFirebaseAuthenticated = firebaseService.isAuthenticated;
-        print('Firebase authenticated: $isFirebaseAuthenticated');
-        
-        // Check guest mode
-        final isGuestMode = await GuestAuthService.isGuestMode();
-        print('Guest mode: $isGuestMode');
-        
-        // Initialize and process data using CombinedDatabaseService without launching app
+        // Initialize and process data using CombinedDatabaseService
+        // The service internally handles guest vs Firebase mode
         final service = CombinedDatabaseService();
         print('CombinedDatabaseService created');
         
-        // Initialize the service first
+        // Initialize the service (it will handle guest mode detection internally)
         service.initialize();
         print('Service initialized');
         
@@ -222,50 +223,52 @@ class HomeWidgetService {
         
         String deleteResult = 'SUCCESS';
         String errorMessage = '';
-          try {
-          // Initialize database service with retry logic
-          final service = CombinedDatabaseService();
-          service.initialize();
+        try {
+          // Wait for Firebase to be properly initialized
+          print('Waiting for Firebase to be ready...');
+          final isFirebaseReady = await _waitForFirebaseReady();
           
-          // Wait a moment for Firebase to be fully ready
-          await Future.delayed(Duration(milliseconds: 500));
-          
-          // Ensure Firebase is authenticated before proceeding
-          int retryCount = 0;
-          const maxRetries = 3;
-          bool operationSuccessful = false;
-          
-          while (retryCount < maxRetries && !operationSuccessful) {
-            try {
-              print('Attempting record deletion (attempt ${retryCount + 1}/$maxRetries)');
-              
-              // Move record to deleted data
-              await service.moveToDeletedData(category, subCategory, recordTitle);
-              
-              operationSuccessful = true;
-              print('Record deletion completed successfully');
-              
-              // Refresh widget data after deletion
-              await service.forceDataReprocessing();
-              final categorizedData = service.currentCategorizedData;
-              
-              if (categorizedData != null) {
-                final todayRecords = categorizedData['today'] ?? [];
-                final missedRecords = categorizedData['missed'] ?? [];
-                final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+          if (!isFirebaseReady) {
+            deleteResult = 'ERROR:Firebase initialization timeout';
+            errorMessage = 'Firebase failed to initialize within timeout period';
+          } else {
+            // Initialize database service
+            final service = CombinedDatabaseService();
+            service.initialize();
+              // Wait for database service to be ready (shorter timeout for guest mode)
+            print('Waiting for database service to be ready...');
+            final isGuestMode = await GuestAuthService.isGuestMode();
+            final serviceTimeout = isGuestMode ? 2 : 5; // Guest mode needs less time
+            final isServiceReady = await _waitForDatabaseServiceReady(service, maxWaitSeconds: serviceTimeout);
+            
+            if (!isServiceReady) {
+              deleteResult = 'ERROR:Database service initialization timeout';
+              errorMessage = 'Database service failed to initialize within timeout period';
+            } else {
+              try {
+                print('All services ready, deleting record...');
                 
-                await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-                print('Widget refreshed after record deletion');
-              }
-            } catch (e) {
-              retryCount++;
-              print('Record deletion attempt $retryCount failed: $e');
-              
-              if (retryCount < maxRetries) {
-                print('Retrying in ${retryCount * 1000}ms...');
-                await Future.delayed(Duration(milliseconds: retryCount * 1000));
-              } else {
-                throw e; // Re-throw on final failure
+                // Move record to deleted data
+                await service.moveToDeletedData(category, subCategory, recordTitle);
+                
+                print('Record deletion completed successfully');
+                
+                // Refresh widget data after deletion
+                await service.forceDataReprocessing();
+                final categorizedData = service.currentCategorizedData;
+                
+                if (categorizedData != null) {
+                  final todayRecords = categorizedData['today'] ?? [];
+                  final missedRecords = categorizedData['missed'] ?? [];
+                  final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+                  
+                  await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                  print('Widget refreshed after record deletion');
+                }
+              } catch (e) {
+                deleteResult = 'ERROR:${e.toString()}';
+                errorMessage = e.toString();
+                print('Record deletion failed: $e');
               }
             }
           }
@@ -318,76 +321,67 @@ class HomeWidgetService {
             updateResult = 'ERROR:Failed to parse update data';
             errorMessage = 'Failed to parse update data: $e';
           }
-            if (updateResult == 'SUCCESS') {
-            // Initialize database service with retry logic
-            final service = CombinedDatabaseService();
-            service.initialize();
+          
+          if (updateResult == 'SUCCESS') {
+            // Wait for Firebase to be properly initialized
+            print('Waiting for Firebase to be ready...');
+            final isFirebaseReady = await _waitForFirebaseReady();
             
-            // Wait a moment for Firebase to be fully ready
-            await Future.delayed(Duration(milliseconds: 500));
-            
-            // Ensure Firebase is authenticated before proceeding
-            int retryCount = 0;
-            const maxRetries = 3;
-            bool operationSuccessful = false;
-            
-            while (retryCount < maxRetries && !operationSuccessful) {
-              try {
-                print('Attempting record update (attempt ${retryCount + 1}/$maxRetries)');
-                
-                // Update the record
-                await service.updateRecordRevision(
-                  category,
-                  subCategory,
-                  recordTitle,
-                  updateData['date_updated']?.toString() ?? '',
-                  '', // description - not changed during revision
-                  '', // reminder_time - not changed during revision
-                  updateData['completion_counts'] as int? ?? 0,
-                  updateData['scheduled_date']?.toString() ?? '',
-                  List<String>.from(updateData['dates_updated'] ?? []),
-                  updateData['missed_counts'] as int? ?? 0,
-                  List<String>.from(updateData['dates_missed_revisions'] ?? []),
-                  updateData['status']?.toString() ?? 'Enabled',
-                );
-                
-                operationSuccessful = true;
-                print('Record update completed successfully');
-                
-                // Refresh widget data after update
-                await service.forceDataReprocessing();
-                final categorizedData = service.currentCategorizedData;
-                
-                if (categorizedData != null) {
-                  final todayRecords = categorizedData['today'] ?? [];
-                  final missedRecords = categorizedData['missed'] ?? [];
-                  final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+            if (!isFirebaseReady) {
+              updateResult = 'ERROR:Firebase initialization timeout';
+              errorMessage = 'Firebase failed to initialize within timeout period';
+            } else {
+              // Initialize database service
+              final service = CombinedDatabaseService();
+              service.initialize();
+                // Wait for database service to be ready (shorter timeout for guest mode)
+              print('Waiting for database service to be ready...');
+              final isGuestMode = await GuestAuthService.isGuestMode();
+              final serviceTimeout = isGuestMode ? 2 : 5; // Guest mode needs less time
+              final isServiceReady = await _waitForDatabaseServiceReady(service, maxWaitSeconds: serviceTimeout);
+              
+              if (!isServiceReady) {
+                updateResult = 'ERROR:Database service initialization timeout';
+                errorMessage = 'Database service failed to initialize within timeout period';
+              } else {
+                try {
+                  print('All services ready, updating record...');
                   
-                  await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-                  print('Widget refreshed after record update');
-                }
-              } catch (e) {
-                retryCount++;
-                print('Record update attempt $retryCount failed: $e');
-                
-                if (retryCount < maxRetries) {
-                  print('Retrying in ${retryCount * 1000}ms...');
-                  await Future.delayed(Duration(milliseconds: retryCount * 1000));
-                } else {
-                  throw e; // Re-throw on final failure
+                  // Update the record
+                  await service.updateRecordRevision(
+                    category,
+                    subCategory,
+                    recordTitle,
+                    updateData['date_updated']?.toString() ?? '',
+                    '', // description - not changed during revision
+                    '', // reminder_time - not changed during revision
+                    updateData['completion_counts'] as int? ?? 0,
+                    updateData['scheduled_date']?.toString() ?? '',
+                    List<String>.from(updateData['dates_updated'] ?? []),
+                    updateData['missed_counts'] as int? ?? 0,
+                    List<String>.from(updateData['dates_missed_revisions'] ?? []),
+                    updateData['status']?.toString() ?? 'Enabled',
+                  );
+                  
+                  print('Record update completed successfully');
+                  
+                  // Refresh widget data after update
+                  await service.forceDataReprocessing();
+                  final categorizedData = service.currentCategorizedData;
+                  
+                  if (categorizedData != null) {
+                    final todayRecords = categorizedData['today'] ?? [];
+                    final missedRecords = categorizedData['missed'] ?? [];
+                    final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+                    
+                    await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);                    print('Widget refreshed after record update');
+                  }
+                } catch (e) {
+                  updateResult = 'ERROR:${e.toString()}';
+                  errorMessage = e.toString();
+                  print('Record update failed: $e');
                 }
               }
-            }
-            await service.forceDataReprocessing();
-            final categorizedData = service.currentCategorizedData;
-            
-            if (categorizedData != null) {
-              final todayRecords = categorizedData['today'] ?? [];
-              final missedRecords = categorizedData['missed'] ?? [];
-              final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-              
-              await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-              print('Widget refreshed after record update');
             }
           }
         } catch (e) {
@@ -395,13 +389,13 @@ class HomeWidgetService {
           updateResult = 'ERROR:${e.toString()}';
           errorMessage = e.toString();
         }
-          // Save the result to SharedPreferences for the Android side to read
+        
+        // Save the result to SharedPreferences for the Android side to read
         if (requestId.isNotEmpty) {
           await HomeWidget.saveWidgetData('record_update_result_$requestId', updateResult);
           print('Update result stored for requestId $requestId: $updateResult');
         }
-        
-      } catch (e) {
+          } catch (e) {
         print('Error in record update background callback: $e');
         
         // If we have a requestId, save the error result
@@ -409,7 +403,8 @@ class HomeWidgetService {
         if (requestId.isNotEmpty) {
           await HomeWidget.saveWidgetData('record_update_result_$requestId', 'ERROR:${e.toString()}');
         }
-      }} else if (uri?.host == 'record_create') {
+      }
+    } else if (uri?.host == 'record_create') {
       try {
         print('Starting record creation background processing...');
         
@@ -444,23 +439,23 @@ class HomeWidgetService {
             print('Error parsing JSON data: $e');
             saveResult = 'ERROR:Failed to parse save data';
             errorMessage = 'Failed to parse save data: $e';
-          }
-            if (saveResult == 'SUCCESS') {
-            // Initialize database service with retry logic
-            final service = CombinedDatabaseService();
-            service.initialize();
-            
-            // Wait a moment for Firebase to be fully ready
-            await Future.delayed(Duration(milliseconds: 500));
-            
-            // Ensure Firebase is authenticated before proceeding
-            int retryCount = 0;
-            const maxRetries = 3;
-            bool operationSuccessful = false;
-            
-            while (retryCount < maxRetries && !operationSuccessful) {
-              try {
-                print('Attempting record creation (attempt ${retryCount + 1}/$maxRetries)');
+          }          if (saveResult == 'SUCCESS') {
+            try {
+              print('Initializing database service for record creation...');
+              
+              // Initialize database service - it will handle guest vs Firebase mode internally
+              final service = CombinedDatabaseService();
+              service.initialize();
+              
+              // Wait for database service to be ready with a reasonable timeout
+              print('Waiting for database service to be ready...');
+              final isServiceReady = await _waitForDatabaseServiceReady(service, maxWaitSeconds: 8);
+              
+              if (!isServiceReady) {
+                saveResult = 'ERROR:Database service initialization timeout';
+                errorMessage = 'Database service failed to initialize within timeout period';
+              } else {
+                print('Database service ready, creating record...');
                 
                 // Create the record using updateRecordsWithoutContext
                 await service.updateRecordsWithoutContext(
@@ -478,7 +473,6 @@ class HomeWidgetService {
                   customFrequencyParams,
                 );
                 
-                operationSuccessful = true;
                 print('Record creation completed successfully');
                 
                 // Refresh widget data after creation
@@ -493,17 +487,11 @@ class HomeWidgetService {
                   await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
                   print('Widget refreshed after record creation');
                 }
-              } catch (e) {
-                retryCount++;
-                print('Record creation attempt $retryCount failed: $e');
-                
-                if (retryCount < maxRetries) {
-                  print('Retrying in ${retryCount * 1000}ms...');
-                  await Future.delayed(Duration(milliseconds: retryCount * 1000));
-                } else {
-                  throw e; // Re-throw on final failure
-                }
               }
+            } catch (e) {
+              saveResult = 'ERROR:${e.toString()}';
+              errorMessage = e.toString();
+              print('Record creation failed: $e');
             }
           }
         } catch (e) {
@@ -522,17 +510,80 @@ class HomeWidgetService {
           // If we have a requestId, save the error result
         final requestId = uri?.queryParameters['requestId'] ?? '';
         if (requestId.isNotEmpty) {
-          await HomeWidget.saveWidgetData('record_save_result_$requestId', 'ERROR:${e.toString()}');
-        }
+          await HomeWidget.saveWidgetData('record_save_result_$requestId', 'ERROR:${e.toString()}');        }
       }
     }
   }
-
-  static Future<void> _ensureInitialized() async {
-    if (!_isInitialized) {
-      HomeWidget.setAppGroupId(appGroupId);
-      _isInitialized = true;
+  /// Waits for Firebase to be properly initialized and ready for operations
+  /// Skips Firebase checks if user is in guest mode
+  static Future<bool> _waitForFirebaseReady({int maxWaitSeconds = 10}) async {
+    // Check if we're in guest mode first
+    final isGuestMode = await GuestAuthService.isGuestMode();
+    if (isGuestMode) {
+      print('Guest mode detected - skipping Firebase connectivity checks');
+      return true; // Guest mode doesn't need Firebase
     }
+    
+    print('Firebase mode detected - checking Firebase connectivity...');
+    final stopwatch = Stopwatch()..start();
+    
+    while (stopwatch.elapsedMilliseconds < maxWaitSeconds * 1000) {
+      try {        // Test Firebase connection by checking auth state first
+        final auth = FirebaseAuth.instance;
+        final currentUser = auth.currentUser;
+        
+        // Test database connection with a minimal read operation
+        final database = FirebaseDatabase.instance;
+        final testRef = database.ref().child('.info/connected');
+        final snapshot = await testRef.get().timeout(Duration(seconds: 2));
+        
+        if (snapshot.exists) {
+          print('Firebase is ready - Auth: ${currentUser != null}, Database: connected');
+          return true;
+        }
+      } catch (e) {
+        print('Firebase not ready yet: $e');
+      }
+      
+      // Wait before next check
+      await Future.delayed(Duration(milliseconds: 250));
+    }
+    
+    print('Firebase initialization timeout after ${maxWaitSeconds}s');
+    return false;
+  }  /// Waits for CombinedDatabaseService to be properly initialized
+  /// Handles both Firebase and guest mode appropriately
+  static Future<bool> _waitForDatabaseServiceReady(CombinedDatabaseService service, {int maxWaitSeconds = 5}) async {
+    // Check guest mode once at the beginning
+    final isGuestMode = await GuestAuthService.isGuestMode();
+    print('Database service readiness check - Guest mode: $isGuestMode');
+    
+    final stopwatch = Stopwatch()..start();
+    
+    while (stopwatch.elapsedMilliseconds < maxWaitSeconds * 1000) {
+      try {
+        if (isGuestMode) {
+          // For guest mode, just verify the service is initialized
+          // Guest mode uses LocalDatabaseService which is always available
+          print('Guest mode - service ready');
+          return true;        } else {
+          // For Firebase mode, test if the service can access user data
+          final testData = service.currentRawData;
+          if (testData != null) {
+            print('Firebase mode - CombinedDatabaseService is ready with user data');
+            return true;
+          }
+        }
+      } catch (e) {
+        print('Database service not ready yet (Guest: $isGuestMode): $e');
+      }
+      
+      // Wait before next check
+      await Future.delayed(Duration(milliseconds: 200));
+    }
+    
+    print('Database service initialization timeout after ${maxWaitSeconds}s');
+    return false;
   }
 
   static Future<void> _updateWidgetSilently() async {
@@ -682,6 +733,13 @@ class HomeWidgetService {
       }
     } catch (e) {
       print('Error monitoring frequency data requests: $e');
+    }
+  }
+
+  static Future<void> _ensureInitialized() async {
+    if (!_isInitialized) {
+      HomeWidget.setAppGroupId(appGroupId);
+      _isInitialized = true;
     }
   }
 }
