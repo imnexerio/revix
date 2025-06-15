@@ -245,6 +245,30 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
+                <!-- Alarm Type -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Alarm Type"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    app:contentPadding="0dp">
+
+                    <Spinner
+                        android:id="@+id/alarm_type_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:paddingHorizontal="12dp"
+                        android:background="@drawable/spinner_border" />
+                </androidx.cardview.widget.CardView>
+
                 <!-- Initiation Date -->
                 <TextView
                     android:layout_width="wrap_content"
