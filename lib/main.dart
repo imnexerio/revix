@@ -25,6 +25,8 @@ void main() async {
   
   // Only do minimal initialization here for fast splash screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Initialize Hive
+  await Hive.initFlutter();
   
   // Initialize HomeWidget service for background callbacks
   if (PlatformUtils.instance.isAndroid) {
@@ -55,9 +57,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initializeApp() async {
     try {
-      // Initialize Hive
-      await Hive.initFlutter();
-      
+            
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
