@@ -694,14 +694,9 @@ class HomeWidgetService {
       iOSName: 'TodayWidget',
     );
 
-    // Notify the native side that data was updated from Flutter
-    const platform = MethodChannel('com.imnexerio.revix/widget_refresh');
-    try {
-      await platform.invokeMethod('refreshCompleted');
-    } catch (e) {
-      print('Error notifying native side about widget refresh: $e');
-      // Channel might not be initialized yet, which is fine
-    }
+    // Note: Method channel notifications are not available in background contexts
+    // The HomeWidget.updateWidget() call above already handles the native widget update
+    print('Widget updated via HomeWidget package');
   }
 
   /// Method to monitor and respond to frequency data requests from native code

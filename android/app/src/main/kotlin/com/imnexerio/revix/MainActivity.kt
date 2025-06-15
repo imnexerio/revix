@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Bundle
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "revix/widget_refresh"
+    private val CHANNEL = "com.imnexerio.revix/widget_refresh"
     private val UPDATE_RECORDS_CHANNEL = "revix/update_records"
     private lateinit var batteryOptManager: BatteryOptimizationManager
 
@@ -20,7 +20,8 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
-        // Widget refresh channel
+        // Widget refresh channel (for manual refresh from main app context only)
+        // Note: Background widget updates use HomeWidget package directly, not this channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "refreshCompleted") {
                 val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
