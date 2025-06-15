@@ -37,7 +37,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
     "endDate": null
   };
   String start_timestamp = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
-
+  // Alarm type field
+  int _alarmType = 0; // 0: no reminder, 1: notification only, 2: vibration only, 3: sound, 4: sound + vibration, 5: loud alarm
+  final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];
 
   // Custom frequency parameters
   Map<String, dynamic> _customFrequencyParams = {};
@@ -52,6 +54,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     _setInitialDate();
     _setScheduledDate();
     _timeController.text = 'All Day';
+    _alarmType = 0; // Initialize alarm type to no reminder
   }
   Future<void> _loadCategoriesAndSubCategories() async {
     try {
@@ -81,9 +84,13 @@ class _AddLectureFormState extends State<AddLectureForm> {
         message: 'Error loading categories and sub categories: $e',
       );
     }
-  }  Future<void> UpdateRecords(BuildContext context) async {
+  }
+  Future<void> UpdateRecords(BuildContext context) async {
     try {
       final unifiedService = UnifiedDatabaseService();
+      
+      // Set alarm type to 0 if "All Day" is selected
+      int finalAlarmType = _timeController.text == 'All Day' ? 0 : _alarmType;
       
       await unifiedService.updateRecords(
         context,
@@ -99,6 +106,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
         _revisionFrequency,
         _durationData,
         _customFrequencyParams,
+        finalAlarmType,
       );
     } catch (e) {
       throw Exception('Failed to save lecture: $e');
@@ -543,6 +551,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                   } else {
                                     // Set to "All Day" (all day)
                                     _timeController.text = 'All Day';
+                                    // Reset alarm type to no reminder when "All Day" is selected
+                                    _alarmType = 0;
                                   }
                                 });
                               },
@@ -567,6 +577,78 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ],
                       ),
                     ),
+                    // Alarm Type Field (only shown when not "All Day")
+                    if (_timeController.text != 'All Day')
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(context).cardColor,
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.alarm,
+                                    size: 20,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Alarm Type',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).hintColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _alarmOptions.asMap().entries.map((entry) {
+                                  int index = entry.key;
+                                  String option = entry.value;
+                                  return FilterChip(
+                                    label: Text(
+                                      option,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: _alarmType == index ? FontWeight.w600 : FontWeight.normal,
+                                      ),
+                                    ),
+                                    selected: _alarmType == index,
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        setState(() {
+                                          _alarmType = index;
+                                        });
+                                      }
+                                    },
+                                    selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                                    checkmarkColor: Theme.of(context).primaryColor,
+                                    backgroundColor: Theme.of(context).colorScheme.surface,
+                                    side: BorderSide(
+                                      color: _alarmType == index 
+                                        ? Theme.of(context).primaryColor 
+                                        : Theme.of(context).dividerColor,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
 
                     // Initiation Date Field
                     Container(

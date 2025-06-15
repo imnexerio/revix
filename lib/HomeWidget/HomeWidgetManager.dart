@@ -399,6 +399,7 @@ class HomeWidgetService {
         final revisionFrequency = uri?.queryParameters['revisionFrequency'] ?? '';
         final durationDataStr = uri?.queryParameters['durationData'] ?? '{}';
         final customFrequencyParamsStr = uri?.queryParameters['customFrequencyParams'] ?? '{}';
+        final alarmTypeStr = uri?.queryParameters['alarmType'] ?? '0';
         final requestId = uri?.queryParameters['requestId'] ?? '';
 
         print('Creating record: $selectedCategory - $selectedCategoryCode - $title (RequestID: $requestId)');
@@ -409,9 +410,11 @@ class HomeWidgetService {
           // Parse JSON data
           Map<String, dynamic> durationData = {};
           Map<String, dynamic> customFrequencyParams = {};
+          int alarmType = 0;
           try {
             durationData = Map<String, dynamic>.from(json.decode(durationDataStr) as Map);
             customFrequencyParams = Map<String, dynamic>.from(json.decode(customFrequencyParamsStr) as Map);
+            alarmType = int.tryParse(alarmTypeStr) ?? 0;
           } catch (e) {
             print('Error parsing JSON data: $e');
             saveResult = 'ERROR:Failed to parse save data';
@@ -451,6 +454,7 @@ class HomeWidgetService {
                   revisionFrequency,
                   durationData,
                   customFrequencyParams,
+                  alarmType,
                 );
 
                 print('Record creation completed successfully');

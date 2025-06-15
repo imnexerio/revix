@@ -41,6 +41,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private lateinit var reminderDurationText: TextView
     private lateinit var cancelButton: Button
     private lateinit var revision_FrequencyCard: CardView
+    private lateinit var alarmTypeSpinner: Spinner
 
     // Data
     private var subjects = mutableListOf<String>()
@@ -52,6 +53,10 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private var todayDate = ""
     private var dateScheduled = ""
     private var noRevision = 0
+
+    // Alarm type variables
+    private var alarmType = 0 // 0: no reminder, 1: notification only, 2: vibration only, 3: sound, 4: sound + vibration, 5: loud alarm
+    private val alarmOptions = listOf("No Reminder", "Notification Only", "Vibration Only", "Sound", "Sound + Vibration", "Loud Alarm")
 
     private var duration = "Forever"
     private val durationOptions = listOf("Forever", "Specific Number of Times", "Until")
@@ -106,18 +111,54 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         reminderDurationText = findViewById(R.id.reminder_duration_text)
         cancelButton = findViewById(R.id.cancel_button)
         revision_FrequencyCard = findViewById(R.id.revision_frequency_card)
-
-        // Set up initial states
+        alarmTypeSpinner = findViewById(R.id.alarm_type_spinner)        // Set up initial states
         addNewCategoryLayout.visibility = View.GONE
         addNewSubCategoryLayout.visibility = View.GONE
         reminderTimeEditText.setText("All Day")
         setupDurationSpinner()
+        setupAlarmTypeSpinner()
 
         // Set up checkboxes initial state
         // Set initial checkbox states
         initiationDateCheckbox.isChecked = false
         reviewFrequencyCheckbox.isChecked = false
-    }    private fun loadCustomData() {
+    }
+
+    private fun setupAlarmTypeSpinner() {
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            alarmOptions
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        alarmTypeSpinner.adapter = adapter
+
+        alarmTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                alarmType = position
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
+            }
+        }
+        
+        // Update initial visibility based on current reminder time
+        updateAlarmTypeVisibility()
+    }
+
+    private fun updateAlarmTypeVisibility() {
+        val isAllDay = reminderTimeEditText.text.toString() == "All Day"
+        if (isAllDay) {
+            alarmTypeSpinner.visibility = View.GONE
+            alarmType = 0 // Reset to "No Reminder" when hidden
+            alarmTypeSpinner.setSelection(0)
+        } else {
+            alarmTypeSpinner.visibility = View.VISIBLE
+        }
+    }
+
+    private fun loadCustomData() {
         // Show a loading indicator if needed
 
         // First, trigger a frequency data refresh to ensure we have the latest data
@@ -448,6 +489,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
                 reminderTimeEditText.setText(timeFormat.format(now.time))
             }
+            updateAlarmTypeVisibility()
         }
 
         // Initiation date checkbox
@@ -716,6 +758,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 allDayCheckBox.isChecked = false
                 val time = String.format("%02d:%02d", selectedHour, selectedMinute)
                 reminderTimeEditText.setText(time)
+                updateAlarmTypeVisibility()
             },
             hour,
             minute,
@@ -856,6 +899,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             recordData["recurrence_frequency"] = revisionFrequency
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
+            recordData["alarm_type"] = alarmType
 
             // If we have custom frequency data and it's not "Unspecified" or "No Repetition"
             if (revisionFrequency == "Custom" && !isUnspecifiedInitiationDate && !isNoRepetition) {
@@ -884,7 +928,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 } else {
                     "{}"
                 }
-                
+
                 val uri = android.net.Uri.parse("homeWidget://record_create").buildUpon()
                     .appendQueryParameter("selectedCategory", selectedCategory)
                     .appendQueryParameter("selectedCategoryCode", selectedCategoryCode)
@@ -898,6 +942,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     .appendQueryParameter("revisionFrequency", revisionFrequency)
                     .appendQueryParameter("durationData", durationDataJson)
                     .appendQueryParameter("customFrequencyParams", customFrequencyParamsJson)
+                    .appendQueryParameter("alarmType", alarmType.toString())
                     .appendQueryParameter("requestId", requestId) // Add request ID for tracking
                     .build()
                 
@@ -1084,13 +1129,13 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                         val parts = key.split("_")
                         if (parts.size >= 4) {
                             val timestamp = parts[3].toLongOrNull()
-                            if (timestamp != null && (currentTime - timestamp) > 60000) { // 1 minute
+                            if (timestamp != null && (currentTime - timestamp) > 60 * 1000) {
+                                // This entry is older than 1 minute, remove it
                                 editor.remove(key)
                             }
                         }
                     } catch (e: Exception) {
-                        // If we can't parse the timestamp, remove the entry
-                        editor.remove(key)
+                        // Ignore errors in cleanup
                     }
                 }
             }

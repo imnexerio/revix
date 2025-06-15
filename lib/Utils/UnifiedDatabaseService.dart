@@ -655,6 +655,7 @@ class CombinedDatabaseService {
     String revisionFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
+    int alarmType,
   ) async {
     try {
       int completionCounts = 0;
@@ -688,6 +689,7 @@ class CombinedDatabaseService {
       Map<String, dynamic> recordData = {
         'start_timestamp': startTimestamp,
         'reminder_time': timeController,
+        'alarm_type': alarmType,
         'entry_type': lectureType,
         'date_initiated': todayDate,
         'date_updated': todayDate,
@@ -716,7 +718,6 @@ class CombinedDatabaseService {
       throw Exception('Failed to save lecture: $e');
     }
   }
-
   // Add UpdateRecords method without context for method channel calls
   Future<void> updateRecordsWithoutContext(
     String selectedCategory,
@@ -731,6 +732,7 @@ class CombinedDatabaseService {
     String revisionFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
+    int alarmType,
   ) async {
     try {
       int completionCounts = 0;
@@ -764,6 +766,7 @@ class CombinedDatabaseService {
       Map<String, dynamic> recordData = {
         'start_timestamp': startTimestamp,
         'reminder_time': timeController,
+        'alarm_type': alarmType,
         'entry_type': lectureType,
         'date_initiated': todayDate,
         'date_updated': todayDate,
@@ -989,6 +992,7 @@ class UnifiedDatabaseService {
     String revisionFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
+    int alarmType,
   ) async {
     return await _service.updateRecords(
       context,
@@ -1004,6 +1008,7 @@ class UnifiedDatabaseService {
       revisionFrequency,
       durationData,
       customFrequencyParams,
+      alarmType,
     );
   }
 }
