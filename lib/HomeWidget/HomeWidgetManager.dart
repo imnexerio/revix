@@ -265,7 +265,16 @@ class HomeWidgetService {
         try {
           // Wait for Firebase to be properly initialized
           print('Waiting for Firebase to be ready...');
-          final isFirebaseReady = await _waitForFirebaseReady();
+          bool isFirebaseReady = await _waitForFirebaseReady();
+
+          // If Firebase is not ready, try to restore authentication once
+          if (!isFirebaseReady) {
+            print('Firebase not ready, attempting authentication restore...');
+            final authRestored = await _attemptAuthenticationRestore();
+            if (authRestored) {
+              isFirebaseReady = await _waitForFirebaseReady(maxWaitSeconds: 5);
+            }
+          }
 
           if (!isFirebaseReady) {
             updateResult = 'ERROR:Firebase initialization timeout';
@@ -310,8 +319,45 @@ class HomeWidgetService {
                   print('Widget refreshed after record update');
                 }
               } catch (e) {
-                updateResult = 'ERROR:${e.toString()}';
-                print('Record update failed: $e');
+                // If we get an authentication-related error, try to restore auth and retry once
+                if (e.toString().contains('Invalid token in path') && !isGuestMode) {
+                  print('Authentication error detected, attempting recovery...');
+                  final authRestored = await _attemptAuthenticationRestore();
+                  if (authRestored) {
+                    try {
+                      print('Retrying record update after authentication recovery...');
+                      await MarkAsDoneService.markAsDone(
+                        context: null,
+                        category: category,
+                        subCategory: subCategory,
+                        lectureNo: recordTitle,
+                      );
+                      print('Record update retry succeeded');
+                      
+                      // Refresh widget data after successful retry
+                      await service.forceDataReprocessing();
+                      final categorizedData = service.currentCategorizedData;
+
+                      if (categorizedData != null) {
+                        final todayRecords = categorizedData['today'] ?? [];
+                        final missedRecords = categorizedData['missed'] ?? [];
+                        final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+
+                        await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                        print('Widget refreshed after record update retry');
+                      }
+                    } catch (retryError) {
+                      updateResult = 'ERROR:Retry failed: ${retryError.toString()}';
+                      print('Record update retry failed: $retryError');
+                    }
+                  } else {
+                    updateResult = 'ERROR:Authentication recovery failed: ${e.toString()}';
+                    print('Authentication recovery failed: $e');
+                  }
+                } else {
+                  updateResult = 'ERROR:${e.toString()}';
+                  print('Record update failed: $e');
+                }
               }
             }
           }
@@ -448,9 +494,7 @@ class HomeWidgetService {
         }
       }
     }
-  }
-
-  /// Waits for Firebase to be properly initialized and ready for operations
+  }  /// Waits for Firebase to be properly initialized and ready for operations
   /// Skips Firebase checks if user is in guest mode
   static Future<bool> _waitForFirebaseReady({int maxWaitSeconds = 10}) async {
     // Check if we're in guest mode first
@@ -469,21 +513,46 @@ class HomeWidgetService {
         final auth = FirebaseAuth.instance;
         final currentUser = auth.currentUser;
 
-        // Test database connection with a minimal read operation
-        final database = FirebaseDatabase.instance;
-        final testRef = database.ref().child('.info/connected');
-        final snapshot = await testRef.get().timeout(const Duration(seconds: 2));
-
-        if (snapshot.exists) {
-          print('Firebase is ready - Auth: ${currentUser != null}, Database: connected');
-          return true;
+        // If no user is authenticated, we can't proceed with Firebase operations
+        if (currentUser == null) {
+          print('No authenticated user found for Firebase operations');
+          return false;
         }
+
+        // Additional validation - check if user has a valid UID
+        if (currentUser.uid.isEmpty) {
+          print('Authenticated user has invalid/empty UID');
+          return false;
+        }
+
+        // Test that we can actually perform a database operation with the user's credentials
+        // Try to read from the user's own data path to validate the authentication token
+        final database = FirebaseDatabase.instance;
+        final userTestRef = database.ref('users/${currentUser.uid}');
+        
+        try {
+          // This will fail with "Invalid token in path" if the auth token is invalid
+          final userSnapshot = await userTestRef.get().timeout(const Duration(seconds: 3));
+          
+          // If we get here, the authentication token is valid for database operations
+          print('Firebase is ready - Auth: ${currentUser.uid}, Database: accessible');
+          return true;
+        } catch (dbError) {
+          // If we get "Invalid token in path" or similar, the auth token is invalid
+          if (dbError.toString().contains('Invalid token in path')) {
+            print('Firebase authentication token is invalid or expired: $dbError');
+            return false;
+          }
+          // For other database errors, continue trying
+          print('Database test failed, continuing: $dbError');
+        }
+
       } catch (e) {
         print('Firebase not ready yet: $e');
       }
 
       // Wait before next check
-      await Future.delayed(const Duration(milliseconds: 250));
+      await Future.delayed(const Duration(milliseconds: 500));
     }
 
     print('Firebase initialization timeout after ${maxWaitSeconds}s');
@@ -658,6 +727,34 @@ class HomeWidgetService {
     if (!_isInitialized) {
       HomeWidget.setAppGroupId(appGroupId);
       _isInitialized = true;
+    }
+  }
+
+  /// Attempts to restore Firebase authentication for background operations
+  static Future<bool> _attemptAuthenticationRestore() async {
+    try {
+      final auth = FirebaseAuth.instance;
+      final currentUser = auth.currentUser;
+      
+      if (currentUser == null) {
+        print('No authenticated user found - cannot restore authentication');
+        return false;
+      }
+
+      // Try to refresh the authentication token
+      print('Attempting to refresh authentication token...');
+      await currentUser.reload();
+      
+      // Verify the token is now valid by testing a simple database operation
+      final database = FirebaseDatabase.instance;
+      final testRef = database.ref('users/${currentUser.uid}');
+      await testRef.get().timeout(const Duration(seconds: 3));
+      
+      print('Authentication token refreshed successfully');
+      return true;
+    } catch (e) {
+      print('Failed to restore authentication: $e');
+      return false;
     }
   }
 }

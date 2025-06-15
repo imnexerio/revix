@@ -128,9 +128,20 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                     val keys = extras.keySet()
                     for (key in keys) {
                         if (key != "category" && key != "sub_category" && key != "record_title") {
-                            val value = extras.getString(key)
-                            if (value != null) {
-                                clickIntent.putExtra(key, value)
+                            // Handle different value types properly
+                            when (val value = extras.get(key)) {
+                                is String -> clickIntent.putExtra(key, value)
+                                is Int -> clickIntent.putExtra(key, value.toString())
+                                is Long -> clickIntent.putExtra(key, value.toString())
+                                is Float -> clickIntent.putExtra(key, value.toString())
+                                is Double -> clickIntent.putExtra(key, value.toString())
+                                is Boolean -> clickIntent.putExtra(key, value.toString())
+                                // Skip appWidgetId and other non-string types we don't need
+                                else -> {
+                                    if (key != "appWidgetId") {
+                                        Log.d("TodayWidget", "Skipping non-string extra: $key with type ${value?.javaClass?.simpleName}")
+                                    }
+                                }
                             }
                         }
                     }

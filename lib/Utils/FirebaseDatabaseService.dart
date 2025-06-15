@@ -648,21 +648,30 @@ class FirebaseDatabaseService {
       return false;
     }
   }
-  
-  /// Update a record in user data
+    /// Update a record in user data
   Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
     try {
       if (await isGuestMode) {
         return await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
       } else {
-        if (currentUserId == null) return false;
+        // Additional validation for Firebase operations
+        final currentUserId = this.currentUserId;
+        if (currentUserId == null || currentUserId.isEmpty) {
+          print('Error: No valid authenticated user for Firebase update operation');
+          return false;
+        }
         
+        print('Attempting Firebase record update for user: $currentUserId');
         DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
         await ref.update(updates);
+        print('Firebase record update completed successfully');
         return true;
       }
     } catch (e) {
       print('Error updating record: $e');
+      if (e.toString().contains('Invalid token in path')) {
+        print('Authentication token invalid - user may need to re-authenticate');
+      }
       return false;
     }
   }

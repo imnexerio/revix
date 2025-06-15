@@ -69,6 +69,13 @@ class CombinedDatabaseService {
           _addErrorToAllControllers('No authenticated user');
           return;
         }
+        
+        // Additional validation to ensure user has valid UID
+        if (user.uid.isEmpty) {
+          _addErrorToAllControllers('Authenticated user has invalid UID');
+          return;
+        }
+        
         _initialize(user.uid);
       }
     } catch (e) {
@@ -132,8 +139,17 @@ class CombinedDatabaseService {
       });
     }
   }  void _initialize(String uid) {
-    _databaseRef = _database.ref('users/$uid/user_data');
-    _setupDataListener();
+    if (uid.isEmpty) {
+      _addErrorToAllControllers('Invalid user ID - cannot initialize Firebase database reference');
+      return;
+    }
+    
+    try {
+      _databaseRef = _database.ref('users/$uid/user_data');
+      _setupDataListener();
+    } catch (e) {
+      _addErrorToAllControllers('Failed to create database reference for user $uid: $e');
+    }
   }
   void _processDataChange(dynamic rawData) {
     // Ensure PlatformUtils is initialized for background contexts
