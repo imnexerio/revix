@@ -12,7 +12,6 @@ import android.widget.RemoteViews
 import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONException
-import com.imnexerio.revix.R
 
 class TodayWidget : AppWidgetProvider() {    companion object {
         const val ACTION_REFRESH = "revix.ACTION_REFRESH"
