@@ -7,6 +7,7 @@ import 'ApiKeyManager.dart';
 import 'ChatHistoryPage.dart';
 import 'ChatMessage.dart';
 import 'ChatStorage.dart';
+import 'ModelSelectionManager.dart';
 
 class ChatPage extends StatefulWidget {
   final String? conversationId;
@@ -91,22 +92,22 @@ class _ChatPageState extends State<ChatPage> {
   }
 
 
-
   Future<void> _initializeGeminiService() async {
     final apiKey = await ApiKeyManager.getApiKey();
+    final selectedModel = await ModelSelectionManager.getSelectedModel();
     if (apiKey != null && apiKey.isNotEmpty) {
-      _geminiService = GeminiService(apiKey: apiKey);
+      _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
       _aiEnabled = _geminiService.isAvailable;
     }
   }
-
   Future<void> _showApiKeyDialog() async {
     final apiKey = await ApiKeyManager.showApiKeyDialog(context);
     if (apiKey != null && apiKey.isNotEmpty) {
       await ApiKeyManager.saveApiKey(apiKey);
-      // Reinitialize the service with the new API key
+      // Reinitialize the service with the new API key and selected model
+      final selectedModel = await ModelSelectionManager.getSelectedModel();
       setState(() {
-        _geminiService = GeminiService(apiKey: apiKey);
+        _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
         _aiEnabled = _geminiService.isAvailable;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,6 +129,42 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _showModelSelectionDialog() async {
+    final selectedModel = await ModelSelectionManager.showModelSelectionDialog(context);
+    if (selectedModel != null) {
+      await ModelSelectionManager.saveSelectedModel(selectedModel);
+      
+      // Reinitialize the service with the new model if API key exists
+      final apiKey = await ApiKeyManager.getApiKey();
+      if (apiKey != null && apiKey.isNotEmpty) {
+        setState(() {
+          _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
+          _aiEnabled = _geminiService.isAvailable;
+        });
+          ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Model changed to ${ModelSelectionManager.getModelDisplayName(selectedModel)}'),
+                Text(
+                  ModelSelectionManager.getModelDescription(selectedModel),
+                  style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -157,10 +194,9 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
   // In _ChatPageState class, modify the _initializeApp method
-
   Future<void> _initializeApp() async {
     try {
-      // Initialize with null API key first
+      // Initialize with null API key first (model doesn't matter yet)
       _geminiService = GeminiService(apiKey: null);
 
       // Check if API key exists and initialize Gemini if it does
@@ -300,6 +336,12 @@ class _ChatPageState extends State<ChatPage> {
     ChatStorage.saveConversation(_currentConversationId, messagesData);
   }
 
+  // Get current model display name for UI
+  Future<String> _getCurrentModelDisplay() async {
+    final currentModel = await ModelSelectionManager.getSelectedModel();
+    return ModelSelectionManager.getModelDisplayName(currentModel);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -382,10 +424,48 @@ class _ChatPageState extends State<ChatPage> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ],
-                        ),
+                          ],                        ),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 8),                  // Model selection button
+                  FutureBuilder<String>(
+                    future: _getCurrentModelDisplay(),
+                    builder: (context, snapshot) {
+                      String currentModel = snapshot.data ?? 'Loading...';
+                      return Tooltip(
+                        message: 'Current model: $currentModel\nTap to change',
+                        child: Material(
+                          borderRadius: BorderRadius.circular(20),
+                          color: colorScheme.secondaryContainer.withOpacity(0.8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: _showModelSelectionDialog,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.psychology,
+                                    size: 16,
+                                    color: colorScheme.onSecondaryContainer,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Model',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSecondaryContainer,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 8),
                   // History button
