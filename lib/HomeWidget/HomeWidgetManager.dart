@@ -40,6 +40,8 @@ class HomeWidgetService {
       // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
 
+      await _initializeWidgetData();
+
 
       _isInitialized = true;
     } catch (e) {
