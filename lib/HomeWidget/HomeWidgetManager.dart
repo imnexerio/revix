@@ -40,8 +40,6 @@ class HomeWidgetService {
       // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
 
-      // Initialize data for AddLectureActivity access using existing database services
-      await _initializeWidgetData();      // Check for any pending frequency data request
 
       _isInitialized = true;
     } catch (e) {
@@ -147,11 +145,6 @@ class HomeWidgetService {
     } catch (e) {
       print('Error updating categories from service: $e');
     }
-  }
-
-  /// Public method to update all widget data - can be called from other parts of the app
-  static Future<void> updateFrequencyDataStatic() async {
-    await _initializeWidgetData();
   }
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
