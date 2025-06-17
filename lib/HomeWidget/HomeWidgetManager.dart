@@ -271,14 +271,9 @@ class HomeWidgetService {
             final service = CombinedDatabaseService();
             await service.initialize();
 
-            // Wait for database service to be ready (shorter timeout for guest mode)
-            print('Waiting for database service to be ready...');
-            final isGuestMode = await GuestAuthService.isGuestMode();
             try {
               print('All services ready, updating record using MarkAsDoneService...');
 
-              // Use the simplified MarkAsDoneService approach
-              // No context needed for background processing
               await MarkAsDoneService.markAsDone(
                 context: null, // Background processing - no UI context
                 category: category,
@@ -301,45 +296,8 @@ class HomeWidgetService {
                 print('Widget refreshed after record update');
               }
             } catch (e) {
-              // If we get an authentication-related error, try to restore auth and retry once
-              if (e.toString().contains('Invalid token in path') && !isGuestMode) {
-                print('Authentication error detected, attempting recovery...');
-                final authRestored = await _attemptAuthenticationRestore();
-                if (authRestored) {
-                  try {
-                    print('Retrying record update after authentication recovery...');
-                    await MarkAsDoneService.markAsDone(
-                      context: null,
-                      category: category,
-                      subCategory: subCategory,
-                      lectureNo: recordTitle,
-                    );
-                    print('Record update retry succeeded');
-
-                    // Refresh widget data after successful retry
-                    await service.forceDataReprocessing();
-                    final categorizedData = service.currentCategorizedData;
-
-                    if (categorizedData != null) {
-                      final todayRecords = categorizedData['today'] ?? [];
-                      final missedRecords = categorizedData['missed'] ?? [];
-                      final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-
-                      await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-                      print('Widget refreshed after record update retry');
-                    }
-                  } catch (retryError) {
-                    updateResult = 'ERROR:Retry failed: ${retryError.toString()}';
-                    print('Record update retry failed: $retryError');
-                  }
-                } else {
-                  updateResult = 'ERROR:Authentication recovery failed: ${e.toString()}';
-                  print('Authentication recovery failed: $e');
-                }
-              } else {
-                updateResult = 'ERROR:${e.toString()}';
-                print('Record update failed: $e');
-              }
+              updateResult = 'ERROR:${e.toString()}';
+              print('Record update failed: $e');
             }
         } catch (e) {
           print('Error in background record update: $e');
@@ -586,34 +544,6 @@ class HomeWidgetService {
     if (!_isInitialized) {
       HomeWidget.setAppGroupId(appGroupId);
       _isInitialized = true;
-    }
-  }
-
-  /// Attempts to restore Firebase authentication for background operations
-  static Future<bool> _attemptAuthenticationRestore() async {
-    try {
-      final auth = FirebaseAuth.instance;
-      final currentUser = auth.currentUser;
-      
-      if (currentUser == null) {
-        print('No authenticated user found - cannot restore authentication');
-        return false;
-      }
-
-      // Try to refresh the authentication token
-      print('Attempting to refresh authentication token...');
-      await currentUser.reload();
-      
-      // Verify the token is now valid by testing a simple database operation
-      final database = FirebaseDatabase.instance;
-      final testRef = database.ref('users/${currentUser.uid}');
-      await testRef.get().timeout(const Duration(seconds: 3));
-      
-      print('Authentication token refreshed successfully');
-      return true;
-    } catch (e) {
-      print('Failed to restore authentication: $e');
-      return false;
     }
   }
 }
