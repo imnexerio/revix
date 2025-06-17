@@ -10,6 +10,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'AI/ChatPage.dart';
 import 'CustomThemeGenerator.dart';
 import 'HomePage/HomePage.dart';
+import 'HomeWidget/HomeWidgetManager.dart';
 import 'SchedulePage/TodayPage.dart';
 import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
@@ -24,6 +25,11 @@ void main() async {
   
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
+
+  // Initialize HomeWidget service for background callbacks
+  if (PlatformUtils.instance.isAndroid) {
+    await HomeWidgetService.initialize();
+  }
   
   runApp(const MyApp());
 }

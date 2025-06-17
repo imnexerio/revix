@@ -42,8 +42,7 @@ class HomeWidgetService {
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Initialize data for AddLectureActivity access using existing database services
-      await _initializeWidgetData();      // Check for any pending frequency data requests
-      await monitorFrequencyDataRequests();
+      await _initializeWidgetData();      // Check for any pending frequency data request
 
       _isInitialized = true;
     } catch (e) {
@@ -171,9 +170,6 @@ class HomeWidgetService {
     if (uri?.host == 'widget_refresh') {
       try {
         print('Starting widget background refresh...');
-
-        // Check for frequency data update requests from native code
-        await monitorFrequencyDataRequests();
 
         final service = CombinedDatabaseService();
         print('CombinedDatabaseService created');
@@ -477,25 +473,6 @@ class HomeWidgetService {
     // Note: Method channel notifications are not available in background contexts
     // The HomeWidget.updateWidget() call above already handles the native widget update
     print('Widget updated via HomeWidget package');
-  }
-
-  /// Method to monitor and respond to frequency data requests from native code
-  static Future<void> monitorFrequencyDataRequests() async {
-    try {
-      // Check if native code has requested frequency data update
-      final prefs = await SharedPreferences.getInstance();
-      final requestTime = prefs.getInt('frequencyDataRequested');
-      final lastUpdateTime = prefs.getInt('frequencyDataLastUpdated') ?? 0;
-
-      if (requestTime != null && requestTime > lastUpdateTime) {
-        print('Widget data update requested by native code');
-        await _initializeWidgetData();
-        await prefs.setInt('frequencyDataLastUpdated', DateTime.now().millisecondsSinceEpoch);
-        print('All widget data updated in response to native request');
-      }
-    } catch (e) {
-      print('Error monitoring frequency data requests: $e');
-    }
   }
 
   static Future<void> _ensureInitialized() async {
