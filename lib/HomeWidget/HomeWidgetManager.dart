@@ -40,6 +40,9 @@ class HomeWidgetService {
       // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
 
+      // Initialize data for AddLectureActivity access using existing database services
+      await _initializeWidgetData();      // Check for any pending frequency data request
+
       _isInitialized = true;
     } catch (e) {
       if (e.toString().contains('already initialized')) {
@@ -146,6 +149,10 @@ class HomeWidgetService {
     }
   }
 
+  /// Public method to update all widget data - can be called from other parts of the app
+  static Future<void> updateFrequencyDataStatic() async {
+    await _initializeWidgetData();
+  }
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
@@ -402,14 +409,13 @@ class HomeWidgetService {
     await _updateWidgetSilently();
   }
 
+
   static Future<void> updateWidgetData(
       List<Map<String, dynamic>> todayRecords,
       List<Map<String, dynamic>> missedRecords,
       List<Map<String, dynamic>> noReminderDateRecords,
       ) async {
     try {
-      await _initializeWidgetData();
-
       // Format and save all three data categories
       await HomeWidget.saveWidgetData(
         todayRecordsKey,
