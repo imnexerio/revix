@@ -11,8 +11,10 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.imnexerio.revix/widget_refresh"
     private val UPDATE_RECORDS_CHANNEL = "revix/update_records"
     private val ALARM_MANAGER_CHANNEL = "revix/alarm_manager"
+    private val PERMISSION_CHANNEL = "revix/permissions"
     private lateinit var batteryOptManager: BatteryOptimizationManager
     private lateinit var alarmManagerHelper: AlarmManagerHelper
+    private lateinit var permissionManager: PermissionManager
 
     companion object {
         @JvmStatic
@@ -22,8 +24,10 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
-        // Initialize alarm manager helper
+        // Initialize managers
         alarmManagerHelper = AlarmManagerHelper(this)
+        batteryOptManager = BatteryOptimizationManager(this)
+        permissionManager = PermissionManager(this)
         
         // Widget refresh channel (for manual refresh from main app context only)
         // Note: Background widget updates use HomeWidget package directly, not this channel
@@ -130,6 +134,63 @@ class MainActivity : FlutterActivity() {
             }
         }
         
+        // Permission manager channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PERMISSION_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "checkAndRequestAllPermissions" -> {
+                    try {
+                        permissionManager.checkAndRequestAllPermissions()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("PERMISSION_ERROR", "Failed to check permissions: ${e.message}", null)
+                    }
+                }
+                "getPermissionStatus" -> {
+                    try {
+                        val status = permissionManager.getPermissionStatus()
+                        result.success(status)
+                    } catch (e: Exception) {
+                        result.error("STATUS_ERROR", "Failed to get permission status: ${e.message}", null)
+                    }
+                }
+                "requestNotificationPermission" -> {
+                    try {
+                        permissionManager.requestPostNotificationPermission()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("PERMISSION_ERROR", "Failed to request notification permission: ${e.message}", null)
+                    }
+                }
+                "requestExactAlarmPermission" -> {
+                    try {
+                        permissionManager.requestExactAlarmPermission()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("PERMISSION_ERROR", "Failed to request exact alarm permission: ${e.message}", null)
+                    }
+                }
+                "requestBatteryOptimization" -> {
+                    try {
+                        permissionManager.requestIgnoreBatteryOptimizations()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("PERMISSION_ERROR", "Failed to request battery optimization: ${e.message}", null)
+                    }
+                }
+                "openNotificationSettings" -> {
+                    try {
+                        permissionManager.openNotificationSettings()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("SETTINGS_ERROR", "Failed to open notification settings: ${e.message}", null)
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+        
         // Initialize update records channel for communication with services
         updateRecordsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_RECORDS_CHANNEL)
     }
@@ -137,17 +198,25 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize the battery optimization manager
+        // Initialize the battery optimization manager (legacy)
         batteryOptManager = BatteryOptimizationManager(this)
 
-        // Check if we need to request battery optimization exemption
-        if (batteryOptManager.shouldShowOptimizationRequest()) {
-            batteryOptManager.showBatteryOptimizationDialog()
-        }
+        // Automatically check and request all necessary permissions
+        // This will show dialogs sequentially for any missing permissions
+        permissionManager.checkAndRequestAllPermissions()
 
         if (intent?.extras?.getBoolean("widget_refresh") == true) {
             // Handle any widget-initiated refresh
         }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
 }
