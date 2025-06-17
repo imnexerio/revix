@@ -306,12 +306,12 @@ class AlarmService : Service() {
                     uriBuilder.append("${entry.key}=${entry.value}")
                 }
             }
-            
+
             val uri = Uri.parse(uriBuilder.toString())
             Log.d(TAG, "Triggering Flutter callback: $uri")
             
             // Use HomeWidget to trigger the background callback
-            HomeWidgetPlugin.updateWidget(this)
+            HomeWidgetPlugin.reloadWidgets(this)
             
             // Also trigger the callback directly
             // Note: This requires the background callback to be registered
