@@ -613,7 +613,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             // Let the spinner selection determine the frequency
             revisionFrequency = revisionFrequencySpinner.selectedItem.toString()
         }
-    }    private fun loadCategoriesAndSubCategories() {
+    }
+
+    private fun loadCategoriesAndSubCategories() {
         // Use CategoriesDataUtils to fetch data from SharedPreferences instead of direct Firebase call
         CategoriesDataUtils.fetchCategoriesAndSubCategories(this) { subjectsList, subCategoriesMap ->
             subjects.clear()
@@ -1085,7 +1087,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 
                 // If no valid data was parsed, use default tracking types
                 if (data.isEmpty()) {
-                    data.addAll(getDefaultTrackingTypes())
                     Log.d("AddLectureActivity", "No tracking types data found, using defaults: $data")
                 }
                 
@@ -1095,16 +1096,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 }
             } catch (e: Exception) {
                 Log.e("AddLectureActivity", "Error fetching tracking types: ${e.message}", e)
-                runOnUiThread {
-                    callback(getDefaultTrackingTypes())
-                }
             }
         }
-    }
-
-    // Get default tracking types when Flutter communication fails
-    private fun getDefaultTrackingTypes(): List<String> {
-        return listOf("Lectures", "Handouts", "Others")
     }
 
     override fun onDestroy() {
