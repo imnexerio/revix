@@ -17,7 +17,6 @@ import 'ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
 import 'firebase_options.dart';
-import 'HomeWidget/HomeWidgetManager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
