@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,8 +7,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
-
 import '../Utils/LocalDatabaseService.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
@@ -29,40 +26,54 @@ class HomeWidgetService {
   static const String trackingTypesKey = 'trackingTypes';
   static const String categoriesDataKey = 'categoriesData';
   static bool _isInitialized = false;
+  static bool _isBackgroundInitialized = false;
   static final CombinedDatabaseService _databaseService = CombinedDatabaseService();
-
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    HomeWidget.setAppGroupId(appGroupId);
-    // Set up widget background callback handling
-    HomeWidget.registerInteractivityCallback(backgroundCallback);
-    await _databaseService.initialize();
+    try {
+      // Simple initialization (same as main.dart)
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await Hive.initFlutter();
 
-    // Give a small delay for the service to initialize properly
-    await Future.delayed(const Duration(milliseconds: 100));
+      HomeWidget.setAppGroupId(appGroupId);
+      // Set up widget background callback handling
+      HomeWidget.registerInteractivityCallback(backgroundCallback);
+      await _databaseService.initialize();
 
-    // Check authentication status using both Firebase and guest mode
-    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
-    final bool isGuestMode = await GuestAuthService.isGuestMode();
-    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
+      // Give a small delay for the service to initialize properly
+      await Future.delayed(const Duration(milliseconds: 100));
 
-    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+      // Check authentication status using both Firebase and guest mode
+      final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
+      final bool isGuestMode = await GuestAuthService.isGuestMode();
+      final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
 
-    // Initialize data for AddLectureActivity access using existing database services
-    await _initializeWidgetData();
+      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
-    // Check for any pending frequency data requests
-    await monitorFrequencyDataRequests();
+      // Initialize data for AddLectureActivity access using existing database services
+      await _initializeWidgetData();
 
-    if (!isLoggedIn) {
-      await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
-      await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
-      await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-      await _updateWidget();
+      // Check for any pending frequency data requests
+      await monitorFrequencyDataRequests();
+
+      if (!isLoggedIn) {
+        await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
+        await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
+        await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
+        await _updateWidget();
+      }
+
+      _isInitialized = true;
+    } catch (e) {
+      if (e.toString().contains('already initialized')) {
+        _isInitialized = true;
+        print('Services already initialized');
+      } else {
+        print('Error initializing HomeWidgetService: $e');
+        throw e;
+      }
     }
-
-    _isInitialized = true;
   }
 
   // Helper method to check Firebase authentication
@@ -74,6 +85,40 @@ class HomeWidgetService {
       return false;
     }
   }
+
+  // Simplified background initialization - mirrors main.dart approach
+  static Future<void> _initializeBackgroundContext() async {
+    if (_isBackgroundInitialized) return;
+
+    try {
+      // Ensure Flutter engine is initialized for background work
+      WidgetsFlutterBinding.ensureInitialized();
+      DartPluginRegistrant.ensureInitialized();
+
+      // Initialize PlatformUtils
+      PlatformUtils.init();
+
+      // Simple Firebase initialization (same as main.dart)
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      
+      // Simple Hive initialization (same as main.dart)
+      await Hive.initFlutter();
+
+      // Initialize database services
+      await LocalDatabaseService.initialize();
+
+      _isBackgroundInitialized = true;
+      print('Background context initialized successfully');
+    } catch (e) {
+      if (e.toString().contains('already initialized')) {
+        _isBackgroundInitialized = true;
+        print('Background services already initialized');
+      } else {
+        print('Error initializing background context: $e');
+        _isBackgroundInitialized = false;
+      }
+    }  
+    }
 
   // Initialize all widget data using existing database services
   static Future<void> _initializeWidgetData() async {
@@ -139,57 +184,17 @@ class HomeWidgetService {
   static Future<void> updateFrequencyDataStatic() async {
     await _initializeWidgetData();
   }
-
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
     print('Background callback triggered: ${uri?.host}');
 
-    // Ensure Flutter engine is initialized for background work
-    WidgetsFlutterBinding.ensureInitialized();
-    DartPluginRegistrant.ensureInitialized();
-
-    // Initialize PlatformUtils for background context
-    PlatformUtils.init();
-
-    // Initialize Hive for background context (required for LocalDatabaseService)
-    try {
-      if (!Hive.isBoxOpen('userDataBox')) {
-        final appDocumentDir = await getApplicationDocumentsDirectory();
-        Hive.init(appDocumentDir.path);
-        print('Hive initialized for background context');
-      }
-
-      // Ensure LocalDatabaseService is properly initialized
-      await LocalDatabaseService.initialize();
-      print('LocalDatabaseService initialized for background context');
-    } catch (e) {
-      print('Error initializing Hive/LocalDatabaseService: $e');
-      // If we can't initialize Hive, we should return early for guest mode operations
-      final isGuestMode = await GuestAuthService.isGuestMode();
-      if (isGuestMode) {
-        print('Critical error: Cannot initialize local database for guest mode');
-        return;
-      }
-    }
-
-    // Check guest mode first to avoid unnecessary Firebase initialization
-    final isGuestMode = await GuestAuthService.isGuestMode();
-    print('Background callback - Guest mode: $isGuestMode');
-
-    // Always initialize Firebase for CombinedDatabaseService to work properly
-    // Even in guest mode, CombinedDatabaseService constructor accesses FirebaseAuth.instance
-    try {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-      print('Firebase initialized in background context');
-    } catch (e) {
-      if (e.toString().contains('already initialized')) {
-        print('Firebase already initialized');
-      } else {
-        print('Error initializing Firebase: $e');
-        await _updateWidgetWithEmptyData();
-        return;
-      }
+    // Initialize background context
+    await _initializeBackgroundContext();
+    if (!_isBackgroundInitialized) {
+      print('Background initialization failed');
+      await _updateWidgetWithEmptyData();
+      return;
     }
 
     if (uri?.host == 'widget_refresh') {
