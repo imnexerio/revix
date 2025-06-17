@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, UserCredential, User;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:revix/ThemeNotifier.dart';
+import 'package:revix/Utils/ThemeNotifier.dart';
 import 'package:revix/Utils/CustomSnackBar.dart';
 import 'package:revix/Utils/GuestAuthService.dart';
 import 'package:revix/Utils/LocalDatabaseService.dart';

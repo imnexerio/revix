@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:revix/ThemeNotifier.dart';
-import '../theme_data.dart';
+import 'package:revix/Utils/ThemeNotifier.dart';
+import '../Utils/theme_data.dart';
 
 class ThemePage extends StatefulWidget {
   @override

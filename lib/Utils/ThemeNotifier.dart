@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:revix/theme_data.dart';
+import 'package:revix/Utils/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'CustomThemeGenerator.dart';
-import 'Utils/GuestAuthService.dart';
-import 'Utils/LocalDatabaseService.dart';
-import 'Utils/FirebaseDatabaseService.dart';
+import 'GuestAuthService.dart';
+import 'LocalDatabaseService.dart';
+import 'FirebaseDatabaseService.dart';
 
 class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   // Theme management class that supports both Firebase (for authenticated users) 

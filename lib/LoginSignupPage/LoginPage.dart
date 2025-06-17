@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:revix/LoginSignupPage/ForgotPassPage.dart';
 import 'package:revix/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../ThemeNotifier.dart';
+import '../Utils/ThemeNotifier.dart';
 import '../Utils/GuestAuthService.dart';
 import '../Utils/LocalDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
