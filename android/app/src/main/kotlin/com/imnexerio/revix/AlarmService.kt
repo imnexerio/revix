@@ -237,9 +237,7 @@ class AlarmService : Service() {    companion object {
             System.currentTimeMillis().toInt(),
             markDoneIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Create ignore alarm intent
+        )        // Create ignore alarm intent
         val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = "IGNORE_ALARM"
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
@@ -253,6 +251,30 @@ class AlarmService : Service() {    companion object {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Create manual snooze intent (only if we haven't reached the limit)
+        var snoozePendingIntent: PendingIntent? = null
+        if (snoozeCount < 5) {
+            val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
+                action = "MANUAL_SNOOZE"
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+                putExtra(AlarmReceiver.EXTRA_DESCRIPTION, description)
+                putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, if (withSound && withVibration && isLoudAlarm) 5 
+                    else if (withSound && withVibration) 4 
+                    else if (withSound) 3 
+                    else if (withVibration) 2 
+                    else 1)
+                putExtra("SNOOZE_COUNT", snoozeCount + 1)
+            }
+            snoozePendingIntent = PendingIntent.getBroadcast(
+                this,
+                System.currentTimeMillis().toInt() + 2,
+                snoozeIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
         val notificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
@@ -263,7 +285,14 @@ class AlarmService : Service() {    companion object {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .addAction(R.drawable.ic_launcher_foreground, "Mark as Done", markDonePendingIntent)
-            .addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
+
+        // Add snooze button only if we haven't reached the limit
+        if (snoozePendingIntent != null) {
+            notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Snooze 5min", snoozePendingIntent)
+        }
+        
+        // Always add ignore button
+        notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
 
         // Configure sound and vibration
         if (withSound || withVibration || isLoudAlarm) {

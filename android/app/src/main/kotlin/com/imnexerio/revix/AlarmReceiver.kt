@@ -10,6 +10,7 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         const val ACTION_RECORD_PRECHECK = "revix.ACTION_RECORD_PRECHECK"
         const val ACTION_MARK_AS_DONE = "MARK_AS_DONE"
         const val ACTION_IGNORE_ALARM = "IGNORE_ALARM"
+        const val ACTION_MANUAL_SNOOZE = "MANUAL_SNOOZE"
         const val EXTRA_RECORD_DATA = "record_data"
         const val EXTRA_ALARM_TYPE = "alarm_type"
         const val EXTRA_CATEGORY = "category"
@@ -34,6 +35,9 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
             }
             ACTION_IGNORE_ALARM -> {
                 handleIgnoreAlarm(context, intent)
+            }
+            ACTION_MANUAL_SNOOZE -> {
+                handleManualSnooze(context, intent)
             }
             Intent.ACTION_BOOT_COMPLETED -> {
                 handleBootCompleted(context)
@@ -113,8 +117,63 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
         notificationManager.cancel(notificationId)
+          Log.d(TAG, "Alarm ignored and notification dismissed for: $recordTitle")
+    }
+
+    private fun handleManualSnooze(context: Context, intent: Intent) {
+        val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
+        val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
+        val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
+        val description = intent.getStringExtra(EXTRA_DESCRIPTION) ?: ""
+        val alarmType = intent.getIntExtra(EXTRA_ALARM_TYPE, 0)
+        val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 1)
+
+        Log.d(TAG, "Manual snooze triggered: $category - $subCategory - $recordTitle (Snooze #$snoozeCount)")
+
+        // Cancel current notification
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val notificationId = (category + subCategory + recordTitle).hashCode()
+        notificationManager.cancel(notificationId)
+
+        // Cancel any pending auto-snooze alarms for this record to avoid duplicates
+        cancelSnoozeAlarms(context, category, subCategory, recordTitle)
+
+        // Schedule the snooze alarm for 5 minutes from now
+        val snoozeTime = System.currentTimeMillis() + (5 * 60 * 1000) // 5 minutes
         
-        Log.d(TAG, "Alarm ignored and notification dismissed for: $recordTitle")
+        val snoozeIntent = Intent(context, AlarmReceiver::class.java).apply {
+            action = ACTION_RECORD_ALARM
+            putExtra(EXTRA_CATEGORY, category)
+            putExtra(EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            putExtra(EXTRA_DESCRIPTION, description)
+            putExtra(EXTRA_ALARM_TYPE, alarmType)
+            putExtra(EXTRA_IS_PRECHECK, false)
+            putExtra("SNOOZE_COUNT", snoozeCount)
+        }
+
+        val snoozePendingIntent = android.app.PendingIntent.getBroadcast(
+            context,
+            ("$category$subCategory$recordTitle$snoozeCount").hashCode(),
+            snoozeIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    android.app.AlarmManager.RTC_WAKEUP,
+                    snoozeTime,
+                    snoozePendingIntent
+                )
+            } else {
+                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, snoozeTime, snoozePendingIntent)
+            }
+            Log.d(TAG, "Manual snooze scheduled for $recordTitle in 5 minutes (attempt $snoozeCount/5)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule manual snooze", e)
+        }
     }
 
     private fun cancelSnoozeAlarms(context: Context, category: String, subCategory: String, recordTitle: String) {
