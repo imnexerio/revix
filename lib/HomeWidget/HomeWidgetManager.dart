@@ -39,23 +39,11 @@ class HomeWidgetService {
       await _databaseService.initialize();
 
       // Give a small delay for the service to initialize properly
-      await Future.delayed(const Duration(milliseconds: 100));      final bool isLoggedIn = true; //assuming logged in for now
-
-      // Clear any incorrect data type that might exist and save with correct boolean type
-      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Initialize data for AddLectureActivity access using existing database services
-      await _initializeWidgetData();
-
-      // Check for any pending frequency data requests
+      await _initializeWidgetData();      // Check for any pending frequency data requests
       await monitorFrequencyDataRequests();
-
-      if (!isLoggedIn) {
-        await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
-        await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
-        await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-        await _updateWidget();
-      }
 
       _isInitialized = true;
     } catch (e) {
@@ -416,14 +404,12 @@ class HomeWidgetService {
       iOSName: 'TodayWidget',
     );
   }
-
   static Future<void> _updateWidgetWithEmptyData() async {
     await _ensureInitialized();
 
     await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-    await HomeWidget.saveWidgetData(isLoggedInKey, true); // Assuming logged in state for now
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
     await _updateWidgetSilently();
   }
@@ -516,6 +502,24 @@ class HomeWidgetService {
     if (!_isInitialized) {
       HomeWidget.setAppGroupId(appGroupId);
       _isInitialized = true;
+    }
+  }
+
+  // Method to update login status in widget
+  static Future<void> updateWidgetLoginStatus(bool isLoggedIn) async {
+    try {
+      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+      
+      if (!isLoggedIn) {
+        // Clear widget data when logging out
+        await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
+        await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
+        await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
+      }
+      
+      await _updateWidget();
+    } catch (e) {
+      print('Error updating widget login status: $e');
     }
   }
 }
