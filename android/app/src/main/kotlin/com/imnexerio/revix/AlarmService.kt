@@ -16,16 +16,42 @@ import android.os.Vibrator
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.imnexerio.revix.AlarmService.Companion.NOTIFICATION_CHANNEL_ID
+import com.imnexerio.revix.AlarmService.Companion.TAG
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
 import java.util.*
 
-class AlarmService : Service() {
-    companion object {
+class AlarmService : Service() {    companion object {
         private const val TAG = "AlarmService"
         private const val NOTIFICATION_CHANNEL_ID = "record_alarms"
         private const val NOTIFICATION_CHANNEL_NAME = "Record Alarms"
         private const val FOREGROUND_NOTIFICATION_ID = 1000
+        
+        // Method to show data refresh notification - call this from Flutter when checking alarm status
+        @JvmStatic
+        fun showDataRefreshNotification(context: Context) {
+            try {
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                
+                val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setContentTitle("Checking for upcoming reminders...")
+                    .setContentText("Refreshing data to check for alarms in the next minute")
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setCategory(NotificationCompat.CATEGORY_STATUS)
+                    .setAutoCancel(true)
+                    .setTimeoutAfter(5000) // Auto-dismiss after 5 seconds
+                    .build()
+                
+                val notificationId = "data_refresh".hashCode()
+                notificationManager.notify(notificationId, notification)
+                
+                Log.d(TAG, "Data refresh notification shown")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to show data refresh notification", e)
+            }
+        }
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -54,9 +80,7 @@ class AlarmService : Service() {
         // Stop the service after processing
         stopSelf()
         return START_NOT_STICKY
-    }
-
-    private fun processIntent(intent: Intent) {
+    }    private fun processIntent(intent: Intent) {
         when (intent.action) {
             "PRECHECK_RECORD_STATUS" -> {
                 handlePrecheckRecordStatus(intent)
@@ -66,6 +90,9 @@ class AlarmService : Service() {
             }
             "MARK_AS_DONE" -> {
                 handleMarkAsDone(intent)
+            }
+            "STOP_ALL_ALARMS" -> {
+                handleStopAllAlarms()
             }
             else -> {
                 handleAlarmTrigger(intent)
@@ -105,10 +132,20 @@ class AlarmService : Service() {
     }
 
     private fun handleRescheduleAlarms() {
-        Log.d(TAG, "Rescheduling alarms after boot")
-
-        // Trigger Flutter background callback to reschedule alarms
+        Log.d(TAG, "Rescheduling alarms after boot")        // Trigger Flutter background callback to reschedule alarms
         triggerFlutterBackgroundCallback("alarm_reschedule", emptyMap())
+    }
+
+    private fun handleStopAllAlarms() {
+        Log.d(TAG, "Stopping all ongoing alarms")
+        
+        // Stop any playing alarm sounds
+        stopAlarmSound()
+        
+        // Stop vibration
+        vibrator?.cancel()
+        
+        Log.d(TAG, "All ongoing alarms stopped")
     }
 
     private fun handleAlarmTrigger(intent: Intent) {
@@ -118,8 +155,9 @@ class AlarmService : Service() {
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
         val description = intent.getStringExtra(AlarmReceiver.EXTRA_DESCRIPTION) ?: ""
         val isPrecheck = intent.getBooleanExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
+        val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
 
-        Log.d(TAG, "Handling alarm: $category - $subCategory - $recordTitle (Type: $alarmType)")
+        Log.d(TAG, "Handling alarm: $category - $subCategory - $recordTitle (Type: $alarmType, Snooze: $snoozeCount)")
 
         // Create notification based on alarm type
         when (alarmType) {
@@ -130,34 +168,36 @@ class AlarmService : Service() {
             }
             1 -> {
                 // Notification Only
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, false, false, false)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, false, false, false, snoozeCount)
             }
             2 -> {
                 // Vibration Only
                 triggerVibration()
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, false, false)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, false, false, snoozeCount)
             }
             3 -> {
                 // Sound
                 playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, false, true, false)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, false, true, false, snoozeCount)
             }
             4 -> {
                 // Sound + Vibration
                 triggerVibration()
                 playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, true, false)
-            }
-            5 -> {
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, true, false, snoozeCount)
+            }            5 -> {
                 // Loud Alarm
                 triggerVibration()
                 playAlarmSound(true)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, true, true)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, true, true, snoozeCount)
             }
         }
-    }
 
-    private fun showNotification(
+        // Schedule auto-snooze if this is not a precheck and we haven't reached the limit
+        if (!isPrecheck && snoozeCount < 5) {
+            scheduleAutoSnooze(category, subCategory, recordTitle, description, alarmType, snoozeCount + 1)
+        }
+    }    private fun showNotification(
         category: String,
         subCategory: String,
         recordTitle: String,
@@ -165,13 +205,15 @@ class AlarmService : Service() {
         isPrecheck: Boolean,
         withVibration: Boolean,
         withSound: Boolean,
-        isLoudAlarm: Boolean
+        isLoudAlarm: Boolean,
+        snoozeCount: Int = 0
     ) {
         val title = if (isPrecheck) "Reminder: $recordTitle" else "Time for: $recordTitle"
+        val snoozeText = if (snoozeCount > 0) " (Snoozed ${snoozeCount}x)" else ""
         val content = if (isPrecheck) {
-            "Don't forget about your upcoming record in $category - $subCategory"
+            "Don't forget about your upcoming record in $category - $subCategory$snoozeText"
         } else {
-            "$description in $category - $subCategory"
+            "$description in $category - $subCategory$snoozeText"
         }
 
         // Create intent to open the app
@@ -183,9 +225,7 @@ class AlarmService : Service() {
             System.currentTimeMillis().toInt(),
             appIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Create mark as done intent
+        )        // Create mark as done intent
         val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = "MARK_AS_DONE"
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
@@ -199,6 +239,20 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Create ignore alarm intent
+        val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = "IGNORE_ALARM"
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val ignorePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 1,
+            ignoreIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
@@ -209,6 +263,7 @@ class AlarmService : Service() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .addAction(R.drawable.ic_launcher_foreground, "Mark as Done", markDonePendingIntent)
+            .addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
 
         // Configure sound and vibration
         if (withSound || withVibration || isLoudAlarm) {
@@ -277,10 +332,8 @@ class AlarmService : Service() {
                 isLooping = isLoudAlarm
                 prepare()
                 start()
-            }
-
-            // Auto-stop after 30 seconds for loud alarms, 5 seconds for regular sounds
-            val duration = if (isLoudAlarm) 30000L else 5000L
+            }            // Auto-stop after 1 minute for loud alarms, 30 seconds for regular sounds
+            val duration = if (isLoudAlarm) 60000L else 30000L
             Timer().schedule(object : TimerTask() {
                 override fun run() {
                     stopAlarmSound()
@@ -302,6 +355,50 @@ class AlarmService : Service() {
             mediaPlayer = null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop alarm sound", e)
+        }    }
+
+    private fun scheduleAutoSnooze(
+        category: String,
+        subCategory: String,
+        recordTitle: String,
+        description: String,
+        alarmType: Int,
+        snoozeCount: Int
+    ) {
+        val snoozeTime = System.currentTimeMillis() + (5 * 60 * 1000) // 5 minutes from now
+        
+        val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_RECORD_ALARM
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra(AlarmReceiver.EXTRA_DESCRIPTION, description)
+            putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
+            putExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
+            putExtra("SNOOZE_COUNT", snoozeCount)
+        }
+
+        val snoozePendingIntent = PendingIntent.getBroadcast(
+            this,
+            ("$category$subCategory$recordTitle$snoozeCount").hashCode(),
+            snoozeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    snoozeTime,
+                    snoozePendingIntent
+                )
+            } else {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, snoozeTime, snoozePendingIntent)
+            }
+            Log.d(TAG, "Auto-snooze scheduled for $recordTitle in 5 minutes (attempt $snoozeCount/5)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule auto-snooze", e)
         }
     }
 
@@ -346,8 +443,7 @@ class AlarmService : Service() {
             }
 
             val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
+            notificationManager.createNotificationChannel(channel)        }
     }
 
     private fun createForegroundNotification(): Notification {

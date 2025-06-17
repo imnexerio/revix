@@ -191,6 +191,23 @@ class MainActivity : FlutterActivity() {
             }
         }
         
+        // Notification helper channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "revix/notifications").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "showDataRefreshNotification" -> {
+                    try {
+                        AlarmService.showDataRefreshNotification(this)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("NOTIFICATION_ERROR", "Failed to show refresh notification: ${e.message}", null)
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+        
         // Initialize update records channel for communication with services
         updateRecordsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_RECORDS_CHANNEL)
     }
@@ -217,6 +234,36 @@ class MainActivity : FlutterActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        clearAllAlarmNotifications()
+        stopAllAlarmSounds()
+    }
+
+    private fun clearAllAlarmNotifications() {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            // Cancel all notifications
+            notificationManager.cancelAll()
+            android.util.Log.d("MainActivity", "Cleared all alarm notifications")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to clear notifications", e)
+        }
+    }
+
+    private fun stopAllAlarmSounds() {
+        try {
+            // Send intent to stop any ongoing alarm sounds
+            val stopAlarmIntent = Intent(this, AlarmService::class.java).apply {
+                action = "STOP_ALL_ALARMS"
+            }
+            startForegroundService(stopAlarmIntent)
+            android.util.Log.d("MainActivity", "Sent stop all alarms command")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to stop alarm sounds", e)
+        }
     }
 
 }
