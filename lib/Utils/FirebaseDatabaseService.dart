@@ -238,36 +238,6 @@ class FirebaseDatabaseService {
       print('Error fetching custom frequencies: $e');
       return {};
     }
-  }  /// Save custom frequencies to profile data
-  Future<bool> saveCustomFrequencies(Map<String, dynamic> frequencies) async {
-    try {
-      bool success = false;
-      
-      if (await isGuestMode) {
-        success = await _localDatabase.saveProfileData('custom_frequencies', frequencies);
-      } else {
-        if (currentUserId == null) return false;
-        
-        DatabaseReference ref = _database.ref('users/$currentUserId/profile_data/custom_frequencies');
-        await ref.set(frequencies);
-        success = true;
-      }
-      
-      // Update frequency data in SharedPreferences for native access
-      if (success) {
-        try {
-          await HomeWidgetService.updateFrequencyDataStatic();
-        } catch (e) {
-          print('Warning: Could not update frequency data in SharedPreferences: $e');
-          // Don't fail the save operation if this fails
-        }
-      }
-      
-      return success;
-    } catch (e) {
-      print('Error saving custom frequencies: $e');
-      return false;
-    }
   }
   
   /// Fetch custom tracking types from profile data

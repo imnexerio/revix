@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:home_widget/home_widget.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -40,9 +39,6 @@ class HomeWidgetService {
 
       // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
-
-      // Initialize data for AddLectureActivity access using existing database services
-      await _initializeWidgetData();      // Check for any pending frequency data request
 
       _isInitialized = true;
     } catch (e) {
@@ -150,10 +146,6 @@ class HomeWidgetService {
     }
   }
 
-  /// Public method to update all widget data - can be called from other parts of the app
-  static Future<void> updateFrequencyDataStatic() async {
-    await _initializeWidgetData();
-  }
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
