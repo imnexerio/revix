@@ -3,6 +3,7 @@ package com.imnexerio.revix
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
@@ -37,15 +38,25 @@ class AlarmService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Start as foreground service
-        startForeground(FOREGROUND_NOTIFICATION_ID, createForegroundNotification())
+        // Start as foreground service with media playback type for Android 14+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                FOREGROUND_NOTIFICATION_ID, 
+                createForegroundNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(FOREGROUND_NOTIFICATION_ID, createForegroundNotification())
+        }
 
         intent?.let { processIntent(it) }
 
         // Stop the service after processing
         stopSelf()
         return START_NOT_STICKY
-    }    private fun processIntent(intent: Intent) {
+    }
+
+    private fun processIntent(intent: Intent) {
         when (intent.action) {
             "PRECHECK_RECORD_STATUS" -> {
                 handlePrecheckRecordStatus(intent)
