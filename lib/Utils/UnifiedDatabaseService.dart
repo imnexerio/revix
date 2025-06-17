@@ -270,6 +270,7 @@ class CombinedDatabaseService {
             'scheduled_date': dateScheduled.toString(),
             'start_timestamp': recordValue['start_timestamp'],
             'reminder_time': recordValue['reminder_time'] ?? 'All Day',
+            'alarm_type': recordValue['alarm_type'] ?? 0,
             'entry_type': recordValue['entry_type'],
             'date_initiated': recordValue['date_initiated'],
             'date_updated': recordValue['date_updated'],

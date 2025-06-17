@@ -40,6 +40,9 @@ class AlarmManagerHelper(private val context: Context) {
                 val description = record["description"]?.toString() ?: ""
                 val scheduledDate = record["scheduled_date"]?.toString() ?: ""
 
+                Log.d(TAG, "Processing record: $recordTitle, Category: $category, SubCategory: $subCategory, Reminder: $reminderTime")
+                Log.d(TAG, "Scheduled Date: $scheduledDate, Alarm Type: $alarmType")
+
                 // Skip if no reminder or all day
                 if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {
                     Log.d(TAG, "Skipping alarm for $recordTitle - no reminder or all day")
