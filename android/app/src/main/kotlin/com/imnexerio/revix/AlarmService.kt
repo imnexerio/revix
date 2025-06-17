@@ -15,7 +15,6 @@ import android.os.Vibrator
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import es.antonborri.home_widget.HomeWidgetPlugin
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
 import java.util.*
@@ -306,16 +305,11 @@ class AlarmService : Service() {
                     uriBuilder.append("${entry.key}=${entry.value}")
                 }
             }
-
             val uri = Uri.parse(uriBuilder.toString())
             Log.d(TAG, "Triggering Flutter callback: $uri")
             
-            // Use HomeWidget to trigger the background callback
-            HomeWidgetPlugin.reloadWidgets(this)
-            
-            // Also trigger the callback directly
-            // Note: This requires the background callback to be registered
-            // The actual implementation may need adjustment based on your HomeWidget setup
+            // Note: Widget updates are handled by the Flutter side when the app processes the alarm
+            // The alarm functionality works independently of whether users have home widgets installed
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to trigger Flutter background callback", e)
