@@ -247,7 +247,8 @@ class HomeWidgetService {
 
               // Refresh widget data after update
               await service.forceDataReprocessing();
-              final categorizedData = service.currentCategorizedData;              if (categorizedData != null) {
+              final categorizedData = service.currentCategorizedData;
+              if (categorizedData != null) {
                 final todayRecords = categorizedData['today'] ?? [];
                 final missedRecords = categorizedData['missed'] ?? [];
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
