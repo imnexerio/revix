@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
 
     <queries>
@@ -44,6 +49,20 @@
 
         <service
             android:name=".RecordUpdateService"
+            android:exported="false" />
+        <!-- Alarm system components -->
+        <receiver
+            android:name="com.imnexerio.revix.AlarmReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="revix.ACTION_RECORD_ALARM" />
+                <action android:name="revix.ACTION_RECORD_PRECHECK" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="com.imnexerio.revix.AlarmService"
             android:exported="false" />
 
         <service

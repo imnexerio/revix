@@ -8,6 +8,7 @@ import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import 'FirebaseDatabaseService.dart';
 import 'CustomSnackBar.dart';
+import 'AlarmManagerService.dart';
 
 class CombinedDatabaseService {
   static final CombinedDatabaseService _instance = CombinedDatabaseService._internal();
@@ -185,19 +186,31 @@ class CombinedDatabaseService {
     _categorizedRecordsController.add(categorizedData);
 
     List<Map<String, dynamic>> allRecords = _processAllRecords(processedRawData);
-    _allRecordsController.add({'allRecords': allRecords});
-
-    _processCategoriesData(processedRawData);
+    _allRecordsController.add({'allRecords': allRecords});    _processCategoriesData(processedRawData);
 
     if (PlatformUtils.instance.isAndroid ) {
       _updateHomeWidget(categorizedData['today'] ?? [],
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? []);
+      
+      // Schedule alarms for today's records
+      _scheduleAlarmsForTodayRecords(categorizedData['today'] ?? []);
     }
   }
-
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
       HomeWidgetService.updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+  }
+
+  // Helper method to schedule alarms for today's records
+  void _scheduleAlarmsForTodayRecords(List<Map<String, dynamic>> todayRecords) {
+    try {
+      if (PlatformUtils.instance.isAndroid) {
+        AlarmManagerService.scheduleAlarmsForTodayRecords(todayRecords);
+        print('Scheduled alarms for ${todayRecords.length} today records');
+      }
+    } catch (e) {
+      print('Error scheduling alarms: $e');
+    }
   }
 
   void _processCategoriesData(Map<Object?, Object?> rawData) {
@@ -350,11 +363,13 @@ class CombinedDatabaseService {
         
         List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
         _allRecordsController.add({'allRecords': allRecords});
-        
-        if (PlatformUtils.instance.isAndroid ) {
+          if (PlatformUtils.instance.isAndroid ) {
           _updateHomeWidget(categorizedData['today'] ?? [],
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? []);
+          
+          // Schedule alarms for today's records
+          _scheduleAlarmsForTodayRecords(categorizedData['today'] ?? []);
         }
       }
       return;

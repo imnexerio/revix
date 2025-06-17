@@ -9,6 +9,7 @@ import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/MarkAsDoneService.dart';
+import '../Utils/AlarmManagerService.dart';
 import '../firebase_options.dart';
 
 @pragma('vm:entry-point')
@@ -23,8 +24,7 @@ class HomeWidgetService {
   static const String categoriesDataKey = 'categoriesData';
   static bool _isInitialized = false;
   static bool _isBackgroundInitialized = false;
-  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();
-  static Future<void> initialize() async {
+  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();  static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
@@ -37,11 +37,13 @@ class HomeWidgetService {
       HomeWidget.registerInteractivityCallback(backgroundCallback);
       await _databaseService.initialize();
 
+      // Initialize alarm manager service
+      await AlarmManagerService.initialize();
+
       // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
 
       await _initializeWidgetData();
-
 
       _isInitialized = true;
     } catch (e) {
@@ -183,10 +185,12 @@ class HomeWidgetService {
           final missedRecords = categorizedData['missed'] ?? [];
           final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-          print('Records found - Today: ${todayRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');
-
-          // Update widget with the new data
+          print('Records found - Today: ${todayRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');          // Update widget with the new data
           await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+          
+          // Schedule alarms for today's records
+          await _scheduleAlarmsForTodayRecords(todayRecords);
+          
           print('Widget background refresh completed with data');
         } else {
           print('No categorized data available, using empty data');
@@ -243,14 +247,16 @@ class HomeWidgetService {
 
               // Refresh widget data after update
               await service.forceDataReprocessing();
-              final categorizedData = service.currentCategorizedData;
-
-              if (categorizedData != null) {
+              final categorizedData = service.currentCategorizedData;              if (categorizedData != null) {
                 final todayRecords = categorizedData['today'] ?? [];
                 final missedRecords = categorizedData['missed'] ?? [];
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
                 await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                
+                // Re-schedule alarms for today's records after successful update
+                await _scheduleAlarmsForTodayRecords(todayRecords);
+                
                 print('Widget refreshed after record update');
               }
             } catch (e) {
@@ -276,6 +282,79 @@ class HomeWidgetService {
         if (requestId.isNotEmpty) {
           await HomeWidget.saveWidgetData('record_update_result_$requestId', 'ERROR:${e.toString()}');
         }
+      }    } else if (uri?.host == 'record_check') {
+      try {
+        print('Starting record check background processing...');
+
+        final category = uri?.queryParameters['category'] ?? '';
+        final subCategory = uri?.queryParameters['sub_category'] ?? '';
+        final recordTitle = uri?.queryParameters['record_title'] ?? '';
+
+        print('Checking record: $category - $subCategory - $recordTitle');
+
+        // Initialize database service to check current status
+        final service = CombinedDatabaseService();
+        await service.initialize();
+
+        // Force data refresh to get latest status
+        await service.forceDataReprocessing();
+        final categorizedData = service.currentCategorizedData;
+
+        if (categorizedData != null) {
+          final todayRecords = categorizedData['today'] ?? [];
+          
+          // Check if the record still exists in today's records
+          final recordExists = todayRecords.any((record) =>
+            record['category'] == category &&
+            record['sub_category'] == subCategory &&
+            record['record_title'] == recordTitle
+          );
+
+          if (recordExists) {
+            print('Record still pending - precheck completed');
+            // Record is still pending, alarm will be triggered at scheduled time
+          } else {
+            print('Record already completed or moved - cancelling related alarms');
+            // Record has been completed or moved, so no need for the main alarm
+          }
+
+          // Update widget data with latest information
+          final missedRecords = categorizedData['missed'] ?? [];
+          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+        }
+
+      } catch (e) {
+        print('Error in record check background callback: $e');
+      }
+    } else if (uri?.host == 'alarm_reschedule') {
+      try {
+        print('Starting alarm reschedule background processing...');
+
+        // Initialize database service
+        final service = CombinedDatabaseService();
+        await service.initialize();
+
+        // Force data refresh to get latest records
+        await service.forceDataReprocessing();
+        final categorizedData = service.currentCategorizedData;
+
+        if (categorizedData != null) {
+          final todayRecords = categorizedData['today'] ?? [];
+          final missedRecords = categorizedData['missed'] ?? [];
+          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+
+          // Reschedule alarms for today's records
+          await _scheduleAlarmsForTodayRecords(todayRecords);
+
+          // Update widget data
+          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+          
+          print('Alarm reschedule completed for ${todayRecords.length} records');
+        }
+
+      } catch (e) {
+        print('Error in alarm reschedule background callback: $e');
       }
     }
     else if (uri?.host == 'record_create') {
@@ -349,14 +428,16 @@ class HomeWidgetService {
 
               // Refresh widget data after creation
               await service.forceDataReprocessing();
-              final categorizedData = service.currentCategorizedData;
-
-              if (categorizedData != null) {
+              final categorizedData = service.currentCategorizedData;              if (categorizedData != null) {
                 final todayRecords = categorizedData['today'] ?? [];
                 final missedRecords = categorizedData['missed'] ?? [];
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
                 await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                
+                // Schedule alarms for today's records after successful creation
+                await _scheduleAlarmsForTodayRecords(todayRecords);
+                
                 print('Widget refreshed after record creation');
               }
             } catch (e) {
@@ -404,7 +485,6 @@ class HomeWidgetService {
     await _updateWidgetSilently();
   }
 
-
   static Future<void> updateWidgetData(
       List<Map<String, dynamic>> todayRecords,
       List<Map<String, dynamic>> missedRecords,
@@ -433,10 +513,25 @@ class HomeWidgetService {
         DateTime.now().millisecondsSinceEpoch,
       );
 
+      // Schedule alarms for today's records
+      await _scheduleAlarmsForTodayRecords(todayRecords);
+
       // Request widget update
       await _updateWidget();
     } catch (e) {
       debugPrint('Error updating widget data: $e');
+    }
+  }
+
+  // Helper method to schedule alarms for today's records
+  static Future<void> _scheduleAlarmsForTodayRecords(List<Map<String, dynamic>> todayRecords) async {
+    try {
+      if (PlatformUtils.instance.isAndroid) {
+        await AlarmManagerService.scheduleAlarmsForTodayRecords(todayRecords);
+        print('Scheduled alarms for ${todayRecords.length} today records');
+      }
+    } catch (e) {
+      print('Error scheduling alarms: $e');
     }
   }
 
