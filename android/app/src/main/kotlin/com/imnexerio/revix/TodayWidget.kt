@@ -206,7 +206,14 @@ internal fun updateAppWidget(
     val viewPrefs = context.getSharedPreferences("WidgetPreferences", Context.MODE_PRIVATE)
     val currentView = viewPrefs.getString(TodayWidget.Companion.PREF_CURRENT_VIEW, "today") ?: "today"
 
-    val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
+    // Handle potential type mismatch for isLoggedIn value
+    val isLoggedIn = try {
+        sharedPreferences.getBoolean("isLoggedIn", false)
+    } catch (e: ClassCastException) {
+        // If there's a type mismatch, clear the incorrect value and use default
+        sharedPreferences.edit().remove("isLoggedIn").apply()
+        false
+    }
     val lastUpdated = sharedPreferences.getLong("lastUpdated", 0L)
 
     // Get appropriate data based on current view

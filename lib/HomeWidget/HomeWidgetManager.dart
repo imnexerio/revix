@@ -39,10 +39,9 @@ class HomeWidgetService {
       await _databaseService.initialize();
 
       // Give a small delay for the service to initialize properly
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));      final bool isLoggedIn = true; //assuming logged in for now
 
-      final bool isLoggedIn = true; //assuming logged in for now
-
+      // Clear any incorrect data type that might exist and save with correct boolean type
       await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
       // Initialize data for AddLectureActivity access using existing database services
@@ -424,7 +423,7 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-    await HomeWidget.saveWidgetData(isLoggedInKey, 1); // Assuming logged in state for now
+    await HomeWidget.saveWidgetData(isLoggedInKey, true); // Assuming logged in state for now
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
     await _updateWidgetSilently();
   }
