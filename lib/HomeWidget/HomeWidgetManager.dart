@@ -4,13 +4,10 @@ import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../Utils/LocalDatabaseService.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
-import '../Utils/GuestAuthService.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/MarkAsDoneService.dart';
 import '../firebase_options.dart';
@@ -44,10 +41,7 @@ class HomeWidgetService {
       // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
 
-      // Check authentication status using both Firebase and guest mode
-      final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
-      final bool isGuestMode = await GuestAuthService.isGuestMode();
-      final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
+      final bool isLoggedIn = true; //assuming logged in for now
 
       await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
 
@@ -73,16 +67,6 @@ class HomeWidgetService {
         print('Error initializing HomeWidgetService: $e');
         throw e;
       }
-    }
-  }
-
-  // Helper method to check Firebase authentication
-  static Future<bool> _isFirebaseAuthenticated() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      return user != null;
-    } catch (e) {
-      return false;
     }
   }
 
@@ -204,12 +188,9 @@ class HomeWidgetService {
         // Check for frequency data update requests from native code
         await monitorFrequencyDataRequests();
 
-        // Initialize and process data using CombinedDatabaseService
-        // The service internally handles guest vs Firebase mode
         final service = CombinedDatabaseService();
         print('CombinedDatabaseService created');
 
-        // Initialize the service (it will handle guest mode detection internally)
         await service.initialize();
         print('Service initialized');
 
@@ -362,7 +343,6 @@ class HomeWidgetService {
             try {
               print('Initializing database service for record creation...');
 
-              // Initialize database service - it will handle guest vs Firebase mode internally
               final service = CombinedDatabaseService();
               await service.initialize();
 
@@ -441,17 +421,10 @@ class HomeWidgetService {
   static Future<void> _updateWidgetWithEmptyData() async {
     await _ensureInitialized();
 
-    // Check both Firebase authentication and guest mode
-    final bool isFirebaseAuthenticated = await _isFirebaseAuthenticated();
-    final bool isGuestMode = await GuestAuthService.isGuestMode();
-    final bool isLoggedIn = isFirebaseAuthenticated || isGuestMode;
-
-    print('Widget empty data update - Firebase auth: $isFirebaseAuthenticated, Guest mode: $isGuestMode, Final logged in: $isLoggedIn');
-
     await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-    await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+    await HomeWidget.saveWidgetData(isLoggedInKey, 1); // Assuming logged in state for now
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
     await _updateWidgetSilently();
   }
