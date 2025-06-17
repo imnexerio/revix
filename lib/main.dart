@@ -23,15 +23,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PlatformUtils.init();
   
-  // Only do minimal initialization here for fast splash screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Initialize Hive
   await Hive.initFlutter();
-  
-  // Initialize HomeWidget service for background callbacks
-  if (PlatformUtils.instance.isAndroid) {
-    await HomeWidgetService.initialize();
-  }
   
   runApp(const MyApp());
 }

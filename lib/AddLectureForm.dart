@@ -6,7 +6,6 @@ import 'package:revix/widgets/LectureTypeDropdown.dart';
 import 'package:revix/widgets/RevisionFrequencyDropdown.dart';
 import 'CustomFrequencySelector.dart';
 import 'Utils/CalculateCustomNextDate.dart';
-import 'Utils/CustomSnackBar.dart';
 import 'Utils/UnifiedDatabaseService.dart';
 import 'Utils/customSnackBar_error.dart';
 
