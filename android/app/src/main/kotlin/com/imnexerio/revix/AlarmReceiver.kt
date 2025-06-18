@@ -290,10 +290,6 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
             Log.d(TAG, "Maximum snooze limit reached for $recordTitle")
             return
         }
-
-        // For now, we'll assume the record still exists and schedule the next snooze
-        // In a real implementation, you would check the database or shared preferences
-        // to see if the record has been completed after the widget refresh
         
         // Schedule the snooze alarm for 5 minutes from now
         val snoozeTime = System.currentTimeMillis() + (5 * 60 * 1000) // 5 minutes
