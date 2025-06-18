@@ -9,6 +9,7 @@ import android.os.Bundle
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.imnexerio.revix/widget_refresh"
     private val UPDATE_RECORDS_CHANNEL = "revix/update_records"
+    private val ALARM_MANAGER_CHANNEL = "revix/alarm_manager"
     private val PERMISSION_CHANNEL = "revix/permissions"
     private lateinit var alarmManagerHelper: AlarmManagerHelper
     private lateinit var permissionManager: PermissionManager
@@ -57,6 +58,78 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Alarm manager channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ALARM_MANAGER_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "initialize" -> {
+                    try {
+                        // Initialization happens in constructor
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("INIT_ERROR", "Failed to initialize alarm manager: ${e.message}", null)
+                    }
+                }
+                "scheduleAlarmsForTodayRecords" -> {
+                    try {
+                        val todayRecords = call.argument<List<Map<String, Any>>>("todayRecords") ?: emptyList()
+                        alarmManagerHelper.scheduleAlarmsForTodayRecords(todayRecords)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("SCHEDULE_ERROR", "Failed to schedule alarms: ${e.message}", null)
+                    }
+                }
+                "cancelAllAlarms" -> {
+                    try {
+                        alarmManagerHelper.cancelAllAlarms()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("CANCEL_ERROR", "Failed to cancel alarms: ${e.message}", null)
+                    }
+                }
+                "requestExactAlarmPermission" -> {
+                    try {
+                        alarmManagerHelper.requestExactAlarmPermission()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("PERMISSION_ERROR", "Failed to request permission: ${e.message}", null)
+                    }
+                }
+                "hasExactAlarmPermission" -> {
+                    try {
+                        val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                            val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                            alarmManager.canScheduleExactAlarms()
+                        } else {
+                            true
+                        }
+                        result.success(hasPermission)
+                    } catch (e: Exception) {
+                        result.error("PERMISSION_CHECK_ERROR", "Failed to check permission: ${e.message}", null)
+                    }
+                }
+                "markRecordAsDone" -> {
+                    try {
+                        val category = call.argument<String>("category") ?: ""
+                        val subCategory = call.argument<String>("sub_category") ?: ""
+                        val recordTitle = call.argument<String>("record_title") ?: ""
+
+                        // Trigger the mark as done action through the existing update records channel
+                        updateRecordsChannel?.invokeMethod("markRecordAsDone", mapOf(
+                            "category" to category,
+                            "subCategory" to subCategory,
+                            "recordTitle" to recordTitle
+                        ))
+
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("MARK_DONE_ERROR", "Failed to mark record as done: ${e.message}", null)
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
 
         // Permission manager channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PERMISSION_CHANNEL).setMethodCallHandler { call, result ->
