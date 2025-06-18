@@ -33,6 +33,7 @@ class AlarmService : Service() {
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var activeAlarmsCount = 0
+    private var vibrationTimer: Timer? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -111,13 +112,11 @@ class AlarmService : Service() {
     }
 
     private fun handleStopAllAlarms() {
-        Log.d(TAG, "Stopping all ongoing alarms")
-
-        // Stop current playing alarm sound
+        Log.d(TAG, "Stopping all ongoing alarms")        // Stop current playing alarm sound
         stopCurrentAlarmSound()
 
         // Stop vibration
-        vibrator?.cancel()
+        stopVibration()
 
         activeAlarmsCount = 0
         currentSoundAlarmKey = null
@@ -134,9 +133,9 @@ class AlarmService : Service() {
         Log.d(TAG, "Stopping specific alarm: $alarmKey")
         
         // Check if this is the currently playing alarm
-        if (currentSoundAlarmKey != null && currentSoundAlarmKey == alarmKey.hashCode().toString()) {
+         if (currentSoundAlarmKey != null && currentSoundAlarmKey == alarmKey.hashCode().toString()) {
             stopCurrentAlarmSound()
-            vibrator?.cancel()
+            stopVibration()
             activeAlarmsCount = maxOf(0, activeAlarmsCount - 1)
             Log.d(TAG, "Stopped currently playing alarm: $recordTitle")
             
@@ -353,21 +352,45 @@ class AlarmService : Service() {
             Log.e(TAG, "Failed to show notification - permission denied", e)
         }
     }
-
-    private fun triggerVibration() {
+private fun triggerVibration() {
         try {
+            // Stop any existing vibration first
+            stopVibration()
+            
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val vibrationEffect = VibrationEffect.createWaveform(
-                    longArrayOf(0, 500, 250, 500, 250, 500),
-                    -1
+                    longArrayOf(0, 1000, 500, 1000, 500),
+                    0 // Repeat from index 0 for continuous vibration
                 )
                 vibrator?.vibrate(vibrationEffect)
             } else {
                 @Suppress("DEPRECATION")
-                vibrator?.vibrate(longArrayOf(0, 500, 250, 500, 250, 500), -1)
+                vibrator?.vibrate(longArrayOf(0, 1000, 500, 1000, 500), 0) // Repeat from index 0
+            }
+            Log.d(TAG, "Started continuous vibration")
+            
+            // Auto-stop vibration after 60 seconds for loud alarms, 30 seconds for others
+            vibrationTimer = Timer().apply {
+                schedule(object : TimerTask() {
+                    override fun run() {
+                        stopVibration()
+                        Log.d(TAG, "Auto-stopped vibration after timeout")
+                    }
+                }, 30000L) // 60 seconds
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to trigger vibration", e)
+        }
+    }
+
+    private fun stopVibration() {
+        try {
+            vibrator?.cancel()
+            vibrationTimer?.cancel()
+            vibrationTimer = null
+            Log.d(TAG, "Stopped vibration")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop vibration", e)
         }
     }
 
@@ -525,9 +548,9 @@ class AlarmService : Service() {
             .build()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onDestroy() {        super.onDestroy()
         stopCurrentAlarmSound()
+        stopVibration()
         releaseWakeLock()
         vibrator = null
         activeAlarmsCount = 0
