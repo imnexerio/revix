@@ -19,16 +19,20 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import java.util.*
 
-class AlarmService : Service() {    companion object {
+class AlarmService : Service() {
+    companion object {
         private const val TAG = "AlarmService"
         private const val NOTIFICATION_CHANNEL_ID = "record_alarms"
         private const val NOTIFICATION_CHANNEL_NAME = "Record Alarms"
         private const val FOREGROUND_NOTIFICATION_ID = 1000
     }
 
+    // Single media player - latest alarm takes priority
     private var mediaPlayer: MediaPlayer? = null
+    private var currentSoundAlarmKey: String? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var activeAlarmsCount = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -68,7 +72,7 @@ class AlarmService : Service() {    companion object {
         // Start as foreground service with media playback type for Android 14+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
-                FOREGROUND_NOTIFICATION_ID, 
+                FOREGROUND_NOTIFICATION_ID,
                 createForegroundNotification(),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
             )
@@ -78,8 +82,11 @@ class AlarmService : Service() {    companion object {
 
         intent?.let { processIntent(it) }
 
-        // Stop the service after processing
-        stopSelf()
+        // Don't stop service immediately - let it stay alive for concurrent alarms
+        // Only stop when no active alarms remain
+        if (activeAlarmsCount == 0) {
+            stopSelf()
+        }
         return START_NOT_STICKY
     }
 
@@ -96,13 +103,15 @@ class AlarmService : Service() {    companion object {
 
     private fun handleStopAllAlarms() {
         Log.d(TAG, "Stopping all ongoing alarms")
-        
-        // Stop any playing alarm sounds
-        stopAlarmSound()
-        
+
+        // Stop current playing alarm sound
+        stopCurrentAlarmSound()
+
         // Stop vibration
         vibrator?.cancel()
-        
+
+        activeAlarmsCount = 0
+        currentSoundAlarmKey = null
         Log.d(TAG, "All ongoing alarms stopped")
     }
 
@@ -121,7 +130,12 @@ class AlarmService : Service() {    companion object {
         val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
 
         Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Snooze: $snoozeCount)")
-        
+
+        // Increment active alarms count for actual alarms with sound/vibration
+        if ((isActualAlarm || (!isUpcomingReminder && !isActualAlarm)) && alarmType > 1) {
+            activeAlarmsCount++
+        }
+
         // Only acquire wake lock for actual alarms, not for upcoming reminders
         if (isActualAlarm && alarmType > 0) {
             acquireWakeLock()
@@ -129,7 +143,7 @@ class AlarmService : Service() {    companion object {
             // Legacy alarm handling - acquire wake lock
             acquireWakeLock()
         }
-        
+
         when {
             isUpcomingReminder -> {
                 handleUpcomingReminder(category, subCategory, recordTitle, actualTime, isSnooze, snoozeCount)
@@ -173,7 +187,7 @@ class AlarmService : Service() {    companion object {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
-            this, 
+            this,
             System.currentTimeMillis().toInt(),
             appIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -212,10 +226,10 @@ class AlarmService : Service() {    companion object {
                 putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
                 putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
                 putExtra(AlarmReceiver.EXTRA_DESCRIPTION, description)
-                putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, if (withSound && withVibration && isLoudAlarm) 5 
-                    else if (withSound && withVibration) 4 
-                    else if (withSound) 3 
-                    else if (withVibration) 2 
+                putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, if (withSound && withVibration && isLoudAlarm) 5
+                    else if (withSound && withVibration) 4
+                    else if (withSound) 3
+                    else if (withVibration) 2
                     else 1)
                 putExtra("SNOOZE_COUNT", snoozeCount + 1)
             }
@@ -306,7 +320,13 @@ class AlarmService : Service() {    companion object {
 
     private fun playAlarmSound(isLoudAlarm: Boolean) {
         try {
-            mediaPlayer?.release()
+            // Stop any currently playing sound
+            stopCurrentAlarmSound()
+            
+            // Generate unique key for this alarm sound
+            val alarmKey = System.currentTimeMillis().toString()
+            currentSoundAlarmKey = alarmKey
+            
             mediaPlayer = MediaPlayer().apply {
                 val soundUri = RingtoneManager.getDefaultUri(
                     if (isLoudAlarm) RingtoneManager.TYPE_ALARM else RingtoneManager.TYPE_NOTIFICATION
@@ -316,19 +336,30 @@ class AlarmService : Service() {    companion object {
                 isLooping = isLoudAlarm
                 prepare()
                 start()
-            }            // Auto-stop after 1 minute for loud alarms, 30 seconds for regular sounds
+            }
+
+            Log.d(TAG, "Started alarm sound with key: $alarmKey (loud: $isLoudAlarm)")
+
+            // Auto-stop after duration
             val duration = if (isLoudAlarm) 60000L else 30000L
             Timer().schedule(object : TimerTask() {
                 override fun run() {
-                    stopAlarmSound()
+                    // Only stop if this is still the current sound
+                    if (currentSoundAlarmKey == alarmKey) {
+                        stopCurrentAlarmSound()
+                        activeAlarmsCount = maxOf(0, activeAlarmsCount - 1)
+                        
+                        // Stop service if no more active alarms
+                        if (activeAlarmsCount == 0) {
+                            stopSelf()
+                        }
+                    }
                 }
             }, duration)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to play alarm sound", e)
         }
-    }
-
-    private fun stopAlarmSound() {
+    }    private fun stopCurrentAlarmSound() {
         try {
             mediaPlayer?.apply {
                 if (isPlaying) {
@@ -337,8 +368,10 @@ class AlarmService : Service() {    companion object {
                 release()
             }
             mediaPlayer = null
+            currentSoundAlarmKey = null
+            Log.d(TAG, "Stopped current alarm sound")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to stop alarm sound", e)
+            Log.e(TAG, "Failed to stop current alarm sound", e)
         }
     }
 
@@ -424,9 +457,9 @@ class AlarmService : Service() {    companion object {
                         .build()
                 )
             }
-
             val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)        }
+            notificationManager.createNotificationChannel(channel)
+        }
     }
 
     private fun createForegroundNotification(): Notification {
@@ -440,9 +473,11 @@ class AlarmService : Service() {    companion object {
 
     override fun onDestroy() {
         super.onDestroy()
-        stopAlarmSound()
+        stopCurrentAlarmSound()
         releaseWakeLock()
         vibrator = null
+        activeAlarmsCount = 0
+        currentSoundAlarmKey = null
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
