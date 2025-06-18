@@ -284,51 +284,6 @@ class HomeWidgetService {
           await HomeWidget.saveWidgetData('record_update_result_$requestId', 'ERROR:${e.toString()}');
         }
       }
-    } else if (uri?.host == 'record_check') {
-      try {
-        print('Starting record check background processing...');
-
-        final category = uri?.queryParameters['category'] ?? '';
-        final subCategory = uri?.queryParameters['sub_category'] ?? '';
-        final recordTitle = uri?.queryParameters['record_title'] ?? '';
-
-        print('Checking record: $category - $subCategory - $recordTitle');
-
-        // Initialize database service to check current status
-        final service = CombinedDatabaseService();
-        await service.initialize();
-
-        // Force data refresh to get latest status
-        await service.forceDataReprocessing();
-        final categorizedData = service.currentCategorizedData;
-
-        if (categorizedData != null) {
-          final todayRecords = categorizedData['today'] ?? [];
-          
-          // Check if the record still exists in today's records
-          final recordExists = todayRecords.any((record) =>
-            record['category'] == category &&
-            record['sub_category'] == subCategory &&
-            record['record_title'] == recordTitle
-          );
-
-          if (recordExists) {
-            print('Record still pending - precheck completed');
-            // Record is still pending, alarm will be triggered at scheduled time
-          } else {
-            print('Record already completed or moved - cancelling related alarms');
-            // Record has been completed or moved, so no need for the main alarm
-          }
-
-          // Update widget data with latest information
-          final missedRecords = categorizedData['missed'] ?? [];
-          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-        }
-
-      } catch (e) {
-        print('Error in record check background callback: $e');
-      }
     }
     else if (uri?.host == 'record_create') {
       try {
