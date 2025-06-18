@@ -202,7 +202,7 @@ class RecordUpdateService : Service() {
                                 "Record updated successfully!",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showStatusNotification(category,subCategory,lectureNo, "✅ Completed successfully!", true)
+                            showStatusNotification(category,subCategory,lectureNo, "Completed successfully!", true)
                         } else {
                             val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
                             Toast.makeText(
@@ -210,7 +210,7 @@ class RecordUpdateService : Service() {
                                 "Failed to update record: $displayError",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showStatusNotification(category,subCategory,lectureNo, "❌ Failed: $displayError", true)
+                            showStatusNotification(category,subCategory,lectureNo, "Failed: $displayError please launch app for more info", false)
                         }
                     } else {
                         // Timeout occurred
@@ -219,7 +219,7 @@ class RecordUpdateService : Service() {
                             "Update operation timed out. Please try again.",
                             Toast.LENGTH_SHORT
                         ).show()
-                        showStatusNotification(category,subCategory,lectureNo, "⏱️ Operation timed out", true)
+                        showStatusNotification(category,subCategory,lectureNo, "Operation timed out please launch app for more info.", false)
                     }
                 }
 
