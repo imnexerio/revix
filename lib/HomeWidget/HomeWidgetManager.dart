@@ -9,7 +9,7 @@ import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/MarkAsDoneService.dart';
-import '../Utils/AlarmManagerService.dart';
+
 import '../firebase_options.dart';
 
 @pragma('vm:entry-point')
@@ -35,12 +35,7 @@ class HomeWidgetService {
       HomeWidget.setAppGroupId(appGroupId);
       // Set up widget background callback handling
       HomeWidget.registerInteractivityCallback(backgroundCallback);
-      await _databaseService.initialize();
-
-      // Initialize alarm manager service
-      await AlarmManagerService.initialize();
-
-      // Give a small delay for the service to initialize properly
+      await _databaseService.initialize();      // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
 
       await _initializeWidgetData();
@@ -450,17 +445,11 @@ class HomeWidgetService {
       debugPrint('Error updating widget data: $e');
     }
   }
-
-  // Helper method to schedule alarms for today's records
+  // Helper method to schedule alarms for today's records (now handled by Android widget)
   static Future<void> _scheduleAlarmsForTodayRecords(List<Map<String, dynamic>> todayRecords) async {
-    try {
-      if (PlatformUtils.instance.isAndroid) {
-        await AlarmManagerService.scheduleAlarmsForTodayRecords(todayRecords);
-        print('Scheduled alarms for ${todayRecords.length} today records');
-      }
-    } catch (e) {
-      print('Error scheduling alarms: $e');
-    }
+    // Alarm scheduling is now handled natively by TodayWidget.kt when widget data is updated
+    // This method is kept for compatibility but no longer performs any action
+    print('Alarm scheduling now handled by Android widget for ${todayRecords.length} today records');
   }
 
   static List<Map<String, dynamic>> _formatRecords(

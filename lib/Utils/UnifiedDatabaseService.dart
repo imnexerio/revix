@@ -8,7 +8,7 @@ import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import 'FirebaseDatabaseService.dart';
 import 'CustomSnackBar.dart';
-import 'AlarmManagerService.dart';
+
 
 class CombinedDatabaseService {
   static final CombinedDatabaseService _instance = CombinedDatabaseService._internal();
@@ -200,17 +200,11 @@ class CombinedDatabaseService {
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
       HomeWidgetService.updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
   }
-
-  // Helper method to schedule alarms for today's records
+  // Helper method to schedule alarms for today's records (now handled by Android widget)
   void _scheduleAlarmsForTodayRecords(List<Map<String, dynamic>> todayRecords) {
-    try {
-      if (PlatformUtils.instance.isAndroid) {
-        AlarmManagerService.scheduleAlarmsForTodayRecords(todayRecords);
-        print('Scheduled alarms for ${todayRecords.length} today records');
-      }
-    } catch (e) {
-      print('Error scheduling alarms: $e');
-    }
+    // Alarm scheduling is now handled natively by TodayWidget.kt when widget data is updated
+    // This method is kept for compatibility but no longer performs any action
+    print('Alarm scheduling now handled by Android widget for ${todayRecords.length} today records');
   }
 
   void _processCategoriesData(Map<Object?, Object?> rawData) {

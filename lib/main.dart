@@ -17,7 +17,7 @@ import 'SettingsPage/SettingsPage.dart';
 import 'Utils/ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
-import 'Utils/AlarmManagerService.dart';
+
 import 'firebase_options.dart';
 
 void main() async {
@@ -26,18 +26,9 @@ void main() async {
   
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
-
   // Initialize HomeWidget service for background callbacks
   if (PlatformUtils.instance.isAndroid) {
     await HomeWidgetService.initialize();
-    
-    // Initialize alarm manager service
-    await AlarmManagerService.initialize();
-    
-    // Request exact alarm permission if needed
-    if (!await AlarmManagerService.hasExactAlarmPermission()) {
-      print('Exact alarm permission not granted, will request when needed');
-    }
   }
   
   runApp(const MyApp());
