@@ -25,15 +25,14 @@ class AlarmService : Service() {
         private const val NOTIFICATION_CHANNEL_ID = "record_alarms"
         private const val NOTIFICATION_CHANNEL_NAME = "Record Alarms"
         private const val FOREGROUND_NOTIFICATION_ID = 1000
-    }
-
-    // Single media player - latest alarm takes priority
+    }    // Single media player - latest alarm takes priority
     private var mediaPlayer: MediaPlayer? = null
     private var currentSoundAlarmKey: String? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var activeAlarmsCount = 0
     private var vibrationTimer: Timer? = null
+    private var currentVibrationAlarmKey: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -351,11 +350,14 @@ class AlarmService : Service() {
         } catch (e: SecurityException) {
             Log.e(TAG, "Failed to show notification - permission denied", e)
         }
-    }
-private fun triggerVibration() {
+    }    private fun triggerVibration() {
         try {
             // Stop any existing vibration first
             stopVibration()
+            
+            // Generate unique key for this vibration alarm
+            val vibrationKey = System.currentTimeMillis().toString()
+            currentVibrationAlarmKey = vibrationKey
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val vibrationEffect = VibrationEffect.createWaveform(
@@ -367,27 +369,29 @@ private fun triggerVibration() {
                 @Suppress("DEPRECATION")
                 vibrator?.vibrate(longArrayOf(0, 1000, 500, 1000, 500), 0) // Repeat from index 0
             }
-            Log.d(TAG, "Started continuous vibration")
+            Log.d(TAG, "Started continuous vibration with key: $vibrationKey")
             
-            // Auto-stop vibration after 60 seconds for loud alarms, 30 seconds for others
+            // Auto-stop vibration after 30 seconds
             vibrationTimer = Timer().apply {
                 schedule(object : TimerTask() {
                     override fun run() {
-                        stopVibration()
-                        Log.d(TAG, "Auto-stopped vibration after timeout")
+                        // Only stop if this is still the current vibration
+                        if (currentVibrationAlarmKey == vibrationKey) {
+                            stopVibration()
+                            Log.d(TAG, "Auto-stopped vibration after timeout for key: $vibrationKey")
+                        }
                     }
-                }, 30000L) // 60 seconds
+                }, 30000L) // 30 seconds
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to trigger vibration", e)
         }
-    }
-
-    private fun stopVibration() {
+    }    private fun stopVibration() {
         try {
             vibrator?.cancel()
             vibrationTimer?.cancel()
             vibrationTimer = null
+            currentVibrationAlarmKey = null
             Log.d(TAG, "Stopped vibration")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop vibration", e)
@@ -548,13 +552,15 @@ private fun triggerVibration() {
             .build()
     }
 
-    override fun onDestroy() {        super.onDestroy()
+    override fun onDestroy() {
+        super.onDestroy()
         stopCurrentAlarmSound()
         stopVibration()
         releaseWakeLock()
         vibrator = null
         activeAlarmsCount = 0
         currentSoundAlarmKey = null
+        currentVibrationAlarmKey = null
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
