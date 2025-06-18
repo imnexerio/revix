@@ -318,7 +318,8 @@ class AlarmService : Service() {    companion object {
             mediaPlayer = null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop alarm sound", e)
-        }    }
+        }
+    }
 
     private fun scheduleAutoSnooze(
         category: String,
@@ -382,28 +383,6 @@ class AlarmService : Service() {    companion object {
             Log.d(TAG, "Widget refresh triggered from AlarmService")
         } catch (e: Exception) {
             Log.e(TAG, "Error triggering widget refresh from AlarmService: ${e.message}")
-        }
-    }
-
-    private fun triggerFlutterBackgroundCallback(action: String, params: Map<String, String>) {
-        try {
-            // Build URI with parameters
-            val uriBuilder = StringBuilder("homewidget://$action")
-            if (params.isNotEmpty()) {
-                uriBuilder.append("?")
-                params.entries.forEachIndexed { index, entry ->
-                    if (index > 0) uriBuilder.append("&")
-                    uriBuilder.append("${entry.key}=${entry.value}")
-                }
-            }
-            val uri = Uri.parse(uriBuilder.toString())
-            Log.d(TAG, "Triggering Flutter callback: $uri")
-            
-            // Note: Widget updates are handled by the Flutter side when the app processes the alarm
-            // The alarm functionality works independently of whether users have home widgets installed
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to trigger Flutter background callback", e)
         }
     }
 
