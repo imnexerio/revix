@@ -44,12 +44,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   
   // Alarm type field
   late int alarmType;
-  final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];
-  @override
+  final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];  @override
   void initState() {
     super.initState();
     revisionFrequency = widget.details['recurrence_frequency'];
-    isEnabled = widget.details['status'] == 'Enabled';
+    isEnabled = widget.details['status'] == 'Enabled'; // Always initialize from widget details
     noRevision = widget.details['completion_counts'];
     formattedTime = widget.details['reminder_time'];
     alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
@@ -971,8 +970,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                 onChanged: (bool newValue) {
                   setState(() {
                     isEnabled = newValue;
-                    // Update the underlying data to maintain consistency
-                    widget.details['status'] = newValue ? 'Enabled' : 'Disabled';
+                    // Don't update widget.details['status'] here - only update in local state
+                    // The actual data will only be updated when user clicks "SAVE CHANGES"
                   });
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
