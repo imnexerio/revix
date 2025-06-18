@@ -80,13 +80,12 @@ class AlarmService : Service() {    companion object {
         // Stop the service after processing
         stopSelf()
         return START_NOT_STICKY
-    }    private fun processIntent(intent: Intent) {
+    }
+
+    private fun processIntent(intent: Intent) {
         when (intent.action) {
             "PRECHECK_RECORD_STATUS" -> {
                 handlePrecheckRecordStatus(intent)
-            }
-            "RESCHEDULE_ALARMS" -> {
-                handleRescheduleAlarms()
             }
             "MARK_AS_DONE" -> {
                 handleMarkAsDone(intent)

@@ -39,9 +39,6 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
             ACTION_MANUAL_SNOOZE -> {
                 handleManualSnooze(context, intent)
             }
-            Intent.ACTION_BOOT_COMPLETED -> {
-                handleBootCompleted(context)
-            }
         }
     }
 
@@ -202,14 +199,4 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         Log.d(TAG, "Cancelled all snooze alarms for: $recordTitle")
     }
 
-    private fun handleBootCompleted(context: Context) {
-        Log.d(TAG, "Boot completed - rescheduling alarms")
-        
-        // Trigger alarm rescheduling after device reboot
-        val serviceIntent = Intent(context, AlarmService::class.java).apply {
-            action = "RESCHEDULE_ALARMS"
-        }
-        
-        context.startForegroundService(serviceIntent)
-    }
 }

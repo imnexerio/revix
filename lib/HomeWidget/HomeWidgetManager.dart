@@ -283,7 +283,8 @@ class HomeWidgetService {
         if (requestId.isNotEmpty) {
           await HomeWidget.saveWidgetData('record_update_result_$requestId', 'ERROR:${e.toString()}');
         }
-      }    } else if (uri?.host == 'record_check') {
+      }
+    } else if (uri?.host == 'record_check') {
       try {
         print('Starting record check background processing...');
 
@@ -327,35 +328,6 @@ class HomeWidgetService {
 
       } catch (e) {
         print('Error in record check background callback: $e');
-      }
-    } else if (uri?.host == 'alarm_reschedule') {
-      try {
-        print('Starting alarm reschedule background processing...');
-
-        // Initialize database service
-        final service = CombinedDatabaseService();
-        await service.initialize();
-
-        // Force data refresh to get latest records
-        await service.forceDataReprocessing();
-        final categorizedData = service.currentCategorizedData;
-
-        if (categorizedData != null) {
-          final todayRecords = categorizedData['today'] ?? [];
-          final missedRecords = categorizedData['missed'] ?? [];
-          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-
-          // Reschedule alarms for today's records
-          await _scheduleAlarmsForTodayRecords(todayRecords);
-
-          // Update widget data
-          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-          
-          print('Alarm reschedule completed for ${todayRecords.length} records');
-        }
-
-      } catch (e) {
-        print('Error in alarm reschedule background callback: $e');
       }
     }
     else if (uri?.host == 'record_create') {
