@@ -21,28 +21,28 @@ class PermissionManager(private val activity: Activity) {
         private const val TAG = "PermissionManager"
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_EXACT_ALARM = 1002
-    }
-
-    /**
-     * Check all alarm-related permissions and prompt user to grant missing ones
-     */
-    fun checkAndRequestAllPermissions() {
+    }    fun checkAndRequestAllPermissions() {
         Log.d(TAG, "Checking all alarm-related permissions")
         
-        when {
-            !hasPostNotificationPermission() -> {
-                requestPostNotificationPermission()
-            }
-            !hasExactAlarmPermission() -> {
-                showExactAlarmDialog()
-            }
-            else -> {
-                Log.d(TAG, "All permissions granted!")
-            }
+        if (!hasPostNotificationPermission()) {
+            Log.d(TAG, "Showing notification permission dialog")
+            showNotificationDialog()
+        } else {
+            checkExactAlarmPermission()
         }
     }
 
     /**
+     * Check and request exact alarm permission if needed
+     */
+    private fun checkExactAlarmPermission() {
+        if (!hasExactAlarmPermission()) {
+            Log.d(TAG, "Showing exact alarm dialog")
+            showExactAlarmDialog()
+        } else {
+            Log.d(TAG, "All permissions granted!")
+        }
+    }    /**
      * Check notification permission (Android 13+)
      */
     fun hasPostNotificationPermission(): Boolean {
@@ -55,6 +55,25 @@ class PermissionManager(private val activity: Activity) {
             // For Android < 13, notification permission is granted by default
             true
         }
+    }
+
+    /**
+     * Show dialog and request notification permission
+     */
+    fun showNotificationDialog() {
+        AlertDialog.Builder(activity)
+            .setTitle("Notification Permission")
+            .setMessage("To receive important reminders and alerts for your scheduled tasks, please grant notification permission.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                requestPostNotificationPermission()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+                // Continue to exact alarm permission even if notification was denied
+                checkExactAlarmPermission()
+            }
+            .setCancelable(false)
+            .show()
     }
 
     /**
@@ -178,14 +197,15 @@ class PermissionManager(private val activity: Activity) {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d(TAG, "Notification permission granted")
                     // Continue with next permission check
-                    if (!hasExactAlarmPermission()) {
-                        showExactAlarmDialog()
-                    }
+                    checkExactAlarmPermission()
                 } else {
                     Log.w(TAG, "Notification permission denied")
                     // Continue anyway but warn user
                     if (!areNotificationsEnabled()) {
                         showNotificationDisabledDialog()
+                    } else {
+                        // Still check exact alarm permission even if notification was denied
+                        checkExactAlarmPermission()
                     }
                 }
             }
@@ -205,10 +225,7 @@ class PermissionManager(private val activity: Activity) {
             .setNegativeButton("Continue") { dialog, _ ->
                 dialog.dismiss()
                 // Continue with other permission checks
-                if (!hasExactAlarmPermission()) {
-                    showExactAlarmDialog()
-                }
-            }
+                checkExactAlarmPermission()            }
             .show()
     }
 }
