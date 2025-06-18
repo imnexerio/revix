@@ -575,8 +575,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           ),
                         ],
                       ),
-                    ),
-                    // Alarm Type Field (only shown when not "All Day")
+                    ),                    // Alarm Type Field (only shown when not "All Day")
                     if (_timeController.text != 'All Day')
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -585,67 +584,27 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           color: Theme.of(context).cardColor,
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.alarm,
-                                    size: 20,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Alarm Type',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).hintColor,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _alarmOptions.asMap().entries.map((entry) {
-                                  int index = entry.key;
-                                  String option = entry.value;
-                                  return FilterChip(
-                                    label: Text(
-                                      option,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: _alarmType == index ? FontWeight.w600 : FontWeight.normal,
-                                      ),
-                                    ),
-                                    selected: _alarmType == index,
-                                    onSelected: (selected) {
-                                      if (selected) {
-                                        setState(() {
-                                          _alarmType = index;
-                                        });
-                                      }
-                                    },
-                                    selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
-                                    checkmarkColor: Theme.of(context).primaryColor,
-                                    backgroundColor: Theme.of(context).colorScheme.surface,
-                                    side: BorderSide(
-                                      color: _alarmType == index 
-                                        ? Theme.of(context).primaryColor 
-                                        : Theme.of(context).dividerColor,
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
+                        child: DropdownButtonFormField<int>(
+                          value: _alarmType,
+                          decoration: const InputDecoration(
+                            labelText: 'Alarm Type',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          isExpanded: true,
+                          items: _alarmOptions.asMap().entries.map((entry) {
+                            int index = entry.key;
+                            String option = entry.value;
+                            return DropdownMenuItem<int>(
+                              value: index,
+                              child: Text(option),
+                            );
+                          }).toList(),
+                          onChanged: (newValue) {
+                            setState(() {
+                              _alarmType = newValue!;
+                            });
+                          },
                         ),
                       ),
 
