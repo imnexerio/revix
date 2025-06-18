@@ -176,7 +176,9 @@ class AlarmService : Service() {    companion object {
         if (!isPrecheck && snoozeCount < 6) {
             scheduleAutoSnooze(category, subCategory, recordTitle, description, alarmType, snoozeCount + 1)
         }
-    }    private fun showNotification(
+    }
+
+    private fun showNotification(
         category: String,
         subCategory: String,
         recordTitle: String,

@@ -5,14 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 
-class AlarmReceiver : BroadcastReceiver() {    companion object {
+class AlarmReceiver : BroadcastReceiver() {
+    companion object {
         const val ACTION_RECORD_ALARM = "revix.ACTION_RECORD_ALARM"
         const val ACTION_WARNING_NOTIFICATION = "revix.ACTION_WARNING_NOTIFICATION"
         const val ACTION_RECORD_PRECHECK = "revix.ACTION_RECORD_PRECHECK"
         const val ACTION_MARK_AS_DONE = "MARK_AS_DONE"
         const val ACTION_IGNORE_ALARM = "IGNORE_ALARM"
         const val ACTION_MANUAL_SNOOZE = "MANUAL_SNOOZE"
-        const val EXTRA_RECORD_DATA = "record_data"
         const val EXTRA_ALARM_TYPE = "alarm_type"
         const val EXTRA_CATEGORY = "category"
         const val EXTRA_SUB_CATEGORY = "sub_category"
