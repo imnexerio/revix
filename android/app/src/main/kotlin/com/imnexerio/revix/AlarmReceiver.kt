@@ -97,14 +97,23 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
 
         Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle")
 
-        // Trigger mark as done through Flutter background callback
-        val serviceIntent = Intent(context, AlarmService::class.java).apply {
-            action = "MARK_AS_DONE"
-            putExtra(EXTRA_CATEGORY, category)
-            putExtra(EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+        // Cancel any pending alarms for this record since it's being marked as done
+        cancelSnoozeAlarms(context, category, subCategory, recordTitle)
+
+        // Dismiss the current notification
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val notificationId = (category + subCategory + recordTitle).hashCode()
+        notificationManager.cancel(notificationId)
+
+        // Use RecordUpdateService directly - much cleaner and more efficient
+        val serviceIntent = Intent(context, RecordUpdateService::class.java).apply {
+            putExtra("category", category)
+            putExtra("sub_category", subCategory)
+            putExtra("record_title", recordTitle)
         }
-          context.startForegroundService(serviceIntent)
+        context.startService(serviceIntent)
+        
+        Log.d(TAG, "RecordUpdateService started for: $recordTitle")
     }
 
     private fun handleIgnoreAlarm(context: Context, intent: Intent) {

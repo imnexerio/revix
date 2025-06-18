@@ -87,9 +87,6 @@ class AlarmService : Service() {    companion object {
             "PRECHECK_RECORD_STATUS" -> {
                 handlePrecheckRecordStatus(intent)
             }
-            "MARK_AS_DONE" -> {
-                handleMarkAsDone(intent)
-            }
             "STOP_ALL_ALARMS" -> {
                 handleStopAllAlarms()
             }
@@ -111,22 +108,6 @@ class AlarmService : Service() {    companion object {
             "category" to category,
             "sub_category" to subCategory,
             "record_title" to recordTitle
-        ))
-    }
-
-    private fun handleMarkAsDone(intent: Intent) {
-        val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
-        val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
-        val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-
-        Log.d(TAG, "Handling mark as done: $category - $subCategory - $recordTitle")
-
-        // Trigger Flutter background callback to mark record as done
-        triggerFlutterBackgroundCallback("record_update", mapOf(
-            "category" to category,
-            "sub_category" to subCategory,
-            "record_title" to recordTitle,
-            "requestId" to System.currentTimeMillis().toString()
         ))
     }
 
