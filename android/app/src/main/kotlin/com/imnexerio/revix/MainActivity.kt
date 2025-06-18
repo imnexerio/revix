@@ -178,25 +178,7 @@ class MainActivity : FlutterActivity() {
                 else -> {
                     result.notImplemented()
                 }
-            }
-        }
-        
-        // Notification helper channel
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "revix/notifications").setMethodCallHandler { call, result ->
-            when (call.method) {
-                "showDataRefreshNotification" -> {
-                    try {
-                        AlarmService.showDataRefreshNotification(this)
-                        result.success(true)
-                    } catch (e: Exception) {
-                        result.error("NOTIFICATION_ERROR", "Failed to show refresh notification: ${e.message}", null)
-                    }
-                }
-                else -> {
-                    result.notImplemented()
-                }
-            }
-        }
+            }        }
         
         // Initialize update records channel for communication with services
         updateRecordsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_RECORDS_CHANNEL)

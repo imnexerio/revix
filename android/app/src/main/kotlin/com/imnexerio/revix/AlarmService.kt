@@ -27,31 +27,6 @@ class AlarmService : Service() {    companion object {
         private const val NOTIFICATION_CHANNEL_ID = "record_alarms"
         private const val NOTIFICATION_CHANNEL_NAME = "Record Alarms"
         private const val FOREGROUND_NOTIFICATION_ID = 1000
-        
-        // Method to show data refresh notification - call this from Flutter when checking alarm status
-        @JvmStatic
-        fun showDataRefreshNotification(context: Context) {
-            try {
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                
-                val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_launcher_foreground)
-                    .setContentTitle("Checking for upcoming reminders...")
-                    .setContentText("Refreshing data to check for alarms in the next minute")
-                    .setPriority(NotificationCompat.PRIORITY_LOW)
-                    .setCategory(NotificationCompat.CATEGORY_STATUS)
-                    .setAutoCancel(true)
-                    .setTimeoutAfter(5000) // Auto-dismiss after 5 seconds
-                    .build()
-                
-                val notificationId = "data_refresh".hashCode()
-                notificationManager.notify(notificationId, notification)
-                
-                Log.d(TAG, "Data refresh notification shown")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to show data refresh notification", e)
-            }
-        }
     }
 
     private var mediaPlayer: MediaPlayer? = null
