@@ -119,11 +119,14 @@ class AlarmService : Service() {    companion object {
         val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
         val actualTime = intent.getLongExtra("ACTUAL_TIME", 0L)
         val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
-        
+
         Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Snooze: $snoozeCount)")
         
-        // Acquire wake lock for all alarm types except "No Reminder" to turn on screen
-        if (alarmType > 0) {
+        // Only acquire wake lock for actual alarms, not for upcoming reminders
+        if (isActualAlarm && alarmType > 0) {
+            acquireWakeLock()
+        } else if (!isUpcomingReminder && !isActualAlarm && alarmType > 0) {
+            // Legacy alarm handling - acquire wake lock
             acquireWakeLock()
         }
         
@@ -632,7 +635,7 @@ class AlarmService : Service() {    companion object {
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT) // Silent upcoming reminder
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -640,6 +643,8 @@ class AlarmService : Service() {    companion object {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(false)
             .setShowWhen(true)
+            .setSilent(true) // Explicitly make it silent - no sound or vibration
+            .setOnlyAlertOnce(true) // Don't alert if notification is updated
 
         // Add snooze button only if we haven't reached the limit
         if (snoozePendingIntent != null) {
