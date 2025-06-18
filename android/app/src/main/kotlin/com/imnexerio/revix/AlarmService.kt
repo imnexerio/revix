@@ -11,6 +11,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
@@ -27,11 +28,40 @@ class AlarmService : Service() {    companion object {
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    }
+
+    private fun acquireWakeLock() {
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                "revix:AlarmWakeLock"
+            )
+            wakeLock?.acquire(30000) // Hold for 30 seconds max
+            Log.d(TAG, "Wake lock acquired - screen should turn on")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to acquire wake lock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.d(TAG, "Wake lock released")
+                }
+            }
+            wakeLock = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to release wake lock", e)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -85,8 +115,14 @@ class AlarmService : Service() {    companion object {
         val isPrecheck = intent.getBooleanExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
         val isWarning = intent.getBooleanExtra("IS_WARNING", false)
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
-
-        Log.d(TAG, "Handling alarm: $category - $subCategory - $recordTitle (Type: $alarmType, Precheck: $isPrecheck, Warning: $isWarning, Snooze: $snoozeCount)")        // Create notification based on alarm type
+        Log.d(TAG, "Handling alarm: $category - $subCategory - $recordTitle (Type: $alarmType, Precheck: $isPrecheck, Warning: $isWarning, Snooze: $snoozeCount)")
+        
+        // Acquire wake lock for all alarm types except "No Reminder" to turn on screen
+        if (alarmType > 0) {
+            acquireWakeLock()
+        }
+        
+        // Create notification based on alarm type
         when (alarmType) {
             0 -> {
                 // No Reminder - do nothing
@@ -219,6 +255,10 @@ class AlarmService : Service() {    companion object {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .addAction(R.drawable.ic_launcher_foreground, "Mark as Done", markDonePendingIntent)
+            // Additional flags to ensure alarm is visible and wakes up screen
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
+            .setOngoing(false) // Allow dismissal but make it prominent
+            .setShowWhen(true) // Show timestamp
 
         // Add snooze button only if we haven't reached the limit
         if (snoozePendingIntent != null) {
@@ -250,10 +290,9 @@ class AlarmService : Service() {    companion object {
                 }
                 notificationBuilder.setVibrate(pattern)
             }
-        }
-
-        // For loud alarms, use full screen intent
-        if (isLoudAlarm) {
+        }        // For loud alarms, use full screen intent
+        // For regular alarms (not warnings), also use full screen intent to wake up screen
+        if (isLoudAlarm || (!isWarning && !isPrecheck)) {
             notificationBuilder.setFullScreenIntent(pendingIntent, true)
         }
 
@@ -420,6 +459,7 @@ class AlarmService : Service() {    companion object {
     override fun onDestroy() {
         super.onDestroy()
         stopAlarmSound()
+        releaseWakeLock()
         vibrator = null
     }
 
