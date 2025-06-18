@@ -63,9 +63,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
 
-        Log.d(TAG, "Upcoming reminder triggered: $recordTitle (immediate: $isImmediate, snooze: $isSnooze)")
-
-        // Show upcoming reminder notification
+        Log.d(TAG, "Upcoming reminder triggered: $recordTitle (immediate: $isImmediate, snooze: $isSnooze)")        // Show upcoming reminder notification
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
             putExtra(EXTRA_ALARM_TYPE, 1) // Light notification for upcoming reminder
             putExtra(EXTRA_CATEGORY, category)
@@ -78,10 +76,8 @@ class AlarmReceiver : BroadcastReceiver() {
         }
         context.startForegroundService(serviceIntent)
 
-        // Schedule the actual alarm if not immediate
-        if (!isImmediate) {
-            scheduleActualAlarm(context, category, subCategory, recordTitle, alarmType, actualTime, snoozeCount)
-        }
+        // Always schedule the actual alarm regardless of immediate flag
+        scheduleActualAlarm(context, category, subCategory, recordTitle, alarmType, actualTime, snoozeCount)
     }
 
     private fun scheduleActualAlarm(
@@ -153,7 +149,14 @@ class AlarmReceiver : BroadcastReceiver() {
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
 
-        Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle")
+        Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle")        // Stop this specific alarm sound immediately
+        val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
+            action = "STOP_SPECIFIC_ALARM"
+            putExtra(EXTRA_CATEGORY, category)
+            putExtra(EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+        }
+        context.startForegroundService(stopAlarmIntent)
 
         // Cancel all alarms for this record using the new alarm manager
         val alarmHelper = AlarmManagerHelper(context)
@@ -173,7 +176,9 @@ class AlarmReceiver : BroadcastReceiver() {
         context.startService(serviceIntent)
         
         Log.d(TAG, "All alarms cancelled and RecordUpdateService started for: $recordTitle")
-    }    private fun handleIgnoreAlarm(context: Context, intent: Intent) {
+    }
+
+    private fun handleIgnoreAlarm(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""

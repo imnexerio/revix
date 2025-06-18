@@ -95,6 +95,9 @@ class AlarmService : Service() {
             "STOP_ALL_ALARMS" -> {
                 handleStopAllAlarms()
             }
+            "STOP_SPECIFIC_ALARM" -> {
+                handleStopSpecificAlarm(intent)
+            }
             else -> {
                 handleAlarmTrigger(intent)
             }
@@ -113,6 +116,33 @@ class AlarmService : Service() {
         activeAlarmsCount = 0
         currentSoundAlarmKey = null
         Log.d(TAG, "All ongoing alarms stopped")
+    }
+
+    private fun handleStopSpecificAlarm(intent: Intent) {
+        val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
+        val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
+        val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
+        
+        val alarmKey = "${category}_${subCategory}_${recordTitle}"
+        
+        Log.d(TAG, "Stopping specific alarm: $alarmKey")
+        
+        // Check if this is the currently playing alarm
+        if (currentSoundAlarmKey != null && currentSoundAlarmKey == alarmKey.hashCode().toString()) {
+            stopCurrentAlarmSound()
+            vibrator?.cancel()
+            activeAlarmsCount = maxOf(0, activeAlarmsCount - 1)
+            Log.d(TAG, "Stopped currently playing alarm: $recordTitle")
+            
+            // Stop service if no more active alarms
+            if (activeAlarmsCount == 0) {
+                stopSelf()
+            }
+        } else {
+            // This alarm is not currently playing sound, but decrement count anyway
+            activeAlarmsCount = maxOf(0, activeAlarmsCount - 1)
+            Log.d(TAG, "Alarm not currently playing, decremented count for: $recordTitle")
+        }
     }
 
     private fun handleAlarmTrigger(intent: Intent) {
