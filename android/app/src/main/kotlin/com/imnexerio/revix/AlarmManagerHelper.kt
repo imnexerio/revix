@@ -38,6 +38,9 @@ class AlarmManagerHelper(private val context: Context) {
     fun scheduleAlarmsForTodayRecords(todayRecords: List<Map<String, Any>>) {
         Log.d(TAG, "Processing ${todayRecords.size} today records with smart alarm management")
 
+        // First, check for imminent alarms in new data and trigger them immediately
+        checkAndTriggerImminentAlarms(todayRecords)
+
         val currentAlarms = getStoredAlarmMetadata()
         val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()
         val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -364,4 +367,84 @@ class AlarmManagerHelper(private val context: Context) {
             }
         }
     }
+
+    private fun checkAndTriggerImminentAlarms(todayRecords: List<Map<String, Any>>) {
+        val currentTime = System.currentTimeMillis()
+        val fiveMinutes = 5 * 60 * 1000L
+        val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        todayRecords.forEach { record ->
+            try {
+                val category = record["category"]?.toString() ?: ""
+                val subCategory = record["sub_category"]?.toString() ?: ""
+                val recordTitle = record["record_title"]?.toString() ?: ""
+                val reminderTime = record["reminder_time"]?.toString() ?: ""
+                val alarmType = (record["alarm_type"]?.toString()?.toIntOrNull()) ?: 0
+                val scheduledDate = record["scheduled_date"]?.toString() ?: ""
+
+                // Skip if no reminder, all day, or not today's record
+                if (alarmType == 0 || reminderTime.lowercase() == "all day" || 
+                    reminderTime.isEmpty() || scheduledDate != currentDate) {
+                    return@forEach
+                }
+
+                val actualTime = parseTimeToday(reminderTime)
+                if (actualTime <= 0) return@forEach
+                val timeUntilAlarm = actualTime - currentTime
+
+                // Check if alarm should be triggered immediately
+                when {
+                    timeUntilAlarm <= 0 -> {
+                        // Alarm time has passed - ignore it (no sense storing past alarms)
+                        Log.d(TAG, "Ignoring past alarm for $recordTitle")
+                        return@forEach
+                    }
+                    timeUntilAlarm <= fiveMinutes -> {
+                        // Less than 5 minutes - show upcoming reminder immediately
+                        Log.d(TAG, "Triggering immediate upcoming reminder for $recordTitle (${timeUntilAlarm/60000} min left)")
+                        triggerUpcomingReminder(category, subCategory, recordTitle, alarmType, actualTime, timeUntilAlarm)
+                    }
+                    // If > 5 minutes, normal scheduling will handle it
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking imminent alarm for record", e)
+            }
+        }
+    }    private fun triggerUpcomingReminder(
+        category: String, 
+        subCategory: String, 
+        recordTitle: String, 
+        alarmType: Int, 
+        actualTime: Long, 
+        timeUntilAlarm: Long
+    ) {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_UPCOMING_REMINDER
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
+            putExtra("ACTUAL_TIME", actualTime)
+            putExtra("IS_IMMEDIATE", true)
+            putExtra("IS_SNOOZE", false)
+            putExtra("SNOOZE_COUNT", 0)
+        }
+        
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            System.currentTimeMillis().toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        // Trigger immediately
+        try {
+            pendingIntent.send()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to trigger upcoming reminder", e)
+        }
+    }
+
+    // ...existing code...
 }
