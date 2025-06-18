@@ -31,10 +31,10 @@ class RecordUpdateService : Service() {
             finishTask(startId)
             return START_NOT_STICKY
         }
-
         val category = intent.getStringExtra("category") ?: ""
         val subCategory = intent.getStringExtra("sub_category") ?: ""
         val lectureNo = intent.getStringExtra("record_title") ?: ""
+        val externalRequestId = intent.getStringExtra("request_id") // Get external request ID if provided
 
         if (category.isEmpty() || subCategory.isEmpty() || lectureNo.isEmpty()) {
             Toast.makeText(this, "Invalid record information", Toast.LENGTH_SHORT).show()
@@ -46,7 +46,7 @@ class RecordUpdateService : Service() {
         val extras = HashMap<String, String>()
         intent.extras?.let { bundle ->
             for (key in bundle.keySet()) {
-                if (key != "category" && key != "sub_category" && key != "record_title") {
+                if (key != "category" && key != "sub_category" && key != "record_title" && key != "request_id") {
                     val value = bundle.getString(key)
                     if (value != null) {
                         extras[key] = value
@@ -55,7 +55,7 @@ class RecordUpdateService : Service() {
             }
         }
 
-        handleRecordClick(category, subCategory, lectureNo, extras, startId)
+        handleRecordClick(category, subCategory, lectureNo, extras, externalRequestId, startId)
         return START_STICKY
     }
 
@@ -106,12 +106,13 @@ class RecordUpdateService : Service() {
         subCategory: String,
         lectureNo: String,
         extras: Map<String, String>,
+        externalRequestId: String?,
         startId: Int
     ) {
         try {
             // Simplified approach - just call updateRecord with minimal data
             // Let Flutter handle all the business logic including checking if already revised today
-            updateRecord(emptyMap<String, Any>(), category, subCategory, lectureNo, extras, startId)
+            updateRecord(emptyMap<String, Any>(), category, subCategory, lectureNo, extras, externalRequestId, startId)
         } catch (e: Exception) {
             Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             e.printStackTrace()
@@ -125,6 +126,7 @@ class RecordUpdateService : Service() {
         subCategory: String,
         lectureNo: String,
         extras: Map<String, String>,
+        externalRequestId: String?,
         startId: Int
     ) {
         try {
@@ -137,8 +139,8 @@ class RecordUpdateService : Service() {
                 ).show()
             }
 
-            // Create unique request ID for tracking this update operation
-            val requestId = System.currentTimeMillis().toString()
+            // Use external request ID if provided, otherwise create new one
+            val requestId = externalRequestId ?: System.currentTimeMillis().toString()
             
             // Use simplified approach - just send the essential parameters
             // Let Flutter handle all the complex logic
