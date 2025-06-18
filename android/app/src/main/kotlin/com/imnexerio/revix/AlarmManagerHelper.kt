@@ -390,13 +390,18 @@ class AlarmManagerHelper(private val context: Context) {
 
                 val actualTime = parseTimeToday(reminderTime)
                 if (actualTime <= 0) return@forEach
-                val timeUntilAlarm = actualTime - currentTime
 
-                // Check if alarm should be triggered immediately
+                val timeUntilAlarm = actualTime - currentTime                // Check if alarm should be triggered immediately
                 when {
-                    timeUntilAlarm <= 0 -> {
-                        // Alarm time has passed - ignore it (no sense storing past alarms)
-                        Log.d(TAG, "Ignoring past alarm for $recordTitle")
+                    timeUntilAlarm < -60000 -> {
+                        // More than 1 minute past - ignore it (no sense storing old alarms)
+                        Log.d(TAG, "Ignoring old alarm for $recordTitle")
+                        return@forEach
+                    }
+                    timeUntilAlarm in -60000..60000 -> {
+                        // Current time alarm (within 1 minute window) - trigger actual alarm immediately
+                        Log.d(TAG, "Triggering current time alarm for $recordTitle")
+                        triggerActualAlarm(category, subCategory, recordTitle, alarmType)
                         return@forEach
                     }
                     timeUntilAlarm <= fiveMinutes -> {
@@ -446,5 +451,31 @@ class AlarmManagerHelper(private val context: Context) {
         }
     }
 
-    // ...existing code...
+    private fun triggerActualAlarm(category: String, subCategory: String, recordTitle: String, alarmType: Int) {
+        Log.d(TAG, "Triggering actual alarm immediately for: $recordTitle")
+        
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_ACTUAL_ALARM
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
+            putExtra("SNOOZE_COUNT", 0)
+        }
+        
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            System.currentTimeMillis().toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        // Trigger immediately
+        try {
+            pendingIntent.send()
+            Log.d(TAG, "Actual alarm triggered immediately for: $recordTitle")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to trigger actual alarm", e)
+        }
+    }
 }
