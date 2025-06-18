@@ -192,19 +192,10 @@ class CombinedDatabaseService {
       _updateHomeWidget(categorizedData['today'] ?? [],
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? []);
-      
-      // Schedule alarms for today's records
-      _scheduleAlarmsForTodayRecords(categorizedData['today'] ?? []);
     }
   }
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
       HomeWidgetService.updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-  }
-  // Helper method to schedule alarms for today's records (now handled by Android widget)
-  void _scheduleAlarmsForTodayRecords(List<Map<String, dynamic>> todayRecords) {
-    // Alarm scheduling is now handled natively by TodayWidget.kt when widget data is updated
-    // This method is kept for compatibility but no longer performs any action
-    print('Alarm scheduling now handled by Android widget for ${todayRecords.length} today records');
   }
 
   void _processCategoriesData(Map<Object?, Object?> rawData) {
@@ -362,9 +353,6 @@ class CombinedDatabaseService {
           _updateHomeWidget(categorizedData['today'] ?? [],
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? []);
-          
-          // Schedule alarms for today's records
-          _scheduleAlarmsForTodayRecords(categorizedData['today'] ?? []);
         }
       }
       return;

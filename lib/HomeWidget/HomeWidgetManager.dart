@@ -182,9 +182,7 @@ class HomeWidgetService {
 
           print('Records found - Today: ${todayRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');          // Update widget with the new data
           await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-          
-          // Schedule alarms for today's records
-          await _scheduleAlarmsForTodayRecords(todayRecords);
+
           
           print('Widget background refresh completed with data');
         } else {
@@ -249,9 +247,6 @@ class HomeWidgetService {
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
                 await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
-                
-                // Re-schedule alarms for today's records after successful update
-                await _scheduleAlarmsForTodayRecords(todayRecords);
                 
                 print('Widget refreshed after record update');
               }
@@ -358,9 +353,6 @@ class HomeWidgetService {
 
                 await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
                 
-                // Schedule alarms for today's records after successful creation
-                await _scheduleAlarmsForTodayRecords(todayRecords);
-                
                 print('Widget refreshed after record creation');
               }
             } catch (e) {
@@ -436,20 +428,11 @@ class HomeWidgetService {
         DateTime.now().millisecondsSinceEpoch,
       );
 
-      // Schedule alarms for today's records
-      await _scheduleAlarmsForTodayRecords(todayRecords);
-
       // Request widget update
       await _updateWidget();
     } catch (e) {
       debugPrint('Error updating widget data: $e');
     }
-  }
-  // Helper method to schedule alarms for today's records (now handled by Android widget)
-  static Future<void> _scheduleAlarmsForTodayRecords(List<Map<String, dynamic>> todayRecords) async {
-    // Alarm scheduling is now handled natively by TodayWidget.kt when widget data is updated
-    // This method is kept for compatibility but no longer performs any action
-    print('Alarm scheduling now handled by Android widget for ${todayRecords.length} today records');
   }
 
   static List<Map<String, dynamic>> _formatRecords(
