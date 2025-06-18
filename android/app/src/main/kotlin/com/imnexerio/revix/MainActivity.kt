@@ -12,7 +12,6 @@ class MainActivity : FlutterActivity() {
     private val UPDATE_RECORDS_CHANNEL = "revix/update_records"
     private val ALARM_MANAGER_CHANNEL = "revix/alarm_manager"
     private val PERMISSION_CHANNEL = "revix/permissions"
-    private lateinit var batteryOptManager: BatteryOptimizationManager
     private lateinit var alarmManagerHelper: AlarmManagerHelper
     private lateinit var permissionManager: PermissionManager
 
@@ -26,7 +25,6 @@ class MainActivity : FlutterActivity() {
         
         // Initialize managers
         alarmManagerHelper = AlarmManagerHelper(this)
-        batteryOptManager = BatteryOptimizationManager(this)
         permissionManager = PermissionManager(this)
         
         // Widget refresh channel (for manual refresh from main app context only)
@@ -215,11 +213,6 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize the battery optimization manager (legacy)
-        batteryOptManager = BatteryOptimizationManager(this)
-
-        // Automatically check and request all necessary permissions
-        // This will show dialogs sequentially for any missing permissions
         permissionManager.checkAndRequestAllPermissions()
 
         if (intent?.extras?.getBoolean("widget_refresh") == true) {
