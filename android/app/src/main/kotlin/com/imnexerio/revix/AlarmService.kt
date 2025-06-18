@@ -193,7 +193,7 @@ class AlarmService : Service() {    companion object {
         }
 
         // Schedule auto-snooze if this is not a precheck and we haven't reached the limit
-        if (!isPrecheck && snoozeCount < 5) {
+        if (!isPrecheck && snoozeCount < 6) {
             scheduleAutoSnooze(category, subCategory, recordTitle, description, alarmType, snoozeCount + 1)
         }
     }    private fun showNotification(
@@ -252,7 +252,7 @@ class AlarmService : Service() {    companion object {
 
         // Create manual snooze intent (only if we haven't reached the limit)
         var snoozePendingIntent: PendingIntent? = null
-        if (snoozeCount < 5) {
+        if (snoozeCount < 6) {
             val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
                 action = "MANUAL_SNOOZE"
                 putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
@@ -393,40 +393,60 @@ class AlarmService : Service() {    companion object {
         alarmType: Int,
         snoozeCount: Int
     ) {
-        val snoozeTime = System.currentTimeMillis() + (5 * 60 * 1000) // 5 minutes from now
-        
-        val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_RECORD_ALARM
+        Log.d(TAG, "Auto-snooze triggered for: $category - $subCategory - $recordTitle (Snooze #$snoozeCount)")
+
+        // Trigger widget refresh to check if record still exists
+        triggerWidgetRefresh()
+
+        // Schedule the snooze check after a short delay to allow widget refresh to complete
+        val snoozeCheckIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = "ACTION_SNOOZE_CHECK"
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
             putExtra(AlarmReceiver.EXTRA_DESCRIPTION, description)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
-            putExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
             putExtra("SNOOZE_COUNT", snoozeCount)
         }
 
-        val snoozePendingIntent = PendingIntent.getBroadcast(
+        val checkPendingIntent = PendingIntent.getBroadcast(
             this,
-            ("$category$subCategory$recordTitle$snoozeCount").hashCode(),
-            snoozeIntent,
+            ("auto_snooze_check_$category$subCategory$recordTitle$snoozeCount").hashCode(),
+            snoozeCheckIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val checkTime = System.currentTimeMillis() + 3000 // 3 seconds delay for widget refresh
+
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    snoozeTime,
-                    snoozePendingIntent
+                    checkTime,
+                    checkPendingIntent
                 )
             } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, snoozeTime, snoozePendingIntent)
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, checkTime, checkPendingIntent)
             }
-            Log.d(TAG, "Auto-snooze scheduled for $recordTitle in 5 minutes (attempt $snoozeCount/5)")
+            Log.d(TAG, "Auto-snooze check scheduled for $recordTitle")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule auto-snooze", e)
+            Log.e(TAG, "Failed to schedule auto-snooze check", e)
+        }
+    }
+
+    private fun triggerWidgetRefresh() {
+        try {
+            // Trigger widget refresh using the same mechanism as in TodayWidget
+            val uri = Uri.parse("homeWidget://widget_refresh")
+            val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
+                this,
+                uri
+            )
+            backgroundIntent.send()
+            Log.d(TAG, "Widget refresh triggered from AlarmService")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error triggering widget refresh from AlarmService: ${e.message}")
         }
     }
 

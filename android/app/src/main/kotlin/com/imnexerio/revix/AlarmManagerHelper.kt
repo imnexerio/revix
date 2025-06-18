@@ -75,20 +75,19 @@ class AlarmManagerHelper(private val context: Context) {
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }
-
-                val precheckCalendar = Calendar.getInstance().apply {
-                    timeInMillis = alarmCalendar.timeInMillis - (60 * 1000) // 1 minute before
+                val warningCalendar = Calendar.getInstance().apply {
+                    timeInMillis = alarmCalendar.timeInMillis - (5 * 60 * 1000) // 5 minutes before
                 }
 
                 val now = System.currentTimeMillis()
 
                 // Only schedule if the alarm time is in the future
                 if (alarmCalendar.timeInMillis > now) {
-                    // Schedule precheck alarm (1 minute before)
-                    if (precheckCalendar.timeInMillis > now) {
-                        schedulePrecheckAlarm(
+                    // Schedule warning alarm (5 minutes before)
+                    if (warningCalendar.timeInMillis > now) {
+                        scheduleWarningAlarm(
                             precheckAlarmId,
-                            precheckCalendar.timeInMillis,
+                            warningCalendar.timeInMillis,
                             category,
                             subCategory,
                             recordTitle
@@ -152,17 +151,14 @@ class AlarmManagerHelper(private val context: Context) {
         )
 
         scheduleExactAlarm(triggerTime, pendingIntent)
-    }
-
-    private fun schedulePrecheckAlarm(
-        precheckAlarmId: String,
+    }    private fun scheduleWarningAlarm(
+        warningAlarmId: String,
         triggerTime: Long,
         category: String,
         subCategory: String,
         recordTitle: String
-    ) {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_RECORD_PRECHECK
+    ) {        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_WARNING_NOTIFICATION
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
@@ -171,7 +167,7 @@ class AlarmManagerHelper(private val context: Context) {
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            precheckAlarmId.hashCode(),
+            warningAlarmId.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
