@@ -476,8 +476,8 @@ class AlarmService : Service() {    companion object {
             actualTime, isSnooze, snoozeCount
         )
     }
-    
-    private fun handleActualAlarm(
+
+      private fun handleActualAlarm(
         category: String,
         subCategory: String,
         recordTitle: String,
@@ -486,6 +486,9 @@ class AlarmService : Service() {    companion object {
         snoozeCount: Int
     ) {
         Log.d(TAG, "Triggering actual alarm for: $recordTitle (Type: $alarmType)")
+        
+        // Cancel any existing upcoming reminder notification for this record
+        cancelUpcomingReminderNotification(category, subCategory, recordTitle)
         
         // Create notification based on alarm type
         when (alarmType) {
@@ -559,6 +562,22 @@ class AlarmService : Service() {    companion object {
         // Schedule auto-snooze if this is not a precheck and we haven't reached the limit
         if (!isPrecheck && snoozeCount < 6) {
             scheduleAutoSnooze(category, subCategory, recordTitle, description, alarmType, snoozeCount + 1)
+        }
+
+    }
+
+    private fun cancelUpcomingReminderNotification(
+        category: String,
+        subCategory: String,
+        recordTitle: String
+    ) {
+        try {
+            val notificationManager = NotificationManagerCompat.from(this)
+            val notificationId = (category + subCategory + recordTitle).hashCode()
+            notificationManager.cancel(notificationId)
+            Log.d(TAG, "Cancelled upcoming reminder notification for: $recordTitle")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to cancel upcoming reminder notification", e)
         }
     }
 
