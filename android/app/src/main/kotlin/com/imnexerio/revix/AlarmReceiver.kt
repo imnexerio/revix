@@ -173,23 +173,20 @@ class AlarmReceiver : BroadcastReceiver() {
         context.startService(serviceIntent)
         
         Log.d(TAG, "All alarms cancelled and RecordUpdateService started for: $recordTitle")
-    }
-
-    private fun handleIgnoreAlarm(context: Context, intent: Intent) {
+    }    private fun handleIgnoreAlarm(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
 
         Log.d(TAG, "Ignore alarm triggered: $category - $subCategory - $recordTitle")
 
-        // Cancel any pending snooze alarms for this record
-        cancelSnoozeAlarms(context, category, subCategory, recordTitle)
-
-        // Just dismiss the notification - no need to mark as done or trigger callbacks
+        // Just dismiss the notification - no need to mark as done or cancel alarms
+        // The alarm will still fire at the scheduled time as intended
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
         notificationManager.cancel(notificationId)
-          Log.d(TAG, "Alarm ignored and notification dismissed for: $recordTitle")
+        
+        Log.d(TAG, "Alarm ignored and notification dismissed for: $recordTitle")
     }
 
     private fun handleManualSnooze(context: Context, intent: Intent) {
