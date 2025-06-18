@@ -129,7 +129,7 @@ class AlarmService : Service() {
         val actualTime = intent.getLongExtra("ACTUAL_TIME", 0L)
         val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
 
-        Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Snooze: $snoozeCount)")
+        Log.d(TAG, "Handling alarm: $category · $subCategory · $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Snooze: $snoozeCount)")
 
         // Increment active alarms count for actual alarms with sound/vibration
         if ((isActualAlarm || (!isUpcomingReminder && !isActualAlarm)) && alarmType > 1) {
@@ -171,13 +171,13 @@ class AlarmService : Service() {
         snoozeCount: Int = 0
     ) {
         val title = when {
-            isWarning -> "Upcoming Reminder: $recordTitle"
-            isPrecheck -> "Reminder: $recordTitle"
-            else -> "Time for: $recordTitle"
+            isWarning -> "Upcoming Reminder: $category · $subCategory · $recordTitle"
+            isPrecheck -> "Reminder: $category · $subCategory · $recordTitle"
+            else -> "Time for: $category · $subCategory · $recordTitle"
         }
         val snoozeText = if (snoozeCount > 0) " (Snoozed ${snoozeCount}x)" else ""
         val content = when {
-            isWarning -> "You have an upcoming reminder in 5 minutes for: $recordTitle in $category - $subCategory"
+            isWarning -> "You have an upcoming reminder in 5 minutes for: $category · $subCategory · $recordTitle"
             isPrecheck -> "Don't forget about your upcoming record in $category - $subCategory$snoozeText"
             else -> "$description in $category - $subCategory$snoozeText"
         }
@@ -419,7 +419,7 @@ class AlarmService : Service() {
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, checkTime, checkPendingIntent)
             }
-            Log.d(TAG, "Auto-snooze check scheduled for $recordTitle")
+            Log.d(TAG, "Auto-snooze check scheduled for $category · $subCategory · $recordTitle")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to schedule auto-snooze check", e)
         }
@@ -495,15 +495,15 @@ class AlarmService : Service() {
         val minutesLeft = (timeUntilAlarm / (60 * 1000)).toInt()
         
         val title = if (isSnooze) {
-            "Snoozed Reminder: $recordTitle"
+            "Snoozed Reminder: $category · $subCategory · $recordTitle"
         } else {
-            "Upcoming Reminder: $recordTitle"
+            "Upcoming Reminder: $category · $subCategory · $recordTitle"
         }
         
         val content = if (minutesLeft <= 1) {
-            "Your reminder for $recordTitle is starting now!"
+            "Your reminder for $category · $subCategory · $recordTitle is starting now!"
         } else {
-            "You have a reminder for $recordTitle in $minutesLeft minute${if (minutesLeft != 1) "s" else ""}"
+            "You have a reminder for $category · $subCategory · $recordTitle in $minutesLeft minute${if (minutesLeft != 1) "s" else ""}"
         }
         
         showUpcomingReminderNotification(
@@ -520,7 +520,7 @@ class AlarmService : Service() {
         alarmType: Int,
         snoozeCount: Int
     ) {
-        Log.d(TAG, "Triggering actual alarm for: $recordTitle (Type: $alarmType)")
+        Log.d(TAG, "Triggering actual alarm for: $category · $subCategory · $recordTitle (Type: $alarmType)")
         
         // Cancel any existing upcoming reminder notification for this record
         cancelUpcomingReminderNotification(category, subCategory, recordTitle)
@@ -610,7 +610,7 @@ class AlarmService : Service() {
             val notificationManager = NotificationManagerCompat.from(this)
             val notificationId = (category + subCategory + recordTitle).hashCode()
             notificationManager.cancel(notificationId)
-            Log.d(TAG, "Cancelled upcoming reminder notification for: $recordTitle")
+            Log.d(TAG, "Cancelled upcoming reminder notification for: $category · $subCategory · $recordTitle")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cancel upcoming reminder notification", e)
         }
@@ -712,7 +712,7 @@ class AlarmService : Service() {
             val notificationManager = NotificationManagerCompat.from(this)
             val notificationId = (category + subCategory + recordTitle).hashCode()
             notificationManager.notify(notificationId, notificationBuilder.build())
-            Log.d(TAG, "Upcoming reminder notification shown for: $recordTitle")
+            Log.d(TAG, "Upcoming reminder notification shown for: $category · $subCategory · $recordTitle")
         } catch (e: SecurityException) {
             Log.e(TAG, "Failed to show upcoming reminder notification - permission denied", e)
         }
