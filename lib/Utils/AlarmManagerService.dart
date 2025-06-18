@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
 
 class AlarmManagerService {
   static const MethodChannel _channel = MethodChannel('revix/alarm_manager');
@@ -46,29 +45,6 @@ class AlarmManagerService {
     }
   }
 
-  // Cancel all scheduled alarms
-  static Future<void> cancelAllAlarms() async {
-    if (!Platform.isAndroid) return;
-
-    try {
-      await _channel.invokeMethod('cancelAllAlarms');
-      print('All alarms cancelled');
-    } catch (e) {
-      print('Error cancelling alarms: $e');
-    }
-  }
-
-  // Request exact alarm permission (required for Android 12+)
-  static Future<void> requestExactAlarmPermission() async {
-    if (!Platform.isAndroid) return;
-
-    try {
-      await _channel.invokeMethod('requestExactAlarmPermission');
-    } catch (e) {
-      print('Error requesting exact alarm permission: $e');
-    }
-  }
-
   // Check if exact alarm permission is granted
   static Future<bool> hasExactAlarmPermission() async {
     if (!Platform.isAndroid) return true;
@@ -79,22 +55,6 @@ class AlarmManagerService {
     } catch (e) {
       print('Error checking exact alarm permission: $e');
       return false;
-    }
-  }
-
-  // Handle mark as done action from notification
-  static Future<void> markRecordAsDone(String category, String subCategory, String recordTitle) async {
-    if (!Platform.isAndroid) return;
-
-    try {
-      await _channel.invokeMethod('markRecordAsDone', {
-        'category': category,
-        'sub_category': subCategory,
-        'record_title': recordTitle,
-      });
-      print('Marked record as done: $category - $subCategory - $recordTitle');
-    } catch (e) {
-      print('Error marking record as done: $e');
     }
   }
 
@@ -128,25 +88,5 @@ class AlarmManagerService {
     }
     
     return 0;
-  }
-
-  // Convert alarm type to readable string
-  static String getAlarmTypeString(int alarmType) {
-    switch (alarmType) {
-      case 0:
-        return 'No Reminder';
-      case 1:
-        return 'Notification Only';
-      case 2:
-        return 'Vibration Only';
-      case 3:
-        return 'Sound';
-      case 4:
-        return 'Sound + Vibration';
-      case 5:
-        return 'Loud Alarm';
-      default:
-        return 'No Reminder';
-    }
   }
 }
