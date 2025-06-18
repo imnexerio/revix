@@ -41,7 +41,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     "numberOfTimes": null,
     "endDate": null
   };
-
+  
+  // Alarm type field
+  late int alarmType;
+  final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];
   @override
   void initState() {
     super.initState();
@@ -49,6 +52,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     isEnabled = widget.details['status'] == 'Enabled';
     noRevision = widget.details['completion_counts'];
     formattedTime = widget.details['reminder_time'];
+    alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
@@ -309,13 +313,15 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           if (isEnabled && widget.details['status'] == 'Disabled' &&
                               DateTime.parse(widget.details['scheduled_date']).isBefore(DateTime.now())) {
                             dateScheduled = DateTime.now().toIso8601String().split('T')[0];
-                          }
-                          Map<String, dynamic> revisionData = {
+                          }                          Map<String, dynamic> revisionData = {
                             'frequency': revisionFrequency,
                           };
                           if(customFrequencyParams.isNotEmpty) {
                             revisionData['custom_params'] = customFrequencyParams;
                           }
+
+                          // Set alarm type to 0 if "All Day" is selected
+                          int finalAlarmType = formattedTime == 'All Day' ? 0 : alarmType;
 
                           await UpdateRecords(
                             widget.selectedCategory,
@@ -332,7 +338,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
                             revisionData,
-                            durationData
+                            durationData,
+                            finalAlarmType
                           );
 
                           Navigator.pop(context);
@@ -402,27 +409,60 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             "Timing",
             formattedTime, // Changed from widget.details['reminder_time'] to formattedTime
             Icons.refresh,
-            Theme.of(context).colorScheme.primary,
-                () async {
-              TimeOfDay? pickedTime = await showTimePicker(
+            Theme.of(context).colorScheme.primary,                () async {
+              // Show options: "All Day" or "Set Time"
+              showDialog(
                 context: context,
-                initialTime: TimeOfDay.now(),
-                builder: (BuildContext context, Widget? child) {
-                  return MediaQuery(
-                    data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-                    child: child!,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Reminder Time'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.access_time),
+                          title: const Text('Set Specific Time'),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            TimeOfDay? pickedTime = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                              builder: (BuildContext context, Widget? child) {
+                                return MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            
+                            if (pickedTime != null) {
+                              final now = DateTime.now();
+                              setState(() {
+                                formattedTime = DateFormat('HH:mm').format(
+                                  DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
+                                );
+                                // Reset alarm type to "No Reminder" when switching from "All Day" to a specific time
+                                // The alarm type dropdown will now be visible for user selection
+                              });
+                            }
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.all_inclusive),
+                          title: const Text('All Day'),
+                          onTap: () {
+                            setState(() {
+                              formattedTime = 'All Day';
+                              alarmType = 0; // Reset alarm type to "No Reminder" when "All Day" is selected
+                            });
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
                   );
                 },
               );
-
-              if (pickedTime != null) {
-                final now = DateTime.now();
-                setState(() {
-                  formattedTime = DateFormat('HH:mm').format(
-                    DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
-                  );
-                });
-              }
             },
           ),
           const SizedBox(width: 8),
@@ -852,8 +892,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           if (revisionFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              // child: Text(
-              //   getCustomFrequencyDescription(),
+              // child: Text(              //   getCustomFrequencyDescription(),
               //   style: TextStyle(
               //     fontStyle: FontStyle.italic,
               //     color: Theme.of(context).colorScheme.secondary,
@@ -862,6 +901,48 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
 
           const SizedBox(height: 20),
+
+          // Alarm Type section (only shown when not "All Day")
+          if (formattedTime != 'All Day') ...[
+            Text(
+              "Alarm Type",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Theme.of(context).cardColor,
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: alarmType,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                isExpanded: true,
+                items: _alarmOptions.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String option = entry.value;
+                  return DropdownMenuItem<int>(
+                    value: index,
+                    child: Text(option),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    alarmType = newValue!;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // Status toggle
           Text(

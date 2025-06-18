@@ -15,7 +15,8 @@ Future<void> UpdateRecords(
     String revisionFrequency,
     String status,
     Map<String, dynamic> revisionData,
-    Map<String, dynamic> durationData
+    Map<String, dynamic> durationData,
+    int alarmType
     ) async {
   
   final firebaseService = FirebaseDatabaseService();
@@ -34,6 +35,7 @@ Future<void> UpdateRecords(
     'description': description,
     'recurrence_data': revisionData,
     'duration': durationData,
+    'alarm_type': alarmType,
   };
   
   // Update record using centralized service
