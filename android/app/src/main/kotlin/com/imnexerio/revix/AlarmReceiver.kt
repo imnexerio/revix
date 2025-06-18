@@ -223,41 +223,22 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
 
         Log.d(TAG, "Warning notification triggered: $category - $subCategory - $recordTitle")
 
-        // Show warning notification
-        showWarningNotification(context, category, subCategory, recordTitle)
-
-        // Trigger widget refresh to update data
+        // Trigger widget refresh to update data first
         triggerWidgetRefresh(context)
-    }
 
-    private fun showWarningNotification(context: Context, category: String, subCategory: String, recordTitle: String) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-        
-        // Create notification channel if needed
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val channel = android.app.NotificationChannel(
-                "warning_notifications",
-                "Upcoming Reminders",
-                android.app.NotificationManager.IMPORTANCE_DEFAULT
-            )
-            notificationManager.createNotificationChannel(channel)
+        // Use AlarmService to show the full notification with all buttons (Mark as Done, Snooze, Ignore)
+        // but with modified title and parameters to indicate it's an upcoming reminder
+        val serviceIntent = Intent(context, AlarmService::class.java).apply {
+            putExtra(EXTRA_ALARM_TYPE, 1) // Light notification for warning
+            putExtra(EXTRA_CATEGORY, category)
+            putExtra(EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            putExtra(EXTRA_DESCRIPTION, "Upcoming reminder in 5 minutes")
+            putExtra(EXTRA_IS_PRECHECK, true) // Mark as precheck to get "Upcoming Reminder" title
+            putExtra("IS_WARNING", true) // Add flag to indicate this is a warning notification
         }
-
-        val notification = androidx.core.app.NotificationCompat.Builder(context, "warning_notifications")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Upcoming Reminder")
-            .setContentText("$recordTitle in 5 minutes")
-            .setStyle(androidx.core.app.NotificationCompat.BigTextStyle()
-                .bigText("You have an upcoming reminder for: $recordTitle\nCategory: $category - $subCategory\n\nThis will alert you in 5 minutes."))
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-            .setTimeoutAfter(5 * 60 * 1000) // Auto-dismiss after 5 minutes
-            .build()
-
-        val notificationId = ("warning_$category$subCategory$recordTitle").hashCode()
-        notificationManager.notify(notificationId, notification)
         
-        Log.d(TAG, "Warning notification shown for: $recordTitle")
+        context.startForegroundService(serviceIntent)
     }
 
     private fun triggerWidgetRefresh(context: Context) {

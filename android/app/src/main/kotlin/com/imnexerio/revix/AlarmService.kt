@@ -135,11 +135,10 @@ class AlarmService : Service() {    companion object {
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
         val description = intent.getStringExtra(AlarmReceiver.EXTRA_DESCRIPTION) ?: ""
         val isPrecheck = intent.getBooleanExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
+        val isWarning = intent.getBooleanExtra("IS_WARNING", false)
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
 
-        Log.d(TAG, "Handling alarm: $category - $subCategory - $recordTitle (Type: $alarmType, Snooze: $snoozeCount)")
-
-        // Create notification based on alarm type
+        Log.d(TAG, "Handling alarm: $category - $subCategory - $recordTitle (Type: $alarmType, Precheck: $isPrecheck, Warning: $isWarning, Snooze: $snoozeCount)")        // Create notification based on alarm type
         when (alarmType) {
             0 -> {
                 // No Reminder - do nothing
@@ -148,28 +147,28 @@ class AlarmService : Service() {    companion object {
             }
             1 -> {
                 // Notification Only
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, false, false, false, snoozeCount)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, false, false, snoozeCount)
             }
             2 -> {
                 // Vibration Only
                 triggerVibration()
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, false, false, snoozeCount)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, false, false, snoozeCount)
             }
             3 -> {
                 // Sound
                 playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, false, true, false, snoozeCount)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, true, false, snoozeCount)
             }
             4 -> {
                 // Sound + Vibration
                 triggerVibration()
                 playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, true, false, snoozeCount)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, false, snoozeCount)
             }            5 -> {
                 // Loud Alarm
                 triggerVibration()
                 playAlarmSound(true)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, true, true, true, snoozeCount)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, true, snoozeCount)
             }
         }
 
@@ -183,17 +182,22 @@ class AlarmService : Service() {    companion object {
         recordTitle: String,
         description: String,
         isPrecheck: Boolean,
+        isWarning: Boolean,
         withVibration: Boolean,
         withSound: Boolean,
         isLoudAlarm: Boolean,
         snoozeCount: Int = 0
     ) {
-        val title = if (isPrecheck) "Reminder: $recordTitle" else "Time for: $recordTitle"
+        val title = when {
+            isWarning -> "Upcoming Reminder: $recordTitle"
+            isPrecheck -> "Reminder: $recordTitle"
+            else -> "Time for: $recordTitle"
+        }
         val snoozeText = if (snoozeCount > 0) " (Snoozed ${snoozeCount}x)" else ""
-        val content = if (isPrecheck) {
-            "Don't forget about your upcoming record in $category - $subCategory$snoozeText"
-        } else {
-            "$description in $category - $subCategory$snoozeText"
+        val content = when {
+            isWarning -> "You have an upcoming reminder in 5 minutes for: $recordTitle in $category - $subCategory"
+            isPrecheck -> "Don't forget about your upcoming record in $category - $subCategory$snoozeText"
+            else -> "$description in $category - $subCategory$snoozeText"
         }
 
         // Create intent to open the app
