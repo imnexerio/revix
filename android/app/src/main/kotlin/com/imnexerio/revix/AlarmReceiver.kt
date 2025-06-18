@@ -9,7 +9,6 @@ class AlarmReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_RECORD_ALARM = "revix.ACTION_RECORD_ALARM"
         const val ACTION_WARNING_NOTIFICATION = "revix.ACTION_WARNING_NOTIFICATION"
-        const val ACTION_RECORD_PRECHECK = "revix.ACTION_RECORD_PRECHECK"
         const val ACTION_MARK_AS_DONE = "MARK_AS_DONE"
         const val ACTION_IGNORE_ALARM = "IGNORE_ALARM"
         const val ACTION_MANUAL_SNOOZE = "MANUAL_SNOOZE"
@@ -24,15 +23,12 @@ class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(TAG, "AlarmReceiver triggered with action: ${intent.action}")
-          when (intent.action) {
+        when (intent.action) {
             ACTION_RECORD_ALARM -> {
                 handleRecordAlarm(context, intent)
             }
             ACTION_WARNING_NOTIFICATION -> {
                 handleWarningNotification(context, intent)
-            }
-            ACTION_RECORD_PRECHECK -> {
-                handleRecordPrecheck(context, intent)
             }
             ACTION_MARK_AS_DONE -> {
                 handleMarkAsDone(context, intent)
@@ -67,24 +63,6 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra(EXTRA_RECORD_TITLE, recordTitle)
             putExtra(EXTRA_DESCRIPTION, description)
             putExtra(EXTRA_IS_PRECHECK, isPrecheck)
-        }
-        
-        context.startForegroundService(serviceIntent)
-    }
-
-    private fun handleRecordPrecheck(context: Context, intent: Intent) {
-        val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
-        val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
-        val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
-
-        Log.d(TAG, "Record precheck triggered: $category - $subCategory - $recordTitle")
-
-        // Trigger data refresh to check if record is still pending
-        val serviceIntent = Intent(context, AlarmService::class.java).apply {
-            action = "PRECHECK_RECORD_STATUS"
-            putExtra(EXTRA_CATEGORY, category)
-            putExtra(EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(EXTRA_RECORD_TITLE, recordTitle)
         }
         
         context.startForegroundService(serviceIntent)

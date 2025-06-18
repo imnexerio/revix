@@ -16,10 +16,6 @@ import android.os.Vibrator
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.imnexerio.revix.AlarmService.Companion.NOTIFICATION_CHANNEL_ID
-import com.imnexerio.revix.AlarmService.Companion.TAG
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.engine.dart.DartExecutor
 import java.util.*
 
 class AlarmService : Service() {    companion object {
@@ -59,9 +55,6 @@ class AlarmService : Service() {    companion object {
 
     private fun processIntent(intent: Intent) {
         when (intent.action) {
-            "PRECHECK_RECORD_STATUS" -> {
-                handlePrecheckRecordStatus(intent)
-            }
             "STOP_ALL_ALARMS" -> {
                 handleStopAllAlarms()
             }
@@ -69,26 +62,6 @@ class AlarmService : Service() {    companion object {
                 handleAlarmTrigger(intent)
             }
         }
-    }
-
-    private fun handlePrecheckRecordStatus(intent: Intent) {
-        val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
-        val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
-        val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-
-        Log.d(TAG, "Prechecking record status: $category - $subCategory - $recordTitle")
-
-        // Trigger Flutter background callback to refresh data
-        triggerFlutterBackgroundCallback("record_check", mapOf(
-            "category" to category,
-            "sub_category" to subCategory,
-            "record_title" to recordTitle
-        ))
-    }
-
-    private fun handleRescheduleAlarms() {
-        Log.d(TAG, "Rescheduling alarms after boot")        // Trigger Flutter background callback to reschedule alarms
-        triggerFlutterBackgroundCallback("alarm_reschedule", emptyMap())
     }
 
     private fun handleStopAllAlarms() {
