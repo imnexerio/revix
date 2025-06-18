@@ -21,7 +21,6 @@ class PermissionManager(private val activity: Activity) {
         private const val TAG = "PermissionManager"
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_EXACT_ALARM = 1002
-        private const val REQUEST_CODE_IGNORE_BATTERY = 1003
     }
 
     /**
@@ -36,9 +35,6 @@ class PermissionManager(private val activity: Activity) {
             }
             !hasExactAlarmPermission() -> {
                 showExactAlarmDialog()
-            }
-            !isIgnoringBatteryOptimizations() -> {
-                showBatteryOptimizationDialog()
             }
             else -> {
                 Log.d(TAG, "All permissions granted!")
@@ -94,17 +90,13 @@ class PermissionManager(private val activity: Activity) {
      */
     fun showExactAlarmDialog() {
         AlertDialog.Builder(activity)
-            .setTitle("Exact Alarm Permission Required")
-            .setMessage("To ensure your reminders work precisely at the scheduled time, please grant exact alarm permission. This is essential for reliable notifications.")
+            .setTitle("Alarm Permission")
+            .setMessage("To ensure your reminders work precisely at the scheduled time, please grant exact alarm permission.")
             .setPositiveButton("Grant Permission") { _, _ ->
                 requestExactAlarmPermission()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
-                // Still check battery optimization after user cancels
-                if (!isIgnoringBatteryOptimizations()) {
-                    showBatteryOptimizationDialog()
-                }
             }
             .setCancelable(false)
             .show()
@@ -133,64 +125,6 @@ class PermissionManager(private val activity: Activity) {
                         activity.startActivity(fallbackIntent)
                     } catch (e2: Exception) {
                         Log.e(TAG, "Failed to open app settings", e2)
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Check battery optimization permission
-     */
-    fun isIgnoringBatteryOptimizations(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val powerManager = activity.getSystemService(Context.POWER_SERVICE) as PowerManager
-            powerManager.isIgnoringBatteryOptimizations(activity.packageName)
-        } else {
-            // For Android < 6, battery optimization doesn't exist
-            true
-        }
-    }
-
-    /**
-     * Show dialog and request battery optimization permission
-     */
-    fun showBatteryOptimizationDialog() {
-        AlertDialog.Builder(activity)
-            .setTitle("Battery Optimization")
-            .setMessage("To ensure your alarms work reliably even when your phone is in power saving mode, please disable battery optimization for this app. This will not significantly impact battery life.")
-            .setPositiveButton("Disable Optimization") { _, _ ->
-                requestIgnoreBatteryOptimizations()
-            }
-            .setNegativeButton("Skip") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .setCancelable(false)
-            .show()
-    }
-
-    /**
-     * Request battery optimization exemption
-     */
-    fun requestIgnoreBatteryOptimizations() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!isIgnoringBatteryOptimizations()) {
-                try {
-                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                        data = Uri.parse("package:${activity.packageName}")
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    activity.startActivity(intent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to open battery optimization settings", e)
-                    // Fallback to battery optimization settings
-                    try {
-                        val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        activity.startActivity(fallbackIntent)
-                    } catch (e2: Exception) {
-                        Log.e(TAG, "Failed to open battery optimization settings", e2)
                     }
                 }
             }
@@ -227,7 +161,6 @@ class PermissionManager(private val activity: Activity) {
         return mapOf(
             "notifications" to hasPostNotificationPermission(),
             "exactAlarm" to hasExactAlarmPermission(),
-            "batteryOptimization" to isIgnoringBatteryOptimizations(),
             "notificationsEnabled" to areNotificationsEnabled()
         )
     }
@@ -247,8 +180,6 @@ class PermissionManager(private val activity: Activity) {
                     // Continue with next permission check
                     if (!hasExactAlarmPermission()) {
                         showExactAlarmDialog()
-                    } else if (!isIgnoringBatteryOptimizations()) {
-                        showBatteryOptimizationDialog()
                     }
                 } else {
                     Log.w(TAG, "Notification permission denied")
@@ -276,8 +207,6 @@ class PermissionManager(private val activity: Activity) {
                 // Continue with other permission checks
                 if (!hasExactAlarmPermission()) {
                     showExactAlarmDialog()
-                } else if (!isIgnoringBatteryOptimizations()) {
-                    showBatteryOptimizationDialog()
                 }
             }
             .show()

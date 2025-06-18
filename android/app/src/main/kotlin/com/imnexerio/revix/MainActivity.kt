@@ -167,14 +167,6 @@ class MainActivity : FlutterActivity() {
                         result.error("PERMISSION_ERROR", "Failed to request exact alarm permission: ${e.message}", null)
                     }
                 }
-                "requestBatteryOptimization" -> {
-                    try {
-                        permissionManager.requestIgnoreBatteryOptimizations()
-                        result.success(true)
-                    } catch (e: Exception) {
-                        result.error("PERMISSION_ERROR", "Failed to request battery optimization: ${e.message}", null)
-                    }
-                }
                 "openNotificationSettings" -> {
                     try {
                         permissionManager.openNotificationSettings()
