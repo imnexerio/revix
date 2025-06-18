@@ -13,11 +13,22 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
 
+data class AlarmMetadata(
+    val key: String,
+    val category: String,
+    val subCategory: String,
+    val recordTitle: String,
+    val actualTime: Long,
+    val alarmType: Int,
+    val isSnoozeAlarm: Boolean = false,
+    val snoozeCount: Int = 0
+)
+
 class AlarmManagerHelper(private val context: Context) {
     companion object {
         private const val TAG = "AlarmManagerHelper"
         private const val PREFS_NAME = "record_alarms"
-        private const val ACTIVE_ALARMS_KEY = "active_alarms"
+        private const val ALARM_METADATA_KEY = "alarm_metadata"
         private const val REQUEST_CODE_BASE = 10000
     }
 
@@ -25,9 +36,10 @@ class AlarmManagerHelper(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun scheduleAlarmsForTodayRecords(todayRecords: List<Map<String, Any>>) {
-        Log.d(TAG, "Scheduling alarms for ${todayRecords.size} today records")
+        Log.d(TAG, "Processing ${todayRecords.size} today records with smart alarm management")
 
-        val newAlarmIds = mutableSetOf<String>()
+        val currentAlarms = getStoredAlarmMetadata()
+        val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()
         val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
         todayRecords.forEach { record ->
@@ -37,142 +49,187 @@ class AlarmManagerHelper(private val context: Context) {
                 val recordTitle = record["record_title"]?.toString() ?: ""
                 val reminderTime = record["reminder_time"]?.toString() ?: ""
                 val alarmType = (record["alarm_type"]?.toString()?.toIntOrNull()) ?: 0
-                val description = record["description"]?.toString() ?: ""
                 val scheduledDate = record["scheduled_date"]?.toString() ?: ""
-
-                Log.d(TAG, "Processing record: $recordTitle, Category: $category, SubCategory: $subCategory, Reminder: $reminderTime")
-                Log.d(TAG, "Scheduled Date: $scheduledDate, Alarm Type: $alarmType")
 
                 // Skip if no reminder or all day
                 if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {
-                    Log.d(TAG, "Skipping alarm for $recordTitle - no reminder or all day")
                     return@forEach
                 }
 
-                // Only schedule alarms for today's records
+                // Only process today's records
                 if (scheduledDate != currentDate) {
-                    Log.d(TAG, "Skipping alarm for $recordTitle - not scheduled for today")
                     return@forEach
                 }
 
-                val alarmId = generateAlarmId(category, subCategory, recordTitle)
-                val precheckAlarmId = generatePrecheckAlarmId(category, subCategory, recordTitle)
-
-                // Parse time (format: HH:mm)
-                val timeParts = reminderTime.split(":")
-                if (timeParts.size != 2) {
-                    Log.w(TAG, "Invalid time format for $recordTitle: $reminderTime")
-                    return@forEach
-                }
-
-                val hour = timeParts[0].toIntOrNull() ?: return@forEach
-                val minute = timeParts[1].toIntOrNull() ?: return@forEach
-
-                // Create calendar instances for today with the specified time
-                val alarmCalendar = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, hour)
-                    set(Calendar.MINUTE, minute)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                val warningCalendar = Calendar.getInstance().apply {
-                    timeInMillis = alarmCalendar.timeInMillis - (5 * 60 * 1000) // 5 minutes before
-                }
-
-                val now = System.currentTimeMillis()
-
-                // Only schedule if the alarm time is in the future
-                if (alarmCalendar.timeInMillis > now) {
-                    // Schedule warning alarm (5 minutes before)
-                    if (warningCalendar.timeInMillis > now) {
-                        scheduleWarningAlarm(
-                            precheckAlarmId,
-                            warningCalendar.timeInMillis,
-                            category,
-                            subCategory,
-                            recordTitle
-                        )
-                        newAlarmIds.add(precheckAlarmId)
-                    }
-
-                    // Schedule main alarm
-                    scheduleMainAlarm(
-                        alarmId,
-                        alarmCalendar.timeInMillis,
-                        category,
-                        subCategory,
-                        recordTitle,
-                        description,
-                        alarmType
-                    )
-                    newAlarmIds.add(alarmId)
-
-                    Log.d(TAG, "Scheduled alarms for $recordTitle at ${alarmCalendar.time}")
-                } else {
+                val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
+                val actualTime = parseTimeToday(reminderTime)
+                
+                if (actualTime <= System.currentTimeMillis()) {
                     Log.d(TAG, "Skipping past alarm for $recordTitle")
+                    return@forEach
+                }
+
+                val newMetadata = AlarmMetadata(
+                    key = uniqueKey,
+                    category = category,
+                    subCategory = subCategory,
+                    recordTitle = recordTitle,
+                    actualTime = actualTime,
+                    alarmType = alarmType
+                )
+
+                newAlarmMetadata[uniqueKey] = newMetadata
+
+                val existingAlarm = currentAlarms[uniqueKey]
+                when {
+                    existingAlarm == null -> {
+                        // New alarm - schedule it
+                        scheduleUpcomingReminderAlarm(newMetadata)
+                        Log.d(TAG, "Scheduled new alarm for $recordTitle")
+                    }
+                    existingAlarm.actualTime != actualTime -> {
+                        // Time changed - update alarm
+                        cancelAlarm(uniqueKey)
+                        scheduleUpcomingReminderAlarm(newMetadata)
+                        Log.d(TAG, "Updated alarm time for $recordTitle")
+                    }
+                    // else: No change needed
                 }
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error scheduling alarm for record", e)
+                Log.e(TAG, "Error processing record", e)
             }
         }
 
-        // Clean up old alarms that are no longer needed
-        cleanupOldAlarms(newAlarmIds)
+        // Handle snooze alarms - keep them unless their parent record is gone
+        currentAlarms.values.filter { it.isSnoozeAlarm }.forEach { snoozeAlarm ->
+            val parentKey = snoozeAlarm.key.substringBefore("_snooze_")
+            if (newAlarmMetadata.containsKey(parentKey)) {
+                // Parent record still exists, keep snooze alarm
+                newAlarmMetadata[snoozeAlarm.key] = snoozeAlarm
+            } else {
+                // Parent record gone, cancel snooze alarm
+                cancelAlarm(snoozeAlarm.key)
+                Log.d(TAG, "Cancelled orphaned snooze alarm: ${snoozeAlarm.recordTitle}")
+            }
+        }
 
-        // Save active alarm IDs
-        saveActiveAlarms(newAlarmIds)
+        // Cancel alarms for records that no longer exist
+        currentAlarms.keys.minus(newAlarmMetadata.keys).forEach { obsoleteKey ->
+            if (!currentAlarms[obsoleteKey]?.isSnoozeAlarm!!) { // Don't double-cancel snooze alarms
+                cancelAlarm(obsoleteKey)
+                Log.d(TAG, "Cancelled obsolete alarm: $obsoleteKey")
+            }
+        }
+
+        // Save updated metadata
+        saveAlarmMetadata(newAlarmMetadata.values.toList())
+        Log.d(TAG, "Alarm management completed. Active alarms: ${newAlarmMetadata.size}")
     }
 
-    private fun scheduleMainAlarm(
-        alarmId: String,
-        triggerTime: Long,
+    private fun scheduleUpcomingReminderAlarm(metadata: AlarmMetadata) {
+        val now = System.currentTimeMillis()
+        val timeDiff = metadata.actualTime - now
+        val fiveMinutes = 5 * 60 * 1000L
+
+        val triggerTime = if (timeDiff <= fiveMinutes) {
+            // Less than 5 minutes left - show upcoming reminder now
+            now + 1000L // 1 second delay to ensure proper ordering
+        } else {
+            // Normal case - 5 minutes before actual time
+            metadata.actualTime - fiveMinutes
+        }
+
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_UPCOMING_REMINDER
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, metadata.category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, metadata.subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, metadata.recordTitle)
+            putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, metadata.alarmType)
+            putExtra("ACTUAL_TIME", metadata.actualTime)
+            putExtra("IS_IMMEDIATE", timeDiff <= fiveMinutes)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            metadata.key.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        scheduleExactAlarm(triggerTime, pendingIntent)
+        Log.d(TAG, "Scheduled upcoming reminder for ${metadata.recordTitle} at ${Date(triggerTime)}")
+    }
+
+    fun scheduleSnoozeAlarm(
         category: String,
         subCategory: String,
         recordTitle: String,
-        description: String,
-        alarmType: Int
+        alarmType: Int,
+        snoozeCount: Int
     ) {
+        val originalKey = generateUniqueKey(category, subCategory, recordTitle)
+        val snoozeKey = "${originalKey}_snooze_${System.currentTimeMillis()}"
+        val snoozeTime = System.currentTimeMillis() + (5 * 60 * 1000L) // 5 minutes from now
+
+        val snoozeMetadata = AlarmMetadata(
+            key = snoozeKey,
+            category = category,
+            subCategory = subCategory,
+            recordTitle = recordTitle,
+            actualTime = snoozeTime,
+            alarmType = alarmType,
+            isSnoozeAlarm = true,
+            snoozeCount = snoozeCount
+        )
+
         val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_RECORD_ALARM
+            action = AlarmReceiver.ACTION_UPCOMING_REMINDER
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra(AlarmReceiver.EXTRA_DESCRIPTION, description)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
-            putExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
+            putExtra("ACTUAL_TIME", snoozeTime)
+            putExtra("IS_SNOOZE", true)
+            putExtra("SNOOZE_COUNT", snoozeCount)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            alarmId.hashCode(),
+            snoozeKey.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        scheduleExactAlarm(triggerTime, pendingIntent)
-    }    private fun scheduleWarningAlarm(
-        warningAlarmId: String,
-        triggerTime: Long,
-        category: String,
-        subCategory: String,
-        recordTitle: String
-    ) {        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_WARNING_NOTIFICATION
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra(AlarmReceiver.EXTRA_IS_PRECHECK, true)
+        scheduleExactAlarm(snoozeTime, pendingIntent)
+        
+        // Add snooze alarm to metadata
+        val currentMetadata = getStoredAlarmMetadata().toMutableMap()
+        currentMetadata[snoozeKey] = snoozeMetadata
+        saveAlarmMetadata(currentMetadata.values.toList())
+        
+        Log.d(TAG, "Scheduled snooze alarm for $recordTitle (count: $snoozeCount)")
+    }
+
+    fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
+        val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
+        val currentMetadata = getStoredAlarmMetadata().toMutableMap()
+        
+        // Cancel main alarm
+        cancelAlarm(uniqueKey)
+        currentMetadata.remove(uniqueKey)
+        
+        // Cancel any snooze alarms for this record
+        val snoozeAlarmsToRemove = currentMetadata.keys.filter { 
+            it.startsWith("${uniqueKey}_snooze_") 
         }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            warningAlarmId.hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        scheduleExactAlarm(triggerTime, pendingIntent)
+        snoozeAlarmsToRemove.forEach { snoozeKey ->
+            cancelAlarm(snoozeKey)
+            currentMetadata.remove(snoozeKey)
+        }
+        
+        saveAlarmMetadata(currentMetadata.values.toList())
+        Log.d(TAG, "Cancelled all alarms for record: $recordTitle")
     }
 
     private fun scheduleExactAlarm(triggerTime: Long, pendingIntent: PendingIntent) {
@@ -209,72 +266,93 @@ class AlarmManagerHelper(private val context: Context) {
         }
     }
 
-    private fun cleanupOldAlarms(activeAlarmIds: Set<String>) {
-        val previousAlarmIds = getActiveAlarms()
-        val toRemove = previousAlarmIds - activeAlarmIds
-
-        toRemove.forEach { alarmId ->
-            cancelAlarm(alarmId)
-        }
-
-        if (toRemove.isNotEmpty()) {
-            Log.d(TAG, "Cleaned up ${toRemove.size} old alarms")
-        }
-    }
-
-    private fun cancelAlarm(alarmId: String) {
+    private fun cancelAlarm(alarmKey: String) {
         try {
             val intent = Intent(context, AlarmReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
-                alarmId.hashCode(),
+                alarmKey.hashCode(),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             alarmManager.cancel(pendingIntent)
             pendingIntent.cancel()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to cancel alarm: $alarmId", e)
+            Log.e(TAG, "Failed to cancel alarm: $alarmKey", e)
         }
     }
 
     fun cancelAllAlarms() {
-        val activeAlarms = getActiveAlarms()
-        activeAlarms.forEach { alarmId ->
-            cancelAlarm(alarmId)
+        val currentMetadata = getStoredAlarmMetadata()
+        currentMetadata.keys.forEach { alarmKey ->
+            cancelAlarm(alarmKey)
         }
-        saveActiveAlarms(emptySet())
-        Log.d(TAG, "Cancelled all ${activeAlarms.size} alarms")
+        saveAlarmMetadata(emptyList())
+        Log.d(TAG, "Cancelled all ${currentMetadata.size} alarms")
     }
 
-    private fun generateAlarmId(category: String, subCategory: String, recordTitle: String): String {
-        return "alarm_${category}_${subCategory}_$recordTitle"
+    private fun generateUniqueKey(category: String, subCategory: String, recordTitle: String): String {
+        return "${category}_${subCategory}_${recordTitle}".hashCode().toString()
     }
 
-    private fun generatePrecheckAlarmId(category: String, subCategory: String, recordTitle: String): String {
-        return "precheck_${category}_${subCategory}_$recordTitle"
+    private fun parseTimeToday(timeString: String): Long {
+        val timeParts = timeString.split(":")
+        if (timeParts.size != 2) return 0L
+
+        val hour = timeParts[0].toIntOrNull() ?: return 0L
+        val minute = timeParts[1].toIntOrNull() ?: return 0L
+
+        return Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
     }
 
-    private fun saveActiveAlarms(alarmIds: Set<String>) {
+    private fun saveAlarmMetadata(alarmList: List<AlarmMetadata>) {
         val jsonArray = JSONArray()
-        alarmIds.forEach { jsonArray.put(it) }
-        prefs.edit().putString(ACTIVE_ALARMS_KEY, jsonArray.toString()).apply()
+        alarmList.forEach { alarm ->
+            val jsonObject = JSONObject().apply {
+                put("key", alarm.key)
+                put("category", alarm.category)
+                put("subCategory", alarm.subCategory)
+                put("recordTitle", alarm.recordTitle)
+                put("actualTime", alarm.actualTime)
+                put("alarmType", alarm.alarmType)
+                put("isSnoozeAlarm", alarm.isSnoozeAlarm)
+                put("snoozeCount", alarm.snoozeCount)
+            }
+            jsonArray.put(jsonObject)
+        }
+        prefs.edit().putString(ALARM_METADATA_KEY, jsonArray.toString()).apply()
     }
 
-    private fun getActiveAlarms(): Set<String> {
-        val jsonString = prefs.getString(ACTIVE_ALARMS_KEY, "[]") ?: "[]"
-        val alarmIds = mutableSetOf<String>()
+    private fun getStoredAlarmMetadata(): Map<String, AlarmMetadata> {
+        val jsonString = prefs.getString(ALARM_METADATA_KEY, "[]") ?: "[]"
+        val alarmMap = mutableMapOf<String, AlarmMetadata>()
         
         try {
             val jsonArray = JSONArray(jsonString)
             for (i in 0 until jsonArray.length()) {
-                alarmIds.add(jsonArray.getString(i))
+                val jsonObject = jsonArray.getJSONObject(i)
+                val alarm = AlarmMetadata(
+                    key = jsonObject.getString("key"),
+                    category = jsonObject.getString("category"),
+                    subCategory = jsonObject.getString("subCategory"),
+                    recordTitle = jsonObject.getString("recordTitle"),
+                    actualTime = jsonObject.getLong("actualTime"),
+                    alarmType = jsonObject.getInt("alarmType"),
+                    isSnoozeAlarm = jsonObject.optBoolean("isSnoozeAlarm", false),
+                    snoozeCount = jsonObject.optInt("snoozeCount", 0)
+                )
+                alarmMap[alarm.key] = alarm
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse active alarms", e)
+            Log.e(TAG, "Failed to parse alarm metadata", e)
         }
         
-        return alarmIds
+        return alarmMap
     }
 
     fun requestExactAlarmPermission() {

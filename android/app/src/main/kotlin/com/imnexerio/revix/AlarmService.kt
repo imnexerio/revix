@@ -115,50 +115,29 @@ class AlarmService : Service() {    companion object {
         val isPrecheck = intent.getBooleanExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
         val isWarning = intent.getBooleanExtra("IS_WARNING", false)
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
-        Log.d(TAG, "Handling alarm: $category - $subCategory - $recordTitle (Type: $alarmType, Precheck: $isPrecheck, Warning: $isWarning, Snooze: $snoozeCount)")
+        val isUpcomingReminder = intent.getBooleanExtra("IS_UPCOMING_REMINDER", false)
+        val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
+        val actualTime = intent.getLongExtra("ACTUAL_TIME", 0L)
+        val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
+        
+        Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Snooze: $snoozeCount)")
         
         // Acquire wake lock for all alarm types except "No Reminder" to turn on screen
         if (alarmType > 0) {
             acquireWakeLock()
         }
         
-        // Create notification based on alarm type
-        when (alarmType) {
-            0 -> {
-                // No Reminder - do nothing
-                Log.d(TAG, "No reminder alarm type - skipping")
-                return
+        when {
+            isUpcomingReminder -> {
+                handleUpcomingReminder(category, subCategory, recordTitle, actualTime, isSnooze, snoozeCount)
             }
-            1 -> {
-                // Notification Only
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, false, false, snoozeCount)
+            isActualAlarm -> {
+                handleActualAlarm(category, subCategory, recordTitle, description, alarmType, snoozeCount)
             }
-            2 -> {
-                // Vibration Only
-                triggerVibration()
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, false, false, snoozeCount)
+            else -> {
+                // Legacy alarm handling
+                handleLegacyAlarm(alarmType, category, subCategory, recordTitle, description, isPrecheck, isWarning, snoozeCount)
             }
-            3 -> {
-                // Sound
-                playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, true, false, snoozeCount)
-            }
-            4 -> {
-                // Sound + Vibration
-                triggerVibration()
-                playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, false, snoozeCount)
-            }            5 -> {
-                // Loud Alarm
-                triggerVibration()
-                playAlarmSound(true)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, true, snoozeCount)
-            }
-        }
-
-        // Schedule auto-snooze if this is not a precheck and we haven't reached the limit
-        if (!isPrecheck && snoozeCount < 6) {
-            scheduleAutoSnooze(category, subCategory, recordTitle, description, alarmType, snoozeCount + 1)
         }
     }
 
@@ -464,4 +443,219 @@ class AlarmService : Service() {    companion object {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun handleUpcomingReminder(
+        category: String,
+        subCategory: String,
+        recordTitle: String,
+        actualTime: Long,
+        isSnooze: Boolean,
+        snoozeCount: Int
+    ) {
+        val now = System.currentTimeMillis()
+        val timeUntilAlarm = actualTime - now
+        val minutesLeft = (timeUntilAlarm / (60 * 1000)).toInt()
+        
+        val title = if (isSnooze) {
+            "Snoozed Reminder: $recordTitle"
+        } else {
+            "Upcoming Reminder: $recordTitle"
+        }
+        
+        val content = if (minutesLeft <= 1) {
+            "Your reminder for $recordTitle is starting now!"
+        } else {
+            "You have a reminder for $recordTitle in $minutesLeft minute${if (minutesLeft != 1) "s" else ""}"
+        }
+        
+        showUpcomingReminderNotification(
+            category, subCategory, recordTitle, title, content, 
+            actualTime, isSnooze, snoozeCount
+        )
+    }
+    
+    private fun handleActualAlarm(
+        category: String,
+        subCategory: String,
+        recordTitle: String,
+        description: String,
+        alarmType: Int,
+        snoozeCount: Int
+    ) {
+        Log.d(TAG, "Triggering actual alarm for: $recordTitle (Type: $alarmType)")
+        
+        // Create notification based on alarm type
+        when (alarmType) {
+            0 -> {
+                Log.d(TAG, "No reminder alarm type - skipping")
+                return
+            }
+            1 -> {
+                showNotification(category, subCategory, recordTitle, description, false, false, false, false, false, snoozeCount)
+            }
+            2 -> {
+                triggerVibration()
+                showNotification(category, subCategory, recordTitle, description, false, false, true, false, false, snoozeCount)
+            }
+            3 -> {
+                playAlarmSound(false)
+                showNotification(category, subCategory, recordTitle, description, false, false, false, true, false, snoozeCount)
+            }
+            4 -> {
+                triggerVibration()
+                playAlarmSound(false)
+                showNotification(category, subCategory, recordTitle, description, false, false, true, true, false, snoozeCount)
+            }
+            5 -> {
+                triggerVibration()
+                playAlarmSound(true)
+                showNotification(category, subCategory, recordTitle, description, false, false, true, true, true, snoozeCount)
+            }
+        }
+    }
+    
+    private fun handleLegacyAlarm(
+        alarmType: Int,
+        category: String,
+        subCategory: String,
+        recordTitle: String,
+        description: String,
+        isPrecheck: Boolean,
+        isWarning: Boolean,
+        snoozeCount: Int
+    ) {
+        // Legacy alarm handling for backward compatibility
+        when (alarmType) {
+            0 -> {
+                Log.d(TAG, "No reminder alarm type - skipping")
+                return
+            }
+            1 -> {
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, false, false, snoozeCount)
+            }
+            2 -> {
+                triggerVibration()
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, false, false, snoozeCount)
+            }
+            3 -> {
+                playAlarmSound(false)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, true, false, snoozeCount)
+            }
+            4 -> {
+                triggerVibration()
+                playAlarmSound(false)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, false, snoozeCount)
+            }
+            5 -> {
+                triggerVibration()
+                playAlarmSound(true)
+                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, true, snoozeCount)
+            }
+        }
+        
+        // Schedule auto-snooze if this is not a precheck and we haven't reached the limit
+        if (!isPrecheck && snoozeCount < 6) {
+            scheduleAutoSnooze(category, subCategory, recordTitle, description, alarmType, snoozeCount + 1)
+        }
+    }
+
+    private fun showUpcomingReminderNotification(
+        category: String,
+        subCategory: String,
+        recordTitle: String,
+        title: String,
+        content: String,
+        actualTime: Long,
+        isSnooze: Boolean,
+        snoozeCount: Int
+    ) {
+        // Create intent to open the app
+        val appIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, 
+            System.currentTimeMillis().toInt(),
+            appIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create mark as done intent
+        val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = "MARK_AS_DONE"
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val markDonePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt(),
+            markDoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create ignore alarm intent
+        val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = "IGNORE_ALARM"
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val ignorePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 1,
+            ignoreIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create snooze intent (only if we haven't reached the limit)
+        var snoozePendingIntent: PendingIntent? = null
+        if (snoozeCount < 6) {
+            val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
+                action = "MANUAL_SNOOZE"
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+                putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, 1) // Light notification for snooze
+                putExtra("SNOOZE_COUNT", snoozeCount)
+            }
+            snoozePendingIntent = PendingIntent.getBroadcast(
+                this,
+                System.currentTimeMillis().toInt() + 2,
+                snoozeIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
+        val notificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(R.drawable.ic_launcher_foreground, "Mark as Done", markDonePendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(false)
+            .setShowWhen(true)
+
+        // Add snooze button only if we haven't reached the limit
+        if (snoozePendingIntent != null) {
+            notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Snooze 5min", snoozePendingIntent)
+        }
+        
+        // Always add ignore button
+        notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
+
+        try {
+            val notificationManager = NotificationManagerCompat.from(this)
+            val notificationId = (category + subCategory + recordTitle).hashCode()
+            notificationManager.notify(notificationId, notificationBuilder.build())
+            Log.d(TAG, "Upcoming reminder notification shown for: $recordTitle")
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Failed to show upcoming reminder notification - permission denied", e)
+        }
+    }
 }
