@@ -262,11 +262,16 @@ class RecordUpdateService : Service() {
             channel.enableVibration(false) // No vibration
             notificationManager.createNotificationChannel(channel)
         }
-
         val notification = androidx.core.app.NotificationCompat.Builder(this, "record_update_status")
-            .setSmallIcon(if (isComplete) android.R.drawable.ic_dialog_info else android.R.drawable.ic_dialog_info)
-            .setContentTitle("Record Update Status")
-            .setContentText("$$recordCategory · $recordSubcategory · $recordTitle: $message")
+            .setSmallIcon(
+                if (isComplete) R.drawable.success_icon
+                else R.drawable.error_icon
+            )
+            .setContentTitle(
+                if (isComplete) "Task Completed ✓" 
+                else "Task Update Failed ✗"
+            )
+            .setContentText("$recordCategory · $recordSubcategory · $recordTitle: $message")
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW) // Silent
             .setAutoCancel(true)
             .build()
