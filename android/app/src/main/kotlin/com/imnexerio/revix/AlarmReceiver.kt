@@ -176,25 +176,42 @@ class AlarmReceiver : BroadcastReceiver() {
         context.startService(serviceIntent)
         
         Log.d(TAG, "All alarms cancelled and RecordUpdateService started for: $recordTitle")
-    }
-
-    private fun handleIgnoreAlarm(context: Context, intent: Intent) {
+    }    private fun handleIgnoreAlarm(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
+        val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
+        val isUpcomingReminder = intent.getBooleanExtra("IS_UPCOMING_REMINDER", false)
 
-        Log.d(TAG, "Ignore alarm triggered: $category - $subCategory - $recordTitle")
+        Log.d(TAG, "Ignore alarm triggered: $category - $subCategory - $recordTitle (actual: $isActualAlarm, upcoming: $isUpcomingReminder)")
 
-        // Just dismiss the notification - no need to mark as done or cancel alarms
-        // The alarm will still fire at the scheduled time as intended
+        // Stop current alarm sound/vibration immediately
+        val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
+            action = "STOP_SPECIFIC_ALARM"
+            putExtra(EXTRA_CATEGORY, category)
+            putExtra(EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+        }
+        context.startForegroundService(stopAlarmIntent)
+
+        // Dismiss the notification
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
         notificationManager.cancel(notificationId)
-        
-        Log.d(TAG, "Alarm ignored and notification dismissed for: $recordTitle")
-    }
 
-    private fun handleManualSnooze(context: Context, intent: Intent) {
+        // Handle different behavior based on alarm type
+        if (isActualAlarm) {
+            // For actual alarms, ignore means cancel completely
+            val alarmHelper = AlarmManagerHelper(context)
+            alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
+            Log.d(TAG, "Actual alarm ignored and cancelled for: $recordTitle")
+        } else {
+            // For upcoming reminders, ignore means treat as snooze (5-minute delay)
+            val alarmHelper = AlarmManagerHelper(context)
+            alarmHelper.scheduleSnoozeAlarm(category, subCategory, recordTitle, 1, 1) // Light notification
+            Log.d(TAG, "Upcoming reminder ignored, scheduled as snooze for: $recordTitle")
+        }
+    }    private fun handleManualSnooze(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
@@ -210,6 +227,15 @@ class AlarmReceiver : BroadcastReceiver() {
             return
         }
 
+        // Stop current alarm sound/vibration immediately
+        val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
+            action = "STOP_SPECIFIC_ALARM"
+            putExtra(EXTRA_CATEGORY, category)
+            putExtra(EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+        }
+        context.startForegroundService(stopAlarmIntent)
+
         // Cancel current notification
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
@@ -219,7 +245,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val alarmHelper = AlarmManagerHelper(context)
         alarmHelper.scheduleSnoozeAlarm(category, subCategory, recordTitle, alarmType, newSnoozeCount)
 
-        Log.d(TAG, "Snooze alarm scheduled for $recordTitle")
+        Log.d(TAG, "Alarm stopped and snooze scheduled for $recordTitle")
     }
     // Legacy handler for backward compatibility
     private fun handleRecordAlarm(context: Context, intent: Intent) {

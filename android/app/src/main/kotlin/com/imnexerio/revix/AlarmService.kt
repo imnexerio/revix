@@ -238,13 +238,16 @@ class AlarmService : Service() {
             this,
             System.currentTimeMillis().toInt(),
             markDoneIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )        // Create ignore alarm intent
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE        )        // Create ignore alarm intent
         val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = "IGNORE_ALARM"
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("IS_PRECHECK", isPrecheck)
+            putExtra("IS_WARNING", isWarning)
+            putExtra("IS_ACTUAL_ALARM", !isPrecheck && !isWarning)
+            putExtra("IS_UPCOMING_REMINDER", isPrecheck || isWarning)
         }
         val ignorePendingIntent = PendingIntent.getBroadcast(
             this,
@@ -700,14 +703,14 @@ class AlarmService : Service() {
             System.currentTimeMillis().toInt(),
             markDoneIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Create ignore alarm intent
+        )        // Create ignore alarm intent
         val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = "IGNORE_ALARM"
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("IS_ACTUAL_ALARM", false)
+            putExtra("IS_UPCOMING_REMINDER", true)
         }
         val ignorePendingIntent = PendingIntent.getBroadcast(
             this,
