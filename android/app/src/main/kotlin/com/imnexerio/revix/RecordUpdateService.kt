@@ -137,9 +137,7 @@ class RecordUpdateService : Service() {
                     "Updating record...",
                     Toast.LENGTH_SHORT
                 ).show()
-            }
-
-            // Use external request ID if provided, otherwise create new one
+            }            // Use external request ID if provided, otherwise create new one
             val requestId = externalRequestId ?: System.currentTimeMillis().toString()
             
             // Use simplified approach - just send the essential parameters
@@ -156,9 +154,8 @@ class RecordUpdateService : Service() {
                 applicationContext,
                 uri
             )
-            backgroundIntent.send()
-
-            // Wait for update result in background thread
+            backgroundIntent.send()            // Always monitor results and show status notifications
+            // This provides consistent feedback for both widget and notification updates
             Thread {
                 var retryCount = 0
                 val maxRetries = 50 // 10 seconds max wait time
@@ -194,16 +191,18 @@ class RecordUpdateService : Service() {
                         break
                     }
                 }
-                
+
                 // Show result on main thread
                 handler.post {
                     if (updateCompleted) {
                         if (updateSuccess) {
+                            // Show both Toast and status notification for consistent feedback
                             Toast.makeText(
                                 applicationContext,
                                 "Record updated successfully!",
                                 Toast.LENGTH_SHORT
                             ).show()
+                            showStatusNotification(lectureNo, "✅ Completed successfully!", true)
                         } else {
                             val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
                             Toast.makeText(
@@ -211,6 +210,7 @@ class RecordUpdateService : Service() {
                                 "Failed to update record: $displayError",
                                 Toast.LENGTH_SHORT
                             ).show()
+                            showStatusNotification(lectureNo, "❌ Failed: $displayError", true)
                         }
                     } else {
                         // Timeout occurred
@@ -219,9 +219,10 @@ class RecordUpdateService : Service() {
                             "Update operation timed out. Please try again.",
                             Toast.LENGTH_SHORT
                         ).show()
+                        showStatusNotification(lectureNo, "⏱️ Operation timed out", true)
                     }
                 }
-                
+
                 // Clear processing state and refresh widgets
                 clearProcessingState(category, subCategory, lectureNo)
                 refreshWidgets(startId)
@@ -244,6 +245,34 @@ class RecordUpdateService : Service() {
         val newProcessingItems = processingItems.toMutableSet()
         newProcessingItems.remove(itemKey)
         prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()
+    }
+
+    private fun showStatusNotification(recordTitle: String, message: String, isComplete: Boolean) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        
+        // Create notification channel for status updates
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                "record_update_status",
+                "Record Update Status",
+                android.app.NotificationManager.IMPORTANCE_LOW // Silent notification
+            )
+            channel.description = "Status updates for record update operations"
+            channel.setSound(null, null) // Silent
+            channel.enableVibration(false) // No vibration
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notification = androidx.core.app.NotificationCompat.Builder(this, "record_update_status")
+            .setSmallIcon(if (isComplete) android.R.drawable.ic_dialog_info else android.R.drawable.ic_dialog_info)
+            .setContentTitle("Record Update")
+            .setContentText("$recordTitle: $message")
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW) // Silent
+            .setAutoCancel(true)
+            .build()
+
+        val statusNotificationId = ("status_$recordTitle").hashCode()
+        notificationManager.notify(statusNotificationId, notification)
     }
 
     override fun onDestroy() {

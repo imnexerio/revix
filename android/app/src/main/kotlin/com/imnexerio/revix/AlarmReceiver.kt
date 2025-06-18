@@ -83,98 +83,16 @@ class AlarmReceiver : BroadcastReceiver() {
         val notificationId = (category + subCategory + recordTitle).hashCode()
         notificationManager.cancel(notificationId)
 
-        // Show immediate status notification
-        showStatusNotification(context, recordTitle, "Processing...", false)
-
-        // Create unique request ID for tracking
-        val requestId = System.currentTimeMillis().toString()
-
-        // Use RecordUpdateService directly with status tracking
+        // Let RecordUpdateService handle everything including status notifications
+        // No need for requestId tracking here anymore
         val serviceIntent = Intent(context, RecordUpdateService::class.java).apply {
             putExtra("category", category)
             putExtra("sub_category", subCategory)
             putExtra("record_title", recordTitle)
-            putExtra("request_id", requestId) // Pass request ID for tracking
         }
         context.startService(serviceIntent)
-
-        // Monitor the result in background and update status notification
-        monitorMarkAsDoneResult(context, recordTitle, requestId)
         
-        Log.d(TAG, "RecordUpdateService started for: $recordTitle with requestId: $requestId")
-    }
-
-    private fun showStatusNotification(context: Context, recordTitle: String, message: String, isComplete: Boolean) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-        
-        // Create notification channel for status updates
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val channel = android.app.NotificationChannel(
-                "mark_as_done_status",
-                "Mark as Done Status",
-                android.app.NotificationManager.IMPORTANCE_LOW // Silent notification
-            )
-            channel.description = "Status updates for mark as done operations"
-            channel.setSound(null, null) // Silent
-            channel.enableVibration(false) // No vibration
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val notification = androidx.core.app.NotificationCompat.Builder(context, "mark_as_done_status")
-            .setSmallIcon(if (isComplete) android.R.drawable.ic_dialog_info else android.R.drawable.ic_dialog_info)
-            .setContentTitle("Mark as Done")
-            .setContentText("$recordTitle: $message")
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW) // Silent
-            .setAutoCancel(true)
-            .build()
-
-        val statusNotificationId = ("status_$recordTitle").hashCode()
-        notificationManager.notify(statusNotificationId, notification)
-    }
-
-    private fun monitorMarkAsDoneResult(context: Context, recordTitle: String, requestId: String) {
-        Thread {
-            var retryCount = 0
-            val maxRetries = 50 // 10 seconds max wait time
-            var resultFound = false
-            
-            while (retryCount < maxRetries && !resultFound) {
-                try {
-                    Thread.sleep(200) // Wait 200ms between checks
-                    
-                    val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                    val resultKey = "record_update_result_$requestId"
-                    val result = prefs.getString(resultKey, null)
-                    
-                    if (result != null) {
-                        resultFound = true
-                        
-                        // Update status notification based on result
-                        if (result.startsWith("SUCCESS")) {
-                            showStatusNotification(context, recordTitle, "✅ Completed successfully!", true)
-                        } else if (result.startsWith("ERROR:")) {
-                            val errorMessage = result.substring(6) // Remove "ERROR:" prefix
-                            showStatusNotification(context, recordTitle, "❌ Failed: $errorMessage", true)
-                        }
-                        
-                        // Clean up the result from preferences
-                        prefs.edit().remove(resultKey).apply()
-                        break
-                    }
-                    
-                    retryCount++
-                } catch (e: InterruptedException) {
-                    Log.e(TAG, "Result monitoring interrupted: ${e.message}")
-                    break
-                }
-            }
-            
-            // If timeout occurred, show timeout message
-            if (!resultFound) {
-                showStatusNotification(context, recordTitle, "⏱️ Operation timed out", true)
-            }
-            
-        }.start()
+        Log.d(TAG, "RecordUpdateService started for: $recordTitle")
     }
 
     private fun handleIgnoreAlarm(context: Context, intent: Intent) {
