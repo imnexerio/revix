@@ -202,7 +202,7 @@ class RecordUpdateService : Service() {
                                 "Record updated successfully!",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showStatusNotification(lectureNo, "✅ Completed successfully!", true)
+                            showStatusNotification(category,subCategory,lectureNo, "✅ Completed successfully!", true)
                         } else {
                             val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
                             Toast.makeText(
@@ -210,7 +210,7 @@ class RecordUpdateService : Service() {
                                 "Failed to update record: $displayError",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showStatusNotification(lectureNo, "❌ Failed: $displayError", true)
+                            showStatusNotification(category,subCategory,lectureNo, "❌ Failed: $displayError", true)
                         }
                     } else {
                         // Timeout occurred
@@ -219,7 +219,7 @@ class RecordUpdateService : Service() {
                             "Update operation timed out. Please try again.",
                             Toast.LENGTH_SHORT
                         ).show()
-                        showStatusNotification(lectureNo, "⏱️ Operation timed out", true)
+                        showStatusNotification(category,subCategory,lectureNo, "⏱️ Operation timed out", true)
                     }
                 }
 
@@ -247,7 +247,7 @@ class RecordUpdateService : Service() {
         prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()
     }
 
-    private fun showStatusNotification(recordTitle: String, message: String, isComplete: Boolean) {
+    private fun showStatusNotification(recordCategory: String,recordSubcategory: String,recordTitle: String, message: String, isComplete: Boolean) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         
         // Create notification channel for status updates
@@ -265,8 +265,8 @@ class RecordUpdateService : Service() {
 
         val notification = androidx.core.app.NotificationCompat.Builder(this, "record_update_status")
             .setSmallIcon(if (isComplete) android.R.drawable.ic_dialog_info else android.R.drawable.ic_dialog_info)
-            .setContentTitle("Record Update")
-            .setContentText("$recordTitle: $message")
+            .setContentTitle("Record Update Status")
+            .setContentText("$$recordCategory · $recordSubcategory · $recordTitle: $message")
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW) // Silent
             .setAutoCancel(true)
             .build()

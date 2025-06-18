@@ -69,18 +69,24 @@ class AlarmService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Start as foreground service with media playback type for Android 14+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(
-                FOREGROUND_NOTIFICATION_ID,
-                createForegroundNotification(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            )
-        } else {
-            startForeground(FOREGROUND_NOTIFICATION_ID, createForegroundNotification())
-        }
-
         intent?.let { processIntent(it) }
+
+        // Only start with a generic foreground notification if no actual alarm notification will be shown
+        val isActualAlarm = intent?.getBooleanExtra("IS_ACTUAL_ALARM", false) ?: false
+        val isUpcomingReminder = intent?.getBooleanExtra("IS_UPCOMING_REMINDER", false) ?: false
+        
+        if (!isActualAlarm && !isUpcomingReminder) {
+            // Start as foreground service with generic notification for other operations
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    FOREGROUND_NOTIFICATION_ID,
+                    createForegroundNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
+                startForeground(FOREGROUND_NOTIFICATION_ID, createForegroundNotification())
+            }
+        }
 
         // Don't stop service immediately - let it stay alive for concurrent alarms
         // Only stop when no active alarms remain
@@ -321,11 +327,25 @@ class AlarmService : Service() {
         if (isLoudAlarm || (!isWarning && !isPrecheck)) {
             notificationBuilder.setFullScreenIntent(pendingIntent, true)
         }
-
         try {
             val notificationManager = NotificationManagerCompat.from(this)
             val notificationId = (category + subCategory + recordTitle).hashCode()
-            notificationManager.notify(notificationId, notificationBuilder.build())
+            val notification = notificationBuilder.build()
+            
+            // Use this alarm notification as the foreground service notification
+            // This eliminates the need for a separate service notification
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    notificationId,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
+                startForeground(notificationId, notification)
+            }
+            
+            // Also show as regular notification
+            notificationManager.notify(notificationId, notification)
         } catch (e: SecurityException) {
             Log.e(TAG, "Failed to show notification - permission denied", e)
         }
@@ -490,14 +510,15 @@ class AlarmService : Service() {
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
-    }
-
-    private fun createForegroundNotification(): Notification {
+    }    private fun createForegroundNotification(): Notification {
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Record Alarm Service")
-            .setContentText("Processing record alarms...")
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentTitle("Alarm Service")
+            .setContentText("Ready for alarms")
+            .setPriority(NotificationCompat.PRIORITY_MIN) // Lowest priority
+            .setOngoing(true)
+            .setSilent(true) // No sound/vibration
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET) // Hide from lock screen
             .build()
     }
 
@@ -737,12 +758,25 @@ class AlarmService : Service() {
         
         // Always add ignore button
         notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
-
         try {
             val notificationManager = NotificationManagerCompat.from(this)
             val notificationId = (category + subCategory + recordTitle).hashCode()
-            notificationManager.notify(notificationId, notificationBuilder.build())
-            Log.d(TAG, "Upcoming reminder notification shown for: $category · $subCategory · $recordTitle")
+            val notification = notificationBuilder.build()
+            
+            // Use this upcoming reminder notification as the foreground service notification
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    notificationId,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
+                startForeground(notificationId, notification)
+            }
+            
+            // Also show as regular notification
+            notificationManager.notify(notificationId, notification)
+            Log.d(TAG, "Upcoming reminder notification shown for: $recordTitle")
         } catch (e: SecurityException) {
             Log.e(TAG, "Failed to show upcoming reminder notification - permission denied", e)
         }
