@@ -71,22 +71,6 @@ class AlarmService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let { processIntent(it) }
 
-        // Only start with a generic foreground notification if no actual alarm notification will be shown
-        val isActualAlarm = intent?.getBooleanExtra("IS_ACTUAL_ALARM", false) ?: false
-        val isUpcomingReminder = intent?.getBooleanExtra("IS_UPCOMING_REMINDER", false) ?: false
-        
-        if (!isActualAlarm && !isUpcomingReminder) {
-            // Start as foreground service with generic notification for other operations
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(
-                    FOREGROUND_NOTIFICATION_ID,
-                    createForegroundNotification(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                )
-            } else {
-                startForeground(FOREGROUND_NOTIFICATION_ID, createForegroundNotification())
-            }
-        }
 
         // Don't stop service immediately - let it stay alive for concurrent alarms
         // Only stop when no active alarms remain
@@ -533,16 +517,6 @@ class AlarmService : Service() {
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
-    }    private fun createForegroundNotification(): Notification {
-        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Alarm Service")
-            .setContentText("Ready for alarms")
-            .setPriority(NotificationCompat.PRIORITY_MIN) // Lowest priority
-            .setOngoing(true)
-            .setSilent(true) // No sound/vibration
-            .setVisibility(NotificationCompat.VISIBILITY_SECRET) // Hide from lock screen
-            .build()
     }
 
     override fun onDestroy() {
