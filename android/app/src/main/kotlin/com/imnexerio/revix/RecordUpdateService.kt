@@ -158,7 +158,7 @@ class RecordUpdateService : Service() {
             // This provides consistent feedback for both widget and notification updates
             Thread {
                 var retryCount = 0
-                val maxRetries = 50 // 10 seconds max wait time
+                val maxRetries = 300 // 1 minute max wait time (300 * 200ms = 60 seconds)
                 var updateCompleted = false
                 var updateSuccess = false
                 var errorMessage = ""
