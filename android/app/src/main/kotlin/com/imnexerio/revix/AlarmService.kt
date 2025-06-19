@@ -210,6 +210,10 @@ class AlarmService : Service() {    companion object {
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("IS_PRECHECK", isPrecheck)
+            putExtra("IS_WARNING", isWarning)
+            putExtra("IS_ACTUAL_ALARM", !isPrecheck && !isWarning)
+            putExtra("IS_PRE_ALARM", isPrecheck || isWarning)
         }
         val markDonePendingIntent = PendingIntent.getBroadcast(
             this,

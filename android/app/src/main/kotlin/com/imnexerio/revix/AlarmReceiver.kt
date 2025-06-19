@@ -132,17 +132,23 @@ class AlarmReceiver : BroadcastReceiver() {
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         val isPreAlarm = intent.getBooleanExtra("IS_PRE_ALARM", false)
+        val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
 
-        Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle (pre-alarm: $isPreAlarm)")
+        Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle (pre-alarm: $isPreAlarm, actual-alarm: $isActualAlarm)")
 
-        // Stop this specific alarm sound immediately
-        val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
-            action = "STOP_SPECIFIC_ALARM"
-            putExtra(EXTRA_CATEGORY, category)
-            putExtra(EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(EXTRA_RECORD_TITLE, recordTitle)
-        }
-        context.startForegroundService(stopAlarmIntent)        // Cancel all alarms for this record (both pre-alarm and actual alarm)
+        // Only stop alarm service if this is an actual alarm (with sound/vibration)
+        if (isActualAlarm) {
+            Log.d(TAG, "Stopping actual alarm sound/vibration for: $recordTitle")
+            val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
+                action = "STOP_SPECIFIC_ALARM"
+                putExtra(EXTRA_CATEGORY, category)
+                putExtra(EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            }
+            context.startForegroundService(stopAlarmIntent)
+        } else {
+            Log.d(TAG, "Pre-alarm marked as done - no need to stop sound/vibration for: $recordTitle")
+        }// Cancel all alarms for this record (both pre-alarm and actual alarm)
         val alarmHelper = AlarmManagerHelper(context)
         alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
 
