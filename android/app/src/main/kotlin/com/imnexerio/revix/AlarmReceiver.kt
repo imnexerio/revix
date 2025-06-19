@@ -59,67 +59,26 @@ class AlarmReceiver : BroadcastReceiver() {
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         val alarmType = intent.getIntExtra(EXTRA_ALARM_TYPE, 0)
         val actualTime = intent.getLongExtra("ACTUAL_TIME", 0L)
-        val isImmediate = intent.getBooleanExtra("IS_IMMEDIATE", false)
+        val isPreAlarm = intent.getBooleanExtra("IS_PRE_ALARM", false)
         val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
 
-        Log.d(TAG, "Upcoming reminder triggered: $recordTitle (immediate: $isImmediate, snooze: $isSnooze)")        // Show upcoming reminder notification
+        Log.d(TAG, "Upcoming reminder triggered: $recordTitle (pre-alarm: $isPreAlarm, snooze: $isSnooze)")
+
+        // Show upcoming reminder notification
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
             putExtra(EXTRA_ALARM_TYPE, 1) // Light notification for upcoming reminder
             putExtra(EXTRA_CATEGORY, category)
             putExtra(EXTRA_SUB_CATEGORY, subCategory)
             putExtra(EXTRA_RECORD_TITLE, recordTitle)
             putExtra("IS_UPCOMING_REMINDER", true)
+            putExtra("IS_PRE_ALARM", isPreAlarm)
             putExtra("ACTUAL_TIME", actualTime)
             putExtra("IS_SNOOZE", isSnooze)
             putExtra("SNOOZE_COUNT", snoozeCount)
         }
-        context.startForegroundService(serviceIntent)
-
-        // Always schedule the actual alarm regardless of immediate flag
-        scheduleActualAlarm(context, category, subCategory, recordTitle, alarmType, actualTime, snoozeCount)
-    }
-
-    private fun scheduleActualAlarm(
-        context: Context,
-        category: String,
-        subCategory: String,
-        recordTitle: String,
-        alarmType: Int,
-        actualTime: Long,
-        snoozeCount: Int
-    ) {
-        val actualAlarmIntent = Intent(context, AlarmReceiver::class.java).apply {
-            action = ACTION_ACTUAL_ALARM
-            putExtra(EXTRA_CATEGORY, category)
-            putExtra(EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(EXTRA_RECORD_TITLE, recordTitle)
-            putExtra(EXTRA_ALARM_TYPE, alarmType)
-            putExtra("SNOOZE_COUNT", snoozeCount)
-        }
-
-        val actualPendingIntent = android.app.PendingIntent.getBroadcast(
-            context,
-            ("actual_${category}_${subCategory}_${recordTitle}_${snoozeCount}").hashCode(),
-            actualAlarmIntent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-        try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    android.app.AlarmManager.RTC_WAKEUP,
-                    actualTime,
-                    actualPendingIntent
-                )
-            } else {
-                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, actualTime, actualPendingIntent)
-            }
-            Log.d(TAG, "Scheduled actual alarm for $recordTitle at ${java.util.Date(actualTime)}")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule actual alarm", e)
-        }
+        context.startForegroundService(serviceIntent)        // NOTE: No longer automatically scheduling actual alarm here
+        // Both pre-alarm and actual alarm are now scheduled independently in AlarmManagerHelper
     }
 
     private fun handleActualAlarm(context: Context, intent: Intent) {
@@ -148,8 +107,11 @@ class AlarmReceiver : BroadcastReceiver() {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
+        val isPreAlarm = intent.getBooleanExtra("IS_PRE_ALARM", false)
 
-        Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle")        // Stop this specific alarm sound immediately
+        Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle (pre-alarm: $isPreAlarm)")
+
+        // Stop this specific alarm sound immediately
         val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
             action = "STOP_SPECIFIC_ALARM"
             putExtra(EXTRA_CATEGORY, category)
@@ -158,7 +120,7 @@ class AlarmReceiver : BroadcastReceiver() {
         }
         context.startForegroundService(stopAlarmIntent)
 
-        // Cancel all alarms for this record using the new alarm manager
+        // Cancel all alarms for this record (both pre-alarm and actual alarm)
         val alarmHelper = AlarmManagerHelper(context)
         alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
 
@@ -175,15 +137,20 @@ class AlarmReceiver : BroadcastReceiver() {
         }
         context.startService(serviceIntent)
         
-        Log.d(TAG, "All alarms cancelled and RecordUpdateService started for: $recordTitle")
-    }    private fun handleIgnoreAlarm(context: Context, intent: Intent) {
-        val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
+        if (isPreAlarm) {
+            Log.d(TAG, "Task completed from pre-alarm, cancelled actual alarm too for: $recordTitle")
+        } else {
+            Log.d(TAG, "Task completed from actual alarm for: $recordTitle")
+        }
+    }
+
+    private fun handleIgnoreAlarm(context: Context, intent: Intent) {        val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
-        val isUpcomingReminder = intent.getBooleanExtra("IS_UPCOMING_REMINDER", false)
+        val isPreAlarm = intent.getBooleanExtra("IS_PRE_ALARM", false)
 
-        Log.d(TAG, "Ignore alarm triggered: $category - $subCategory - $recordTitle (actual: $isActualAlarm, upcoming: $isUpcomingReminder)")
+        Log.d(TAG, "Ignore alarm triggered: $category - $subCategory - $recordTitle (actual: $isActualAlarm, pre-alarm: $isPreAlarm)")
 
         // Stop current alarm sound/vibration immediately
         val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
@@ -198,20 +165,24 @@ class AlarmReceiver : BroadcastReceiver() {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
         notificationManager.cancel(notificationId)
+        val alarmHelper = AlarmManagerHelper(context)
 
         // Handle different behavior based on alarm type
-        if (isActualAlarm) {
+        if (isPreAlarm) {
+            // For pre-alarms, ignore means dismiss notification only, let actual alarm proceed
+            Log.d(TAG, "Pre-alarm ignored, actual alarm will still trigger for: $recordTitle")
+        } else {
             // For actual alarms, ignore means cancel completely
-            val alarmHelper = AlarmManagerHelper(context)
+
             alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
             Log.d(TAG, "Actual alarm ignored and cancelled for: $recordTitle")
-        } else {
-            // For upcoming reminders, ignore means treat as snooze (5-minute delay)
-            val alarmHelper = AlarmManagerHelper(context)
+        }
+
             alarmHelper.scheduleSnoozeAlarm(category, subCategory, recordTitle, 1, 1) // Light notification
             Log.d(TAG, "Upcoming reminder ignored, scheduled as snooze for: $recordTitle")
-        }
-    }    private fun handleManualSnooze(context: Context, intent: Intent) {
+    }
+
+    private fun handleManualSnooze(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""

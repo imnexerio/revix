@@ -137,10 +137,11 @@ class AlarmService : Service() {
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
         val isUpcomingReminder = intent.getBooleanExtra("IS_UPCOMING_REMINDER", false)
         val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
+        val isPreAlarm = intent.getBooleanExtra("IS_PRE_ALARM", false)
         val actualTime = intent.getLongExtra("ACTUAL_TIME", 0L)
         val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
 
-        Log.d(TAG, "Handling alarm: $category · $subCategory · $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Snooze: $snoozeCount)")
+        Log.d(TAG, "Handling alarm: $category · $subCategory · $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Pre-Alarm: $isPreAlarm, Snooze: $snoozeCount)")
 
         // Increment active alarms count for actual alarms with sound/vibration
         if ((isActualAlarm || (!isUpcomingReminder && !isActualAlarm)) && alarmType > 1) {
@@ -157,7 +158,7 @@ class AlarmService : Service() {
 
         when {
             isUpcomingReminder -> {
-                handleUpcomingReminder(category, subCategory, recordTitle, actualTime, isSnooze, snoozeCount)
+                handleUpcomingReminder(category, subCategory, recordTitle, actualTime, isSnooze, snoozeCount, isPreAlarm)
             }
             isActualAlarm -> {
                 handleActualAlarm(category, subCategory, recordTitle, description, alarmType, snoozeCount)
@@ -531,14 +532,14 @@ class AlarmService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
     private fun handleUpcomingReminder(
         category: String,
         subCategory: String,
         recordTitle: String,
         actualTime: Long,
         isSnooze: Boolean,
-        snoozeCount: Int
+        snoozeCount: Int,
+        isPreAlarm: Boolean = false
     ) {
         val now = System.currentTimeMillis()
         val timeUntilAlarm = actualTime - now
@@ -558,7 +559,7 @@ class AlarmService : Service() {
         
         showUpcomingReminderNotification(
             category, subCategory, recordTitle, title, content, 
-            actualTime, isSnooze, snoozeCount
+            actualTime, isSnooze, snoozeCount, isPreAlarm
         )
     }
 
@@ -664,9 +665,7 @@ class AlarmService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cancel upcoming reminder notification", e)
         }
-    }
-
-    private fun showUpcomingReminderNotification(
+    }    private fun showUpcomingReminderNotification(
         category: String,
         subCategory: String,
         recordTitle: String,
@@ -674,7 +673,8 @@ class AlarmService : Service() {
         content: String,
         actualTime: Long,
         isSnooze: Boolean,
-        snoozeCount: Int
+        snoozeCount: Int,
+        isPreAlarm: Boolean = false
     ) {
         // Create intent to open the app
         val appIntent = Intent(this, MainActivity::class.java).apply {
@@ -685,28 +685,28 @@ class AlarmService : Service() {
             System.currentTimeMillis().toInt(),
             appIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Create mark as done intent
+        )        // Create mark as done intent
         val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = "MARK_AS_DONE"
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("IS_PRE_ALARM", isPreAlarm)
         }
         val markDonePendingIntent = PendingIntent.getBroadcast(
             this,
             System.currentTimeMillis().toInt(),
             markDoneIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )        // Create ignore alarm intent
+        )
+
+        // Create ignore alarm intent
         val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = "IGNORE_ALARM"
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra("IS_ACTUAL_ALARM", false)
-            putExtra("IS_UPCOMING_REMINDER", true)
+            putExtra("IS_PRE_ALARM", isPreAlarm)
         }
         val ignorePendingIntent = PendingIntent.getBroadcast(
             this,
