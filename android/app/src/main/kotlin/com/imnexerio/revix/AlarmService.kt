@@ -749,7 +749,7 @@ class AlarmService : Service() {    companion object {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )        // Create snooze intent (only if we haven't reached the limit)
         var snoozePendingIntent: PendingIntent? = null
-        if (snoozeCount < 6) {
+        if (snoozeCount < 5) {
             val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
                 if (isPreAlarm) {
                     // For pre-alarms, snooze acts same as ignore - just dismiss and let actual alarm proceed
@@ -796,23 +796,6 @@ class AlarmService : Service() {    companion object {
         
         // Always add ignore button
         notificationBuilder.addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
-
-        // Create delete intent - triggered when user swipes away notification
-        // For pre-alarms, auto-dismiss (same as ignore) when notification is cleared
-        val deleteIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "IGNORE_ALARM"
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra("IS_PRE_ALARM", isPreAlarm)
-        }
-        val deletePendingIntent = PendingIntent.getBroadcast(
-            this,
-            System.currentTimeMillis().toInt() + 4,
-            deleteIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        notificationBuilder.setDeleteIntent(deletePendingIntent)
         try {
             val notificationManager = NotificationManagerCompat.from(this)
             val notificationId = (category + subCategory + recordTitle).hashCode()

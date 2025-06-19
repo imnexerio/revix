@@ -264,8 +264,8 @@ class RecordUpdateService : Service() {
         }
         val notification = androidx.core.app.NotificationCompat.Builder(this, "record_update_status")
             .setSmallIcon(
-                if (isComplete) R.drawable.success_icon
-                else R.drawable.error_icon
+                if (isComplete) R.drawable.ic_launcher_icon
+                else R.drawable.ic_launcher_icon_error
             )
             .setContentTitle(
                 if (isComplete) "Task Completed ✓" 
