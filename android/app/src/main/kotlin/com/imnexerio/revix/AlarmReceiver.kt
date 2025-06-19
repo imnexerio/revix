@@ -176,9 +176,7 @@ class AlarmReceiver : BroadcastReceiver() {
         } else {
             Log.d(TAG, "Task completed from actual alarm for: $recordTitle")
         }
-    }
-
-    private fun handleIgnoreAlarm(context: Context, intent: Intent) {        val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
+    }    private fun handleIgnoreAlarm(context: Context, intent: Intent) {        val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
@@ -186,16 +184,22 @@ class AlarmReceiver : BroadcastReceiver() {
 
         Log.d(TAG, "Ignore alarm triggered: $category - $subCategory - $recordTitle (actual: $isActualAlarm, pre-alarm: $isPreAlarm)")
 
-        // Stop current alarm sound/vibration immediately
-        val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
-            action = "STOP_SPECIFIC_ALARM"
-            putExtra(EXTRA_CATEGORY, category)
-            putExtra(EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+        // Only stop alarm sound/vibration for actual alarms that might be playing sound
+        // Pre-alarms are just light notifications and don't need foreground service to stop
+        if (isActualAlarm && !isPreAlarm) {
+            Log.d(TAG, "Stopping alarm sound/vibration for actual alarm: $recordTitle")
+            val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
+                action = "STOP_SPECIFIC_ALARM"
+                putExtra(EXTRA_CATEGORY, category)
+                putExtra(EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            }
+            context.startForegroundService(stopAlarmIntent)
+        } else {
+            Log.d(TAG, "Pre-alarm ignore - no sound/vibration to stop for: $recordTitle")
         }
-        context.startForegroundService(stopAlarmIntent)
 
-        // Dismiss the notification
+        // Dismiss the notification directly
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
         notificationManager.cancel(notificationId)
@@ -232,9 +236,9 @@ class AlarmReceiver : BroadcastReceiver() {
         if (newSnoozeCount > 6) {
             Log.d(TAG, "Maximum snooze limit reached for $recordTitle")
             return
-        }
-
-        // Stop current alarm sound/vibration immediately
+        }        // Stop current alarm sound/vibration immediately
+        // Manual snooze is typically for actual alarms that are playing sound/vibration
+        Log.d(TAG, "Stopping alarm sound/vibration for snooze: $recordTitle")
         val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
             action = "STOP_SPECIFIC_ALARM"
             putExtra(EXTRA_CATEGORY, category)
