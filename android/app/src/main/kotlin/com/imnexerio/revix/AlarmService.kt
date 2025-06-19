@@ -258,7 +258,7 @@ class AlarmService : Service() {    companion object {
         }
 
         val notificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_launcher_icon)
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
@@ -266,19 +266,39 @@ class AlarmService : Service() {    companion object {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-            .addAction(R.drawable.ic_launcher_foreground, "Mark as Done", markDonePendingIntent)
+            .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
             // Additional flags to ensure alarm is visible and wakes up screen
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
             .setOngoing(false) // Allow dismissal but make it prominent
-            .setShowWhen(true) // Show timestamp
-
-        // Add snooze button only if we haven't reached the limit
+            .setShowWhen(true) // Show timestamp        // Add snooze button only if we haven't reached the limit
         if (snoozePendingIntent != null) {
             notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Snooze 5min", snoozePendingIntent)
         }
         
         // Always add ignore button
-        notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)        // Configure sound and vibration for notification
+        notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
+
+        // Create delete intent - triggered when user swipes away notification
+        // For actual alarms, auto-snooze when dismissed
+        val deleteIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = "MANUAL_SNOOZE"
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, if (withSound && withVibration && isLoudAlarm) 5
+                else if (withSound && withVibration) 4
+                else if (withSound) 3
+                else if (withVibration) 2
+                else 1)
+            putExtra("SNOOZE_COUNT", snoozeCount + 1)
+        }
+        val deletePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 3,
+            deleteIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        notificationBuilder.setDeleteIntent(deletePendingIntent)// Configure sound and vibration for notification
         // Only add notification sound/vibration for silent notifications (type 1)
         // For alarms with MediaPlayer sound, keep notification silent to avoid double audio
         if (!withSound && !withVibration && !isLoudAlarm) {
@@ -768,9 +788,7 @@ class AlarmService : Service() {    companion object {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(false)
             .setShowWhen(true)
-            .setDefaults(NotificationCompat.DEFAULT_ALL) // Use system defaults for sound/vibration            .setOnlyAlertOnce(false) // Allow alert to ensure notification is noticed
-
-        // Add snooze button only if we haven't reached the limit
+            .setDefaults(NotificationCompat.DEFAULT_ALL) // Use system defaults for sound/vibration            .setOnlyAlertOnce(false) // Allow alert to ensure notification is noticed        // Add snooze button only if we haven't reached the limit
         if (snoozePendingIntent != null) {
             val snoozeButtonText = if (isPreAlarm) "Dismiss" else "Snooze 5min"
             notificationBuilder.addAction(R.drawable.ic_launcher_foreground, snoozeButtonText, snoozePendingIntent)
@@ -778,6 +796,23 @@ class AlarmService : Service() {    companion object {
         
         // Always add ignore button
         notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
+
+        // Create delete intent - triggered when user swipes away notification
+        // For pre-alarms, auto-dismiss (same as ignore) when notification is cleared
+        val deleteIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = "IGNORE_ALARM"
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("IS_PRE_ALARM", isPreAlarm)
+        }
+        val deletePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 4,
+            deleteIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        notificationBuilder.setDeleteIntent(deletePendingIntent)
         try {
             val notificationManager = NotificationManagerCompat.from(this)
             val notificationId = (category + subCategory + recordTitle).hashCode()

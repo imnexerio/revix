@@ -40,11 +40,12 @@ class AlarmReceiver : BroadcastReceiver() {
             }
             ACTION_MARK_AS_DONE -> {
                 handleMarkAsDone(context, intent)
-            }
-            ACTION_IGNORE_ALARM -> {
+            }            ACTION_IGNORE_ALARM -> {
+                Log.d(TAG, "Ignore alarm action received - could be from button tap or notification dismissal")
                 handleIgnoreAlarm(context, intent)
             }
             ACTION_MANUAL_SNOOZE -> {
+                Log.d(TAG, "Manual snooze action received - could be from button tap or notification dismissal")
                 handleManualSnooze(context, intent)
             }
             "ACTION_SNOOZE_CHECK" -> {
