@@ -1,7 +1,6 @@
 package com.imnexerio.revix
 
 import android.app.*
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -128,37 +127,20 @@ class AlarmService : Service() {
         autoStopTimer?.cancel()
         releaseWakeLock()
         stopSelf()
-    }
-
-    private fun handleStopSpecificAlarm(intent: Intent) {
+    }    private fun handleStopSpecificAlarm(intent: Intent) {
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-        val alarmKey = "${category}_${subCategory}_${recordTitle}"
+        val alarmKey = "$category$subCategory$recordTitle"
 
-        Log.d(TAG, "Stopping specific alarm: $alarmKey")
+        Log.d(TAG, "Stopping specific alarm: $recordTitle")
 
-        // Always stop current sound and vibration when a specific alarm is being stopped
-        // This ensures ignore button works properly
-        stopCurrentAlarmSound()
-        stopVibration()
-        Log.d(TAG, "Stopped alarm sound and vibration for: $recordTitle")
-    }
-        private fun stopCurrentAlarmSound() {
-        try {
-            mediaPlayer?.let {
-                if (it.isPlaying) {
-                    it.stop()
-                }
-                it.release()
-            }
-            mediaPlayer = null
-            currentSoundAlarmKey = null
-            Log.d(TAG, "Stopped current alarm sound")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error stopping current alarm sound", e)
+        if (currentAlarmKey == alarmKey) {
+            stopSoundAndVibration()
+            autoStopTimer?.cancel()
+            releaseWakeLock()
+            stopSelf()
         }
-    }
     }
 
     private fun handleNotificationOnly(category: String, subCategory: String, recordTitle: String) {
@@ -324,9 +306,7 @@ class AlarmService : Service() {
             .setShowWhen(true)
             .setFullScreenIntent(pendingIntent, true)
             .build()
-    }
-
-        private fun startAutoStopTimer() {
+    }    private fun startAutoStopTimer() {
         autoStopTimer?.cancel()
         autoStopTimer = Timer().apply {
             schedule(object : TimerTask() {
@@ -338,28 +318,14 @@ class AlarmService : Service() {
             }, AUTO_STOP_TIMEOUT)
         }
         Log.d(TAG, "Auto-stop timer started (5 minutes)")
-    }    private fun stopVibration() {
+    }
+
+    private fun stopVibration() {
         try {
             vibrator?.cancel()
             Log.d(TAG, "Vibration stopped")
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping vibration", e)
-        }
-    }
-
-    private fun handleStopSpecificAlarm(intent: Intent) {
-        val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
-        val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
-        val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-        val alarmKey = "$category$subCategory$recordTitle"
-
-        Log.d(TAG, "Stopping specific alarm: $recordTitle")
-
-        if (currentAlarmKey == alarmKey) {
-            stopSoundAndVibration()
-            autoStopTimer?.cancel()
-            releaseWakeLock()
-            stopSelf()
         }
     }
 
