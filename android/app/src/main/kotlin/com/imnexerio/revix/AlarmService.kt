@@ -19,25 +19,29 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import java.util.*
 
-class AlarmService : Service() {    companion object {
+class AlarmService : Service() {
+    companion object {
         private const val TAG = "AlarmService"
         private const val NOTIFICATION_CHANNEL_ID = "record_alarms"
         private const val NOTIFICATION_CHANNEL_NAME = "Record Alarms"
-        private const val UPCOMING_CHANNEL_ID = "upcoming_reminders"
-        private const val UPCOMING_CHANNEL_NAME = "Upcoming Reminders"
         private const val FOREGROUND_NOTIFICATION_ID = 1000
-    }// Single media player - latest alarm takes priority
+        private const val AUTO_STOP_TIMEOUT = 5 * 60 * 1000L // 5 minutes
+    }
+
+    // Single media player and vibrator for the current alarm
     private var mediaPlayer: MediaPlayer? = null
-    private var currentSoundAlarmKey: String? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var autoStopTimer: Timer? = null
+    private var currentAlarmKey: String? = null
     private var activeAlarmsCount = 0
     private var vibrationTimer: Timer? = null
-    private var currentVibrationAlarmKey: String? = null    
+    private var currentSoundAlarmKey: String? = null
+    private var currentVibrationAlarmKey: String? = null
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        createUpcomingReminderChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     }
 
@@ -71,13 +75,6 @@ class AlarmService : Service() {    companion object {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let { processIntent(it) }
-
-
-        // Don't stop service immediately - let it stay alive for concurrent alarms
-        // Only stop when no active alarms remain
-        if (activeAlarmsCount == 0) {
-            stopSelf()
-        }
         return START_NOT_STICKY
     }
 
@@ -95,105 +92,173 @@ class AlarmService : Service() {    companion object {
         }
     }
 
-    private fun handleStopAllAlarms() {
-        Log.d(TAG, "Stopping all ongoing alarms")        // Stop current playing alarm sound
-        stopCurrentAlarmSound()
-
-        // Stop vibration
-        stopVibration()
-
-        activeAlarmsCount = 0
-        currentSoundAlarmKey = null
-        Log.d(TAG, "All ongoing alarms stopped")
-    }    private fun handleStopSpecificAlarm(intent: Intent) {
+    private fun handleAlarmTrigger(intent: Intent) {
+        val alarmType = intent.getIntExtra(AlarmReceiver.EXTRA_ALARM_TYPE, 0)
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-        
+
+        currentAlarmKey = "$category$subCategory$recordTitle"
+
+        Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType)")
+
+        // Acquire wake lock to turn on screen
+        acquireWakeLock()
+
+        // Start foreground service with notification
+        startForeground(FOREGROUND_NOTIFICATION_ID, createAlarmNotification(category, subCategory, recordTitle))
+
+        // Handle different alarm types
+        when (alarmType) {
+            1 -> handleNotificationOnly(category, subCategory, recordTitle)
+            2 -> handleVibrationOnly(category, subCategory, recordTitle)
+            3 -> handleSoundOnly(category, subCategory, recordTitle)
+            4 -> handleSoundAndVibration(category, subCategory, recordTitle)
+            5 -> handleLoudAlarm(category, subCategory, recordTitle)
+            else -> {
+                Log.w(TAG, "Unknown alarm type: $alarmType")
+                stopSelf()
+                return
+            }
+        }
+
+        // Start auto-stop timer for 5 minutes
+        startAutoStopTimer()
+    }
+
+    private fun handleStopAllAlarms() {
+        Log.d(TAG, "Stopping all ongoing alarms")
+        stopSoundAndVibration()
+        autoStopTimer?.cancel()
+        releaseWakeLock()
+        stopSelf()
+    }
+
+    private fun handleStopSpecificAlarm(intent: Intent) {
+        val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
+        val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
+        val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
+
         val alarmKey = "${category}_${subCategory}_${recordTitle}"
-        
+
         Log.d(TAG, "Stopping specific alarm: $alarmKey")
-        
+
         // Always stop current sound and vibration when a specific alarm is being stopped
         // This ensures ignore button works properly
         stopCurrentAlarmSound()
         stopVibration()
         activeAlarmsCount = maxOf(0, activeAlarmsCount - 1)
         Log.d(TAG, "Stopped alarm sound and vibration for: $recordTitle")
-        
+
         // Stop service if no more active alarms
         if (activeAlarmsCount == 0) {
             stopSelf()
         }
     }
 
-    private fun handleAlarmTrigger(intent: Intent) {
-        val alarmType = intent.getIntExtra(AlarmReceiver.EXTRA_ALARM_TYPE, 0)
-        val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
-        val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
-        val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-        val description = intent.getStringExtra(AlarmReceiver.EXTRA_DESCRIPTION) ?: ""
-        val isPrecheck = intent.getBooleanExtra(AlarmReceiver.EXTRA_IS_PRECHECK, false)
-        val isWarning = intent.getBooleanExtra("IS_WARNING", false)
-        val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
-        val isUpcomingReminder = intent.getBooleanExtra("IS_UPCOMING_REMINDER", false)
-        val isActualAlarm = intent.getBooleanExtra("IS_ACTUAL_ALARM", false)
-        val isPreAlarm = intent.getBooleanExtra("IS_PRE_ALARM", false)
-        val actualTime = intent.getLongExtra("ACTUAL_TIME", 0L)
-        val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
+    private fun handleNotificationOnly(category: String, subCategory: String, recordTitle: String) {
+        Log.d(TAG, "Notification only alarm for: $recordTitle")
+        // Only show notification - no sound or vibration
+        // Service keeps running for 5 minutes to maintain notification priority
+    }
 
-        Log.d(TAG, "Handling alarm: $category · $subCategory · $recordTitle (Type: $alarmType, Upcoming: $isUpcomingReminder, Actual: $isActualAlarm, Pre-Alarm: $isPreAlarm, Snooze: $snoozeCount)")
+    private fun handleVibrationOnly(category: String, subCategory: String, recordTitle: String) {
+        Log.d(TAG, "Vibration only alarm for: $recordTitle")
+        startVibration(VibrationPattern.NORMAL)
+    }
 
-        // Increment active alarms count for actual alarms with sound/vibration
-        if ((isActualAlarm || (!isUpcomingReminder && !isActualAlarm)) && alarmType > 1) {
-            activeAlarmsCount++
-        }
+    private fun handleSoundOnly(category: String, subCategory: String, recordTitle: String) {
+        Log.d(TAG, "Sound only alarm for: $recordTitle")
+        startSound(SoundLevel.NORMAL)
+    }
 
-        // Only acquire wake lock for actual alarms, not for upcoming reminders
-        if (isActualAlarm && alarmType > 0) {
-            acquireWakeLock()
-        } else if (!isUpcomingReminder && !isActualAlarm && alarmType > 0) {
-            // Legacy alarm handling - acquire wake lock
-            acquireWakeLock()
-        }
+    private fun handleSoundAndVibration(category: String, subCategory: String, recordTitle: String) {
+        Log.d(TAG, "Sound + Vibration alarm for: $recordTitle")
+        startSound(SoundLevel.NORMAL)
+        startVibration(VibrationPattern.NORMAL)
+    }
 
-        when {
-            isUpcomingReminder -> {
-                handleUpcomingReminder(category, subCategory, recordTitle, actualTime, isSnooze, snoozeCount, isPreAlarm, alarmType)
+    private fun handleLoudAlarm(category: String, subCategory: String, recordTitle: String) {
+        Log.d(TAG, "Loud alarm for: $recordTitle")
+        startSound(SoundLevel.LOUD)
+        startVibration(VibrationPattern.INTENSE)
+    }
+
+    private enum class SoundLevel { NORMAL, LOUD }
+    private enum class VibrationPattern { NORMAL, INTENSE }
+
+    private fun startSound(level: SoundLevel) {
+        try {
+            stopSound() // Stop any existing sound
+
+            val defaultRingtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(this@AlarmService, defaultRingtoneUri)
+                isLooping = true
+
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+
+                // Set volume based on level
+                val volume = when (level) {
+                    SoundLevel.NORMAL -> 0.7f
+                    SoundLevel.LOUD -> 1.0f
+                }
+                setVolume(volume, volume)
+
+                prepare()
+                start()
             }
-            isActualAlarm -> {
-                handleActualAlarm(category, subCategory, recordTitle, description, alarmType, snoozeCount)
-            }
-            else -> {
-                // Legacy alarm handling
-                handleLegacyAlarm(alarmType, category, subCategory, recordTitle, description, isPrecheck, isWarning, snoozeCount)
-            }
+
+            Log.d(TAG, "Started ${level.name.lowercase()} sound")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start sound", e)
         }
     }
 
-    private fun showNotification(
-        category: String,
-        subCategory: String,
-        recordTitle: String,
-        description: String,
-        isPrecheck: Boolean,
-        isWarning: Boolean,
-        withVibration: Boolean,
-        withSound: Boolean,
-        isLoudAlarm: Boolean,
-        snoozeCount: Int = 0
-    ) {
-        val title = when {
-            isWarning -> "Upcoming Reminder: $category · $subCategory · $recordTitle"
-            isPrecheck -> "Reminder: $category · $subCategory · $recordTitle"
-            else -> "Time for : $category · $subCategory · $recordTitle"
+    private fun startVibration(pattern: VibrationPattern) {
+        try {
+            stopVibration() // Stop any existing vibration
+
+            val vibrationPattern = when (pattern) {
+                VibrationPattern.NORMAL -> longArrayOf(0, 500, 200, 500, 200, 500)
+                VibrationPattern.INTENSE -> longArrayOf(0, 800, 200, 800, 200, 800, 200, 800)
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val vibrationEffect = VibrationEffect.createWaveform(vibrationPattern, 0) // 0 = repeat
+                vibrator?.vibrate(vibrationEffect)
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(vibrationPattern, 0)
+            }
+
+            Log.d(TAG, "Started ${pattern.name.lowercase()} vibration")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start vibration", e)
         }
-        val snoozeText = if (snoozeCount > 0) " (Snoozed ${snoozeCount}x)" else ""
-        val content = when {
-            isWarning -> "You have an upcoming reminder in 5 minutes for: $category · $subCategory · $recordTitle"
-            isPrecheck -> "Don't forget about your upcoming record in $category - $subCategory$snoozeText"
-            else -> "$description in $category - $subCategory$snoozeText"
+    }
+
+    private fun startAutoStopTimer() {
+        autoStopTimer?.cancel()
+        autoStopTimer = Timer().apply {
+            schedule(object : TimerTask() {
+                override fun run() {
+                    Log.d(TAG, "Auto-stopping alarm after 5 minutes")
+                    stopSoundAndVibration()
+                    // Keep service running to maintain notification
+                }
+            }, AUTO_STOP_TIMEOUT)
         }
+        Log.d(TAG, "Auto-stop timer started (5 minutes)")
+    }
+    private fun createAlarmNotification(category: String, subCategory: String, recordTitle: String): Notification {
+        val title = "Alarm: $category · $subCategory · $recordTitle"
+        val content = "Time for your scheduled task"
 
         // Create intent to open the app
         val appIntent = Intent(this, MainActivity::class.java).apply {
@@ -204,31 +269,28 @@ class AlarmService : Service() {    companion object {
             System.currentTimeMillis().toInt(),
             appIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )        // Create mark as done intent
+        )
+
+        // Create mark as done intent
         val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "MARK_AS_DONE"
+            action = AlarmReceiver.ACTION_MARK_AS_DONE
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra("IS_PRECHECK", isPrecheck)
-            putExtra("IS_WARNING", isWarning)
-            putExtra("IS_ACTUAL_ALARM", !isPrecheck && !isWarning)
-            putExtra("IS_PRE_ALARM", isPrecheck || isWarning)
         }
         val markDonePendingIntent = PendingIntent.getBroadcast(
             this,
             System.currentTimeMillis().toInt(),
             markDoneIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE        )        // Create ignore alarm intent
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create ignore alarm intent
         val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "IGNORE_ALARM"
+            action = AlarmReceiver.ACTION_IGNORE_ALARM
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra("IS_PRECHECK", isPrecheck)
-            putExtra("IS_WARNING", isWarning)
-            putExtra("IS_ACTUAL_ALARM", !isPrecheck && !isWarning)
-            putExtra("IS_UPCOMING_REMINDER", isPrecheck || isWarning)
         }
         val ignorePendingIntent = PendingIntent.getBroadcast(
             this,
@@ -237,148 +299,24 @@ class AlarmService : Service() {    companion object {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Create manual snooze intent (only if we haven't reached the limit)
-        var snoozePendingIntent: PendingIntent? = null
-        if (snoozeCount < 6) {
-            val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
-                action = "MANUAL_SNOOZE"
-                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-                putExtra(AlarmReceiver.EXTRA_DESCRIPTION, description)
-                putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, if (withSound && withVibration && isLoudAlarm) 5
-                    else if (withSound && withVibration) 4
-                    else if (withSound) 3
-                    else if (withVibration) 2
-                    else 1)
-                putExtra("SNOOZE_COUNT", snoozeCount + 1)
-            }
-            snoozePendingIntent = PendingIntent.getBroadcast(
-                this,
-                System.currentTimeMillis().toInt() + 2,
-                snoozeIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
-
-        val notificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_icon)
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
-            .setPriority(if (isLoudAlarm) NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(true)
+            .setAutoCancel(false)
+            .setOngoing(true)
             .setContentIntent(pendingIntent)
             .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
-            // Additional flags to ensure alarm is visible and wakes up screen
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
-            .setOngoing(false) // Allow dismissal but make it prominent
-            .setShowWhen(true) // Show timestamp        // Add snooze button only if we haven't reached the limit
-        if (snoozePendingIntent != null) {
-            notificationBuilder.addAction(R.drawable.ic_launcher_icon, "Snooze 5min", snoozePendingIntent)
-        }
-        
-        // Always add ignore button
-        notificationBuilder.addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
-
-        // Create delete intent - triggered when user swipes away notification
-        // For actual alarms, auto-snooze when dismissed
-        val deleteIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "MANUAL_SNOOZE"
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, if (withSound && withVibration && isLoudAlarm) 5
-                else if (withSound && withVibration) 4
-                else if (withSound) 3
-                else if (withVibration) 2
-                else 1)
-            putExtra("SNOOZE_COUNT", snoozeCount + 1)
-        }
-        val deletePendingIntent = PendingIntent.getBroadcast(
-            this,
-            System.currentTimeMillis().toInt() + 3,
-            deleteIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        notificationBuilder.setDeleteIntent(deletePendingIntent)// Configure sound and vibration for notification
-        // Only add notification sound/vibration for silent notifications (type 1)
-        // For alarms with MediaPlayer sound, keep notification silent to avoid double audio
-        if (!withSound && !withVibration && !isLoudAlarm) {
-            // Pure silent notification (type 1) - use system defaults like pre-alarm
-            notificationBuilder.setDefaults(NotificationCompat.DEFAULT_ALL)
-        } else if (!withSound && !isLoudAlarm && withVibration) {
-            // Only vibration notifications (type 2) - just vibration, no sound
-            val pattern = longArrayOf(0, 500, 250, 500)
-            notificationBuilder.setVibrate(pattern)
-        }
-        // For all other cases (withSound=true or isLoudAlarm=true), keep notification silent
-        // because MediaPlayer will handle the sound// For loud alarms, use full screen intent
-        // For regular alarms (not warnings), also use full screen intent to wake up screen
-        if (isLoudAlarm || (!isWarning && !isPrecheck)) {
-            notificationBuilder.setFullScreenIntent(pendingIntent, true)
-        }
-        try {
-            val notificationManager = NotificationManagerCompat.from(this)
-            val notificationId = (category + subCategory + recordTitle).hashCode()
-            val notification = notificationBuilder.build()
-            
-            // Show as regular notification first
-            notificationManager.notify(notificationId, notification)
-            
-            // Use a different notification ID for foreground service to avoid conflicts
-            val foregroundNotificationId = FOREGROUND_NOTIFICATION_ID + 1000 + (notificationId % 1000)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(
-                    foregroundNotificationId,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                )
-            } else {
-                startForeground(foregroundNotificationId, notification)
-            }
-            
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to show notification - permission denied", e)
-        }
-    }    private fun triggerVibration() {
-        try {
-            // Stop any existing vibration first
-            stopVibration()
-            
-            // Generate unique key for this vibration alarm
-            val vibrationKey = System.currentTimeMillis().toString()
-            currentVibrationAlarmKey = vibrationKey
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val vibrationEffect = VibrationEffect.createWaveform(
-                    longArrayOf(0, 1000, 500, 1000, 500),
-                    0 // Repeat from index 0 for continuous vibration
-                )
-                vibrator?.vibrate(vibrationEffect)
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(longArrayOf(0, 1000, 500, 1000, 500), 0) // Repeat from index 0
-            }
-            Log.d(TAG, "Started continuous vibration with key: $vibrationKey")
-            
-            // Auto-stop vibration after 30 seconds
-            vibrationTimer = Timer().apply {
-                schedule(object : TimerTask() {
-                    override fun run() {
-                        // Only stop if this is still the current vibration
-                        if (currentVibrationAlarmKey == vibrationKey) {
-                            stopVibration()
-                            Log.d(TAG, "Auto-stopped vibration after timeout for key: $vibrationKey")
-                        }
-                    }
-                }, 30000L) // 30 seconds
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to trigger vibration", e)
-        }
-    }    private fun stopVibration() {
+            .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setShowWhen(true)
+            .setFullScreenIntent(pendingIntent, true)
+            .build()
+    }
+    private fun stopVibration() {
         try {
             vibrator?.cancel()
             vibrationTimer?.cancel()
@@ -394,11 +332,11 @@ class AlarmService : Service() {    companion object {
         try {
             // Stop any currently playing sound
             stopCurrentAlarmSound()
-            
+
             // Generate unique key for this alarm sound
             val alarmKey = System.currentTimeMillis().toString()
             currentSoundAlarmKey = alarmKey
-            
+
             mediaPlayer = MediaPlayer().apply {
                 val soundUri = RingtoneManager.getDefaultUri(
                     if (isLoudAlarm) RingtoneManager.TYPE_ALARM else RingtoneManager.TYPE_NOTIFICATION
@@ -412,443 +350,47 @@ class AlarmService : Service() {    companion object {
 
             Log.d(TAG, "Started alarm sound with key: $alarmKey (loud: $isLoudAlarm)")
 
-            // Auto-stop after duration
-            val duration = if (isLoudAlarm) 60000L else 30000L
-            Timer().schedule(object : TimerTask() {
-                override fun run() {
-                    // Only stop if this is still the current sound
-                    if (currentSoundAlarmKey == alarmKey) {
-                        stopCurrentAlarmSound()
-                        activeAlarmsCount = maxOf(0, activeAlarmsCount - 1)
-                        
-                        // Stop service if no more active alarms
-                        if (activeAlarmsCount == 0) {
-                            stopSelf()
-                        }
-                    }
-                }
-            }, duration)
-        } catch (e: Exception) {
+            // Auto-stop after duration    private fun handleStopSpecificAlarm(intent: Intent) {
+        val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
+        val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
+        val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
+        val alarmKey = "$category$subCategory$recordTitle"
+
+        Log.d(TAG, "Stopping specific alarm: $recordTitle")
+
+        if (currentAlarmKey == alarmKey) {
+            stopSoundAndVibration()
+            autoStopTimer?.cancel()
+            releaseWakeLock()
+            stopSelf()
+        }
+    }catch (e: Exception) {
             Log.e(TAG, "Failed to play alarm sound", e)
         }
-    }    private fun stopCurrentAlarmSound() {
-        try {
-            mediaPlayer?.apply {
-                if (isPlaying) {
-                    stop()
-                }
-                release()
-            }
-            mediaPlayer = null
-            currentSoundAlarmKey = null
-            Log.d(TAG, "Stopped current alarm sound")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to stop current alarm sound", e)
-        }
     }
 
-    private fun scheduleAutoSnooze(
-        category: String,
-        subCategory: String,
-        recordTitle: String,
-        description: String,
-        alarmType: Int,
-        snoozeCount: Int
-    ) {
-        Log.d(TAG, "Auto-snooze triggered for: $category - $subCategory - $recordTitle (Snooze #$snoozeCount)")
-
-        // Trigger widget refresh to check if record still exists
-        triggerWidgetRefresh()
-
-        // Schedule the snooze check after a short delay to allow widget refresh to complete
-        val snoozeCheckIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "ACTION_SNOOZE_CHECK"
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra(AlarmReceiver.EXTRA_DESCRIPTION, description)
-            putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
-            putExtra("SNOOZE_COUNT", snoozeCount)
-        }
-
-        val checkPendingIntent = PendingIntent.getBroadcast(
-            this,
-            ("auto_snooze_check_$category$subCategory$recordTitle$snoozeCount").hashCode(),
-            snoozeCheckIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val checkTime = System.currentTimeMillis() + 3000 // 3 seconds delay for widget refresh
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    checkTime,
-                    checkPendingIntent
-                )
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, checkTime, checkPendingIntent)
-            }
-            Log.d(TAG, "Auto-snooze check scheduled for $category · $subCategory · $recordTitle")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule auto-snooze check", e)
-        }
-    }
-
-    private fun triggerWidgetRefresh() {
-        try {
-            // Trigger widget refresh using the same mechanism as in TodayWidget
-            val uri = Uri.parse("homeWidget://widget_refresh")
-            val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
-                this,
-                uri
-            )
-            backgroundIntent.send()
-            Log.d(TAG, "Widget refresh triggered from AlarmService")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error triggering widget refresh from AlarmService: ${e.message}")
-        }
-    }    private fun createNotificationChannel() {
+    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notifications for record alarms"
-                enableVibration(true)
-                setSound(
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, importance).apply {
+                description = "Notifications for record alarms and reminders"
+                enableVibration(false) // We handle vibration manually
+                setSound(null, null) // We handle sound manually
+                setBypassDnd(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
-            val notificationManager = getSystemService(NotificationManager::class.java)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
-        }
-    }    private fun createUpcomingReminderChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                UPCOMING_CHANNEL_ID,
-                UPCOMING_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notifications for upcoming reminders (pre-alarms)"
-                enableVibration(false) // No vibration for upcoming reminders
-                setSound(
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
-                setShowBadge(true) // Show badge to increase visibility
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC // Show on lock screen
-                enableLights(true) // Enable LED lights
-                lightColor = android.graphics.Color.BLUE // Set LED color
-            }
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-            
-            // Log channel creation details
-            Log.d(TAG, "Created upcoming reminder channel - ID: $UPCOMING_CHANNEL_ID, Importance: ${channel.importance}")
         }
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        stopCurrentAlarmSound()
-        stopVibration()
+        Log.d(TAG, "AlarmService destroyed")
+        stopSoundAndVibration()
+        autoStopTimer?.cancel()
         releaseWakeLock()
-        vibrator = null
-        activeAlarmsCount = 0
-        currentSoundAlarmKey = null
-        currentVibrationAlarmKey = null
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-    private fun handleUpcomingReminder(
-        category: String,
-        subCategory: String,
-        recordTitle: String,
-        actualTime: Long,
-        isSnooze: Boolean,
-        snoozeCount: Int,
-        isPreAlarm: Boolean = false,
-        alarmType: Int = 1
-    ) {
-        val now = System.currentTimeMillis()
-        val timeUntilAlarm = actualTime - now
-        val minutesLeft = (timeUntilAlarm / (60 * 1000)).toInt()
-        
-        val title = if (isSnooze) {
-            "Snoozed Reminder: $category · $subCategory · $recordTitle"
-        } else {
-            "Upcoming Reminder: $category · $subCategory · $recordTitle"
-        }
-        
-        val content = if (minutesLeft <= 1) {
-            "Its time for your reminder!"
-        } else {
-            "You have a reminder in $minutesLeft minute${if (minutesLeft != 1) "s" else ""}"
-        }
-        
-        showUpcomingReminderNotification(
-            category, subCategory, recordTitle, title, content, 
-            actualTime, isSnooze, snoozeCount, isPreAlarm, alarmType
-        )
-    }
-    private fun handleActualAlarm(
-        category: String,
-        subCategory: String,
-        recordTitle: String,
-        description: String,
-        alarmType: Int,
-        snoozeCount: Int
-    ) {
-        Log.d(TAG, "Triggering actual alarm for: $category · $subCategory · $recordTitle (Type: $alarmType, Snooze: $snoozeCount)")
-        
-        // Cancel any existing upcoming reminder notification for this record
-        Log.d(TAG, "Cancelling any existing upcoming reminder for: $recordTitle")
-        cancelUpcomingReminderNotification(category, subCategory, recordTitle)
-        
-        // Create notification based on alarm type
-        when (alarmType) {
-            0 -> {
-                Log.d(TAG, "No reminder alarm type - skipping")
-                return
-            }
-            1 -> {
-                showNotification(category, subCategory, recordTitle, description, false, false, false, false, false, snoozeCount)
-            }
-            2 -> {
-                triggerVibration()
-                showNotification(category, subCategory, recordTitle, description, false, false, true, false, false, snoozeCount)
-            }
-            3 -> {
-                playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, false, false, false, true, false, snoozeCount)
-            }
-            4 -> {
-                triggerVibration()
-                playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, false, false, true, true, false, snoozeCount)
-            }
-            5 -> {
-                triggerVibration()
-                playAlarmSound(true)
-                showNotification(category, subCategory, recordTitle, description, false, false, true, true, true, snoozeCount)
-            }
-        }
-    }
-    
-    private fun handleLegacyAlarm(
-        alarmType: Int,
-        category: String,
-        subCategory: String,
-        recordTitle: String,
-        description: String,
-        isPrecheck: Boolean,
-        isWarning: Boolean,
-        snoozeCount: Int
-    ) {
-        // Legacy alarm handling for backward compatibility
-        when (alarmType) {
-            0 -> {
-                Log.d(TAG, "No reminder alarm type - skipping")
-                return
-            }
-            1 -> {
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, false, false, snoozeCount)
-            }
-            2 -> {
-                triggerVibration()
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, false, false, snoozeCount)
-            }
-            3 -> {
-                playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, false, true, false, snoozeCount)
-            }
-            4 -> {
-                triggerVibration()
-                playAlarmSound(false)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, false, snoozeCount)
-            }
-            5 -> {
-                triggerVibration()
-                playAlarmSound(true)
-                showNotification(category, subCategory, recordTitle, description, isPrecheck, isWarning, true, true, true, snoozeCount)
-            }
-        }
-        
-        // Schedule auto-snooze if this is not a precheck and we haven't reached the limit
-        if (!isPrecheck && snoozeCount < 6) {
-            scheduleAutoSnooze(category, subCategory, recordTitle, description, alarmType, snoozeCount + 1)
-        }
-
-    }
-
-    private fun cancelUpcomingReminderNotification(
-        category: String,
-        subCategory: String,
-        recordTitle: String
-    ) {
-        try {
-            val notificationManager = NotificationManagerCompat.from(this)
-            val notificationId = (category + subCategory + recordTitle).hashCode()
-            notificationManager.cancel(notificationId)
-            Log.d(TAG, "Cancelled upcoming reminder notification for: $category · $subCategory · $recordTitle")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to cancel upcoming reminder notification", e)
-        }
-    }    private fun showUpcomingReminderNotification(
-        category: String,
-        subCategory: String,
-        recordTitle: String,
-        title: String,
-        content: String,
-        actualTime: Long,
-        isSnooze: Boolean,
-        snoozeCount: Int,
-        isPreAlarm: Boolean = false,
-        alarmType: Int = 1
-    ) {
-        // Create intent to open the app
-        val appIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this, 
-            System.currentTimeMillis().toInt(),
-            appIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )        // Create mark as done intent
-        val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "MARK_AS_DONE"
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra("IS_PRE_ALARM", isPreAlarm)
-        }
-        val markDonePendingIntent = PendingIntent.getBroadcast(
-            this,
-            System.currentTimeMillis().toInt(),
-            markDoneIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Create ignore alarm intent
-        val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "IGNORE_ALARM"
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-            putExtra("IS_PRE_ALARM", isPreAlarm)
-        }
-        val ignorePendingIntent = PendingIntent.getBroadcast(
-            this,
-            System.currentTimeMillis().toInt() + 1,
-            ignoreIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )        // Create snooze intent (only if we haven't reached the limit)
-        var snoozePendingIntent: PendingIntent? = null
-        if (snoozeCount < 5) {
-            val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
-                if (isPreAlarm) {
-                    // For pre-alarms, snooze acts same as ignore - just dismiss and let actual alarm proceed
-                    action = "IGNORE_ALARM"
-                    putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-                    putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-                    putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-                    putExtra("IS_PRE_ALARM", isPreAlarm)                } else {
-                    // For actual alarms or snoozes, use normal snooze behavior
-                    action = "MANUAL_SNOOZE"
-                    putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-                    putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-                    putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-                    putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType) // Preserve original alarm type
-                    putExtra("SNOOZE_COUNT", snoozeCount)
-                }
-            }
-            snoozePendingIntent = PendingIntent.getBroadcast(
-                this,
-                System.currentTimeMillis().toInt() + 2,
-                snoozeIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
-        val notificationBuilder = NotificationCompat.Builder(this, UPCOMING_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_icon)
-            .setContentTitle(title)
-            .setContentText(content)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT) // Use default priority for upcoming reminders
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(false)
-            .setShowWhen(true)
-            .setDefaults(NotificationCompat.DEFAULT_ALL) // Use system defaults for sound/vibration            .setOnlyAlertOnce(false) // Allow alert to ensure notification is noticed        // Add snooze button only if we haven't reached the limit
-        if (snoozePendingIntent != null) {
-            val snoozeButtonText = if (isPreAlarm) "Dismiss" else "Snooze 5min"
-            notificationBuilder.addAction(R.drawable.ic_launcher_icon, snoozeButtonText, snoozePendingIntent)
-        }
-        
-        // Always add ignore button
-        notificationBuilder.addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
-        try {
-            val notificationManager = NotificationManagerCompat.from(this)
-            val notificationId = (category + subCategory + recordTitle).hashCode()
-            val notification = notificationBuilder.build()
-            
-            Log.d(TAG, "Creating upcoming reminder notification - ID: $notificationId, Channel: $UPCOMING_CHANNEL_ID")
-            Log.d(TAG, "Notification details - Title: $title, Content: $content")
-            
-            // Check if notifications are enabled
-            if (!notificationManager.areNotificationsEnabled()) {
-                Log.w(TAG, "Notifications are disabled for this app!")
-            }
-            
-            // Check channel status if Android O+
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val systemNotificationManager = getSystemService(NotificationManager::class.java)
-                val channel = systemNotificationManager.getNotificationChannel(UPCOMING_CHANNEL_ID)
-                if (channel != null) {
-                    Log.d(TAG, "Channel status - ID: ${channel.id}, Importance: ${channel.importance}, Name: ${channel.name}")
-                    if (channel.importance == NotificationManager.IMPORTANCE_NONE) {
-                        Log.w(TAG, "Channel importance is NONE - notifications will be blocked!")
-                    }
-                } else {
-                    Log.e(TAG, "Notification channel not found: $UPCOMING_CHANNEL_ID")
-                }
-            }
-            
-            // Show as regular notification first
-            notificationManager.notify(notificationId, notification)
-            Log.d(TAG, "Upcoming reminder notification shown for: $notificationId")
-            
-            // Use a different notification ID for foreground service to avoid conflicts
-            val foregroundNotificationId = FOREGROUND_NOTIFICATION_ID + (notificationId % 1000)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(
-                    foregroundNotificationId,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                )
-            } else {
-                startForeground(foregroundNotificationId, notification)
-            }
-            
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to show upcoming reminder notification - permission denied", e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to show upcoming reminder notification - unexpected error", e)
-        }
-    }
 }
