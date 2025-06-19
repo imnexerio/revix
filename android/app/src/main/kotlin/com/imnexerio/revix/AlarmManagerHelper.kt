@@ -210,11 +210,21 @@ class AlarmManagerHelper(private val context: Context) {
                         // New alarm - schedule both if time allows
                         scheduleBothAlarms(newMetadata)
                         Log.d(TAG, "Scheduled new alarm(s) for $recordTitle")
-                    }
-                    existingAlarm?.actualTime != actualTime -> {
+                    }                    existingAlarm?.actualTime != actualTime -> {
                         // Time changed - cancel old alarms and reschedule
+                        Log.d(TAG, "Time changed for $recordTitle, clearing active states and rescheduling")
+                        
+                        // Clear active notification states (critical fix)
+                        clearActiveStatesForRecord(uniqueKey)
+                        
+                        // Dismiss any active notification for this record
+                        dismissNotificationForRecord(category, subCategory, recordTitle)
+                        
+                        // Cancel scheduled alarms
                         cancelAlarm(uniqueKey) // Cancel actual alarm
                         cancelAlarm("${uniqueKey}_pre") // Cancel pre-alarm if exists
+                        
+                        // Schedule new alarms
                         scheduleBothAlarms(newMetadata)
                         Log.d(TAG, "Updated alarm time for $recordTitle")
                     }
@@ -237,13 +247,21 @@ class AlarmManagerHelper(private val context: Context) {
                 cancelAlarm(snoozeAlarm.key)
                 Log.d(TAG, "Cancelled orphaned snooze alarm: ${snoozeAlarm.recordTitle}")
             }
-        }
-
-        // Cancel alarms for records that no longer exist
+        }        // Cancel alarms for records that no longer exist
         currentAlarms.keys.minus(newAlarmMetadata.keys).forEach { obsoleteKey ->
             if (!currentAlarms[obsoleteKey]?.isSnoozeAlarm!!) { // Don't double-cancel snooze alarms
-                cancelAlarm(obsoleteKey)
-                Log.d(TAG, "Cancelled obsolete alarm: $obsoleteKey")
+                val obsoleteAlarm = currentAlarms[obsoleteKey]
+                if (obsoleteAlarm != null) {
+                    // Clear active states for deleted record
+                    clearActiveStatesForRecord(obsoleteKey)
+                    
+                    // Dismiss any active notification for deleted record
+                    dismissNotificationForRecord(obsoleteAlarm.category, obsoleteAlarm.subCategory, obsoleteAlarm.recordTitle)
+                    
+                    // Cancel scheduled alarm
+                    cancelAlarm(obsoleteKey)
+                    Log.d(TAG, "Cancelled obsolete alarm and dismissed notification: ${obsoleteAlarm.recordTitle}")
+                }
             }
         }
 
@@ -622,6 +640,15 @@ class AlarmManagerHelper(private val context: Context) {
         actualTime: Long, 
         timeUntilAlarm: Long
     ) {
+        Log.d(TAG, "Triggering upcoming reminder immediately for: $recordTitle")
+        
+        // EXECUTION-LEVEL DEDUPLICATION: Check if this alarm should trigger
+        // This is treated as a pre-alarm since it's triggered before the actual time
+        if (!shouldTriggerAlarm(category, subCategory, recordTitle, true)) {
+            Log.d(TAG, "Ignoring duplicate immediate upcoming reminder trigger for $recordTitle")
+            return // Simply ignore - let existing notification continue as expected
+        }
+        
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_UPCOMING_REMINDER
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
@@ -630,6 +657,7 @@ class AlarmManagerHelper(private val context: Context) {
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
             putExtra("ACTUAL_TIME", actualTime)
             putExtra("IS_IMMEDIATE", true)
+            putExtra("IS_PRE_ALARM", true) // Mark as pre-alarm
             putExtra("IS_SNOOZE", false)
             putExtra("SNOOZE_COUNT", 0)
         }
@@ -644,13 +672,19 @@ class AlarmManagerHelper(private val context: Context) {
         // Trigger immediately
         try {
             pendingIntent.send()
+            onAlarmTriggered(category, subCategory, recordTitle, true)
+            Log.d(TAG, "Upcoming reminder triggered immediately for: $recordTitle")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to trigger upcoming reminder", e)
         }
-    }
-
-    private fun triggerActualAlarm(category: String, subCategory: String, recordTitle: String, alarmType: Int) {
+    }private fun triggerActualAlarm(category: String, subCategory: String, recordTitle: String, alarmType: Int) {
         Log.d(TAG, "Triggering actual alarm immediately for: $recordTitle")
+        
+        // EXECUTION-LEVEL DEDUPLICATION: Check if this alarm should trigger
+        if (!shouldTriggerAlarm(category, subCategory, recordTitle, false)) {
+            Log.d(TAG, "Ignoring duplicate immediate actual alarm trigger for $recordTitle")
+            return // Simply ignore - let existing notification continue as expected
+        }
         
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_ACTUAL_ALARM
@@ -671,6 +705,7 @@ class AlarmManagerHelper(private val context: Context) {
         // Trigger immediately
         try {
             pendingIntent.send()
+            onAlarmTriggered(category, subCategory, recordTitle, false)
             Log.d(TAG, "Actual alarm triggered immediately for: $recordTitle")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to trigger actual alarm", e)
@@ -764,4 +799,17 @@ class AlarmManagerHelper(private val context: Context) {
             }
         }
     }
+
+    private fun dismissNotificationForRecord(category: String, subCategory: String, recordTitle: String) {
+        try {
+            val notificationId = (category + subCategory + recordTitle).hashCode()
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.cancel(notificationId)
+            Log.d(TAG, "Dismissed notification for updated/deleted record: $recordTitle")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to dismiss notification for $recordTitle", e)
+        }
+    }
+
+    // ==================== EXECUTION-LEVEL DEDUPLICATION ====================
 }

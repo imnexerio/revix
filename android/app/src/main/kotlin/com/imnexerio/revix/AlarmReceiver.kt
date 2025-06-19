@@ -51,9 +51,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 handleSnoozeCheck(context, intent)
             }
         }
-    }
-
-    private fun handleUpcomingReminder(context: Context, intent: Intent) {
+    }    private fun handleUpcomingReminder(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
@@ -64,6 +62,13 @@ class AlarmReceiver : BroadcastReceiver() {
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
 
         Log.d(TAG, "Upcoming reminder triggered: $recordTitle (pre-alarm: $isPreAlarm, snooze: $isSnooze)")
+
+        // EXECUTION-LEVEL DEDUPLICATION: Check if this alarm should trigger
+        val alarmHelper = AlarmManagerHelper(context)
+        if (!alarmHelper.shouldTriggerAlarm(category, subCategory, recordTitle, isPreAlarm)) {
+            Log.d(TAG, "Ignoring duplicate upcoming reminder trigger for $recordTitle (pre-alarm: $isPreAlarm)")
+            return // Simply ignore - let existing notification continue as expected
+        }
 
         // Show upcoming reminder notification
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
@@ -77,11 +82,12 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra("IS_SNOOZE", isSnooze)
             putExtra("SNOOZE_COUNT", snoozeCount)
         }
-        context.startForegroundService(serviceIntent)        // NOTE: No longer automatically scheduling actual alarm here
-        // Both pre-alarm and actual alarm are now scheduled independently in AlarmManagerHelper
-    }
+        context.startForegroundService(serviceIntent)
 
-    private fun handleActualAlarm(context: Context, intent: Intent) {
+        // Mark this alarm as active to prevent future duplicates
+        alarmHelper.onAlarmTriggered(category, subCategory, recordTitle, isPreAlarm)// NOTE: No longer automatically scheduling actual alarm here
+        // Both pre-alarm and actual alarm are now scheduled independently in AlarmManagerHelper
+    }    private fun handleActualAlarm(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
@@ -89,6 +95,13 @@ class AlarmReceiver : BroadcastReceiver() {
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
 
         Log.d(TAG, "Actual alarm triggered: $recordTitle")
+
+        // EXECUTION-LEVEL DEDUPLICATION: Check if this alarm should trigger
+        val alarmHelper = AlarmManagerHelper(context)
+        if (!alarmHelper.shouldTriggerAlarm(category, subCategory, recordTitle, false)) {
+            Log.d(TAG, "Ignoring duplicate actual alarm trigger for $recordTitle")
+            return // Simply ignore - let existing notification continue as expected
+        }
 
         // Show the actual alarm notification
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
@@ -101,6 +114,9 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra("SNOOZE_COUNT", snoozeCount)
         }
         context.startForegroundService(serviceIntent)
+
+        // Mark this alarm as active to prevent future duplicates
+        alarmHelper.onAlarmTriggered(category, subCategory, recordTitle, false)
     }
 
     private fun handleMarkAsDone(context: Context, intent: Intent) {
@@ -118,11 +134,12 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra(EXTRA_SUB_CATEGORY, subCategory)
             putExtra(EXTRA_RECORD_TITLE, recordTitle)
         }
-        context.startForegroundService(stopAlarmIntent)
-
-        // Cancel all alarms for this record (both pre-alarm and actual alarm)
+        context.startForegroundService(stopAlarmIntent)        // Cancel all alarms for this record (both pre-alarm and actual alarm)
         val alarmHelper = AlarmManagerHelper(context)
         alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
+
+        // Update alarm state: user marked as done
+        alarmHelper.onUserActionTaken(category, subCategory, recordTitle, "done", isPreAlarm)
 
         // Dismiss the current notification
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
@@ -167,13 +184,15 @@ class AlarmReceiver : BroadcastReceiver() {
         notificationManager.cancel(notificationId)
         val alarmHelper = AlarmManagerHelper(context)
 
+        // Update alarm state: user ignored
+        alarmHelper.onUserActionTaken(category, subCategory, recordTitle, "ignore", isPreAlarm)
+
         // Handle different behavior based on alarm type
         if (isPreAlarm) {
             // For pre-alarms, ignore means dismiss notification only, let actual alarm proceed
             Log.d(TAG, "Pre-alarm ignored, actual alarm will still trigger for: $recordTitle")
         } else {
             // For actual alarms, ignore means cancel completely
-
             alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
             Log.d(TAG, "Actual alarm ignored and cancelled for: $recordTitle")
         }
@@ -210,10 +229,12 @@ class AlarmReceiver : BroadcastReceiver() {
         // Cancel current notification
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
-        notificationManager.cancel(notificationId)
-
-        // Schedule snooze alarm using the new alarm manager
+        notificationManager.cancel(notificationId)        // Schedule snooze alarm using the new alarm manager
         val alarmHelper = AlarmManagerHelper(context)
+        
+        // Update alarm state: user snoozed
+        alarmHelper.onUserActionTaken(category, subCategory, recordTitle, "snooze", false) // Assuming snooze is from actual alarm
+        
         alarmHelper.scheduleSnoozeAlarm(category, subCategory, recordTitle, alarmType, newSnoozeCount)
 
         Log.d(TAG, "Alarm stopped and snooze scheduled for $recordTitle")
