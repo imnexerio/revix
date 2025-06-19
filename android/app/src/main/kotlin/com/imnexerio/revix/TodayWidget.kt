@@ -115,7 +115,8 @@ class TodayWidget : AppWidgetProvider() {    companion object {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        when (intent.action) {            ACTION_REFRESH -> {
+        when (intent.action) {
+            ACTION_REFRESH -> {
                 // Trigger Flutter background callback for refresh
                 try {
                     Log.d("TodayWidget", "Refreshing widget data...")
