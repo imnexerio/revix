@@ -30,11 +30,128 @@ class AlarmManagerHelper(private val context: Context) {
         private const val TAG = "AlarmManagerHelper"
         private const val PREFS_NAME = "record_alarms"
         private const val ALARM_METADATA_KEY = "alarm_metadata"
+        private const val ACTIVE_ALARMS_KEY = "active_alarms"
         private const val REQUEST_CODE_BASE = 10000
     }
 
+    // Track active alarm states to prevent duplicate triggers
+    private val activePreAlarms = mutableSetOf<String>()
+    private val activeActualAlarms = mutableSetOf<String>()
+    private val dismissedAlarms = mutableSetOf<String>()
+
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    init {
+        loadActiveAlarmStates()
+    }
+
+    private fun loadActiveAlarmStates() {
+        try {
+            val activeAlarmsJson = prefs.getString(ACTIVE_ALARMS_KEY, "{}")
+            val jsonObject = JSONObject(activeAlarmsJson ?: "{}")
+            
+            // Load active pre-alarms
+            val preAlarms = jsonObject.optJSONArray("activePreAlarms")
+            if (preAlarms != null) {
+                for (i in 0 until preAlarms.length()) {
+                    activePreAlarms.add(preAlarms.getString(i))
+                }
+            }
+            
+            // Load active actual alarms
+            val actualAlarms = jsonObject.optJSONArray("activeActualAlarms")
+            if (actualAlarms != null) {
+                for (i in 0 until actualAlarms.length()) {
+                    activeActualAlarms.add(actualAlarms.getString(i))
+                }
+            }
+            
+            // Load dismissed alarms
+            val dismissed = jsonObject.optJSONArray("dismissedAlarms")
+            if (dismissed != null) {
+                for (i in 0 until dismissed.length()) {
+                    dismissedAlarms.add(dismissed.getString(i))
+                }
+            }
+            
+            Log.d(TAG, "Loaded active states - Pre: ${activePreAlarms.size}, Actual: ${activeActualAlarms.size}, Dismissed: ${dismissedAlarms.size}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading active alarm states", e)
+        }
+    }
+    
+    private fun saveActiveAlarmStates() {
+        try {
+            val jsonObject = JSONObject().apply {
+                put("activePreAlarms", JSONArray(activePreAlarms))
+                put("activeActualAlarms", JSONArray(activeActualAlarms))
+                put("dismissedAlarms", JSONArray(dismissedAlarms))
+            }
+            prefs.edit().putString(ACTIVE_ALARMS_KEY, jsonObject.toString()).apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving active alarm states", e)
+        }
+    }
+    
+    // Public methods for checking and updating alarm states
+    fun isPreAlarmActive(recordKey: String): Boolean = activePreAlarms.contains(recordKey)
+    fun isActualAlarmActive(recordKey: String): Boolean = activeActualAlarms.contains(recordKey)
+    fun isAlarmDismissed(recordKey: String): Boolean = dismissedAlarms.contains(recordKey)
+    
+    fun markPreAlarmActive(recordKey: String) {
+        activePreAlarms.add(recordKey)
+        saveActiveAlarmStates()
+        Log.d(TAG, "Marked pre-alarm active: $recordKey")
+    }
+    
+    fun markActualAlarmActive(recordKey: String) {
+        activeActualAlarms.add(recordKey)
+        saveActiveAlarmStates()
+        Log.d(TAG, "Marked actual alarm active: $recordKey")
+    }
+    
+    fun markAlarmDismissed(recordKey: String) {
+        activePreAlarms.remove(recordKey)
+        activeActualAlarms.remove(recordKey)
+        dismissedAlarms.add(recordKey)
+        saveActiveAlarmStates()
+        Log.d(TAG, "Marked alarm dismissed: $recordKey")
+    }
+    
+    fun markAlarmCompleted(recordKey: String) {
+        activePreAlarms.remove(recordKey)
+        activeActualAlarms.remove(recordKey)
+        dismissedAlarms.remove(recordKey)
+        saveActiveAlarmStates()
+        Log.d(TAG, "Marked alarm completed: $recordKey")
+    }
+    
+    fun clearActiveStatesForRecord(recordKey: String) {
+        activePreAlarms.remove(recordKey)
+        activeActualAlarms.remove(recordKey)
+        dismissedAlarms.remove(recordKey)
+        saveActiveAlarmStates()
+        Log.d(TAG, "Cleared all states for record: $recordKey")
+    }
+    
+    // Clean up states for records that no longer exist
+    private fun cleanupStaleActiveStates(validRecordKeys: Set<String>) {
+        val preAlarmsBefore = activePreAlarms.size
+        val actualAlarmsBefore = activeActualAlarms.size
+        val dismissedBefore = dismissedAlarms.size
+        
+        activePreAlarms.retainAll(validRecordKeys)
+        activeActualAlarms.retainAll(validRecordKeys)
+        dismissedAlarms.retainAll(validRecordKeys)
+        
+        if (activePreAlarms.size != preAlarmsBefore || 
+            activeActualAlarms.size != actualAlarmsBefore || 
+            dismissedAlarms.size != dismissedBefore) {
+            saveActiveAlarmStates()
+            Log.d(TAG, "Cleaned up stale active states")
+        }
+    }
 
     fun scheduleAlarmsForTodayRecords(todayRecords: List<Map<String, Any>>) {
         Log.d(TAG, "Processing ${todayRecords.size} today records with smart alarm management")
@@ -132,6 +249,11 @@ class AlarmManagerHelper(private val context: Context) {
 
         // Save updated metadata
         saveAlarmMetadata(newAlarmMetadata.values.toList())
+        
+        // Clean up active states for records that no longer exist
+        val validRecordKeys = newAlarmMetadata.keys.toSet()
+        cleanupStaleActiveStates(validRecordKeys)
+        
         Log.d(TAG, "Alarm management completed. Active alarms: ${newAlarmMetadata.size}")
     }
 
@@ -263,7 +385,9 @@ class AlarmManagerHelper(private val context: Context) {
         saveAlarmMetadata(currentMetadata.values.toList())
         
         Log.d(TAG, "Scheduled snooze alarm for $recordTitle (count: $snoozeCount)")
-    }    fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
+    }
+
+    fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
         val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
         val preAlarmKey = "${uniqueKey}_pre"
         val currentMetadata = getStoredAlarmMetadata().toMutableMap()
@@ -550,6 +674,94 @@ class AlarmManagerHelper(private val context: Context) {
             Log.d(TAG, "Actual alarm triggered immediately for: $recordTitle")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to trigger actual alarm", e)
+        }
+    }
+    /**
+     * Call this method before triggering any alarm notification to check if it should proceed.
+     * This prevents duplicate notifications from rapid data refreshes.
+     * 
+     * @param category Record category
+     * @param subCategory Record sub-category  
+     * @param recordTitle Record title
+     * @param isPreAlarm True if this is a pre-alarm, false for actual alarm
+     * @return True if the alarm should be triggered, false if it should be ignored
+     */
+    fun shouldTriggerAlarm(category: String, subCategory: String, recordTitle: String, isPreAlarm: Boolean): Boolean {
+        val recordKey = generateUniqueKey(category, subCategory, recordTitle)
+        
+        // Check if this alarm was already dismissed
+        if (isAlarmDismissed(recordKey)) {
+            Log.d(TAG, "Ignoring trigger for dismissed alarm: $recordKey (isPreAlarm: $isPreAlarm)")
+            return false
+        }
+        
+        // Check if this specific alarm type is already active
+        if (isPreAlarm) {
+            if (isPreAlarmActive(recordKey)) {
+                Log.d(TAG, "Ignoring duplicate pre-alarm trigger: $recordKey")
+                return false
+            }
+        } else {
+            if (isActualAlarmActive(recordKey)) {
+                Log.d(TAG, "Ignoring duplicate actual alarm trigger: $recordKey")
+                return false
+            }
+        }
+        
+        Log.d(TAG, "Allowing alarm trigger: $recordKey (isPreAlarm: $isPreAlarm)")
+        return true
+    }
+    
+    /**
+     * Call this method after successfully showing an alarm notification.
+     * This marks the alarm as active to prevent duplicates.
+     */
+    fun onAlarmTriggered(category: String, subCategory: String, recordTitle: String, isPreAlarm: Boolean) {
+        val recordKey = generateUniqueKey(category, subCategory, recordTitle)
+        
+        if (isPreAlarm) {
+            markPreAlarmActive(recordKey)
+        } else {
+            markActualAlarmActive(recordKey)
+        }
+    }
+    
+    /**
+     * Call this when user takes action on an alarm notification.
+     * This updates the state to reflect the user's choice.
+     */
+    fun onUserActionTaken(category: String, subCategory: String, recordTitle: String, action: String, isPreAlarm: Boolean) {
+        val recordKey = generateUniqueKey(category, subCategory, recordTitle)
+        
+        when (action.lowercase()) {
+            "ignore" -> {
+                if (isPreAlarm) {
+                    // For pre-alarm ignore: remove pre-alarm state but don't mark as dismissed
+                    // This allows the actual alarm to still trigger
+                    activePreAlarms.remove(recordKey)
+                    saveActiveAlarmStates()
+                    Log.d(TAG, "User ignored pre-alarm: $recordKey")
+                } else {
+                    // For actual alarm ignore: mark as dismissed
+                    markAlarmDismissed(recordKey)
+                    Log.d(TAG, "User ignored actual alarm: $recordKey")
+                }
+            }
+            "snooze" -> {
+                // Clear current states but don't mark as dismissed (snooze will retrigger)
+                activePreAlarms.remove(recordKey)
+                activeActualAlarms.remove(recordKey)
+                saveActiveAlarmStates()
+                Log.d(TAG, "User snoozed alarm: $recordKey")
+            }
+            "done", "mark_done" -> {
+                // Mark as completed - clears all states
+                markAlarmCompleted(recordKey)
+                Log.d(TAG, "User marked alarm as done: $recordKey")
+            }
+            else -> {
+                Log.w(TAG, "Unknown user action: $action for $recordKey")
+            }
         }
     }
 }
