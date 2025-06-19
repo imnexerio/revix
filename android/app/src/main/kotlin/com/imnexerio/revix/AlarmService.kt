@@ -278,31 +278,19 @@ class AlarmService : Service() {    companion object {
         }
         
         // Always add ignore button
-        notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)
-
-        // Configure sound and vibration
-        if (withSound || withVibration || isLoudAlarm) {
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-
-            if (withSound || isLoudAlarm) {
-                val soundUri = RingtoneManager.getDefaultUri(
-                    if (isLoudAlarm) RingtoneManager.TYPE_ALARM else RingtoneManager.TYPE_NOTIFICATION
-                )
-                notificationBuilder.setSound(soundUri, AudioManager.STREAM_ALARM)
-            }
-
-            if (withVibration || isLoudAlarm) {
-                val pattern = if (isLoudAlarm) {
-                    longArrayOf(0, 1000, 500, 1000, 500, 1000)
-                } else {
-                    longArrayOf(0, 500, 250, 500)
-                }
-                notificationBuilder.setVibrate(pattern)
-            }
-        }        // For loud alarms, use full screen intent
+        notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Ignore", ignorePendingIntent)        // Configure sound and vibration for notification
+        // Only add notification sound/vibration for silent notifications (type 1)
+        // For alarms with MediaPlayer sound, keep notification silent to avoid double audio
+        if (!withSound && !withVibration && !isLoudAlarm) {
+            // Pure silent notification (type 1) - use system defaults like pre-alarm
+            notificationBuilder.setDefaults(NotificationCompat.DEFAULT_ALL)
+        } else if (!withSound && !isLoudAlarm && withVibration) {
+            // Only vibration notifications (type 2) - just vibration, no sound
+            val pattern = longArrayOf(0, 500, 250, 500)
+            notificationBuilder.setVibrate(pattern)
+        }
+        // For all other cases (withSound=true or isLoudAlarm=true), keep notification silent
+        // because MediaPlayer will handle the sound// For loud alarms, use full screen intent
         // For regular alarms (not warnings), also use full screen intent to wake up screen
         if (isLoudAlarm || (!isWarning && !isPrecheck)) {
             notificationBuilder.setFullScreenIntent(pendingIntent, true)
