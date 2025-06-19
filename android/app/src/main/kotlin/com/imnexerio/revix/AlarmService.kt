@@ -51,17 +51,15 @@ class AlarmService : Service() {
         super.onCreate()
         createNotificationChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    }
-
-    private fun acquireWakeLock() {
+    }    private fun acquireWakeLock() {
         try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock = powerManager.newWakeLock(
                 PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
                 "revix:AlarmWakeLock"
             )
-            wakeLock?.acquire(30000) // Hold for 30 seconds max
-            Log.d(TAG, "Wake lock acquired - screen should turn on")
+            wakeLock?.acquire(AUTO_STOP_TIMEOUT) // Hold for 5 minutes max
+            Log.d(TAG, "Wake lock acquired - screen will stay on for 5 minutes")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to acquire wake lock", e)
         }
@@ -84,7 +82,8 @@ class AlarmService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let { processIntent(it) }
         return START_NOT_STICKY
-    }    private fun processIntent(intent: Intent) {
+    }
+    private fun processIntent(intent: Intent) {
         when (intent.action) {
             "STOP_ALL_ALARMS" -> {
                 handleStopAllAlarms()
@@ -191,9 +190,7 @@ class AlarmService : Service() {
         autoStopTimer?.cancel()
         releaseWakeLock()
         stopSelf()
-    }
-
-    private fun handleStopSpecificAlarm(intent: Intent) {
+    }    private fun handleStopSpecificAlarm(intent: Intent) {
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
@@ -221,11 +218,49 @@ class AlarmService : Service() {
             // Remove from active alarms
             activeAlarms.remove(alarmKey)
             
-            // If no more alarms, stop service
+            // If no more alarms, stop service and release wake lock
             if (activeAlarms.isEmpty()) {
                 releaseWakeLock()
                 stopSelf()
             }
+        }
+    }
+
+    // Overloaded method to stop alarm by alarmId
+    private fun handleStopSpecificAlarm(alarmId: Int) {
+        // Find the active alarm with matching alarmId
+        val alarmEntry = activeAlarms.entries.find { (_, alarm) -> 
+            alarm.notificationId == alarmId 
+        }
+        
+        if (alarmEntry != null) {
+            val (alarmKey, alarm) = alarmEntry
+            Log.d(TAG, "Stopping specific alarm by ID: $alarmId (key: $alarmKey)")
+            
+            // Cancel auto-stop timer for this alarm
+            cancelAutoStopTimerForAlarm(alarmKey)
+            
+            // Dismiss notification
+            dismissNotification(alarm.notificationId)
+            
+            // If this alarm was playing audio, stop it and check for next
+            if (currentAudioAlarm == alarmKey) {
+                stopSoundAndVibration()
+                currentAudioAlarm = null
+                
+                // Check if any other active alarm needs audio
+                checkForNextAudioAlarm()
+            }
+            
+            // Remove from active alarms
+            activeAlarms.remove(alarmKey)
+            
+            // Release wake lock if no active alarms
+            if (activeAlarms.isEmpty()) {
+                releaseWakeLock()
+            }
+        } else {
+            Log.w(TAG, "No active alarm found with ID: $alarmId")
         }
     }
 
@@ -251,15 +286,13 @@ class AlarmService : Service() {
             Log.e(TAG, "Failed to dismiss notification: $notificationId", e)
         }
     }    private val alarmTimers = mutableMapOf<String, Timer>()
-
     private fun startAutoStopTimerForAlarm(alarmKey: String) {
         // Cancel existing timer if any
         cancelAutoStopTimerForAlarm(alarmKey)
-        
-        val timer = Timer().apply {
+          val timer = Timer().apply {
             schedule(object : TimerTask() {
                 override fun run() {
-                    Log.d(TAG, "Auto-stopping alarm after 5 minutes: $alarmKey")
+                    Log.d(TAG, "Auto-stopping alarm completely after 5 minutes for alarm: $alarmKey")
                     
                     // Stop audio if this alarm was playing it
                     if (currentAudioAlarm == alarmKey) {
@@ -270,7 +303,11 @@ class AlarmService : Service() {
                         checkForNextAudioAlarm()
                     }
                     
-                    // Keep notification but stop sound/vibration
+                    // Extract alarmId from alarmKey and stop the alarm completely
+                    val alarmId = alarmKey.substringAfterLast("_").toIntOrNull()
+                    if (alarmId != null) {
+                        handleStopSpecificAlarm(alarmId)
+                    }
                 }
             }, AUTO_STOP_TIMEOUT)
         }
@@ -383,22 +420,9 @@ class AlarmService : Service() {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
-    }
-
-    private fun createAlarmNotification(category: String, subCategory: String, recordTitle: String): Notification {
+    }    private fun createAlarmNotification(category: String, subCategory: String, recordTitle: String): Notification {
         val title = "Alarm: $category · $subCategory · $recordTitle"
         val content = "Time for your scheduled task"
-
-        // Create intent to open the app
-        val appIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            System.currentTimeMillis().toInt(),
-            appIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 
         // Create mark as done intent
         val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
@@ -437,14 +461,13 @@ class AlarmService : Service() {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(false)
             .setOngoing(true)
-            .setContentIntent(pendingIntent)
+            .setDeleteIntent(ignorePendingIntent) // Handle notification dismissal like ignore
             .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
             .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setShowWhen(true)
-            .setFullScreenIntent(pendingIntent, true)
             .build()
-    }    override fun onDestroy() {
+    }override fun onDestroy() {
         Log.d(TAG, "AlarmService destroyed")
         stopSoundAndVibration()
         
