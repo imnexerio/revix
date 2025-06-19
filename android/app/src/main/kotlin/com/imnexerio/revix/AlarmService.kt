@@ -19,24 +19,25 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import java.util.*
 
-class AlarmService : Service() {
-    companion object {
+class AlarmService : Service() {    companion object {
         private const val TAG = "AlarmService"
         private const val NOTIFICATION_CHANNEL_ID = "record_alarms"
         private const val NOTIFICATION_CHANNEL_NAME = "Record Alarms"
+        private const val UPCOMING_CHANNEL_ID = "upcoming_reminders"
+        private const val UPCOMING_CHANNEL_NAME = "Upcoming Reminders"
         private const val FOREGROUND_NOTIFICATION_ID = 1000
-    }    // Single media player - latest alarm takes priority
+    }// Single media player - latest alarm takes priority
     private var mediaPlayer: MediaPlayer? = null
     private var currentSoundAlarmKey: String? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var activeAlarmsCount = 0
     private var vibrationTimer: Timer? = null
-    private var currentVibrationAlarmKey: String? = null
-
+    private var currentVibrationAlarmKey: String? = null    
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        createUpcomingReminderChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     }
 
@@ -311,20 +312,21 @@ class AlarmService : Service() {
             val notificationId = (category + subCategory + recordTitle).hashCode()
             val notification = notificationBuilder.build()
             
-            // Use this alarm notification as the foreground service notification
-            // This eliminates the need for a separate service notification
+            // Show as regular notification first
+            notificationManager.notify(notificationId, notification)
+            
+            // Use a different notification ID for foreground service to avoid conflicts
+            val foregroundNotificationId = FOREGROUND_NOTIFICATION_ID + 1000 + (notificationId % 1000)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
-                    notificationId,
+                    foregroundNotificationId,
                     notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 )
             } else {
-                startForeground(notificationId, notification)
+                startForeground(foregroundNotificationId, notification)
             }
             
-            // Also show as regular notification
-            notificationManager.notify(notificationId, notification)
         } catch (e: SecurityException) {
             Log.e(TAG, "Failed to show notification - permission denied", e)
         }
@@ -496,9 +498,7 @@ class AlarmService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Error triggering widget refresh from AlarmService: ${e.message}")
         }
-    }
-
-    private fun createNotificationChannel() {
+    }    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
@@ -517,6 +517,33 @@ class AlarmService : Service() {
             }
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
+        }
+    }    private fun createUpcomingReminderChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                UPCOMING_CHANNEL_ID,
+                UPCOMING_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications for upcoming reminders (pre-alarms)"
+                enableVibration(false) // No vibration for upcoming reminders
+                setSound(
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+                setShowBadge(true) // Show badge to increase visibility
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC // Show on lock screen
+                enableLights(true) // Enable LED lights
+                lightColor = android.graphics.Color.BLUE // Set LED color
+            }
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+            
+            // Log channel creation details
+            Log.d(TAG, "Created upcoming reminder channel - ID: $UPCOMING_CHANNEL_ID, Importance: ${channel.importance}")
         }
     }
 
@@ -561,9 +588,7 @@ class AlarmService : Service() {
             category, subCategory, recordTitle, title, content, 
             actualTime, isSnooze, snoozeCount, isPreAlarm
         )
-    }
-
-      private fun handleActualAlarm(
+    }      private fun handleActualAlarm(
         category: String,
         subCategory: String,
         recordTitle: String,
@@ -574,6 +599,7 @@ class AlarmService : Service() {
         Log.d(TAG, "Triggering actual alarm for: $category · $subCategory · $recordTitle (Type: $alarmType)")
         
         // Cancel any existing upcoming reminder notification for this record
+        Log.d(TAG, "Cancelling any existing upcoming reminder for: $recordTitle")
         cancelUpcomingReminderNotification(category, subCategory, recordTitle)
         
         // Create notification based on alarm type
@@ -733,13 +759,12 @@ class AlarmService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }
-
-        val notificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+        val notificationBuilder = NotificationCompat.Builder(this, UPCOMING_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT) // Silent upcoming reminder
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT) // Use default priority for upcoming reminders
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -747,8 +772,8 @@ class AlarmService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(false)
             .setShowWhen(true)
-            .setSilent(true) // Explicitly make it silent - no sound or vibration
-            .setOnlyAlertOnce(true) // Don't alert if notification is updated
+            .setDefaults(NotificationCompat.DEFAULT_ALL) // Use system defaults for sound/vibration
+            .setOnlyAlertOnce(false) // Allow alert to ensure notification is noticed
 
         // Add snooze button only if we haven't reached the limit
         if (snoozePendingIntent != null) {
@@ -762,22 +787,48 @@ class AlarmService : Service() {
             val notificationId = (category + subCategory + recordTitle).hashCode()
             val notification = notificationBuilder.build()
             
-            // Use this upcoming reminder notification as the foreground service notification
+            Log.d(TAG, "Creating upcoming reminder notification - ID: $notificationId, Channel: $UPCOMING_CHANNEL_ID")
+            Log.d(TAG, "Notification details - Title: $title, Content: $content")
+            
+            // Check if notifications are enabled
+            if (!notificationManager.areNotificationsEnabled()) {
+                Log.w(TAG, "Notifications are disabled for this app!")
+            }
+            
+            // Check channel status if Android O+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val systemNotificationManager = getSystemService(NotificationManager::class.java)
+                val channel = systemNotificationManager.getNotificationChannel(UPCOMING_CHANNEL_ID)
+                if (channel != null) {
+                    Log.d(TAG, "Channel status - ID: ${channel.id}, Importance: ${channel.importance}, Name: ${channel.name}")
+                    if (channel.importance == NotificationManager.IMPORTANCE_NONE) {
+                        Log.w(TAG, "Channel importance is NONE - notifications will be blocked!")
+                    }
+                } else {
+                    Log.e(TAG, "Notification channel not found: $UPCOMING_CHANNEL_ID")
+                }
+            }
+            
+            // Show as regular notification first
+            notificationManager.notify(notificationId, notification)
+            Log.d(TAG, "Upcoming reminder notification shown for: $notificationId")
+            
+            // Use a different notification ID for foreground service to avoid conflicts
+            val foregroundNotificationId = FOREGROUND_NOTIFICATION_ID + (notificationId % 1000)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
-                    notificationId,
+                    foregroundNotificationId,
                     notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 )
             } else {
-                startForeground(notificationId, notification)
+                startForeground(foregroundNotificationId, notification)
             }
             
-            // Also show as regular notification
-            notificationManager.notify(notificationId, notification)
-            Log.d(TAG, "Upcoming reminder notification shown for: $recordTitle")
         } catch (e: SecurityException) {
             Log.e(TAG, "Failed to show upcoming reminder notification - permission denied", e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to show upcoming reminder notification - unexpected error", e)
         }
     }
 }

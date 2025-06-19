@@ -65,12 +65,16 @@ class AlarmReceiver : BroadcastReceiver() {
 
         // EXECUTION-LEVEL DEDUPLICATION: Check if this alarm should trigger
         val alarmHelper = AlarmManagerHelper(context)
-        if (!alarmHelper.shouldTriggerAlarm(category, subCategory, recordTitle, isPreAlarm)) {
+        val shouldTrigger = alarmHelper.shouldTriggerAlarm(category, subCategory, recordTitle, isPreAlarm)
+        Log.d(TAG, "Should trigger check result: $shouldTrigger for $recordTitle (pre-alarm: $isPreAlarm)")
+        
+        if (!shouldTrigger) {
             Log.d(TAG, "Ignoring duplicate upcoming reminder trigger for $recordTitle (pre-alarm: $isPreAlarm)")
             return // Simply ignore - let existing notification continue as expected
         }
 
         // Show upcoming reminder notification
+        Log.d(TAG, "Starting AlarmService for upcoming reminder: $recordTitle")
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
             putExtra(EXTRA_ALARM_TYPE, 1) // Light notification for upcoming reminder
             putExtra(EXTRA_CATEGORY, category)
@@ -85,9 +89,12 @@ class AlarmReceiver : BroadcastReceiver() {
         context.startForegroundService(serviceIntent)
 
         // Mark this alarm as active to prevent future duplicates
-        alarmHelper.onAlarmTriggered(category, subCategory, recordTitle, isPreAlarm)// NOTE: No longer automatically scheduling actual alarm here
+        alarmHelper.onAlarmTriggered(category, subCategory, recordTitle, isPreAlarm)
+        Log.d(TAG, "Marked alarm as triggered: $recordTitle (pre-alarm: $isPreAlarm)")
+
+        // NOTE: No longer automatically scheduling actual alarm here
         // Both pre-alarm and actual alarm are now scheduled independently in AlarmManagerHelper
-    }    private fun handleActualAlarm(context: Context, intent: Intent) {
+    }private fun handleActualAlarm(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
