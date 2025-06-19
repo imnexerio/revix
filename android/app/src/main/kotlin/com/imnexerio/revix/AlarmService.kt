@@ -727,18 +727,26 @@ class AlarmService : Service() {    companion object {
             System.currentTimeMillis().toInt() + 1,
             ignoreIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Create snooze intent (only if we haven't reached the limit)
+        )        // Create snooze intent (only if we haven't reached the limit)
         var snoozePendingIntent: PendingIntent? = null
         if (snoozeCount < 6) {
             val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
-                action = "MANUAL_SNOOZE"
-                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-                putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, 1) // Light notification for snooze
-                putExtra("SNOOZE_COUNT", snoozeCount)
+                if (isPreAlarm) {
+                    // For pre-alarms, snooze acts same as ignore - just dismiss and let actual alarm proceed
+                    action = "IGNORE_ALARM"
+                    putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                    putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                    putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+                    putExtra("IS_PRE_ALARM", isPreAlarm)
+                } else {
+                    // For actual alarms or snoozes, use normal snooze behavior
+                    action = "MANUAL_SNOOZE"
+                    putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                    putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                    putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+                    putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, 1) // Light notification for snooze
+                    putExtra("SNOOZE_COUNT", snoozeCount)
+                }
             }
             snoozePendingIntent = PendingIntent.getBroadcast(
                 this,
@@ -760,12 +768,12 @@ class AlarmService : Service() {    companion object {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(false)
             .setShowWhen(true)
-            .setDefaults(NotificationCompat.DEFAULT_ALL) // Use system defaults for sound/vibration
-            .setOnlyAlertOnce(false) // Allow alert to ensure notification is noticed
+            .setDefaults(NotificationCompat.DEFAULT_ALL) // Use system defaults for sound/vibration            .setOnlyAlertOnce(false) // Allow alert to ensure notification is noticed
 
         // Add snooze button only if we haven't reached the limit
         if (snoozePendingIntent != null) {
-            notificationBuilder.addAction(R.drawable.ic_launcher_foreground, "Snooze 5min", snoozePendingIntent)
+            val snoozeButtonText = if (isPreAlarm) "Dismiss" else "Snooze 5min"
+            notificationBuilder.addAction(R.drawable.ic_launcher_foreground, snoozeButtonText, snoozePendingIntent)
         }
         
         // Always add ignore button
