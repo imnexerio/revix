@@ -108,9 +108,6 @@ class TodayWidget : AppWidgetProvider() {    companion object {
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
-        
-        // Schedule alarms from widget data after update
-        scheduleAlarmsFromWidgetData(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
