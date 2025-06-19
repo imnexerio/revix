@@ -186,7 +186,7 @@ class AlarmService : Service() {    companion object {
         val title = when {
             isWarning -> "Upcoming Reminder: $category · $subCategory · $recordTitle"
             isPrecheck -> "Reminder: $category · $subCategory · $recordTitle"
-            else -> "Time for: $category · $subCategory · $recordTitle"
+            else -> "Time for : $category · $subCategory · $recordTitle"
         }
         val snoozeText = if (snoozeCount > 0) " (Snoozed ${snoozeCount}x)" else ""
         val content = when {
@@ -591,9 +591,9 @@ class AlarmService : Service() {    companion object {
         }
         
         val content = if (minutesLeft <= 1) {
-            "Your reminder for $category · $subCategory · $recordTitle is starting now!"
+            "Its time for your reminder!"
         } else {
-            "You have a reminder for $category · $subCategory · $recordTitle in $minutesLeft minute${if (minutesLeft != 1) "s" else ""}"
+            "You have a reminder in $minutesLeft minute${if (minutesLeft != 1) "s" else ""}"
         }
         
         showUpcomingReminderNotification(
