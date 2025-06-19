@@ -378,11 +378,12 @@ class AlarmManagerHelper(private val context: Context) {
         )
 
         val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_UPCOMING_REMINDER
+            action = AlarmReceiver.ACTION_ACTUAL_ALARM
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
+            putExtra(AlarmReceiver.EXTRA_DESCRIPTION, "Record reminder") // Add description for actual alarm
             putExtra("ACTUAL_TIME", snoozeTime)
             putExtra("IS_SNOOZE", true)
             putExtra("SNOOZE_COUNT", snoozeCount)

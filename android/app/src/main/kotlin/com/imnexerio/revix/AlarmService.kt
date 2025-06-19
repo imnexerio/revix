@@ -159,7 +159,7 @@ class AlarmService : Service() {    companion object {
 
         when {
             isUpcomingReminder -> {
-                handleUpcomingReminder(category, subCategory, recordTitle, actualTime, isSnooze, snoozeCount, isPreAlarm)
+                handleUpcomingReminder(category, subCategory, recordTitle, actualTime, isSnooze, snoozeCount, isPreAlarm, alarmType)
             }
             isActualAlarm -> {
                 handleActualAlarm(category, subCategory, recordTitle, description, alarmType, snoozeCount)
@@ -578,7 +578,8 @@ class AlarmService : Service() {    companion object {
         actualTime: Long,
         isSnooze: Boolean,
         snoozeCount: Int,
-        isPreAlarm: Boolean = false
+        isPreAlarm: Boolean = false,
+        alarmType: Int = 1
     ) {
         val now = System.currentTimeMillis()
         val timeUntilAlarm = actualTime - now
@@ -598,9 +599,10 @@ class AlarmService : Service() {    companion object {
         
         showUpcomingReminderNotification(
             category, subCategory, recordTitle, title, content, 
-            actualTime, isSnooze, snoozeCount, isPreAlarm
+            actualTime, isSnooze, snoozeCount, isPreAlarm, alarmType
         )
-    }      private fun handleActualAlarm(
+    }
+    private fun handleActualAlarm(
         category: String,
         subCategory: String,
         recordTitle: String,
@@ -608,7 +610,7 @@ class AlarmService : Service() {    companion object {
         alarmType: Int,
         snoozeCount: Int
     ) {
-        Log.d(TAG, "Triggering actual alarm for: $category · $subCategory · $recordTitle (Type: $alarmType)")
+        Log.d(TAG, "Triggering actual alarm for: $category · $subCategory · $recordTitle (Type: $alarmType, Snooze: $snoozeCount)")
         
         // Cancel any existing upcoming reminder notification for this record
         Log.d(TAG, "Cancelling any existing upcoming reminder for: $recordTitle")
@@ -712,7 +714,8 @@ class AlarmService : Service() {    companion object {
         actualTime: Long,
         isSnooze: Boolean,
         snoozeCount: Int,
-        isPreAlarm: Boolean = false
+        isPreAlarm: Boolean = false,
+        alarmType: Int = 1
     ) {
         // Create intent to open the app
         val appIntent = Intent(this, MainActivity::class.java).apply {
@@ -761,14 +764,13 @@ class AlarmService : Service() {    companion object {
                     putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
                     putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
                     putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-                    putExtra("IS_PRE_ALARM", isPreAlarm)
-                } else {
+                    putExtra("IS_PRE_ALARM", isPreAlarm)                } else {
                     // For actual alarms or snoozes, use normal snooze behavior
                     action = "MANUAL_SNOOZE"
                     putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
                     putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
                     putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-                    putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, 1) // Light notification for snooze
+                    putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType) // Preserve original alarm type
                     putExtra("SNOOZE_COUNT", snoozeCount)
                 }
             }

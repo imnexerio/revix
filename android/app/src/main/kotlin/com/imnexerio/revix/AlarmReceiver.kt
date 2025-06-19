@@ -95,14 +95,16 @@ class AlarmReceiver : BroadcastReceiver() {
 
         // NOTE: No longer automatically scheduling actual alarm here
         // Both pre-alarm and actual alarm are now scheduled independently in AlarmManagerHelper
-    }private fun handleActualAlarm(context: Context, intent: Intent) {
+    }
+    private fun handleActualAlarm(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         val alarmType = intent.getIntExtra(EXTRA_ALARM_TYPE, 0)
         val snoozeCount = intent.getIntExtra("SNOOZE_COUNT", 0)
+        val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
 
-        Log.d(TAG, "Actual alarm triggered: $recordTitle")
+        Log.d(TAG, "Actual alarm triggered: $recordTitle (snooze: $isSnooze, count: $snoozeCount)")
 
         // EXECUTION-LEVEL DEDUPLICATION: Check if this alarm should trigger
         val alarmHelper = AlarmManagerHelper(context)
@@ -119,6 +121,7 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra(EXTRA_RECORD_TITLE, recordTitle)
             putExtra(EXTRA_DESCRIPTION, "It's time for your scheduled task")
             putExtra("IS_ACTUAL_ALARM", true)
+            putExtra("IS_SNOOZE", isSnooze)
             putExtra("SNOOZE_COUNT", snoozeCount)
         }
         context.startForegroundService(serviceIntent)
