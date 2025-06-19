@@ -67,9 +67,11 @@ class AlarmManagerHelper(private val context: Context) {
 
                 val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
                 val actualTime = parseTimeToday(reminderTime)
+                val currentMinuteTime = getCurrentMinuteTime()
+                val alarmMinuteTime = getMinuteTime(actualTime)
                 
-                if (actualTime <= System.currentTimeMillis()) {
-                    Log.d(TAG, "Skipping past alarm for $recordTitle")
+                if (alarmMinuteTime < currentMinuteTime - 60000) {
+                    Log.d(TAG, "Skipping past alarm for $recordTitle (alarm minute: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(alarmMinuteTime))}, current minute: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(currentMinuteTime))})")
                     return@forEach
                 }
 
@@ -363,7 +365,24 @@ class AlarmManagerHelper(private val context: Context) {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
-    }    private fun saveAlarmMetadata(alarmList: List<AlarmMetadata>) {
+    }
+
+    private fun getCurrentMinuteTime(): Long {
+        return Calendar.getInstance().apply {
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
+    private fun getMinuteTime(timeMillis: Long): Long {
+        return Calendar.getInstance().apply {
+            setTimeInMillis(timeMillis)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
+    private fun saveAlarmMetadata(alarmList: List<AlarmMetadata>) {
         val jsonArray = JSONArray()
         alarmList.forEach { alarm ->
             val jsonObject = JSONObject().apply {
@@ -417,10 +436,9 @@ class AlarmManagerHelper(private val context: Context) {
                 context.startActivity(intent)
             }
         }
-    }
-
-    private fun checkAndTriggerImminentAlarms(todayRecords: List<Map<String, Any>>) {
+    }    private fun checkAndTriggerImminentAlarms(todayRecords: List<Map<String, Any>>) {
         val currentTime = System.currentTimeMillis()
+        val currentMinuteTime = getCurrentMinuteTime()
         val fiveMinutes = 5 * 60 * 1000L
         val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
@@ -442,16 +460,19 @@ class AlarmManagerHelper(private val context: Context) {
                 val actualTime = parseTimeToday(reminderTime)
                 if (actualTime <= 0) return@forEach
 
-                val timeUntilAlarm = actualTime - currentTime                // Check if alarm should be triggered immediately
+                val alarmMinuteTime = getMinuteTime(actualTime)
+                val timeUntilAlarm = actualTime - currentTime
+
+                // Check if alarm should be triggered immediately using HH:MM comparison
                 when {
-                    timeUntilAlarm < -60000 -> {
-                        // More than 1 minute past - ignore it (no sense storing old alarms)
-                        Log.d(TAG, "Ignoring old alarm for $recordTitle")
+                    alarmMinuteTime < currentMinuteTime - 60000 -> {
+                        // More than 1 minute past (HH:MM level) - ignore it
+                        Log.d(TAG, "Ignoring old alarm for $recordTitle (alarm minute: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(alarmMinuteTime))}, current minute: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(currentMinuteTime))})")
                         return@forEach
                     }
-                    timeUntilAlarm in -60000..60000 -> {
-                        // Current time alarm (within 1 minute window) - trigger actual alarm immediately
-                        Log.d(TAG, "Triggering current time alarm for $recordTitle")
+                    alarmMinuteTime in (currentMinuteTime - 60000)..(currentMinuteTime + 60000) -> {
+                        // Current time alarm (within 1 minute window at HH:MM level) - trigger actual alarm immediately
+                        Log.d(TAG, "Triggering current time alarm for $recordTitle (alarm minute: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(alarmMinuteTime))}, current minute: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(currentMinuteTime))})")
                         triggerActualAlarm(category, subCategory, recordTitle, alarmType)
                         return@forEach
                     }
@@ -467,7 +488,9 @@ class AlarmManagerHelper(private val context: Context) {
                 Log.e(TAG, "Error checking imminent alarm for record", e)
             }
         }
-    }    private fun triggerUpcomingReminder(
+    }
+
+    private fun triggerUpcomingReminder(
         category: String, 
         subCategory: String, 
         recordTitle: String, 
