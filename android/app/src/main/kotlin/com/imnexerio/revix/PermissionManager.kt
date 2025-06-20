@@ -40,9 +40,21 @@ class PermissionManager(private val activity: Activity) {
             Log.d(TAG, "Showing exact alarm dialog")
             showExactAlarmDialog()
         } else {
+            checkOverlayPermissionFlow()
+        }
+    }
+
+    /**
+     * Check and request overlay permission if needed
+     */
+    private fun checkOverlayPermissionFlow() {
+        if (!checkOverlayPermission()) {
+            Log.d(TAG, "Showing overlay permission dialog")
+            showOverlayDialog()
+        } else {
             Log.d(TAG, "All permissions granted!")
         }
-    }    /**
+    }/**
      * Check notification permission (Android 13+)
      */
     fun hasPostNotificationPermission(): Boolean {
@@ -114,6 +126,8 @@ class PermissionManager(private val activity: Activity) {
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
+                // Continue to overlay permission even if exact alarm was denied
+                checkOverlayPermissionFlow()
             }
             .setCancelable(false)
             .show()
@@ -220,7 +234,8 @@ class PermissionManager(private val activity: Activity) {
             .setNegativeButton("Continue") { dialog, _ ->
                 dialog.dismiss()
                 // Continue with other permission checks
-                checkExactAlarmPermission()            }
+                checkExactAlarmPermission()
+            }
             .show()
     }
 
@@ -260,6 +275,7 @@ class PermissionManager(private val activity: Activity) {
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
+                Log.d(TAG, "All permission checks completed!")
             }
             .setCancelable(false)
             .show()
