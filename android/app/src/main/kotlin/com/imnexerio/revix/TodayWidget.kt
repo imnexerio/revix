@@ -15,100 +15,103 @@ import org.json.JSONException
 import org.json.JSONObject
 
 class TodayWidget : AppWidgetProvider() {    companion object {
-        const val ACTION_REFRESH = "revix.ACTION_REFRESH"
-        const val ACTION_ITEM_CLICK = "revix.ACTION_ITEM_CLICK"
-        const val ACTION_ADD_RECORD = "revix.ACTION_ADD_RECORD"
-        const val ACTION_SWITCH_VIEW = "revix.ACTION_SWITCH_VIEW"
-        const val PREF_PROCESSING_ITEMS = "widget_processing_items"
+    const val ACTION_REFRESH = "revix.ACTION_REFRESH"
+    const val ACTION_ITEM_CLICK = "revix.ACTION_ITEM_CLICK"
+    const val ACTION_ADD_RECORD = "revix.ACTION_ADD_RECORD"
+    const val ACTION_SWITCH_VIEW = "revix.ACTION_SWITCH_VIEW"
+    const val PREF_PROCESSING_ITEMS = "widget_processing_items"
 
-        private const val VIEW_TODAY = "today"
-        private const val VIEW_MISSED = "missed"
-        private const val VIEW_NO_REMINDER = "noreminder"
-        const val PREF_CURRENT_VIEW = "widget_current_view"
+    private const val VIEW_TODAY = "today"
+    private const val VIEW_MISSED = "missed"
+    private const val VIEW_NO_REMINDER = "noreminder"
+    const val PREF_CURRENT_VIEW = "widget_current_view"
 
-        // New method to schedule alarms directly from widget data
-        fun scheduleAlarmsFromWidgetData(context: Context) {
-            try {
-                Log.d("TodayWidget", "Starting alarm scheduling from widget data...")
-                
-                val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                val todayRecordsJson = prefs.getString("todayRecords", "[]") ?: "[]"
-                
-                val todayRecords = parseRecordsFromJson(todayRecordsJson)
-                Log.d("TodayWidget", "Parsed ${todayRecords.size} today records for alarm scheduling")
-                
-                if (todayRecords.isNotEmpty()) {
-                    val alarmHelper = AlarmManagerHelper(context)
-                    alarmHelper.scheduleAlarmsForTodayRecords(todayRecords)
-                    Log.d("TodayWidget", "Successfully scheduled alarms for today's records")
-                } else {
-                    Log.d("TodayWidget", "No today records found for alarm scheduling")
-                }
-            } catch (e: Exception) {
-                Log.e("TodayWidget", "Error scheduling alarms from widget data: ${e.message}", e)
+    // New method to schedule alarms directly from widget data
+    fun scheduleAlarmsFromWidgetData(context: Context) {
+        try {
+            Log.d("TodayWidget", "Starting alarm scheduling from widget data...")
+
+            val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            val todayRecordsJson = prefs.getString("todayRecords", "[]") ?: "[]"
+
+            val todayRecords = parseRecordsFromJson(todayRecordsJson)
+            Log.d("TodayWidget", "Parsed ${todayRecords.size} today records for alarm scheduling")
+
+            if (todayRecords.isNotEmpty()) {
+                val alarmHelper = AlarmManagerHelper(context)
+                alarmHelper.scheduleAlarmsForTodayRecords(todayRecords)
+                Log.d("TodayWidget", "Successfully scheduled alarms for today's records")
+            } else {
+                Log.d("TodayWidget", "No today records found for alarm scheduling")
             }
+        } catch (e: Exception) {
+            Log.e("TodayWidget", "Error scheduling alarms from widget data: ${e.message}", e)
+        }
+    }
+
+    private fun parseRecordsFromJson(jsonString: String): List<Map<String, Any>> {
+        val records = mutableListOf<Map<String, Any>>()
+
+        try {
+            val jsonArray = JSONArray(jsonString)
+            for (i in 0 until jsonArray.length()) {
+                val jsonObject = jsonArray.getJSONObject(i)
+                val record = mutableMapOf<String, Any>()
+
+                // Extract all fields needed for alarm scheduling
+                record["category"] = jsonObject.optString("category", "")
+                record["sub_category"] = jsonObject.optString("sub_category", "")
+                record["record_title"] = jsonObject.optString("record_title", "")
+                record["reminder_time"] = jsonObject.optString("reminder_time", "")
+                record["alarm_type"] = jsonObject.optString("alarm_type", "0").toIntOrNull() ?: 0
+                record["scheduled_date"] = jsonObject.optString("scheduled_date", "")
+                record["status"] = jsonObject.optString("status", "")
+
+                records.add(record)
+            }
+        } catch (e: JSONException) {
+            Log.e("TodayWidget", "Error parsing records JSON: ${e.message}", e)
         }
 
-        private fun parseRecordsFromJson(jsonString: String): List<Map<String, Any>> {
-            val records = mutableListOf<Map<String, Any>>()
-            
-            try {
-                val jsonArray = JSONArray(jsonString)
-                for (i in 0 until jsonArray.length()) {
-                    val jsonObject = jsonArray.getJSONObject(i)
-                    val record = mutableMapOf<String, Any>()
-                    
-                    // Extract all fields needed for alarm scheduling
-                    record["category"] = jsonObject.optString("category", "")
-                    record["sub_category"] = jsonObject.optString("sub_category", "")
-                    record["record_title"] = jsonObject.optString("record_title", "")
-                    record["reminder_time"] = jsonObject.optString("reminder_time", "")
-                    record["alarm_type"] = jsonObject.optString("alarm_type", "0").toIntOrNull() ?: 0
-                    record["scheduled_date"] = jsonObject.optString("scheduled_date", "")
-                    record["status"] = jsonObject.optString("status", "")
-                    
-                    records.add(record)
-                }
-            } catch (e: JSONException) {
-                Log.e("TodayWidget", "Error parsing records JSON: ${e.message}", e)
-            }
-            
-            return records
-        }
+        return records
+    }
 
-        // Add a method to force widget update from anywhere in the app
-        fun updateWidgets(context: Context) {
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                ComponentName(context, TodayWidget::class.java)
-            )
+    // Add a method to force widget update from anywhere in the app
+    fun updateWidgets(context: Context) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(
+            ComponentName(context, TodayWidget::class.java)
+        )
 
-            // Force a full update for each widget
-            for (appWidgetId in appWidgetIds) {
-                updateAppWidget(context, appWidgetManager, appWidgetId)
-            }
-
-            // Ensure data changes for the ListView are notified
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
-
-            // Send a broadcast to update all widgets
-            val updateIntent = Intent(context, TodayWidget::class.java)
-            updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-            context.sendBroadcast(updateIntent)
-            
-            // Schedule alarms after widget update
-            scheduleAlarmsFromWidgetData(context)
-        }
-    }    override fun onUpdate(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
+        // Force a full update for each widget
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
+
+        // Ensure data changes for the ListView are notified
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
+
+        // Send a broadcast to update all widgets
+        val updateIntent = Intent(context, TodayWidget::class.java)
+        updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+        updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+        context.sendBroadcast(updateIntent)
+
+        // Schedule alarms after widget update
+        scheduleAlarmsFromWidgetData(context)
     }
+}    override fun onUpdate(
+    context: Context,
+    appWidgetManager: AppWidgetManager,
+    appWidgetIds: IntArray
+) {
+    for (appWidgetId in appWidgetIds) {
+        updateAppWidget(context, appWidgetManager, appWidgetId)
+    }
+
+    // Schedule alarms from widget data after update
+    scheduleAlarmsFromWidgetData(context)
+}
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
@@ -137,7 +140,7 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                         )
                         backgroundIntent.send()
                         Log.d("TodayWidget", "Background callback triggered for data refresh")
-                        
+
                         // Schedule alarms after triggering refresh
                         scheduleAlarmsFromWidgetData(context)
                     } catch (e: Exception) {

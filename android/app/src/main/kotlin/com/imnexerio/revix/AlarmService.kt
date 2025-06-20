@@ -41,11 +41,11 @@ class AlarmService : Service() {    companion object {
     private var autoStopTimer: Timer? = null
     private fun getAutoStopTimeout(): Long {
         return try {
-            val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-              // Read alarm duration setting, default to 60 seconds (1 minute)
-            val durationSeconds = sharedPreferences.getLong("alarm_duration_seconds", 60L)
-            Log.d(TAG, "Read alarm duration from SharedPreferences: ${durationSeconds}s")
+            // Read from standard SharedPreferences (reliable method)
+            val standardPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val durationSeconds = standardPrefs.getLong("flutter.alarm_duration_seconds", 60L)
             
+            Log.d(TAG, "Read alarm duration from SharedPreferences: ${durationSeconds}s")
             durationSeconds * 1000L // Convert to milliseconds
         } catch (e: Exception) {
             Log.w(TAG, "Failed to read alarm duration from SharedPreferences, using default", e)

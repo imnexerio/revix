@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/platform_utils.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
@@ -22,27 +22,27 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       _loadAlarmDuration();
     }
   }
-
   Future<void> _loadAlarmDuration() async {
     try {
-      final duration = await HomeWidget.getWidgetData<int>('alarm_duration_seconds');
+      final prefs = await SharedPreferences.getInstance();
+      final duration = prefs.getInt('alarm_duration_seconds');
       setState(() {
         _alarmDurationSeconds = duration ?? 60; // Default to 1 minute if null
       });
-      debugPrint('Loaded alarm duration: ${_alarmDurationSeconds}s');
+      debugPrint('Loaded alarm duration from SharedPreferences: ${_alarmDurationSeconds}s');
     } catch (e) {      debugPrint('Failed to load alarm duration: $e');
       setState(() {
         _alarmDurationSeconds = 60; // Default to 1 minute
       });
     }
-  }
-  Future<void> _saveAlarmDuration(int seconds) async {
+  }  Future<void> _saveAlarmDuration(int seconds) async {
     try {
-      await HomeWidget.saveWidgetData('alarm_duration_seconds', seconds);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('alarm_duration_seconds', seconds);
       setState(() {
         _alarmDurationSeconds = seconds;
       });
-      debugPrint('Alarm duration saved: ${seconds}s');
+      debugPrint('Alarm duration saved to SharedPreferences: ${seconds}s');
     } catch (e) {
       debugPrint('Failed to save alarm duration: $e');
     }
