@@ -13,7 +13,9 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.util.TypedValue
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -21,6 +23,8 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import kotlin.math.abs
+import kotlin.math.sqrt
 
 class AlarmScreenActivity : Activity() {
     companion object {
@@ -256,18 +260,31 @@ class AlarmScreenActivity : Activity() {
                 setMargins(0, 0, 0, dpToPx(48))
             }
         }
-        
-        // Button container
+          // Button container
         val buttonContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-        }          // Mark as Done button with modern styling
-        val doneButton = createModernButton(
-            text = "MARK AS DONE",
-            isPrimary = true,
+        }
+        
+        // Instruction text for swipe button
+        val instructionText = TextView(this).apply {
+            text = "Swipe the circle in any direction to mark as done"
+            textSize = 12f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            alpha = 0.7f
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(16))
+            }
+        }// Mark as Done button with circular swipe gesture
+        val doneButton = createCircularSwipeButton(
+            text = "SWIPE TO\nMARK DONE",
             accentColor = accentColor,
             textColor = backgroundColor,
             dpToPx = dpToPx
@@ -293,14 +310,14 @@ class AlarmScreenActivity : Activity() {
                 0,
                 1.0f
             )
-        }
-          // Assemble the layout
+        }        // Assemble the layout
         contentLayout.addView(alarmIcon)
         contentLayout.addView(titleText)
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
         
+        buttonContainer.addView(instructionText)
         buttonContainer.addView(doneButton)
         buttonContainer.addView(ignoreButton)
         contentLayout.addView(buttonContainer)
@@ -354,6 +371,93 @@ class AlarmScreenActivity : Activity() {
             
             // Add touch feedback
             foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+        }
+    }
+
+    private fun createCircularSwipeButton(
+        text: String,
+        accentColor: Int,
+        textColor: Int,
+        dpToPx: (Int) -> Int,
+        onSwipe: () -> Unit
+    ): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = 14f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            
+            // Create circular background
+            val circularBackground = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(accentColor)
+                setStroke(dpToPx(3), textColor)
+            }
+            background = circularBackground
+            
+            // Set circular dimensions
+            val size = dpToPx(120)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                setMargins(0, 0, 0, dpToPx(24))
+            }
+            
+            // Add gesture detection for swipe
+            val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                private val SWIPE_THRESHOLD = 50
+                private val SWIPE_VELOCITY_THRESHOLD = 50
+                
+                override fun onFling(
+                    e1: MotionEvent?,
+                    e2: MotionEvent,
+                    velocityX: Float,
+                    velocityY: Float
+                ): Boolean {
+                    if (e1 == null) return false
+                    
+                    val diffX = e2.x - e1.x
+                    val diffY = e2.y - e1.y
+                    val distance = sqrt(diffX * diffX + diffY * diffY)
+                    val velocity = sqrt(velocityX * velocityX + velocityY * velocityY)
+                    
+                    // Check if swipe meets threshold requirements
+                    if (distance > SWIPE_THRESHOLD && velocity > SWIPE_VELOCITY_THRESHOLD) {
+                        Log.d(TAG, "Swipe gesture detected - marking as done")
+                        onSwipe()
+                        return true
+                    }
+                    return false
+                }
+                
+                override fun onDown(e: MotionEvent): Boolean {
+                    // Provide visual feedback on touch
+                    alpha = 0.7f
+                    return true
+                }
+            })
+            
+            setOnTouchListener { _, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        // Reset visual feedback
+                        alpha = 1.0f
+                    }
+                }
+                gestureDetector.onTouchEvent(event)
+            }
+            
+            // Add subtle animation hint
+            animate().scaleX(1.05f).scaleY(1.05f).setDuration(1000).withEndAction {
+                animate().scaleX(1.0f).scaleY(1.0f).setDuration(1000).withEndAction {
+                    // Repeat the breathing animation
+                    post {
+                        animate().scaleX(1.05f).scaleY(1.05f).setDuration(1000).withEndAction {
+                            animate().scaleX(1.0f).scaleY(1.0f).setDuration(1000)
+                        }
+                    }
+                }
+            }
         }
     }
 
