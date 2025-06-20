@@ -288,14 +288,13 @@ class AlarmService : Service() {    companion object {
                         // Check for next audio alarm
                         checkForNextAudioAlarm()
                     }
-                      // Remove the alarm directly
+                    
+                    // Remove the alarm directly
                     activeAlarms.remove(alarmKey)
                     
-                    // If this was the last alarm, stop service completely
+                    // If this was the last alarm, release wake lock
                     if (activeAlarms.isEmpty()) {
                         releaseWakeLock()
-                        stopSelf()
-                        Log.d(TAG, "All alarms finished, stopping service. Notification will persist.")
                     }
                 }
             }, AUTO_STOP_TIMEOUT)
