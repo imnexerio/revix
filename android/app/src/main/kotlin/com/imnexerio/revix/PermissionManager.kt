@@ -61,7 +61,7 @@ class PermissionManager(private val activity: Activity) {
      * Show dialog and request notification permission
      */
     fun showNotificationDialog() {
-        AlertDialog.Builder(activity)
+        AlertDialog.Builder(activity, R.style.DialogWithCenteredTitle)
             .setTitle("Notification Permission")
             .setMessage("To receive important reminders and alerts for your scheduled tasks, please grant notification permission.")
             .setPositiveButton("Grant Permission") { _, _ ->
@@ -102,13 +102,11 @@ class PermissionManager(private val activity: Activity) {
             // For Android < 12, exact alarm permission is granted by default
             true
         }
-    }
-
-    /**
+    }    /**
      * Show dialog and request exact alarm permission
      */
     fun showExactAlarmDialog() {
-        AlertDialog.Builder(activity)
+        AlertDialog.Builder(activity, R.style.DialogWithCenteredTitle)
             .setTitle("Alarm Permission")
             .setMessage("To ensure your reminders work precisely at the scheduled time, please grant exact alarm permission.")
             .setPositiveButton("Grant Permission") { _, _ ->
@@ -171,16 +169,15 @@ class PermissionManager(private val activity: Activity) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open notification settings", e)
         }
-    }
-
-    /**
+    }    /**
      * Get a summary of all permission states
      */
     fun getPermissionStatus(): Map<String, Boolean> {
         return mapOf(
             "notifications" to hasPostNotificationPermission(),
             "exactAlarm" to hasExactAlarmPermission(),
-            "notificationsEnabled" to areNotificationsEnabled()
+            "notificationsEnabled" to areNotificationsEnabled(),
+            "overlay" to checkOverlayPermission()
         )
     }
 
@@ -210,13 +207,11 @@ class PermissionManager(private val activity: Activity) {
                 }
             }
         }
-    }
-
-    /**
+    }    /**
      * Show dialog when notifications are disabled
      */
     private fun showNotificationDisabledDialog() {
-        AlertDialog.Builder(activity)
+        AlertDialog.Builder(activity, R.style.DialogWithCenteredTitle)
             .setTitle("Notifications Disabled")
             .setMessage("Notifications are currently disabled for this app. You may not receive alarm notifications. Would you like to enable them?")
             .setPositiveButton("Open Settings") { _, _ ->
@@ -226,6 +221,47 @@ class PermissionManager(private val activity: Activity) {
                 dialog.dismiss()
                 // Continue with other permission checks
                 checkExactAlarmPermission()            }
+            .show()
+    }
+
+    /**
+     * Check if overlay permission is granted (Android 6.0+)
+     */
+    fun checkOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(activity)
+        } else {
+            true // Permission not needed on older versions
+        }
+    }
+
+    /**
+     * Request overlay permission (Android 6.0+)
+     */
+    fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(activity)) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:${activity.packageName}")
+            ).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            activity.startActivity(intent)
+        }
+    }    /**
+     * Show dialog and request overlay permission
+     */
+    fun showOverlayDialog() {
+        AlertDialog.Builder(activity, R.style.DialogWithCenteredTitle)
+            .setTitle("Overlay Permission")
+            .setMessage("To display reminders and alerts on top of other apps, please grant overlay permission.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                requestOverlayPermission()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
             .show()
     }
 }
