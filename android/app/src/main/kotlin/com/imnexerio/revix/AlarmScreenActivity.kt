@@ -30,30 +30,44 @@ class AlarmScreenActivity : Activity() {
     private var recordTitle: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
     
-    // Broadcast receiver to listen for alarm service events
+    // Brjoadcast receiver to listen for alarm service events
     private val alarmServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d(TAG, "Broadcast received with action: ${intent?.action}")
             when (intent?.action) {
                 ACTION_CLOSE_ALARM_SCREEN -> {
                     val receivedCategory = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
                     val receivedSubCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
                     val receivedRecordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
                     
+                    Log.d(TAG, "Close alarm screen broadcast received for: $receivedRecordTitle, current alarm: $recordTitle")
+                    
                     // Check if this broadcast is for this specific alarm
                     if (receivedCategory == category && receivedSubCategory == subCategory && receivedRecordTitle == recordTitle) {
-                        Log.d(TAG, "Received close alarm screen broadcast for: $recordTitle")
+                        Log.d(TAG, "Broadcast matches current alarm - closing activity for: $recordTitle")
                         userActionTaken = true // Mark as handled to prevent duplicate dismissal
                         finish()
+                    } else {
+                        Log.d(TAG, "Broadcast doesn't match current alarm - ignoring")
                     }
+                }
+                else -> {
+                    Log.d(TAG, "Unknown broadcast action: ${intent?.action}")
                 }
             }
         }
     }
-    
-    override fun onCreate(savedInstanceState: Bundle?) {
+      override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         Log.d(TAG, "AlarmScreenActivity onCreate() called")
+        
+        // Check if this is a close activity intent
+        if (intent?.action == "CLOSE_ALARM_ACTIVITY") {
+            Log.d(TAG, "Received close activity intent - finishing immediately")
+            finish()
+            return
+        }
         
         // Extract alarm details from intent
         category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
@@ -69,7 +83,7 @@ class AlarmScreenActivity : Activity() {
         createAlarmUI()
         
         Log.d(TAG, "AlarmScreenActivity setup complete for: $recordTitle")
-    }    private fun setupFullScreenOverLockScreen() {
+    }private fun setupFullScreenOverLockScreen() {
         Log.d(TAG, "Setting up full screen over lock screen")
         
         // Critical flags for showing over lock screen regardless of notification settings
@@ -294,5 +308,26 @@ class AlarmScreenActivity : Activity() {
         sendBroadcast(intent)
         
         Log.d(TAG, "Sent dismissal broadcast for: $recordTitle")
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        Log.d(TAG, "AlarmScreenActivity onNewIntent() called with action: ${intent?.action}")
+        
+        // Check if this is a close activity intent
+        if (intent?.action == "CLOSE_ALARM_ACTIVITY") {
+            val closeCategory = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
+            val closeSubCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
+            val closeRecordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
+            
+            // Check if this close intent is for the current alarm
+            if (closeCategory == category && closeSubCategory == subCategory && closeRecordTitle == recordTitle) {
+                Log.d(TAG, "Received close activity intent for current alarm - finishing")
+                userActionTaken = true // Mark as handled to prevent duplicate dismissal
+                finish()
+            } else {
+                Log.d(TAG, "Close intent for different alarm - ignoring")
+            }
+        }
     }
 }

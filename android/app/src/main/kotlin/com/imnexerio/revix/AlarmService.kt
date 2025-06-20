@@ -583,22 +583,32 @@ class AlarmService : Service() {    companion object {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to convert notification for: ${alarm.recordTitle}", e)
         }
-    }
-    
-    private fun sendCloseAlarmScreenBroadcast(alarm: ActiveAlarm) {
+    }    private fun sendCloseAlarmScreenBroadcast(alarm: ActiveAlarm) {
         try {
             Log.d(TAG, "Sending close alarm screen broadcast for: ${alarm.recordTitle}")
             
-            val intent = Intent("CLOSE_ALARM_SCREEN").apply {
+            // Method 1: Send broadcast (for registered receivers)
+            val broadcastIntent = Intent("CLOSE_ALARM_SCREEN").apply {
+                setPackage(packageName) // Ensure it's delivered to our app only
                 putExtra(AlarmReceiver.EXTRA_CATEGORY, alarm.category)
                 putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, alarm.subCategory)
                 putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, alarm.recordTitle)
             }
-            sendBroadcast(intent)
+            sendBroadcast(broadcastIntent)
             
-            Log.d(TAG, "Successfully sent close alarm screen broadcast for: ${alarm.recordTitle}")
+            // Method 2: Send specific intent to close AlarmScreenActivity
+            val closeActivityIntent = Intent(this, AlarmScreenActivity::class.java).apply {
+                action = "CLOSE_ALARM_ACTIVITY"
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, alarm.category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, alarm.subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, alarm.recordTitle)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            startActivity(closeActivityIntent)
+            
+            Log.d(TAG, "Successfully sent close alarm screen signals for: ${alarm.recordTitle}")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to send close alarm screen broadcast for: ${alarm.recordTitle}", e)
+            Log.e(TAG, "Failed to send close alarm screen signals for: ${alarm.recordTitle}", e)
         }
     }
 }
