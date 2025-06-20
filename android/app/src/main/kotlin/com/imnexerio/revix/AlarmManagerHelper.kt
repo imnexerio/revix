@@ -56,7 +56,8 @@ class AlarmManagerHelper(private val context: Context) {
                 // Only process today's records
                 if (scheduledDate != currentDate) {
                     return@forEach
-                }                val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
+                }
+                val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
                 val actualTime = parseTimeToday(reminderTime)
                 val alarmTimeHHMM = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(actualTime))
                 
