@@ -1,11 +1,16 @@
 package com.imnexerio.revix
 
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BlurMaskFilter
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
@@ -20,10 +25,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
+import kotlin.math.min
 import kotlin.math.sqrt
 
 class AlarmScreenActivity : Activity() {
@@ -268,10 +275,9 @@ class AlarmScreenActivity : Activity() {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
         }
-        
-        // Instruction text for swipe button
+          // Instruction text for swipe button
         val instructionText = TextView(this).apply {
-            text = "Swipe the circle in any direction to mark as done"
+            text = "Hold and swipe the glowing circle to mark as done"
             textSize = 12f
             setTextColor(textColor)
             gravity = Gravity.CENTER
@@ -372,16 +378,72 @@ class AlarmScreenActivity : Activity() {
             // Add touch feedback
             foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
         }
-    }
-
-    private fun createCircularSwipeButton(
+    }    private fun createCircularSwipeButton(
         text: String,
         accentColor: Int,
         textColor: Int,
         dpToPx: (Int) -> Int,
         onSwipe: () -> Unit
-    ): TextView {
-        return TextView(this).apply {
+    ): View {
+        // Container for button and glow effect
+        val container = FrameLayout(this).apply {
+            val size = dpToPx(140) // Slightly larger for glow effect
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                setMargins(0, 0, 0, dpToPx(24))
+            }
+        }
+        
+        // Glow effect view
+        val glowView = object : View(this) {
+            private val glowPaint = Paint().apply {
+                color = accentColor
+                maskFilter = BlurMaskFilter(dpToPx(20).toFloat(), BlurMaskFilter.Blur.NORMAL)
+                alpha = 0
+            }
+            
+            private val circlePaint = Paint().apply {
+                color = accentColor
+                alpha = 0
+            }
+            
+            var glowIntensity: Float = 0f
+                set(value) {
+                    field = value
+                    glowPaint.alpha = (value * 100).toInt()
+                    circlePaint.alpha = (value * 50).toInt()
+                    invalidate()
+                }
+            
+            override fun onDraw(canvas: Canvas) {
+                super.onDraw(canvas)
+                if (glowIntensity > 0) {
+                    val centerX = width / 2f
+                    val centerY = height / 2f
+                    val radius = dpToPx(60).toFloat() + (glowIntensity * dpToPx(10))
+                    
+                    // Draw multiple glow layers for better effect
+                    for (i in 1..3) {
+                        val layerRadius = radius + (i * dpToPx(8))
+                        val layerAlpha = (glowIntensity * 30 / i).toInt()
+                        glowPaint.alpha = layerAlpha
+                        canvas.drawCircle(centerX, centerY, layerRadius, glowPaint)
+                    }
+                    
+                    // Inner glow
+                    canvas.drawCircle(centerX, centerY, radius * 0.8f, circlePaint)
+                }
+            }
+        }.apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null) // Enable blur effects
+        }
+        
+        // Main button
+        val button = TextView(this).apply {
             this.text = text
             textSize = 14f
             setTextColor(textColor)
@@ -396,17 +458,22 @@ class AlarmScreenActivity : Activity() {
             }
             background = circularBackground
             
-            // Set circular dimensions
-            val size = dpToPx(120)
-            layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                gravity = Gravity.CENTER_HORIZONTAL
-                setMargins(0, 0, 0, dpToPx(24))
+            // Set circular dimensions (smaller than container for glow space)
+            val buttonSize = dpToPx(120)
+            layoutParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
+                gravity = Gravity.CENTER
             }
             
-            // Add gesture detection for swipe
+            // Track touch state and swipe progress
+            var isPressed = false
+            var swipeProgress = 0f
+            var startX = 0f
+            var startY = 0f
+            var glowAnimator: ValueAnimator? = null
+            
+            // Gesture detector for swipe
             val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                private val SWIPE_THRESHOLD = 50
-                private val SWIPE_VELOCITY_THRESHOLD = 50
+                private val MIN_SWIPE_DISTANCE = dpToPx(80) // Minimum swipe distance
                 
                 override fun onFling(
                     e1: MotionEvent?,
@@ -419,46 +486,128 @@ class AlarmScreenActivity : Activity() {
                     val diffX = e2.x - e1.x
                     val diffY = e2.y - e1.y
                     val distance = sqrt(diffX * diffX + diffY * diffY)
-                    val velocity = sqrt(velocityX * velocityX + velocityY * velocityY)
                     
-                    // Check if swipe meets threshold requirements
-                    if (distance > SWIPE_THRESHOLD && velocity > SWIPE_VELOCITY_THRESHOLD) {
-                        Log.d(TAG, "Swipe gesture detected - marking as done")
-                        onSwipe()
+                    // Check if minimum swipe distance is met
+                    if (distance >= MIN_SWIPE_DISTANCE) {
+                        Log.d(TAG, "Swipe completed - distance: $distance, required: $MIN_SWIPE_DISTANCE")
+                        
+                        // Success feedback
+                        animate()
+                            .scaleX(1.2f)
+                            .scaleY(1.2f)
+                            .setDuration(150)
+                            .withEndAction {
+                                onSwipe()
+                            }
                         return true
                     }
                     return false
                 }
                 
                 override fun onDown(e: MotionEvent): Boolean {
-                    // Provide visual feedback on touch
-                    alpha = 0.7f
                     return true
                 }
             })
             
             setOnTouchListener { _, event ->
                 when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        isPressed = true
+                        startX = event.x
+                        startY = event.y
+                        
+                        // Start glow animation
+                        glowAnimator?.cancel()
+                        glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                            duration = 300
+                            addUpdateListener { animator ->
+                                val intensity = animator.animatedValue as Float
+                                glowView.glowIntensity = intensity
+                                alpha = 0.8f + (intensity * 0.2f)
+                                scaleX = 1f + (intensity * 0.1f)
+                                scaleY = 1f + (intensity * 0.1f)
+                            }
+                            start()
+                        }
+                    }
+                    
+                    MotionEvent.ACTION_MOVE -> {
+                        if (isPressed) {
+                            val diffX = event.x - startX
+                            val diffY = event.y - startY
+                            val currentDistance = sqrt(diffX * diffX + diffY * diffY)
+                            
+                            // Calculate progress (0 to 1) based on minimum swipe distance
+                            swipeProgress = min(currentDistance / dpToPx(80), 1f)
+                            
+                            // Visual feedback based on progress
+                            val progressAlpha = 0.8f + (swipeProgress * 0.2f)
+                            val progressScale = 1f + (swipeProgress * 0.2f)
+                            val progressGlow = swipeProgress
+                            
+                            alpha = progressAlpha
+                            scaleX = progressScale
+                            scaleY = progressScale
+                            glowView.glowIntensity = progressGlow
+                            
+                            // Change color tint as user gets closer to completion
+                            if (swipeProgress > 0.7f) {
+                                setTextColor(Color.WHITE)
+                            } else {
+                                setTextColor(textColor)
+                            }
+                        }
+                    }
+                    
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        // Reset visual feedback
-                        alpha = 1.0f
+                        isPressed = false
+                        swipeProgress = 0f
+                        
+                        // Reset visual state
+                        glowAnimator?.cancel()
+                        glowAnimator = ValueAnimator.ofFloat(glowView.glowIntensity, 0f).apply {
+                            duration = 200
+                            addUpdateListener { animator ->
+                                val intensity = animator.animatedValue as Float
+                                glowView.glowIntensity = intensity
+                            }
+                            start()
+                        }
+                        
+                        animate()
+                            .alpha(1.0f)
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setDuration(200)
+                            .start()
+                        
+                        setTextColor(textColor)
                     }
                 }
                 gestureDetector.onTouchEvent(event)
             }
             
-            // Add subtle animation hint
-            animate().scaleX(1.05f).scaleY(1.05f).setDuration(1000).withEndAction {
-                animate().scaleX(1.0f).scaleY(1.0f).setDuration(1000).withEndAction {
-                    // Repeat the breathing animation
-                    post {
-                        animate().scaleX(1.05f).scaleY(1.05f).setDuration(1000).withEndAction {
-                            animate().scaleX(1.0f).scaleY(1.0f).setDuration(1000)
-                        }
+            // Subtle breathing animation when not being touched
+            val breathingAnimator = ValueAnimator.ofFloat(1.0f, 1.05f).apply {
+                duration = 2000
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                addUpdateListener { animator ->
+                    if (!isPressed) {
+                        val scale = animator.animatedValue as Float
+                        scaleX = scale
+                        scaleY = scale
                     }
                 }
+                start()
             }
         }
+        
+        // Add views to container
+        container.addView(glowView)
+        container.addView(button)
+        
+        return container
     }
 
     private fun markAsDone() {
