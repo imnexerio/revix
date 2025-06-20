@@ -11,6 +11,8 @@ import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
@@ -392,54 +394,85 @@ class AlarmScreenActivity : Activity() {
                 gravity = Gravity.CENTER_HORIZONTAL
                 setMargins(0, 0, 0, dpToPx(24))
             }
-        }
-        
-        // Glow effect view
+        }        // Glow effect view with permanent circular gradient
         val glowView = object : View(this) {
-            private val glowPaint = Paint().apply {
-                color = accentColor
-                maskFilter = BlurMaskFilter(dpToPx(20).toFloat(), BlurMaskFilter.Blur.NORMAL)
-                alpha = 0
+            private var baseGlowIntensity = 1f // Always visible base glow
+            private var interactionGlowIntensity = 0f // Additional glow during interaction
+            
+            private val gradientPaint = Paint().apply {
+                isAntiAlias = true
             }
             
-            private val circlePaint = Paint().apply {
-                color = accentColor
-                alpha = 0
+            private fun updateGradient() {
+                val centerX = width / 2f
+                val centerY = height / 2f
+                val baseRadius = dpToPx(60).toFloat()
+                val glowRadius = dpToPx(80).toFloat() + (interactionGlowIntensity * dpToPx(20))
+                
+                // Create radial gradient from accent color to transparent
+                val totalIntensity = baseGlowIntensity + interactionGlowIntensity
+                val centerAlpha = (totalIntensity * 120).toInt().coerceIn(0, 255)
+                val edgeAlpha = (totalIntensity * 30).toInt().coerceIn(0, 255)
+                
+                gradientPaint.shader = RadialGradient(
+                    centerX, centerY, glowRadius,
+                    intArrayOf(
+                        Color.argb(centerAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb((centerAlpha * 0.7f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb((centerAlpha * 0.4f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb(edgeAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.TRANSPARENT
+                    ),
+                    floatArrayOf(0f, 0.3f, 0.6f, 0.8f, 1f),
+                    Shader.TileMode.CLAMP
+                )
             }
             
-            var glowIntensity: Float = 0f
+            var totalGlowIntensity: Float
+                get() = baseGlowIntensity + interactionGlowIntensity
                 set(value) {
-                    field = value
-                    glowPaint.alpha = (value * 100).toInt()
-                    circlePaint.alpha = (value * 50).toInt()
+                    interactionGlowIntensity = (value - baseGlowIntensity).coerceAtLeast(0f)
                     invalidate()
                 }
             
+            fun setBaseGlowIntensity(intensity: Float) {
+                baseGlowIntensity = intensity
+                invalidate()
+            }
+            
+            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+                super.onSizeChanged(w, h, oldw, oldh)
+                updateGradient()
+            }
+            
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
-                if (glowIntensity > 0) {
-                    val centerX = width / 2f
-                    val centerY = height / 2f
-                    val radius = dpToPx(60).toFloat() + (glowIntensity * dpToPx(10))
-                    
-                    // Draw multiple glow layers for better effect
-                    for (i in 1..3) {
-                        val layerRadius = radius + (i * dpToPx(8))
-                        val layerAlpha = (glowIntensity * 30 / i).toInt()
-                        glowPaint.alpha = layerAlpha
-                        canvas.drawCircle(centerX, centerY, layerRadius, glowPaint)
-                    }
-                    
-                    // Inner glow
-                    canvas.drawCircle(centerX, centerY, radius * 0.8f, circlePaint)
-                }
+                updateGradient()
+                
+                val centerX = width / 2f
+                val centerY = height / 2f
+                val glowRadius = dpToPx(80).toFloat() + (interactionGlowIntensity * dpToPx(20))
+                
+                // Draw the circular gradient glow
+                canvas.drawCircle(centerX, centerY, glowRadius, gradientPaint)
             }
         }.apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
-            setLayerType(View.LAYER_TYPE_SOFTWARE, null) // Enable blur effects
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null) // Enable advanced rendering
+            
+            // Animate the base glow with a breathing effect
+            val breathingGlowAnimator = ValueAnimator.ofFloat(0.8f, 1.2f).apply {
+                duration = 3000
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                addUpdateListener { animator ->
+                    setBaseGlowIntensity(animator.animatedValue as Float)
+                }
+                start()
+            }
         }
         
         // Main button
@@ -510,22 +543,21 @@ class AlarmScreenActivity : Activity() {
             })
             
             setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
+                when (event.action) {                    MotionEvent.ACTION_DOWN -> {
                         isPressed = true
                         startX = event.x
                         startY = event.y
                         
-                        // Start glow animation
+                        // Enhance glow animation on touch
                         glowAnimator?.cancel()
-                        glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                        glowAnimator = ValueAnimator.ofFloat(glowView.totalGlowIntensity, 2.5f).apply {
                             duration = 300
                             addUpdateListener { animator ->
                                 val intensity = animator.animatedValue as Float
-                                glowView.glowIntensity = intensity
-                                alpha = 0.8f + (intensity * 0.2f)
-                                scaleX = 1f + (intensity * 0.1f)
-                                scaleY = 1f + (intensity * 0.1f)
+                                glowView.totalGlowIntensity = intensity
+                                alpha = 0.8f + ((intensity - 1f) * 0.2f)
+                                scaleX = 1f + ((intensity - 1f) * 0.1f)
+                                scaleY = 1f + ((intensity - 1f) * 0.1f)
                             }
                             start()
                         }
@@ -540,15 +572,15 @@ class AlarmScreenActivity : Activity() {
                             // Calculate progress (0 to 1) based on minimum swipe distance
                             swipeProgress = min(currentDistance / dpToPx(80), 1f)
                             
-                            // Visual feedback based on progress
+                            // Enhanced visual feedback based on progress
                             val progressAlpha = 0.8f + (swipeProgress * 0.2f)
-                            val progressScale = 1f + (swipeProgress * 0.2f)
-                            val progressGlow = swipeProgress
+                            val progressScale = 1f + (swipeProgress * 0.3f)
+                            val progressGlow = 2.5f + (swipeProgress * 1.5f) // Increase glow further during swipe
                             
                             alpha = progressAlpha
                             scaleX = progressScale
                             scaleY = progressScale
-                            glowView.glowIntensity = progressGlow
+                            glowView.totalGlowIntensity = progressGlow
                             
                             // Change color tint as user gets closer to completion
                             if (swipeProgress > 0.7f) {
@@ -563,13 +595,13 @@ class AlarmScreenActivity : Activity() {
                         isPressed = false
                         swipeProgress = 0f
                         
-                        // Reset visual state
+                        // Reset to base glow state
                         glowAnimator?.cancel()
-                        glowAnimator = ValueAnimator.ofFloat(glowView.glowIntensity, 0f).apply {
-                            duration = 200
+                        glowAnimator = ValueAnimator.ofFloat(glowView.totalGlowIntensity, 1f).apply {
+                            duration = 400
                             addUpdateListener { animator ->
                                 val intensity = animator.animatedValue as Float
-                                glowView.glowIntensity = intensity
+                                glowView.totalGlowIntensity = intensity
                             }
                             start()
                         }
@@ -578,7 +610,7 @@ class AlarmScreenActivity : Activity() {
                             .alpha(1.0f)
                             .scaleX(1.0f)
                             .scaleY(1.0f)
-                            .setDuration(200)
+                            .setDuration(400)
                             .start()
                         
                         setTextColor(textColor)
