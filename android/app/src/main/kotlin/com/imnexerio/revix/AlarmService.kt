@@ -25,7 +25,7 @@ data class ActiveAlarm(
 
 class AlarmService : Service() {    companion object {
         private const val TAG = "AlarmService"
-        private const val AUTO_STOP_TIMEOUT = 5 * 60 * 1000L // 5 minutes
+        private const val AUTO_STOP_TIMEOUT = 5 * 1000L // 5 minutes
     }
 
     // Multi-alarm state management
@@ -288,13 +288,14 @@ class AlarmService : Service() {    companion object {
                         // Check for next audio alarm
                         checkForNextAudioAlarm()
                     }
-                    
-                    // Remove the alarm directly
+                      // Remove the alarm directly
                     activeAlarms.remove(alarmKey)
                     
-                    // If this was the last alarm, release wake lock
+                    // If this was the last alarm, stop service completely
                     if (activeAlarms.isEmpty()) {
                         releaseWakeLock()
+                        stopSelf()
+                        Log.d(TAG, "All alarms finished, stopping service. Notification will persist.")
                     }
                 }
             }, AUTO_STOP_TIMEOUT)

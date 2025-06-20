@@ -50,16 +50,20 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
 
         Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle")
 
-        // Stop alarm service
-        val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
-            action = "STOP_SPECIFIC_ALARM"
-            putExtra(EXTRA_CATEGORY, category)
-            putExtra(EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+        // Try to stop alarm service if it's still running (for active alarms)
+        try {
+            val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
+                action = "STOP_SPECIFIC_ALARM"
+                putExtra(EXTRA_CATEGORY, category)
+                putExtra(EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            }
+            context.startForegroundService(stopAlarmIntent)
+        } catch (e: Exception) {
+            Log.d(TAG, "Service not running, handling directly: ${e.message}")
         }
-        context.startForegroundService(stopAlarmIntent)
 
-        // Cancel all alarms for this record
+        // Cancel all future alarms for this record
         val alarmHelper = AlarmManagerHelper(context)
         alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
 
@@ -84,14 +88,18 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
 
         Log.d(TAG, "Ignore alarm triggered: $category - $subCategory - $recordTitle")
 
-        // Stop alarm service
-        val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
-            action = "STOP_SPECIFIC_ALARM"
-            putExtra(EXTRA_CATEGORY, category)
-            putExtra(EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(EXTRA_RECORD_TITLE, recordTitle)
+        // Try to stop alarm service if it's still running (for active alarms)
+        try {
+            val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
+                action = "STOP_SPECIFIC_ALARM"
+                putExtra(EXTRA_CATEGORY, category)
+                putExtra(EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            }
+            context.startForegroundService(stopAlarmIntent)
+        } catch (e: Exception) {
+            Log.d(TAG, "Service not running, handling directly: ${e.message}")
         }
-        context.startForegroundService(stopAlarmIntent)
 
         // Dismiss the notification
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
