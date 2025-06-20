@@ -24,38 +24,6 @@ class MainActivity : FlutterActivity() {
         alarmManagerHelper = AlarmManagerHelper(this)
         permissionManager = PermissionManager(this)
 
-        // Widget refresh channel (for manual refresh from main app context only)
-        // Note: Background widget updates use HomeWidget package directly, not this channel
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "refreshCompleted") {
-                val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                if (!sharedPreferences.contains("lastUpdated")) {
-                    val editor = sharedPreferences.edit()
-                    editor.putLong("lastUpdated", System.currentTimeMillis())
-                    editor.apply()
-                }
-                TodayWidget.updateWidgets(this)
-                result.success(true)
-            } else if (call.method == "manualRefresh") {
-                // Trigger refresh through Flutter background callback
-                try {
-                    // The refresh will be handled by Flutter's background callback
-                    // Just trigger the widget update mechanism
-                    val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                    val editor = sharedPreferences.edit()
-                    editor.putLong("lastUpdated", System.currentTimeMillis())
-                    editor.apply()
-
-                    TodayWidget.updateWidgets(this)
-                    result.success(true)
-                } catch (e: Exception) {
-                    result.error("REFRESH_ERROR", "Failed to refresh widget: ${e.message}", null)
-                }
-            }else {
-                result.notImplemented()
-            }
-        }
-
         // Initialize update records channel for communication with services
         updateRecordsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_RECORDS_CHANNEL)
     }
@@ -64,10 +32,6 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
 
         permissionManager.checkAndRequestAllPermissions()
-
-        if (intent?.extras?.getBoolean("widget_refresh") == true) {
-            // Handle any widget-initiated refresh
-        }
     }
 
     override fun onRequestPermissionsResult(
