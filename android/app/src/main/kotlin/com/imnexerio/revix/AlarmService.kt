@@ -25,7 +25,7 @@ data class ActiveAlarm(
 
 class AlarmService : Service() {    companion object {
         private const val TAG = "AlarmService"
-        private const val AUTO_STOP_TIMEOUT = 5 * 1000L // Auto-stop timeout in milliseconds
+        private const val DEFAULT_AUTO_STOP_TIMEOUT = 5 * 60 * 1000L // Default 5 minutes in milliseconds
     }
 
     // Multi-alarm state management
@@ -39,6 +39,12 @@ class AlarmService : Service() {    companion object {
     // Wake lock for device wake-up (screen management handled by AlarmScreenActivity)
     private var wakeLock: PowerManager.WakeLock? = null
     private var autoStopTimer: Timer? = null
+
+    private fun getAutoStopTimeout(): Long {
+        val sharedPreferences = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val durationSeconds = sharedPreferences.getInt("flutter.alarm_duration_seconds", 300) // Default 5 minutes
+        return durationSeconds * 1000L // Convert to milliseconds
+    }
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -345,14 +351,17 @@ class AlarmService : Service() {    companion object {
             currentAudioAlarm = nextAudioAlarm.alarmKey
             startAudioForAlarmType(nextAudioAlarm)
             Log.d(TAG, "Started audio for next alarm: ${nextAudioAlarm.recordTitle}")
-        }    }
-
-    private val alarmTimers = mutableMapOf<String, Timer>()
+        }    }    private val alarmTimers = mutableMapOf<String, Timer>()
+    
     private fun startAutoStopTimerForAlarm(alarmKey: String) {
         // Cancel existing timer if any
         cancelAutoStopTimerForAlarm(alarmKey)
-          val timer = Timer().apply {            schedule(object : TimerTask() {                override fun run() {
-                    Log.d(TAG, "Auto-stopping alarm completely after ${AUTO_STOP_TIMEOUT / 1000}s for alarm: $alarmKey")
+        
+        val autoStopTimeout = getAutoStopTimeout()
+        val timer = Timer().apply {
+            schedule(object : TimerTask() {
+                override fun run() {
+                    Log.d(TAG, "Auto-stopping alarm completely after ${autoStopTimeout / 1000}s for alarm: $alarmKey")
                     
                     // Stop audio if this alarm was playing it
                     if (currentAudioAlarm == alarmKey) {
@@ -371,19 +380,18 @@ class AlarmService : Service() {    companion object {
                     
                     // Remove the alarm directly
                     activeAlarms.remove(alarmKey)
-                    
-                    // If this was the last alarm, release wake lock AND stop service
+                      // If this was the last alarm, release wake lock AND stop service
                     if (activeAlarms.isEmpty()) {
                         releaseWakeLock()
                         stopSelf() // Stop service - reminder notification will persist
                         Log.d(TAG, "All alarms completed - service stopped, reminder notifications persist")
                     }
                 }
-            }, AUTO_STOP_TIMEOUT)
+            }, autoStopTimeout)
         }
         
         alarmTimers[alarmKey] = timer
-        Log.d(TAG, "Auto-stop timer started for alarm: $alarmKey")
+        Log.d(TAG, "Auto-stop timer started for alarm: $alarmKey with duration ${autoStopTimeout / 1000}s")
     }
 
     private fun cancelAutoStopTimerForAlarm(alarmKey: String) {
@@ -533,9 +541,8 @@ class AlarmService : Service() {    companion object {
     override fun onDestroy() {
         Log.d(TAG, "AlarmService destroyed")
         stopSoundAndVibration()
-        releaseWakeLock()
-          // Cancel all timers
-        alarmTimers.values.forEach { it.cancel() }
+        releaseWakeLock()        // Cancel all timers
+        alarmTimers.values.forEach { timer -> timer.cancel() }
         alarmTimers.clear()
         autoStopTimer?.cancel()
         
