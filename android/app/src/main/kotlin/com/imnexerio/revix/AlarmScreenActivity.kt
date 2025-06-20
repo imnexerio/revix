@@ -2,8 +2,10 @@ package com.imnexerio.revix
 
 import android.app.Activity
 import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -20,11 +22,34 @@ class AlarmScreenActivity : Activity() {
         const val EXTRA_CATEGORY = "category"
         const val EXTRA_SUB_CATEGORY = "sub_category"
         const val EXTRA_RECORD_TITLE = "record_title"
+        const val ACTION_CLOSE_ALARM_SCREEN = "CLOSE_ALARM_SCREEN"
     }
 
     private var category: String = ""
     private var subCategory: String = ""
     private var recordTitle: String = ""
+    private var userActionTaken: Boolean = false // Track if user clicked a button
+    
+    // Broadcast receiver to listen for alarm service events
+    private val alarmServiceReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                ACTION_CLOSE_ALARM_SCREEN -> {
+                    val receivedCategory = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
+                    val receivedSubCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
+                    val receivedRecordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
+                    
+                    // Check if this broadcast is for this specific alarm
+                    if (receivedCategory == category && receivedSubCategory == subCategory && receivedRecordTitle == recordTitle) {
+                        Log.d(TAG, "Received close alarm screen broadcast for: $recordTitle")
+                        userActionTaken = true // Mark as handled to prevent duplicate dismissal
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -168,6 +193,8 @@ class AlarmScreenActivity : Activity() {
     private fun markAsDone() {
         Log.d(TAG, "Mark as done clicked for: $recordTitle")
         
+        userActionTaken = true // User clicked a button
+        
         // Send broadcast to mark alarm as done
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_MARK_AS_DONE
@@ -182,6 +209,8 @@ class AlarmScreenActivity : Activity() {
 
     private fun ignoreAlarm() {
         Log.d(TAG, "Ignore clicked for: $recordTitle")
+        
+        userActionTaken = true // User clicked a button
         
         // Send broadcast to ignore alarm
         val intent = Intent(this, AlarmReceiver::class.java).apply {
@@ -201,20 +230,69 @@ class AlarmScreenActivity : Activity() {
     }    override fun onStart() {
         super.onStart()
         Log.d(TAG, "AlarmScreenActivity onStart() called")
-    }
-
-    override fun onResume() {
+    }    override fun onResume() {
         super.onResume()
         Log.d(TAG, "AlarmScreenActivity onResume() called - should be visible now")
-    }
-
-    override fun onPause() {
+        
+        // Register broadcast receiver to listen for alarm service events
+        val filter = IntentFilter(ACTION_CLOSE_ALARM_SCREEN)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(alarmServiceReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(alarmServiceReceiver, filter)
+        }
+        Log.d(TAG, "Registered alarm service receiver")
+    }    override fun onPause() {
         super.onPause()
         Log.d(TAG, "AlarmScreenActivity onPause() called")
+        
+        // Unregister broadcast receiver
+        try {
+            unregisterReceiver(alarmServiceReceiver)
+            Log.d(TAG, "Unregistered alarm service receiver")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to unregister receiver", e)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d(TAG, "AlarmScreenActivity onStop() called")
+        
+        // If user didn't take any action and activity is being stopped, treat as dismissal
+        if (!userActionTaken) {
+            Log.d(TAG, "Activity stopped without user action - treating as dismissal for: $recordTitle")
+            handleAlarmDismissal()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "AlarmScreenActivity destroyed")
+        
+        // Backup check - if user didn't take any action, treat it as dismiss
+        if (!userActionTaken) {
+            Log.d(TAG, "Activity destroyed without user action - treating as dismissal for: $recordTitle")
+            handleAlarmDismissal()
+        }
+    }      private fun handleAlarmDismissal() {
+        // Prevent duplicate dismissal handling
+        if (userActionTaken) {
+            Log.d(TAG, "User action already taken, skipping dismissal handling for: $recordTitle")
+            return
+        }
+        
+        userActionTaken = true // Mark as handled
+        
+        // Send broadcast to dismiss alarm (treated same as ignore but with different action for logging)
+        val intent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_DISMISS_ALARM
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        sendBroadcast(intent)
+        
+        Log.d(TAG, "Sent dismissal broadcast for: $recordTitle")
     }
 }

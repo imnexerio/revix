@@ -324,11 +324,16 @@ class AlarmService : Service() {    companion object {
         val alarmKey = "$category$subCategory$recordTitle"
 
         Log.d(TAG, "Stopping specific alarm: $recordTitle")
-
         val alarm = activeAlarms[alarmKey]
         if (alarm != null) {
             // Cancel auto-stop timer for this alarm
             cancelAutoStopTimerForAlarm(alarmKey)
+            
+            // Convert to reminder notification BEFORE removing from active alarms
+            convertToReminderNotification(alarm)
+            
+            // Send broadcast to close alarm screen for this specific alarm
+            sendCloseAlarmScreenBroadcast(alarm)
             
             // If this alarm was playing audio, stop it and check for next
             if (currentAudioAlarm == alarmKey) {
@@ -346,7 +351,7 @@ class AlarmService : Service() {    companion object {
                 releaseWakeLock()
                 stopSelf()
             }
-        }    }
+        }}
 
     private fun checkForNextAudioAlarm() {
         // Find the oldest alarm that needs audio
@@ -378,11 +383,13 @@ class AlarmService : Service() {    companion object {
                         // Check for next audio alarm
                         checkForNextAudioAlarm()
                     }
-                    
-                    // Convert to reminder notification BEFORE removing from active alarms
+                      // Convert to reminder notification BEFORE removing from active alarms
                     val alarm = activeAlarms[alarmKey]
                     if (alarm != null) {
                         convertToReminderNotification(alarm)
+                        
+                        // Send broadcast to close alarm screen for this specific alarm
+                        sendCloseAlarmScreenBroadcast(alarm)
                     }
                     
                     // Remove the alarm directly
@@ -575,6 +582,23 @@ class AlarmService : Service() {    companion object {
             Log.d(TAG, "Successfully converted to reminder notification for: ${alarm.recordTitle}")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to convert notification for: ${alarm.recordTitle}", e)
+        }
+    }
+    
+    private fun sendCloseAlarmScreenBroadcast(alarm: ActiveAlarm) {
+        try {
+            Log.d(TAG, "Sending close alarm screen broadcast for: ${alarm.recordTitle}")
+            
+            val intent = Intent("CLOSE_ALARM_SCREEN").apply {
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, alarm.category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, alarm.subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, alarm.recordTitle)
+            }
+            sendBroadcast(intent)
+            
+            Log.d(TAG, "Successfully sent close alarm screen broadcast for: ${alarm.recordTitle}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send close alarm screen broadcast for: ${alarm.recordTitle}", e)
         }
     }
 }
