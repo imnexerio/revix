@@ -46,6 +46,9 @@ class AlarmService : Service() {    companion object {
         initializeWakeLock()
     }    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // Existing alarm service channel
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel("alarm_service", "Record Alarms", importance).apply {
                 description = "Notifications for record alarms and reminders"
@@ -54,8 +57,17 @@ class AlarmService : Service() {    companion object {
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+            
+            // New channel for task reminders (after service stops)
+            val reminderImportance = NotificationManager.IMPORTANCE_DEFAULT
+            val reminderChannel = NotificationChannel("task_reminders", "Task Reminders", reminderImportance).apply {
+                description = "Persistent reminders for tasks after alarm stops"
+                enableVibration(false)
+                setSound(null, null)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            notificationManager.createNotificationChannel(reminderChannel)
         }
     }
       private fun createForegroundNotification(category: String, subCategory: String, recordTitle: String): Notification {
@@ -114,6 +126,69 @@ class AlarmService : Service() {    companion object {
                 .setContentText(content)
                 .setAutoCancel(false)
                 .setOngoing(true)
+                .setDeleteIntent(ignorePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
+                .build()
+        }
+    }
+
+    private fun createReminderNotification(category: String, subCategory: String, recordTitle: String): Notification {
+        val title = "Task Reminder: $category · $subCategory"
+        val content = recordTitle
+
+        // Create mark as done intent (same as foreground notification)
+        val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_MARK_AS_DONE
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val markDonePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt(),
+            markDoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create ignore alarm intent (same as foreground notification)
+        val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_IGNORE_ALARM
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val ignorePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 1,
+            ignoreIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, "task_reminders")
+                .setSmallIcon(R.drawable.ic_launcher_icon)
+                .setContentTitle(title)
+                .setContentText(content)
+                .setStyle(Notification.BigTextStyle().bigText(content))
+                .setPriority(Notification.PRIORITY_DEFAULT)
+                .setCategory(Notification.CATEGORY_REMINDER)
+                .setAutoCancel(false)
+                .setOngoing(false) // Can be dismissed unlike foreground notification
+                .setDeleteIntent(ignorePendingIntent) // Handle notification dismissal like ignore
+                .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setShowWhen(true)
+                .build()
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+                .setSmallIcon(R.drawable.ic_launcher_icon)
+                .setContentTitle(title)
+                .setContentText(content)
+                .setAutoCancel(false)
+                .setOngoing(false)
                 .setDeleteIntent(ignorePendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
@@ -289,12 +364,20 @@ class AlarmService : Service() {    companion object {
                         checkForNextAudioAlarm()
                     }
                     
+                    // Convert to reminder notification BEFORE removing from active alarms
+                    val alarm = activeAlarms[alarmKey]
+                    if (alarm != null) {
+                        convertToReminderNotification(alarm)
+                    }
+                    
                     // Remove the alarm directly
                     activeAlarms.remove(alarmKey)
                     
-                    // If this was the last alarm, release wake lock
+                    // If this was the last alarm, release wake lock AND stop service
                     if (activeAlarms.isEmpty()) {
                         releaseWakeLock()
+                        stopSelf() // Stop service - reminder notification will persist
+                        Log.d(TAG, "All alarms completed - service stopped, reminder notifications persist")
                     }
                 }
             }, AUTO_STOP_TIMEOUT)
@@ -463,4 +546,22 @@ class AlarmService : Service() {    companion object {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun convertToReminderNotification(alarm: ActiveAlarm) {
+        try {
+            Log.d(TAG, "Converting foreground notification to reminder for: ${alarm.recordTitle}")
+            
+            val reminderNotification = createReminderNotification(alarm.category, alarm.subCategory, alarm.recordTitle)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationId = (alarm.category + alarm.subCategory + alarm.recordTitle).hashCode()
+            
+            // Post regular notification with same ID as foreground notification
+            // This ensures seamless transition
+            notificationManager.notify(notificationId, reminderNotification)
+            
+            Log.d(TAG, "Successfully converted to reminder notification for: ${alarm.recordTitle}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to convert notification for: ${alarm.recordTitle}", e)
+        }
+    }
 }
