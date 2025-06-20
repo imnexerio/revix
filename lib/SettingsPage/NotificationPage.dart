@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
@@ -15,20 +16,51 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     super.initState();
     _loadAlarmDuration();
   }
-
   Future<void> _loadAlarmDuration() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _alarmDurationSeconds = prefs.getInt('alarm_duration_seconds') ?? 300;
-    });
+    try {
+      // Try to load from HomeWidget preferences first
+      final duration = await HomeWidget.getWidgetData<int>('alarm_duration_seconds');
+      if (duration != null) {
+        setState(() {
+          _alarmDurationSeconds = duration;
+        });
+        debugPrint('Loaded alarm duration from HomeWidget: ${duration}s');
+        return;
+      }
+    } catch (e) {
+      debugPrint('Failed to load from HomeWidget: $e');
+    }
+    
+    // Fall back to SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _alarmDurationSeconds = prefs.getInt('alarm_duration_seconds') ?? 300;
+      });
+      debugPrint('Loaded alarm duration from SharedPreferences: ${_alarmDurationSeconds}s');
+    } catch (e) {
+      debugPrint('Failed to load alarm duration: $e');
+      setState(() {
+        _alarmDurationSeconds = 300; // Default to 5 minutes
+      });
+    }
   }
-
   Future<void> _saveAlarmDuration(int seconds) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('alarm_duration_seconds', seconds);
-    setState(() {
-      _alarmDurationSeconds = seconds;
-    });
+    try {
+      // Save to HomeWidget preferences (which creates "HomeWidgetPreferences" on Android)
+      await HomeWidget.saveWidgetData('alarm_duration_seconds', seconds);
+      setState(() {
+        _alarmDurationSeconds = seconds;
+      });
+      
+      // Also save to regular SharedPreferences for consistency within Flutter
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('alarm_duration_seconds', seconds);
+      
+      debugPrint('Alarm duration saved: ${seconds}s');
+    } catch (e) {
+      debugPrint('Failed to save alarm duration: $e');
+    }
   }
 
   @override

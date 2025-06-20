@@ -39,11 +39,19 @@ class AlarmService : Service() {    companion object {
     // Wake lock for device wake-up (screen management handled by AlarmScreenActivity)
     private var wakeLock: PowerManager.WakeLock? = null
     private var autoStopTimer: Timer? = null
-
     private fun getAutoStopTimeout(): Long {
-        val sharedPreferences = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val durationSeconds = sharedPreferences.getInt("flutter.alarm_duration_seconds", 300) // Default 5 minutes
-        return durationSeconds * 1000L // Convert to milliseconds
+        return try {
+            val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            
+            // Read alarm duration setting, default to 300 seconds (5 minutes)
+            val durationSeconds = sharedPreferences.getLong("alarm_duration_seconds", 300L)
+            Log.d(TAG, "Read alarm duration from SharedPreferences: ${durationSeconds}s")
+            
+            durationSeconds * 1000L // Convert to milliseconds
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to read alarm duration from SharedPreferences, using default", e)
+            DEFAULT_AUTO_STOP_TIMEOUT // Use default if reading fails
+        }
     }
     override fun onCreate() {
         super.onCreate()
