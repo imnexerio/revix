@@ -41,9 +41,41 @@ class AlarmService : Service() {    companion object {
     private var autoStopTimer: Timer? = null
     override fun onCreate() {
         super.onCreate()
+        createNotificationChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         initializeWakeLock()
-    }private fun initializeWakeLock() {
+    }
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_LOW
+            val channel = NotificationChannel("alarm_service", "Alarm Service", importance).apply {
+                description = "Alarm service running"
+                enableVibration(false)
+                setSound(null, null)
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+    
+    private fun createForegroundNotification(): Notification {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, "alarm_service")
+                .setSmallIcon(R.drawable.ic_launcher_icon)
+                .setContentTitle("Alarm Active")
+                .setContentText("Managing alarm")
+                .build()
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+                .setSmallIcon(R.drawable.ic_launcher_icon)
+                .setContentTitle("Alarm Active")
+                .setContentText("Managing alarm")
+                .build()
+        }
+    }
+
+    private fun initializeWakeLock() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         // Simple partial wake lock just to wake the device - screen handling is done by activity
         wakeLock = powerManager.newWakeLock(
@@ -83,16 +115,23 @@ class AlarmService : Service() {    companion object {
             category = category,
             subCategory = subCategory,
             recordTitle = recordTitle,
-            alarmType = alarmType
-        )// Add to active alarms
+            alarmType = alarmType)
+
+        // Add to active alarms
         activeAlarms[alarmKey] = alarm
+
+        // Start as foreground service if first alarm
+        if (activeAlarms.size == 1) {
+            val notification = createForegroundNotification()
+            startForeground(999, notification)
+        }
 
         // Launch full-screen alarm and handle audio/vibration
         handleAudioForAlarm(alarm)
 
         // Start auto-stop timer for this specific alarm
         startAutoStopTimerForAlarm(alarmKey)
-    }    private fun handleAudioForAlarm(alarm: ActiveAlarm) {
+    }private fun handleAudioForAlarm(alarm: ActiveAlarm) {
         // Wake device and launch full-screen alarm activity
         acquireWakeLock()
         launchAlarmScreen(alarm)
