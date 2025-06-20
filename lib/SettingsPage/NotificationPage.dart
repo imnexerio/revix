@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
+import '../Utils/platform_utils.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
   @override
@@ -9,11 +10,17 @@ class NotificationSettingsPage extends StatefulWidget {
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   final _formKey = GlobalKey<FormState>();
   int _alarmDurationSeconds = 300; // Default 5 minutes (300 seconds)
-
   @override
   void initState() {
     super.initState();
-    _loadAlarmDuration();
+    // Initialize platform utils if not already done
+    if (!PlatformUtils.instance.isInitialized) {
+      PlatformUtils.init();
+    }
+    // Only load alarm duration on Android
+    if (PlatformUtils.instance.isAndroid) {
+      _loadAlarmDuration();
+    }
   }
 
   Future<void> _loadAlarmDuration() async {
@@ -51,9 +58,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,            children: [
-              _buildAlarmDurationSetting(context),
-              const Divider(height: 32),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Only show alarm duration setting on Android
+              if (PlatformUtils.instance.isAndroid) ...[
+                _buildAlarmDurationSetting(context),
+                const Divider(height: 32),
+              ],
               _buildNotificationOption(
                 context,
                 'Push Notifications',
