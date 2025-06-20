@@ -6,15 +6,21 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 
 class AlarmScreenActivity : Activity() {
     companion object {
@@ -147,61 +153,208 @@ class AlarmScreenActivity : Activity() {
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
             )
         }
-    }
-
-    private fun createAlarmUI() {
-        // Create a simple layout programmatically
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setBackgroundColor(android.graphics.Color.BLACK)
-            setPadding(50, 100, 50, 100)
+    }    private fun createAlarmUI() {
+        val dpToPx = { dp: Int ->
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), resources.displayMetrics).toInt()
+        }        // Get colors from resources
+        val backgroundColor = ContextCompat.getColor(this, R.color.WidgetBackground)
+        val textColor = ContextCompat.getColor(this, R.color.text)
+        val accentColor = ContextCompat.getColor(this, R.color.colorOnPrimary)
+        
+        // Main container with full screen background
+        val mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+            setPadding(dpToPx(32), dpToPx(64), dpToPx(32), dpToPx(64))
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
         }
         
-        // Title text
+        // Top spacer for centering content
+        val topSpacer = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1.0f
+            )
+        }
+          // Content container (no card styling)
+        val contentLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+          // Alarm icon (using text for now)
+        val alarmIcon = TextView(this).apply {
+            text = "⏰"
+            textSize = 64f
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(24))
+            }
+        }
+          // Title text with modern typography
         val titleText = TextView(this).apply {
-            text = "ALARM"
-            textSize = 36f
-            setTextColor(android.graphics.Color.WHITE)
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, 0, 0, 50)
+            text = "REMINDER ALERT"
+            textSize = 32f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(32))
+            }
         }
-        
-        // Alarm details text
-        val detailsText = TextView(this).apply {
-            text = "$category · $subCategory\n$recordTitle"
-            textSize = 20f
-            setTextColor(android.graphics.Color.WHITE)
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, 0, 0, 100)
+          // Category info with better styling
+        val categoryText = TextView(this).apply {
+            text = category.uppercase()
+            textSize = 16f
+            setTextColor(accentColor)
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(12))
+            }
         }
-        
-        // Mark as Done button
-        val doneButton = Button(this).apply {
-            text = "MARK AS DONE"
+          // Sub-category text
+        val subCategoryText = TextView(this).apply {
+            text = subCategory
             textSize = 18f
-            setPadding(50, 30, 50, 30)
-            setOnClickListener {
-                markAsDone()
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            alpha = 0.8f
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(20))
+            }
+        }
+          // Record title with emphasis
+        val recordTitleText = TextView(this).apply {
+            text = recordTitle
+            textSize = 24f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(48))
             }
         }
         
-        // Ignore button
-        val ignoreButton = Button(this).apply {
-            text = "IGNORE"
-            textSize = 18f
-            setPadding(50, 30, 50, 30)
-            setOnClickListener {
-                ignoreAlarm()
-            }
+        // Button container
+        val buttonContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }          // Mark as Done button with modern styling
+        val doneButton = createModernButton(
+            text = "MARK AS DONE",
+            isPrimary = true,
+            accentColor = accentColor,
+            textColor = backgroundColor,
+            dpToPx = dpToPx
+        ) {
+            markAsDone()
         }
         
-        // Add views to layout
-        layout.addView(titleText)
-        layout.addView(detailsText)
-        layout.addView(doneButton)
-        layout.addView(ignoreButton)
+        // Ignore button with secondary styling
+        val ignoreButton = createModernButton(
+            text = "IGNORE",
+            isPrimary = false,
+            accentColor = accentColor,
+            textColor = textColor,
+            dpToPx = dpToPx
+        ) {
+            ignoreAlarm()
+        }
         
-        setContentView(layout)
+        // Bottom spacer for centering content
+        val bottomSpacer = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1.0f
+            )
+        }
+          // Assemble the layout
+        contentLayout.addView(alarmIcon)
+        contentLayout.addView(titleText)
+        contentLayout.addView(categoryText)
+        contentLayout.addView(subCategoryText)
+        contentLayout.addView(recordTitleText)
+        
+        buttonContainer.addView(doneButton)
+        buttonContainer.addView(ignoreButton)
+        contentLayout.addView(buttonContainer)
+        
+        mainLayout.addView(topSpacer)
+        mainLayout.addView(contentLayout)
+        mainLayout.addView(bottomSpacer)
+        
+        setContentView(mainLayout)
+    }
+      private fun createModernButton(
+        text: String,
+        isPrimary: Boolean,
+        accentColor: Int,
+        textColor: Int,
+        dpToPx: (Int) -> Int,
+        onClick: () -> Unit
+    ): Button {
+        return Button(this).apply {
+            this.text = text
+            textSize = 16f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            isAllCaps = false
+            
+            // Set text color before creating background
+            setTextColor(textColor)
+            
+            val buttonBackground = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dpToPx(12).toFloat()
+                
+                if (isPrimary) {
+                    setColor(accentColor)
+                } else {
+                    setColor(android.graphics.Color.TRANSPARENT)
+                    setStroke(dpToPx(2), accentColor)
+                }
+            }
+            
+            background = buttonBackground
+            setPadding(dpToPx(24), dpToPx(16), dpToPx(24), dpToPx(16))
+            
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(16))
+            }
+            
+            setOnClickListener { onClick() }
+            
+            // Add touch feedback
+            foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+        }
     }
 
     private fun markAsDone() {
