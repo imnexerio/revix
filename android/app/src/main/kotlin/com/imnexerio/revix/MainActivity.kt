@@ -78,22 +78,7 @@ class MainActivity : FlutterActivity() {
                         result.error("SCHEDULE_ERROR", "Failed to schedule alarms: ${e.message}", null)
                     }
                 }
-                "cancelAllAlarms" -> {
-                    try {
-                        alarmManagerHelper.cancelAllAlarms()
-                        result.success(true)
-                    } catch (e: Exception) {
-                        result.error("CANCEL_ERROR", "Failed to cancel alarms: ${e.message}", null)
-                    }
-                }
-                "requestExactAlarmPermission" -> {
-                    try {
-                        alarmManagerHelper.requestExactAlarmPermission()
-                        result.success(true)
-                    } catch (e: Exception) {
-                        result.error("PERMISSION_ERROR", "Failed to request permission: ${e.message}", null)
-                    }
-                }
+
                 "hasExactAlarmPermission" -> {
                     try {
                         val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {

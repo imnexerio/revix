@@ -206,15 +206,6 @@ class AlarmManagerHelper(private val context: Context) {
         }
     }
 
-    fun cancelAllAlarms() {
-        val currentMetadata = getStoredAlarmMetadata()
-        currentMetadata.keys.forEach { alarmKey ->
-            cancelAlarm(alarmKey)
-        }
-        saveAlarmMetadata(emptyList())
-        Log.d(TAG, "Cancelled all ${currentMetadata.size} alarms")
-    }
-
     private fun generateUniqueKey(category: String, subCategory: String, recordTitle: String): String {
         return "${category}_${subCategory}_${recordTitle}".hashCode().toString()
     }
@@ -232,12 +223,9 @@ class AlarmManagerHelper(private val context: Context) {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
-    }    private fun getCurrentMinuteTime(): Long {
-        return Calendar.getInstance().apply {
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }    private fun saveAlarmMetadata(alarmList: List<AlarmMetadata>) {
+    }
+
+    private fun saveAlarmMetadata(alarmList: List<AlarmMetadata>) {
         val jsonArray = JSONArray()
         alarmList.forEach { alarm ->
             val jsonObject = JSONObject().apply {
@@ -273,14 +261,6 @@ class AlarmManagerHelper(private val context: Context) {
         }
         
         return alarmMap
-    }    fun requestExactAlarmPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (!alarmManager.canScheduleExactAlarms()) {
-                val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                context.startActivity(intent)
-            }
-        }
     }
 
     private fun dismissNotificationForRecord(category: String, subCategory: String, recordTitle: String) {
