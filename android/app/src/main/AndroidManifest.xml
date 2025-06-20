@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
 
     <queries>
@@ -86,13 +88,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
+        </activity>        <activity
             android:name=".AddLectureActivity"
             android:exported="false"
             android:label="Add New Record(revix)"
             android:theme="@style/DialogWithCenteredTitle"
             android:windowSoftInputMode="adjustResize">
+        </activity>
+        <activity
+            android:name=".AlarmScreenActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
 
         <meta-data

@@ -3,25 +3,19 @@ package com.imnexerio.revix
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
-import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import java.util.*
 
 data class ActiveAlarm(
     val alarmKey: String,
-    val notificationId: Int,
     val category: String,
     val subCategory: String,
     val recordTitle: String,
@@ -29,11 +23,8 @@ data class ActiveAlarm(
     val startTime: Long = System.currentTimeMillis()
 )
 
-class AlarmService : Service() {
-    companion object {
+class AlarmService : Service() {    companion object {
         private const val TAG = "AlarmService"
-        private const val NOTIFICATION_CHANNEL_ID = "record_alarms"
-        private const val NOTIFICATION_CHANNEL_NAME = "Record Alarms"
         private const val AUTO_STOP_TIMEOUT = 5 * 60 * 1000L // 5 minutes
     }
 
@@ -44,13 +35,21 @@ class AlarmService : Service() {
     // Audio/vibration components (single instances for priority-based audio)
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
-//    private var wakeLock: PowerManager.WakeLock? = null
+    
+    // Wake lock for device wake-up (screen management handled by AlarmScreenActivity)
+    private var wakeLock: PowerManager.WakeLock? = null
     private var autoStopTimer: Timer? = null
-
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        initializeWakeLock()
+    }private fun initializeWakeLock() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        // Simple partial wake lock just to wake the device - screen handling is done by activity
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "AlarmService::WakeLock"
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -74,43 +73,31 @@ class AlarmService : Service() {
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-
         val alarmKey = "$category$subCategory$recordTitle"
-        val notificationId = (category + subCategory + recordTitle).hashCode()
 
         Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType)")
 
         // Create alarm metadata
         val alarm = ActiveAlarm(
             alarmKey = alarmKey,
-            notificationId = notificationId,
             category = category,
             subCategory = subCategory,
             recordTitle = recordTitle,
             alarmType = alarmType
-        )
-
-        // Add to active alarms
+        )// Add to active alarms
         activeAlarms[alarmKey] = alarm
 
-        // Create and show notification
-        val notification = createAlarmNotification(category, subCategory, recordTitle)
-        
-        // Start foreground service with first alarm, others as regular notifications
-        if (activeAlarms.size == 1) {
-            startForeground(notificationId, notification)
-        } else {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(notificationId, notification)
-        }
-
-        // Handle audio/vibration based on priority
+        // Launch full-screen alarm and handle audio/vibration
         handleAudioForAlarm(alarm)
 
         // Start auto-stop timer for this specific alarm
         startAutoStopTimerForAlarm(alarmKey)
     }    private fun handleAudioForAlarm(alarm: ActiveAlarm) {
-        // Check if this alarm should play audio (sound types: 2,3,4,5)
+        // Wake device and launch full-screen alarm activity
+        acquireWakeLock()
+        launchAlarmScreen(alarm)
+        
+        // Handle audio/vibration based on alarm type
         val needsAudio = alarm.alarmType in 2..5
         
         if (!needsAudio) {
@@ -144,14 +131,13 @@ class AlarmService : Service() {
     }    private fun handleStopAllAlarms() {
         Log.d(TAG, "Stopping all ongoing alarms")
         
-        // Stop audio/vibration
+        // Stop audio/vibration and release wake lock
         stopSoundAndVibration()
+        releaseWakeLock()
         currentAudioAlarm = null
-        
-        // Cancel all timers and dismiss all notifications
+          // Cancel all timers and clean up active alarms
         activeAlarms.values.forEach { alarm ->
             cancelAutoStopTimerForAlarm(alarm.alarmKey)
-            dismissNotification(alarm.notificationId)
         }
         
         // Clear all active alarms
@@ -160,7 +146,7 @@ class AlarmService : Service() {
         // Release resources and stop service
         autoStopTimer?.cancel()
         stopSelf()
-    }    private fun handleStopSpecificAlarm(intent: Intent) {
+    }private fun handleStopSpecificAlarm(intent: Intent) {
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
@@ -173,9 +159,6 @@ class AlarmService : Service() {
             // Cancel auto-stop timer for this alarm
             cancelAutoStopTimerForAlarm(alarmKey)
             
-            // Dismiss notification
-            dismissNotification(alarm.notificationId)
-            
             // If this alarm was playing audio, stop it and check for next
             if (currentAudioAlarm == alarmKey) {
                 stopSoundAndVibration()
@@ -184,50 +167,15 @@ class AlarmService : Service() {
                 // Check if any other active alarm needs audio
                 checkForNextAudioAlarm()
             }
-            
-            // Remove from active alarms
+              // Remove from active alarms
             activeAlarms.remove(alarmKey)
             
             // If no more alarms, stop service and release wake lock
             if (activeAlarms.isEmpty()) {
+                releaseWakeLock()
                 stopSelf()
             }
-        }
-    }
-
-    // Overloaded method to stop alarm by alarmId
-    private fun handleStopSpecificAlarm(alarmId: Int) {
-        // Find the active alarm with matching alarmId
-        val alarmEntry = activeAlarms.entries.find { (_, alarm) -> 
-            alarm.notificationId == alarmId 
-        }
-        
-        if (alarmEntry != null) {
-            val (alarmKey, alarm) = alarmEntry
-            Log.d(TAG, "Stopping specific alarm by ID: $alarmId (key: $alarmKey)")
-            
-            // Cancel auto-stop timer for this alarm
-            cancelAutoStopTimerForAlarm(alarmKey)
-            
-            // Dismiss notification
-            dismissNotification(alarm.notificationId)
-            
-            // If this alarm was playing audio, stop it and check for next
-            if (currentAudioAlarm == alarmKey) {
-                stopSoundAndVibration()
-                currentAudioAlarm = null
-                
-                // Check if any other active alarm needs audio
-                checkForNextAudioAlarm()
-            }
-            
-            // Remove from active alarms
-            activeAlarms.remove(alarmKey)
-
-        } else {
-            Log.w(TAG, "No active alarm found with ID: $alarmId")
-        }
-    }
+        }    }
 
     private fun checkForNextAudioAlarm() {
         // Find the oldest alarm that needs audio
@@ -239,23 +187,13 @@ class AlarmService : Service() {
             currentAudioAlarm = nextAudioAlarm.alarmKey
             startAudioForAlarmType(nextAudioAlarm)
             Log.d(TAG, "Started audio for next alarm: ${nextAudioAlarm.recordTitle}")
-        }
-    }
+        }    }
 
-    private fun dismissNotification(notificationId: Int) {
-        try {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.cancel(notificationId)
-            Log.d(TAG, "Dismissed notification: $notificationId")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to dismiss notification: $notificationId", e)
-        }
-    }    private val alarmTimers = mutableMapOf<String, Timer>()
+    private val alarmTimers = mutableMapOf<String, Timer>()
     private fun startAutoStopTimerForAlarm(alarmKey: String) {
         // Cancel existing timer if any
         cancelAutoStopTimerForAlarm(alarmKey)
-          val timer = Timer().apply {
-            schedule(object : TimerTask() {
+          val timer = Timer().apply {            schedule(object : TimerTask() {
                 override fun run() {
                     Log.d(TAG, "Auto-stopping alarm completely after 5 minutes for alarm: $alarmKey")
                     
@@ -268,10 +206,12 @@ class AlarmService : Service() {
                         checkForNextAudioAlarm()
                     }
                     
-                    // Extract alarmId from alarmKey and stop the alarm completely
-                    val alarmId = alarmKey.substringAfterLast("_").toIntOrNull()
-                    if (alarmId != null) {
-                        handleStopSpecificAlarm(alarmId)
+                    // Remove the alarm directly
+                    activeAlarms.remove(alarmKey)
+                    
+                    // If this was the last alarm, release wake lock
+                    if (activeAlarms.isEmpty()) {
+                        releaseWakeLock()
                     }
                 }
             }, AUTO_STOP_TIMEOUT)
@@ -338,12 +278,66 @@ class AlarmService : Service() {
                 @Suppress("DEPRECATION")
                 vibrator?.vibrate(vibrationPattern, 0)
             }
-
             Log.d(TAG, "Started ${pattern.name.lowercase()} vibration")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start vibration", e)
         }
-    }    private fun stopSoundAndVibration() {
+    }    private fun acquireWakeLock() {
+        try {
+            if (wakeLock?.isHeld != true) {
+                wakeLock?.acquire(10000) // Brief wake lock just to wake device, activity handles the rest
+                Log.d(TAG, "Wake lock acquired - Device woken up")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to acquire wake lock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.d(TAG, "Wake lock released")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to release wake lock", e)
+        }
+    }    private fun launchAlarmScreen(alarm: ActiveAlarm) {
+        try {
+            Log.d(TAG, "Attempting to launch alarm screen for: ${alarm.recordTitle}")
+            
+            val intent = Intent(this, AlarmScreenActivity::class.java).apply {
+                putExtra(AlarmScreenActivity.EXTRA_CATEGORY, alarm.category)
+                putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
+                putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or 
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or 
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_NO_USER_ACTION or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                )
+            }
+            
+            startActivity(intent)
+            Log.d(TAG, "Successfully launched alarm screen for: ${alarm.recordTitle}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch alarm screen for: ${alarm.recordTitle}", e)
+            // Fallback: try to show with less restrictive flags
+            try {
+                val fallbackIntent = Intent(this, AlarmScreenActivity::class.java).apply {
+                    putExtra(AlarmScreenActivity.EXTRA_CATEGORY, alarm.category)
+                    putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
+                    putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(fallbackIntent)
+                Log.d(TAG, "Fallback launch successful for: ${alarm.recordTitle}")
+            } catch (fallbackException: Exception) {
+                Log.e(TAG, "Fallback launch also failed for: ${alarm.recordTitle}", fallbackException)
+            }
+        }
+    }private fun stopSoundAndVibration() {
         stopSound()
         stopVibration()
     }
@@ -368,83 +362,19 @@ class AlarmService : Service() {
             vibrator?.cancel()
             Log.d(TAG, "Vibration stopped")
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping vibration", e)
-        }
+            Log.e(TAG, "Error stopping vibration", e)        }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, importance).apply {
-                description = "Notifications for record alarms and reminders"
-                enableVibration(false) // We handle vibration manually
-                setSound(null, null) // We handle sound manually
-                setBypassDnd(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            }
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }    private fun createAlarmNotification(category: String, subCategory: String, recordTitle: String): Notification {
-        val title = "Alarm: $category · $subCategory · $recordTitle"
-        val content = "Time for your scheduled task"
-
-        // Create mark as done intent
-        val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_MARK_AS_DONE
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-        }
-        val markDonePendingIntent = PendingIntent.getBroadcast(
-            this,
-            System.currentTimeMillis().toInt(),
-            markDoneIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Create ignore alarm intent
-        val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_IGNORE_ALARM
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-        }
-        val ignorePendingIntent = PendingIntent.getBroadcast(
-            this,
-            System.currentTimeMillis().toInt() + 1,
-            ignoreIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_icon)
-            .setContentTitle(title)
-            .setContentText(content)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(false)
-            .setOngoing(true)
-            .setDeleteIntent(ignorePendingIntent) // Handle notification dismissal like ignore
-            .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
-            .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setShowWhen(true)
-            .build()
-    }override fun onDestroy() {
+    override fun onDestroy() {
         Log.d(TAG, "AlarmService destroyed")
         stopSoundAndVibration()
-        
-        // Cancel all timers
+        releaseWakeLock()
+          // Cancel all timers
         alarmTimers.values.forEach { it.cancel() }
         alarmTimers.clear()
         autoStopTimer?.cancel()
         
-        // Dismiss all notifications
-        activeAlarms.values.forEach { alarm ->
-            dismissNotification(alarm.notificationId)
-        }
+        // Clear all active alarms
         activeAlarms.clear()
         super.onDestroy()
     }
