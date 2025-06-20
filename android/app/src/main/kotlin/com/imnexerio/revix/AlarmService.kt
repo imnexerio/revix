@@ -587,7 +587,7 @@ class AlarmService : Service() {    companion object {
         try {
             Log.d(TAG, "Sending close alarm screen broadcast for: ${alarm.recordTitle}")
             
-            // Method 1: Send broadcast (for registered receivers)
+            // Send broadcast to close alarm screen activity
             val broadcastIntent = Intent("CLOSE_ALARM_SCREEN").apply {
                 setPackage(packageName) // Ensure it's delivered to our app only
                 putExtra(AlarmReceiver.EXTRA_CATEGORY, alarm.category)
@@ -596,19 +596,9 @@ class AlarmService : Service() {    companion object {
             }
             sendBroadcast(broadcastIntent)
             
-            // Method 2: Send specific intent to close AlarmScreenActivity
-            val closeActivityIntent = Intent(this, AlarmScreenActivity::class.java).apply {
-                action = "CLOSE_ALARM_ACTIVITY"
-                putExtra(AlarmReceiver.EXTRA_CATEGORY, alarm.category)
-                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, alarm.subCategory)
-                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, alarm.recordTitle)
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            }
-            startActivity(closeActivityIntent)
-            
-            Log.d(TAG, "Successfully sent close alarm screen signals for: ${alarm.recordTitle}")
+            Log.d(TAG, "Successfully sent close alarm screen broadcast for: ${alarm.recordTitle}")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to send close alarm screen signals for: ${alarm.recordTitle}", e)
+            Log.e(TAG, "Failed to send close alarm screen broadcast for: ${alarm.recordTitle}", e)
         }
     }
 }

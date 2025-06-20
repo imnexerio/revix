@@ -273,10 +273,10 @@ class AlarmScreenActivity : Activity() {
         super.onStop()
         Log.d(TAG, "AlarmScreenActivity onStop() called")
         
-        // If user didn't take any action and activity is being stopped, treat as dismissal
+        // If user didn't take any action and activity is being stopped, treat as ignore
         if (!userActionTaken) {
-            Log.d(TAG, "Activity stopped without user action - treating as dismissal for: $recordTitle")
-            handleAlarmDismissal()
+            Log.d(TAG, "Activity stopped without user action - treating as ignore for: $recordTitle")
+            handleAlarmIgnore()
         }
     }
 
@@ -284,50 +284,35 @@ class AlarmScreenActivity : Activity() {
         super.onDestroy()
         Log.d(TAG, "AlarmScreenActivity destroyed")
         
-        // Backup check - if user didn't take any action, treat it as dismiss
+        // Backup check - if user didn't take any action, treat it as ignore
         if (!userActionTaken) {
-            Log.d(TAG, "Activity destroyed without user action - treating as dismissal for: $recordTitle")
-            handleAlarmDismissal()
+            Log.d(TAG, "Activity destroyed without user action - treating as ignore for: $recordTitle")
+            handleAlarmIgnore()
         }
-    }      private fun handleAlarmDismissal() {
-        // Prevent duplicate dismissal handling
+    }
+
+    private fun handleAlarmIgnore() {
+        // Prevent duplicate handling
         if (userActionTaken) {
-            Log.d(TAG, "User action already taken, skipping dismissal handling for: $recordTitle")
+            Log.d(TAG, "User action already taken, skipping ignore handling for: $recordTitle")
             return
         }
         
         userActionTaken = true // Mark as handled
         
-        // Send broadcast to dismiss alarm (treated same as ignore but with different action for logging)
+        // Send the same broadcast as the ignore button
         val intent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_DISMISS_ALARM
+            action = AlarmReceiver.ACTION_IGNORE_ALARM
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
         }
         sendBroadcast(intent)
         
-        Log.d(TAG, "Sent dismissal broadcast for: $recordTitle")
-    }
-
-    override fun onNewIntent(intent: Intent?) {
+        Log.d(TAG, "Sent ignore broadcast for: $recordTitle")
+    }    override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         Log.d(TAG, "AlarmScreenActivity onNewIntent() called with action: ${intent?.action}")
-        
-        // Check if this is a close activity intent
-        if (intent?.action == "CLOSE_ALARM_ACTIVITY") {
-            val closeCategory = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
-            val closeSubCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
-            val closeRecordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
-            
-            // Check if this close intent is for the current alarm
-            if (closeCategory == category && closeSubCategory == subCategory && closeRecordTitle == recordTitle) {
-                Log.d(TAG, "Received close activity intent for current alarm - finishing")
-                userActionTaken = true // Mark as handled to prevent duplicate dismissal
-                finish()
-            } else {
-                Log.d(TAG, "Close intent for different alarm - ignoring")
-            }
-        }
+        // Simplified - just log for debugging, actual close is handled by broadcast receiver
     }
 }
