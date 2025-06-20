@@ -44,33 +44,79 @@ class AlarmService : Service() {    companion object {
         createNotificationChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         initializeWakeLock()
-    }
-    private fun createNotificationChannel() {
+    }    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_LOW
-            val channel = NotificationChannel("alarm_service", "Alarm Service", importance).apply {
-                description = "Alarm service running"
-                enableVibration(false)
-                setSound(null, null)
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel("alarm_service", "Record Alarms", importance).apply {
+                description = "Notifications for record alarms and reminders"
+                enableVibration(false) // We handle vibration manually
+                setSound(null, null) // We handle sound manually
+                setBypassDnd(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
-    
-    private fun createForegroundNotification(): Notification {
+      private fun createForegroundNotification(category: String, subCategory: String, recordTitle: String): Notification {
+        val title = "Alarm: $category · $subCategory · $recordTitle"
+        val content = "Time for your scheduled task"
+
+        // Create mark as done intent
+        val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_MARK_AS_DONE
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val markDonePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt(),
+            markDoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create ignore alarm intent
+        val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_IGNORE_ALARM
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val ignorePendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 1,
+            ignoreIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, "alarm_service")
                 .setSmallIcon(R.drawable.ic_launcher_icon)
-                .setContentTitle("Alarm Active")
-                .setContentText("Managing alarm")
+                .setContentTitle(title)
+                .setContentText(content)
+                .setStyle(Notification.BigTextStyle().bigText(content))
+                .setPriority(Notification.PRIORITY_HIGH)
+                .setCategory(Notification.CATEGORY_ALARM)
+                .setAutoCancel(false)
+                .setOngoing(true)
+                .setDeleteIntent(ignorePendingIntent) // Handle notification dismissal like ignore
+                .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setShowWhen(true)
                 .build()
         } else {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
                 .setSmallIcon(R.drawable.ic_launcher_icon)
-                .setContentTitle("Alarm Active")
-                .setContentText("Managing alarm")
+                .setContentTitle(title)
+                .setContentText(content)
+                .setAutoCancel(false)
+                .setOngoing(true)
+                .setDeleteIntent(ignorePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
                 .build()
         }
     }
@@ -115,14 +161,12 @@ class AlarmService : Service() {    companion object {
             category = category,
             subCategory = subCategory,
             recordTitle = recordTitle,
-            alarmType = alarmType)
-
-        // Add to active alarms
+            alarmType = alarmType)        // Add to active alarms
         activeAlarms[alarmKey] = alarm
 
         // Start as foreground service if first alarm
         if (activeAlarms.size == 1) {
-            val notification = createForegroundNotification()
+            val notification = createForegroundNotification(category, subCategory, recordTitle)
             startForeground(999, notification)
         }
 
