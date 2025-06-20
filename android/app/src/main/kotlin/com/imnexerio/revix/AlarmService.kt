@@ -25,7 +25,7 @@ data class ActiveAlarm(
 
 class AlarmService : Service() {    companion object {
         private const val TAG = "AlarmService"
-        private const val AUTO_STOP_TIMEOUT = 5 * 1000L // 5 minutes
+        private const val AUTO_STOP_TIMEOUT = 5 * 1000L // Auto-stop timeout in milliseconds
     }
 
     // Multi-alarm state management
@@ -351,9 +351,8 @@ class AlarmService : Service() {    companion object {
     private fun startAutoStopTimerForAlarm(alarmKey: String) {
         // Cancel existing timer if any
         cancelAutoStopTimerForAlarm(alarmKey)
-          val timer = Timer().apply {            schedule(object : TimerTask() {
-                override fun run() {
-                    Log.d(TAG, "Auto-stopping alarm completely after 5 minutes for alarm: $alarmKey")
+          val timer = Timer().apply {            schedule(object : TimerTask() {                override fun run() {
+                    Log.d(TAG, "Auto-stopping alarm completely after ${AUTO_STOP_TIMEOUT / 1000}s for alarm: $alarmKey")
                     
                     // Stop audio if this alarm was playing it
                     if (currentAudioAlarm == alarmKey) {
