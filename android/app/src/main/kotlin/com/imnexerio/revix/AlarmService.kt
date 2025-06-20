@@ -44,39 +44,13 @@ class AlarmService : Service() {
     // Audio/vibration components (single instances for priority-based audio)
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
-    private var wakeLock: PowerManager.WakeLock? = null
+//    private var wakeLock: PowerManager.WakeLock? = null
     private var autoStopTimer: Timer? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    }    private fun acquireWakeLock() {
-        try {
-            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-            wakeLock = powerManager.newWakeLock(
-                PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                "revix:AlarmWakeLock"
-            )
-            wakeLock?.acquire(AUTO_STOP_TIMEOUT) // Hold for 5 minutes max
-            Log.d(TAG, "Wake lock acquired - screen will stay on for 5 minutes")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to acquire wake lock", e)
-        }
-    }
-
-    private fun releaseWakeLock() {
-        try {
-            wakeLock?.let {
-                if (it.isHeld) {
-                    it.release()
-                    Log.d(TAG, "Wake lock released")
-                }
-            }
-            wakeLock = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to release wake lock", e)
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -118,9 +92,6 @@ class AlarmService : Service() {
 
         // Add to active alarms
         activeAlarms[alarmKey] = alarm
-
-        // Acquire wake lock to turn on screen
-        acquireWakeLock()
 
         // Create and show notification
         val notification = createAlarmNotification(category, subCategory, recordTitle)
@@ -188,7 +159,6 @@ class AlarmService : Service() {
         
         // Release resources and stop service
         autoStopTimer?.cancel()
-        releaseWakeLock()
         stopSelf()
     }    private fun handleStopSpecificAlarm(intent: Intent) {
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
@@ -220,7 +190,6 @@ class AlarmService : Service() {
             
             // If no more alarms, stop service and release wake lock
             if (activeAlarms.isEmpty()) {
-                releaseWakeLock()
                 stopSelf()
             }
         }
@@ -254,11 +223,7 @@ class AlarmService : Service() {
             
             // Remove from active alarms
             activeAlarms.remove(alarmKey)
-            
-            // Release wake lock if no active alarms
-            if (activeAlarms.isEmpty()) {
-                releaseWakeLock()
-            }
+
         } else {
             Log.w(TAG, "No active alarm found with ID: $alarmId")
         }
@@ -481,8 +446,6 @@ class AlarmService : Service() {
             dismissNotification(alarm.notificationId)
         }
         activeAlarms.clear()
-        
-        releaseWakeLock()
         super.onDestroy()
     }
 
