@@ -25,7 +25,7 @@ data class ActiveAlarm(
 
 class AlarmService : Service() {    companion object {
         private const val TAG = "AlarmService"
-        private const val DEFAULT_AUTO_STOP_TIMEOUT = 5 * 60 * 1000L // Default 5 minutes in milliseconds
+        private const val DEFAULT_AUTO_STOP_TIMEOUT = 1 * 60 * 1000L // Default 1 minute in milliseconds
     }
 
     // Multi-alarm state management
@@ -42,9 +42,8 @@ class AlarmService : Service() {    companion object {
     private fun getAutoStopTimeout(): Long {
         return try {
             val sharedPreferences = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-            
-            // Read alarm duration setting, default to 300 seconds (5 minutes)
-            val durationSeconds = sharedPreferences.getLong("alarm_duration_seconds", 300L)
+              // Read alarm duration setting, default to 60 seconds (1 minute)
+            val durationSeconds = sharedPreferences.getLong("alarm_duration_seconds", 60L)
             Log.d(TAG, "Read alarm duration from SharedPreferences: ${durationSeconds}s")
             
             durationSeconds * 1000L // Convert to milliseconds

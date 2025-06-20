@@ -9,7 +9,7 @@ class NotificationSettingsPage extends StatefulWidget {
 
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   final _formKey = GlobalKey<FormState>();
-  int _alarmDurationSeconds = 300; // Default 5 minutes (300 seconds)
+  int _alarmDurationSeconds = 60; // Default 1 minute (60 seconds)
   @override
   void initState() {
     super.initState();
@@ -27,13 +27,12 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     try {
       final duration = await HomeWidget.getWidgetData<int>('alarm_duration_seconds');
       setState(() {
-        _alarmDurationSeconds = duration ?? 300; // Default to 5 minutes if null
+        _alarmDurationSeconds = duration ?? 60; // Default to 1 minute if null
       });
       debugPrint('Loaded alarm duration: ${_alarmDurationSeconds}s');
-    } catch (e) {
-      debugPrint('Failed to load alarm duration: $e');
+    } catch (e) {      debugPrint('Failed to load alarm duration: $e');
       setState(() {
-        _alarmDurationSeconds = 300; // Default to 5 minutes
+        _alarmDurationSeconds = 60; // Default to 1 minute
       });
     }
   }
