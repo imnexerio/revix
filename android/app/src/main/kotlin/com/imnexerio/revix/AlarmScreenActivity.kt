@@ -387,16 +387,17 @@ class AlarmScreenActivity : Activity() {
         dpToPx: (Int) -> Int,
         onSwipe: () -> Unit
     ): View {
-        // Container for button and glow effect
+        // Container for button and glow effect - full screen size
         val container = FrameLayout(this).apply {
-            val size = dpToPx(140) // Slightly larger for glow effect
-            layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                gravity = Gravity.CENTER_HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ).apply {
                 setMargins(0, 0, 0, dpToPx(24))
             }
-        }        // Glow effect view with permanent circular gradient
+        }        // Glow effect view with full screen circular gradient
         val glowView = object : View(this) {
-            private var baseGlowIntensity = 1f // Always visible base glow
+            private var baseGlowIntensity = 1f // Stable base glow
             private var interactionGlowIntensity = 0f // Additional glow during interaction
             
             private val gradientPaint = Paint().apply {
@@ -406,24 +407,32 @@ class AlarmScreenActivity : Activity() {
             private fun updateGradient() {
                 val centerX = width / 2f
                 val centerY = height / 2f
-                val baseRadius = dpToPx(60).toFloat()
-                val glowRadius = dpToPx(80).toFloat() + (interactionGlowIntensity * dpToPx(20))
+                
+                // Calculate radius to reach screen edges
+                val maxRadius = kotlin.math.max(
+                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
+                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + centerY * centerY).toDouble())
+                ).toFloat()
+                
+                val glowRadius = maxRadius + (interactionGlowIntensity * dpToPx(50))
                 
                 // Create radial gradient from accent color to transparent
                 val totalIntensity = baseGlowIntensity + interactionGlowIntensity
                 val centerAlpha = (totalIntensity * 120).toInt().coerceIn(0, 255)
-                val edgeAlpha = (totalIntensity * 30).toInt().coerceIn(0, 255)
+                val midAlpha = (totalIntensity * 80).toInt().coerceIn(0, 255)
+                val edgeAlpha = (totalIntensity * 20).toInt().coerceIn(0, 255)
                 
                 gradientPaint.shader = RadialGradient(
                     centerX, centerY, glowRadius,
                     intArrayOf(
                         Color.argb(centerAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb((centerAlpha * 0.7f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb((centerAlpha * 0.4f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb((centerAlpha * 0.8f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb((centerAlpha * 0.6f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb(midAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
                         Color.argb(edgeAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
                         Color.TRANSPARENT
                     ),
-                    floatArrayOf(0f, 0.3f, 0.6f, 0.8f, 1f),
+                    floatArrayOf(0f, 0.2f, 0.4f, 0.7f, 0.9f, 1f),
                     Shader.TileMode.CLAMP
                 )
             }
@@ -451,9 +460,16 @@ class AlarmScreenActivity : Activity() {
                 
                 val centerX = width / 2f
                 val centerY = height / 2f
-                val glowRadius = dpToPx(80).toFloat() + (interactionGlowIntensity * dpToPx(20))
                 
-                // Draw the circular gradient glow
+                // Calculate radius to cover entire screen
+                val maxRadius = kotlin.math.max(
+                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
+                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + centerY * centerY).toDouble())
+                ).toFloat()
+                
+                val glowRadius = maxRadius + (interactionGlowIntensity * dpToPx(50))
+                
+                // Draw the full screen circular gradient glow
                 canvas.drawCircle(centerX, centerY, glowRadius, gradientPaint)
             }
         }.apply {
@@ -463,16 +479,7 @@ class AlarmScreenActivity : Activity() {
             )
             setLayerType(View.LAYER_TYPE_SOFTWARE, null) // Enable advanced rendering
             
-            // Animate the base glow with a breathing effect
-            val breathingGlowAnimator = ValueAnimator.ofFloat(0.8f, 1.2f).apply {
-                duration = 3000
-                repeatCount = ValueAnimator.INFINITE
-                repeatMode = ValueAnimator.REVERSE
-                addUpdateListener { animator ->
-                    setBaseGlowIntensity(animator.animatedValue as Float)
-                }
-                start()
-            }
+            // No breathing animation - stable glow
         }
         
         // Main button
@@ -616,23 +623,9 @@ class AlarmScreenActivity : Activity() {
                         setTextColor(textColor)
                     }
                 }
-                gestureDetector.onTouchEvent(event)
-            }
+                gestureDetector.onTouchEvent(event)            }
             
-            // Subtle breathing animation when not being touched
-            val breathingAnimator = ValueAnimator.ofFloat(1.0f, 1.05f).apply {
-                duration = 2000
-                repeatCount = ValueAnimator.INFINITE
-                repeatMode = ValueAnimator.REVERSE
-                addUpdateListener { animator ->
-                    if (!isPressed) {
-                        val scale = animator.animatedValue as Float
-                        scaleX = scale
-                        scaleY = scale
-                    }
-                }
-                start()
-            }
+            // No breathing animation - button remains stable
         }
         
         // Add views to container
