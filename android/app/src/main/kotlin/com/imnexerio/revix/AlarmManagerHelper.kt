@@ -63,11 +63,7 @@ class AlarmManagerHelper(private val context: Context) {
                 val actualTime = parseTimeToday(reminderTime)
                 val alarmTimeHHMM = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(actualTime))
                 
-                // Skip past alarms using HH:mm comparison
-                if (alarmTimeHHMM <= currentTimeHHMM) {
-                    Log.d(TAG, "Skipping past alarm for $recordTitle (alarm: $alarmTimeHHMM, current: $currentTimeHHMM)")
-                    return@forEach
-                }
+                // Let Android AlarmManager handle past times - no manual checking needed
 
                 val newMetadata = AlarmMetadata(
                     key = uniqueKey,
@@ -236,14 +232,10 @@ class AlarmManagerHelper(private val context: Context) {
                 if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {
                     return@forEach
                 }
-                
-                val actualTime = parseTimeForDate(reminderTime, scheduledDate)
+                  val actualTime = parseTimeForDate(reminderTime, scheduledDate)
                 val alarmTimeHHMM = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(actualTime))
                 
-                if (isToday && alarmTimeHHMM <= currentTimeHHMM) {
-                    Log.d(TAG, "Skipping past alarm for $recordTitle (alarm: $alarmTimeHHMM, current: $currentTimeHHMM)")
-                    return@forEach
-                }
+                // Let Android AlarmManager handle past times - no manual checking needed
                 
                 val uniqueKey = generateUniqueKeyWithDate(category, subCategory, recordTitle, scheduledDate)
                 val newMetadata = AlarmMetadata(
