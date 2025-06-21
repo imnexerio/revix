@@ -173,15 +173,25 @@ class AlarmScreenActivity : Activity() {
         val backgroundColor = ContextCompat.getColor(this, R.color.WidgetBackground)
         val textColor = ContextCompat.getColor(this, R.color.text)
         val accentColor = ContextCompat.getColor(this, R.color.colorOnPrimary)
-        
-        // Main container with full screen background
-        val mainLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+          // Main container - FrameLayout for layering
+        val mainLayout = FrameLayout(this).apply {
             setBackgroundColor(backgroundColor)
-            setPadding(dpToPx(32), dpToPx(64), dpToPx(32), dpToPx(64))
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        
+        // First layer: Gradient background starting from button position
+        val gradientLayer = createGradientBackground(accentColor, dpToPx)
+        
+        // Second layer: Content overlay
+        val contentOverlay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dpToPx(32), dpToPx(64), dpToPx(32), dpToPx(64))
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
         
@@ -268,16 +278,16 @@ class AlarmScreenActivity : Activity() {
             ).apply {
                 setMargins(0, 0, 0, dpToPx(48))
             }
-        }
-          // Button container
-        val buttonContainer = LinearLayout(this).apply {
+        }        // Container for swipe button only
+        val swipeButtonContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        }
-          // Instruction text for swipe button
+            )        }
+        
+        // Instruction text for swipe button
         val instructionText = TextView(this).apply {
             text = "Hold and swipe the glowing circle to mark as done"
             textSize = 12f
@@ -290,17 +300,17 @@ class AlarmScreenActivity : Activity() {
             ).apply {
                 setMargins(0, 0, 0, dpToPx(16))
             }
-        }// Mark as Done button with circular swipe gesture
-        val doneButton = createCircularSwipeButton(
+        }
+        
+        // Simple swipe button (gradient will be in background layer)
+        val doneButton = createSimpleSwipeButton(
             text = "SWIPE TO\nMARK DONE",
             accentColor = accentColor,
             textColor = backgroundColor,
             dpToPx = dpToPx
         ) {
             markAsDone()
-        }
-        
-        // Ignore button with secondary styling
+        }// Ignore button with secondary styling - will be placed at bottom
         val ignoreButton = createModernButton(
             text = "IGNORE",
             isPrimary = false,
@@ -318,21 +328,26 @@ class AlarmScreenActivity : Activity() {
                 0,
                 1.0f
             )
-        }        // Assemble the layout
+        }        // Assemble the content overlay
+        contentOverlay.addView(topSpacer)
+        contentOverlay.addView(contentLayout)
+        contentOverlay.addView(ignoreButton)  // Ignore button at bottom
+        
+        // Add content to main layout
         contentLayout.addView(alarmIcon)
         contentLayout.addView(titleText)
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
         
-        buttonContainer.addView(instructionText)
-        buttonContainer.addView(doneButton)
-        buttonContainer.addView(ignoreButton)
-        contentLayout.addView(buttonContainer)
+        // Add swipe button in center
+        swipeButtonContainer.addView(instructionText)
+        swipeButtonContainer.addView(doneButton)
+        contentLayout.addView(swipeButtonContainer)
         
-        mainLayout.addView(topSpacer)
-        mainLayout.addView(contentLayout)
-        mainLayout.addView(bottomSpacer)
+        // Layer the components: gradient background first, then content overlay
+        mainLayout.addView(gradientLayer)  // First layer
+        mainLayout.addView(contentOverlay) // Second layer
         
         setContentView(mainLayout)
     }
@@ -386,8 +401,7 @@ class AlarmScreenActivity : Activity() {
         textColor: Int,
         dpToPx: (Int) -> Int,
         onSwipe: () -> Unit
-    ): View {
-        // Container for button and glow effect - full screen size
+    ): View {        // Container for button and glow effect - full screen size for edge-to-edge gradient
         val container = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -395,44 +409,39 @@ class AlarmScreenActivity : Activity() {
             ).apply {
                 setMargins(0, 0, 0, dpToPx(24))
             }
-        }        // Glow effect view with full screen circular gradient
-        val glowView = object : View(this) {
-            private var baseGlowIntensity = 1f // Stable base glow
+        }
+        // Glow effect view with circular gradient, clipped to circle
+        val glowView = object : View(this) {            private var baseGlowIntensity = 0.4f // More subtle base glow
             private var interactionGlowIntensity = 0f // Additional glow during interaction
             
             private val gradientPaint = Paint().apply {
                 isAntiAlias = true
             }
-            
-            private fun updateGradient() {
+              private fun updateGradient() {
                 val centerX = width / 2f
                 val centerY = height / 2f
                 
-                // Calculate radius to reach screen edges
-                val maxRadius = kotlin.math.max(
-                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
-                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + centerY * centerY).toDouble())
-                ).toFloat()
+                // Use a moderate radius to avoid square edge effect
+                val baseRadius = dpToPx(180).toFloat() // Fixed moderate radius
+                val glowRadius = baseRadius + (interactionGlowIntensity * dpToPx(80))
                 
-                val glowRadius = maxRadius + (interactionGlowIntensity * dpToPx(50))
-                
-                // Create radial gradient from accent color to transparent
+                // Create subtle radial gradient with lower opacity
                 val totalIntensity = baseGlowIntensity + interactionGlowIntensity
-                val centerAlpha = (totalIntensity * 120).toInt().coerceIn(0, 255)
-                val midAlpha = (totalIntensity * 80).toInt().coerceIn(0, 255)
-                val edgeAlpha = (totalIntensity * 20).toInt().coerceIn(0, 255)
+                val centerAlpha = (totalIntensity * 80).toInt().coerceIn(0, 255) // Reduced alpha
+                val midAlpha = (totalIntensity * 40).toInt().coerceIn(0, 255)
+                val edgeAlpha = (totalIntensity * 15).toInt().coerceIn(0, 255)
                 
                 gradientPaint.shader = RadialGradient(
                     centerX, centerY, glowRadius,
                     intArrayOf(
                         Color.argb(centerAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb((centerAlpha * 0.8f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb((centerAlpha * 0.6f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb((centerAlpha * 0.7f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb((centerAlpha * 0.5f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
                         Color.argb(midAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
                         Color.argb(edgeAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
                         Color.TRANSPARENT
                     ),
-                    floatArrayOf(0f, 0.2f, 0.4f, 0.7f, 0.9f, 1f),
+                    floatArrayOf(0f, 0.25f, 0.5f, 0.75f, 0.9f, 1f),
                     Shader.TileMode.CLAMP
                 )
             }
@@ -452,24 +461,18 @@ class AlarmScreenActivity : Activity() {
             override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
                 super.onSizeChanged(w, h, oldw, oldh)
                 updateGradient()
-            }
-            
-            override fun onDraw(canvas: Canvas) {
+            }            override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 updateGradient()
                 
                 val centerX = width / 2f
                 val centerY = height / 2f
                 
-                // Calculate radius to cover entire screen
-                val maxRadius = kotlin.math.max(
-                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
-                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + centerY * centerY).toDouble())
-                ).toFloat()
+                // Use moderate radius to avoid square edge effect
+                val baseRadius = dpToPx(180).toFloat()
+                val glowRadius = baseRadius + (interactionGlowIntensity * dpToPx(80))
                 
-                val glowRadius = maxRadius + (interactionGlowIntensity * dpToPx(50))
-                
-                // Draw the full screen circular gradient glow
+                // Draw circular gradient with smooth edges (no square boundary)
                 canvas.drawCircle(centerX, centerY, glowRadius, gradientPaint)
             }
         }.apply {
@@ -635,6 +638,79 @@ class AlarmScreenActivity : Activity() {
         return container
     }
 
+    private fun createGradientBackground(
+        accentColor: Int,
+        dpToPx: (Int) -> Int
+    ): View {
+        return object : View(this) {
+            private var glowIntensity = 0.6f
+            
+            private val gradientPaint = Paint().apply {
+                isAntiAlias = true
+            }
+            
+            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+                super.onSizeChanged(w, h, oldw, oldh)
+                updateGradient()
+            }
+            
+            private fun updateGradient() {
+                // Button will be positioned in the center-bottom area
+                val centerX = width / 2f
+                val centerY = height * 0.7f // Position where button will be
+                
+                // Create gradient radiating from button position
+                val maxRadius = kotlin.math.max(
+                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
+                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + (height - centerY) * (height - centerY)).toDouble())
+                ).toFloat()
+                
+                val centerAlpha = (glowIntensity * 100).toInt().coerceIn(0, 255)
+                val midAlpha = (glowIntensity * 60).toInt().coerceIn(0, 255)
+                val edgeAlpha = (glowIntensity * 20).toInt().coerceIn(0, 255)
+                
+                gradientPaint.shader = RadialGradient(
+                    centerX, centerY, maxRadius,
+                    intArrayOf(
+                        Color.argb(centerAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb(midAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb(edgeAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.TRANSPARENT
+                    ),
+                    floatArrayOf(0f, 0.4f, 0.8f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+            }
+            
+            override fun onDraw(canvas: Canvas) {
+                super.onDraw(canvas)
+                updateGradient()
+                
+                // Button position
+                val centerX = width / 2f
+                val centerY = height * 0.7f
+                
+                val maxRadius = kotlin.math.max(
+                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
+                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + (height - centerY) * (height - centerY)).toDouble())
+                ).toFloat()
+                
+                // Draw gradient starting from button position
+                canvas.drawCircle(centerX, centerY, maxRadius, gradientPaint)
+            }
+            
+            fun updateIntensity(intensity: Float) {
+                glowIntensity = intensity
+                invalidate()
+            }
+        }.apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+    }
+
     private fun markAsDone() {
         Log.d(TAG, "Mark as done clicked for: $recordTitle")
         
@@ -746,4 +822,131 @@ class AlarmScreenActivity : Activity() {
         Log.d(TAG, "AlarmScreenActivity onNewIntent() called with action: ${intent?.action}")
         // Simplified - just log for debugging, actual close is handled by broadcast receiver
     }
-}
+
+    private fun createSimpleSwipeButton(
+        text: String,
+        accentColor: Int,
+        textColor: Int,
+        dpToPx: (Int) -> Int,
+        onSwipe: () -> Unit
+    ): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = 14f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            
+            // Create circular background
+            val circularBackground = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(accentColor)
+                setStroke(dpToPx(3), textColor)
+            }
+            background = circularBackground
+            
+            // Set circular dimensions
+            val buttonSize = dpToPx(120)
+            layoutParams = LinearLayout.LayoutParams(buttonSize, buttonSize).apply {
+                gravity = Gravity.CENTER
+                setMargins(0, 0, 0, dpToPx(24))
+            }
+            
+            // Track touch state and swipe progress
+            var isPressed = false
+            var startX = 0f
+            var startY = 0f
+            
+            // Gesture detector for swipe
+            val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                private val MIN_SWIPE_DISTANCE = dpToPx(80)
+                
+                override fun onFling(
+                    e1: MotionEvent?,
+                    e2: MotionEvent,
+                    velocityX: Float,
+                    velocityY: Float
+                ): Boolean {
+                    if (e1 == null) return false
+                    
+                    val diffX = e2.x - e1.x
+                    val diffY = e2.y - e1.y
+                    val distance = sqrt(diffX * diffX + diffY * diffY)
+                    
+                    if (distance >= MIN_SWIPE_DISTANCE) {
+                        Log.d(TAG, "Swipe completed - distance: $distance")
+                        
+                        // Success feedback
+                        animate()
+                            .scaleX(1.2f)
+                            .scaleY(1.2f)
+                            .setDuration(150)
+                            .withEndAction {
+                                onSwipe()
+                            }
+                        return true
+                    }
+                    return false
+                }
+                
+                override fun onDown(e: MotionEvent): Boolean {
+                    return true
+                }
+            })
+            
+            setOnTouchListener { _, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        isPressed = true
+                        startX = event.x
+                        startY = event.y
+                        
+                        // Visual feedback on touch
+                        animate()
+                            .scaleX(1.1f)
+                            .scaleY(1.1f)
+                            .alpha(0.9f)
+                            .setDuration(200)
+                            .start()
+                    }
+                    
+                    MotionEvent.ACTION_MOVE -> {
+                        if (isPressed) {
+                            val diffX = event.x - startX
+                            val diffY = event.y - startY
+                            val currentDistance = sqrt(diffX * diffX + diffY * diffY)
+                            
+                            // Calculate progress and provide visual feedback
+                            val swipeProgress = min(currentDistance / dpToPx(80), 1f)
+                            val progressScale = 1.1f + (swipeProgress * 0.2f)
+                            
+                            scaleX = progressScale
+                            scaleY = progressScale
+                            
+                            // Change color as user swipes
+                            if (swipeProgress > 0.7f) {
+                                setTextColor(Color.WHITE)
+                            } else {
+                                setTextColor(textColor)
+                            }
+                        }
+                    }
+                    
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        isPressed = false
+                        
+                        // Reset to normal state
+                        animate()
+                            .alpha(1.0f)
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setDuration(300)
+                            .start()
+                        
+                        setTextColor(textColor)
+                    }
+                }
+                gestureDetector.onTouchEvent(event)
+            }
+        }
+    }
