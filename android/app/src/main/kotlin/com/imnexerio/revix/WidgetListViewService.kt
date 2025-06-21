@@ -22,22 +22,25 @@ class WidgetListViewFactory(
     private val viewType: String = "today"
 ) : RemoteViewsService.RemoteViewsFactory {
     private val todayRecords = ArrayList<Map<String, String>>()
+    private val tomorrowRecords = ArrayList<Map<String, String>>()  // NEW
     private val missedRecords = ArrayList<Map<String, String>>()
     private val noReminderDateRecords = ArrayList<Map<String, String>>()
 
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(
         "HomeWidgetPreferences", Context.MODE_PRIVATE)
 
-    private var lastRefreshTimestamp = 0L
-
-    override fun onDataSetChanged() {
+    private var lastRefreshTimestamp = 0L    override fun onDataSetChanged() {
         todayRecords.clear()
+        tomorrowRecords.clear()  // NEW
         missedRecords.clear()
         noReminderDateRecords.clear()
 
         try {
             // Load today's records
             loadRecords("todayRecords", todayRecords)
+
+            // Load tomorrow's records  // NEW
+            loadRecords("tomorrowRecords", tomorrowRecords)
 
             // Load missed records
             loadRecords("missedRecords", missedRecords)
@@ -109,10 +112,9 @@ class WidgetListViewFactory(
                 e.printStackTrace()
             }
         }
-    }
-
-    override fun getViewAt(position: Int): RemoteViews {
+    }    override fun getViewAt(position: Int): RemoteViews {
         val records = when (viewType) {
+            "tomorrow" -> tomorrowRecords  // NEW
             "missed" -> missedRecords
             "noreminder" -> noReminderDateRecords
             else -> todayRecords
@@ -168,9 +170,9 @@ class WidgetListViewFactory(
         todayRecords.clear()
         missedRecords.clear()
         noReminderDateRecords.clear()
-    }
-    override fun getCount(): Int {
+    }    override fun getCount(): Int {
         return when (viewType) {
+            "tomorrow" -> tomorrowRecords.size  // NEW
             "missed" -> missedRecords.size
             "noreminder" -> noReminderDateRecords.size
             else -> todayRecords.size

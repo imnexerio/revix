@@ -169,7 +169,7 @@ class CombinedDatabaseService {
       _rawDataController.add(null);
 
       if (PlatformUtils.instance.isAndroid ) {
-        _updateHomeWidget([], [], []);
+        _updateHomeWidget([], [], [],[]);
       }
       return;
     }
@@ -186,16 +186,15 @@ class CombinedDatabaseService {
     _categorizedRecordsController.add(categorizedData);
 
     List<Map<String, dynamic>> allRecords = _processAllRecords(processedRawData);
-    _allRecordsController.add({'allRecords': allRecords});    _processCategoriesData(processedRawData);
-
-    if (PlatformUtils.instance.isAndroid ) {
+    _allRecordsController.add({'allRecords': allRecords});    _processCategoriesData(processedRawData);    if (PlatformUtils.instance.isAndroid ) {
       _updateHomeWidget(categorizedData['today'] ?? [],
+          categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? []);
     }
   }
-  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
-      HomeWidgetService.updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
+      HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
   }
 
   void _processCategoriesData(Map<Object?, Object?> rawData) {
@@ -349,8 +348,9 @@ class CombinedDatabaseService {
         
         List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
         _allRecordsController.add({'allRecords': allRecords});
-          if (PlatformUtils.instance.isAndroid ) {
+        if (PlatformUtils.instance.isAndroid ) {
           _updateHomeWidget(categorizedData['today'] ?? [],
+              categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? []);
         }

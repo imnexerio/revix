@@ -15,39 +15,59 @@ import org.json.JSONException
 import org.json.JSONObject
 
 class TodayWidget : AppWidgetProvider() {    companion object {
-    const val ACTION_REFRESH = "revix.ACTION_REFRESH"
-    const val ACTION_ITEM_CLICK = "revix.ACTION_ITEM_CLICK"
-    const val ACTION_ADD_RECORD = "revix.ACTION_ADD_RECORD"
-    const val ACTION_SWITCH_VIEW = "revix.ACTION_SWITCH_VIEW"
-    const val PREF_PROCESSING_ITEMS = "widget_processing_items"
+        const val ACTION_REFRESH = "revix.ACTION_REFRESH"
+        const val ACTION_ITEM_CLICK = "revix.ACTION_ITEM_CLICK"
+        const val ACTION_ADD_RECORD = "revix.ACTION_ADD_RECORD"
+        const val ACTION_SWITCH_VIEW = "revix.ACTION_SWITCH_VIEW"
+        const val PREF_PROCESSING_ITEMS = "widget_processing_items"
 
-    private const val VIEW_TODAY = "today"
-    private const val VIEW_MISSED = "missed"
-    private const val VIEW_NO_REMINDER = "noreminder"
-    const val PREF_CURRENT_VIEW = "widget_current_view"
+        private const val VIEW_TODAY = "today"
+        private const val VIEW_TOMORROW = "tomorrow"  // NEW
+        private const val VIEW_MISSED = "missed"
+        private const val VIEW_NO_REMINDER = "noreminder"
+        const val PREF_CURRENT_VIEW = "widget_current_view"
+        
+        // Add this new preference key for alarm data hash tracking
+        private const val PREF_LAST_ALARM_DATA_HASH = "last_alarm_data_hash"
 
-    // New method to schedule alarms directly from widget data
-    fun scheduleAlarmsFromWidgetData(context: Context) {
-        try {
-            Log.d("TodayWidget", "Starting alarm scheduling from widget data...")
+        // Enhanced method to schedule alarms for two days with change detection
+        fun scheduleAlarmsFromWidgetData(context: Context, forceUpdate: Boolean = false) {
+            try {
+                Log.d("TodayWidget", "Checking if alarm scheduling needed...")
 
-            val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-            val todayRecordsJson = prefs.getString("todayRecords", "[]") ?: "[]"
+                val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                val todayRecordsJson = prefs.getString("todayRecords", "[]") ?: "[]"
+                val tomorrowRecordsJson = prefs.getString("tomorrowRecords", "[]") ?: "[]"  // NEW
 
-            val todayRecords = parseRecordsFromJson(todayRecordsJson)
-            Log.d("TodayWidget", "Parsed ${todayRecords.size} today records for alarm scheduling")
+                // Calculate hash of current data (both days)
+                val currentDataHash = (todayRecordsJson + tomorrowRecordsJson).hashCode()
+                val lastDataHash = prefs.getInt(PREF_LAST_ALARM_DATA_HASH, -1)
 
-            if (todayRecords.isNotEmpty()) {
-                val alarmHelper = AlarmManagerHelper(context)
-                alarmHelper.scheduleAlarmsForTodayRecords(todayRecords)
-                Log.d("TodayWidget", "Successfully scheduled alarms for today's records")
-            } else {
-                Log.d("TodayWidget", "No today records found for alarm scheduling")
+                // Only schedule alarms if data has changed or forced update
+                if (forceUpdate || currentDataHash != lastDataHash) {
+                    Log.d("TodayWidget", "Data changed, scheduling alarms for two days...")
+                    
+                    val todayRecords = parseRecordsFromJson(todayRecordsJson)
+                    val tomorrowRecords = parseRecordsFromJson(tomorrowRecordsJson)  // NEW
+                    Log.d("TodayWidget", "Parsed ${todayRecords.size} today + ${tomorrowRecords.size} tomorrow records")
+
+                    if (todayRecords.isNotEmpty() || tomorrowRecords.isNotEmpty()) {
+                        val alarmHelper = AlarmManagerHelper(context)
+                        alarmHelper.scheduleAlarmsForTwoDays(todayRecords, tomorrowRecords)  // NEW METHOD
+                        Log.d("TodayWidget", "Successfully scheduled alarms for two days")
+                    } else {
+                        Log.d("TodayWidget", "No records found for alarm scheduling")
+                    }
+
+                    // Save the new data hash
+                    prefs.edit().putInt(PREF_LAST_ALARM_DATA_HASH, currentDataHash).apply()
+                } else {
+                    Log.d("TodayWidget", "No data changes detected, skipping alarm scheduling")
+                }
+            } catch (e: Exception) {
+                Log.e("TodayWidget", "Error scheduling alarms from widget data: ${e.message}", e)
             }
-        } catch (e: Exception) {
-            Log.e("TodayWidget", "Error scheduling alarms from widget data: ${e.message}", e)
         }
-    }
 
     private fun parseRecordsFromJson(jsonString: String): List<Map<String, Any>> {
         val records = mutableListOf<Map<String, Any>>()
@@ -74,33 +94,33 @@ class TodayWidget : AppWidgetProvider() {    companion object {
         }
 
         return records
-    }
+    }        // Modified updateWidgets method
+        fun updateWidgets(context: Context, scheduleAlarms: Boolean = false) {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                ComponentName(context, TodayWidget::class.java)
+            )
 
-    // Add a method to force widget update from anywhere in the app
-    fun updateWidgets(context: Context) {
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(
-            ComponentName(context, TodayWidget::class.java)
-        )
+            // Force a full update for each widget
+            for (appWidgetId in appWidgetIds) {
+                updateAppWidget(context, appWidgetManager, appWidgetId)
+            }
 
-        // Force a full update for each widget
-        for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
+            // Ensure data changes for the ListView are notified
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
+
+            // Send a broadcast to update all widgets
+            val updateIntent = Intent(context, TodayWidget::class.java)
+            updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+            updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+            context.sendBroadcast(updateIntent)
+
+            // Only schedule alarms if explicitly requested
+            if (scheduleAlarms) {
+                scheduleAlarmsFromWidgetData(context)
+            }
         }
-
-        // Ensure data changes for the ListView are notified
-        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
-
-        // Send a broadcast to update all widgets
-        val updateIntent = Intent(context, TodayWidget::class.java)
-        updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-        updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-        context.sendBroadcast(updateIntent)
-
-        // Schedule alarms after widget update
-        scheduleAlarmsFromWidgetData(context)
-    }
-}    override fun onUpdate(
+    }override fun onUpdate(
     context: Context,
     appWidgetManager: AppWidgetManager,
     appWidgetIds: IntArray
@@ -139,14 +159,12 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                             uri
                         )
                         backgroundIntent.send()
-                        Log.d("TodayWidget", "Background callback triggered for data refresh")
-
-                        // Schedule alarms after triggering refresh
+                        Log.d("TodayWidget", "Background callback triggered for data refresh")                        // Schedule alarms after data refresh - this will check if data actually changed
                         scheduleAlarmsFromWidgetData(context)
                     } catch (e: Exception) {
                         Log.e("TodayWidget", "Error triggering background callback: ${e.message}")
-                        // Fallback: just update the widget with current data
-                        updateWidgets(context)
+                        // Fallback: just update the widget with current data (no alarm scheduling)
+                        updateWidgets(context, scheduleAlarms = false)
                     }
                 } catch (e: Exception) {
                     Log.e("TodayWidget", "Error updating widget during refresh: ${e.message}")
@@ -212,15 +230,15 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                 val addIntent = Intent(context, AddLectureActivity::class.java)
                 addIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(addIntent)
-            }
-            ACTION_SWITCH_VIEW -> {
+            }            ACTION_SWITCH_VIEW -> {
                 // Get the current view type from preferences
                 val prefs = context.getSharedPreferences("WidgetPreferences", Context.MODE_PRIVATE)
                 val currentView = prefs.getString(PREF_CURRENT_VIEW, VIEW_TODAY) ?: VIEW_TODAY
 
-                // Cycle through view types
+                // Cycle through view types (updated order with tomorrow)
                 val nextView = when (currentView) {
-                    VIEW_TODAY -> VIEW_MISSED
+                    VIEW_TODAY -> VIEW_TOMORROW      // NEW
+                    VIEW_TOMORROW -> VIEW_MISSED     // MODIFIED  
                     VIEW_MISSED -> VIEW_NO_REMINDER
                     else -> VIEW_TODAY
                 }
@@ -228,12 +246,13 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                 // Save the new view type
                 prefs.edit().putString(PREF_CURRENT_VIEW, nextView).apply()
 
-                // Update all widgets
-                updateWidgets(context)
+                // Update all widgets (no alarm scheduling needed for view switch)
+                updateWidgets(context, scheduleAlarms = false)
 
                 // Show toast with the new view type
                 val viewName = when (nextView) {
                     VIEW_TODAY -> "Today's Schedule"
+                    VIEW_TOMORROW -> "Tomorrow's Schedule"  // NEW
                     VIEW_MISSED -> "Missed Revisions"
                     VIEW_NO_REMINDER -> "No Reminder Date"
                     else -> "Unknown View"
@@ -273,10 +292,9 @@ internal fun updateAppWidget(
         sharedPreferences.edit().remove("isLoggedIn").apply()
         false
     }
-    val lastUpdated = sharedPreferences.getLong("lastUpdated", 0L)
-
-    // Get appropriate data based on current view
+    val lastUpdated = sharedPreferences.getLong("lastUpdated", 0L)    // Get appropriate data based on current view
     val jsonDataKey = when (currentView) {
+        "tomorrow" -> "tomorrowRecords"  // NEW
         "missed" -> "missedRecords"
         "noreminder" -> "noreminderdate"
         else -> "todayRecords"
@@ -288,6 +306,7 @@ internal fun updateAppWidget(
 
     // Set view title based on current view
     val viewTitle = when (currentView) {
+        "tomorrow" -> "Tomorrow's Schedule"  // NEW
         "missed" -> "Missed Revisions"
         "noreminder" -> "No Reminder Date"
         else -> "Today's Schedule"
@@ -297,9 +316,9 @@ internal fun updateAppWidget(
         views.setTextViewText(R.id.title_text_n_refresh, "($count)")
 
         if (!isLoggedIn) {
-            views.setTextViewText(R.id.empty_view, "Please login to view your schedule")
-        } else {
+            views.setTextViewText(R.id.empty_view, "Please login to view your schedule")        } else {
             val emptyMessage = when (currentView) {
+                "tomorrow" -> "No tasks for tomorrow"  // NEW
                 "missed" -> "No missed revisions. Great job!"
                 "noreminder" -> "No records without reminder dates"
                 else -> "No tasks for today, enjoy your day"
@@ -351,11 +370,10 @@ internal fun updateAppWidget(
         switchViewIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
-    views.setOnClickPendingIntent(R.id.switch_view_button, switchViewPendingIntent)
-
-    // Set the icon based on current view type
+    views.setOnClickPendingIntent(R.id.switch_view_button, switchViewPendingIntent)    // Set the icon based on current view type
     when (currentView) {
         "today" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_today_24)
+        "tomorrow" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_today_24)  // NEW - can use same icon or create new one
         "missed" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_history_toggle_off_24)
         "noreminder" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_alarm_off_24)
     }

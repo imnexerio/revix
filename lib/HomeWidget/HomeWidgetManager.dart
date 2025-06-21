@@ -16,6 +16,7 @@ import '../firebase_options.dart';
 class HomeWidgetService {
   static const String appGroupId = 'HomeWidgetPreferences';
   static const String todayRecordsKey = 'todayRecords';
+  static const String tomorrowRecordsKey = 'tomorrowRecords';  // NEW
   static const String missedRecordsKey = 'missedRecords';
   static const String noReminderDateRecordsKey = 'noreminderdate';
   static const String isLoggedInKey = 'isLoggedIn';
@@ -177,11 +178,12 @@ class HomeWidgetService {
 
         if (categorizedData != null) {
           final todayRecords = categorizedData['today'] ?? [];
+          final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
           final missedRecords = categorizedData['missed'] ?? [];
           final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-          print('Records found - Today: ${todayRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');          // Update widget with the new data
-          await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');          // Update widget with the new data
+          await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
 
           
           print('Widget background refresh completed with data');
@@ -238,15 +240,15 @@ class HomeWidgetService {
 
               print('Record update completed successfully using MarkAsDoneService');
 
-              // Refresh widget data after update
-              await service.forceDataReprocessing();
+              // Refresh widget data after update              await service.forceDataReprocessing();
               final categorizedData = service.currentCategorizedData;
               if (categorizedData != null) {
                 final todayRecords = categorizedData['today'] ?? [];
+                final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
                 final missedRecords = categorizedData['missed'] ?? [];
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-                await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
                 
                 print('Widget refreshed after record update');
               }
@@ -346,12 +348,14 @@ class HomeWidgetService {
 
               // Refresh widget data after creation
               await service.forceDataReprocessing();
-              final categorizedData = service.currentCategorizedData;              if (categorizedData != null) {
+              final categorizedData = service.currentCategorizedData;
+              if (categorizedData != null) {
                 final todayRecords = categorizedData['today'] ?? [];
+                final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
                 final missedRecords = categorizedData['missed'] ?? [];
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-                await updateWidgetData(todayRecords, missedRecords, noReminderDateRecords);
+                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
                 
                 print('Widget refreshed after record creation');
               }
@@ -394,22 +398,28 @@ class HomeWidgetService {
     await _ensureInitialized();
 
     await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
+    await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
     await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
     await _updateWidgetSilently();
   }
-
   static Future<void> updateWidgetData(
       List<Map<String, dynamic>> todayRecords,
+      List<Map<String, dynamic>> tomorrowRecords,  // NEW
       List<Map<String, dynamic>> missedRecords,
       List<Map<String, dynamic>> noReminderDateRecords,
       ) async {
     try {
-      // Format and save all three data categories
+      // Format and save all data categories
       await HomeWidget.saveWidgetData(
         todayRecordsKey,
         jsonEncode(_formatRecords(todayRecords)),
+      );
+
+      await HomeWidget.saveWidgetData(
+        tomorrowRecordsKey,  // NEW
+        jsonEncode(_formatRecords(tomorrowRecords)),
       );
 
       await HomeWidget.saveWidgetData(
@@ -474,10 +484,10 @@ class HomeWidgetService {
   static Future<void> updateWidgetLoginStatus(bool isLoggedIn) async {
     try {
       await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
-      
-      if (!isLoggedIn) {
+        if (!isLoggedIn) {
         // Clear widget data when logging out
         await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
+        await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
         await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
       }
