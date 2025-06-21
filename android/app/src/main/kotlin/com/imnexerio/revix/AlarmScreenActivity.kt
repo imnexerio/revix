@@ -950,3 +950,4 @@ class AlarmScreenActivity : Activity() {
             }
         }
     }
+}

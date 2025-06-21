@@ -438,7 +438,8 @@ class AlarmManagerHelper(private val context: Context) {
         try {
             val jsonArray = JSONArray(jsonString)
             for (i in 0 until jsonArray.length()) {
-                val jsonObject = jsonArray.getJSONObject(i)                val alarm = AlarmMetadata(
+                val jsonObject = jsonArray.getJSONObject(i)
+                val alarm = AlarmMetadata(
                     key = jsonObject.getString("key"),
                     category = jsonObject.getString("category"),
                     subCategory = jsonObject.getString("subCategory"),

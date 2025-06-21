@@ -29,7 +29,8 @@ class WidgetListViewFactory(
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(
         "HomeWidgetPreferences", Context.MODE_PRIVATE)
 
-    private var lastRefreshTimestamp = 0L    override fun onDataSetChanged() {
+    private var lastRefreshTimestamp = 0L
+    override fun onDataSetChanged() {
         todayRecords.clear()
         tomorrowRecords.clear()  // NEW
         missedRecords.clear()
