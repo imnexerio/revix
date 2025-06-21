@@ -38,8 +38,6 @@ class AlarmManagerHelper(private val context: Context) {
 
         val currentAlarms = getStoredAlarmMetadata()
         val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()
-        val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val currentTimeHHMM = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
         todayRecords.forEach { record ->
             try {
@@ -55,15 +53,9 @@ class AlarmManagerHelper(private val context: Context) {
                     return@forEach
                 }
 
-                // Only process today's records
-                if (scheduledDate != currentDate) {
-                    return@forEach
-                }
+                // Let Android AlarmManager handle past times and date validation
                 val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
                 val actualTime = parseTimeToday(reminderTime)
-                val alarmTimeHHMM = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(actualTime))
-                
-                // Let Android AlarmManager handle past times - no manual checking needed
 
                 val newMetadata = AlarmMetadata(
                     key = uniqueKey,
@@ -80,9 +72,8 @@ class AlarmManagerHelper(private val context: Context) {
                 
                 when {
                     existingAlarm == null -> {
-                        // New alarm - schedule it
-                        scheduleAlarm(newMetadata)
-                        Log.d(TAG, "Scheduled new alarm for $recordTitle at $alarmTimeHHMM")
+                        // New alarm - schedule it                        scheduleAlarm(newMetadata)
+                        Log.d(TAG, "Scheduled new alarm for $recordTitle at ${Date(actualTime)}")
                     }
                     existingAlarm.actualTime != actualTime -> {
                         // Time changed - cancel old and reschedule
@@ -93,10 +84,9 @@ class AlarmManagerHelper(private val context: Context) {
                         
                         // Cancel old alarm
                         cancelAlarm(uniqueKey)
-                        
-                        // Schedule new alarm
+                          // Schedule new alarm
                         scheduleAlarm(newMetadata)
-                        Log.d(TAG, "Updated alarm time for $recordTitle to $alarmTimeHHMM")
+                        Log.d(TAG, "Updated alarm time for $recordTitle to ${Date(actualTime)}")
                     }
                     // else: No change needed
                 }
@@ -146,17 +136,14 @@ class AlarmManagerHelper(private val context: Context) {
             cleanupOldDateAlarms(todayDate, tomorrowDate)
             saveLastProcessedDates(todayDate, tomorrowDate)
         }
-
         val currentAlarms = getStoredAlarmMetadata()
-        val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()
-        val currentTimeMillis = System.currentTimeMillis()
-        
+        val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()        
         // Process both days
-        processDayRecords(todayRecords, todayDate, newAlarmMetadata, currentTimeMillis)
-        processDayRecords(tomorrowRecords, tomorrowDate, newAlarmMetadata, currentTimeMillis)
+        processDayRecords(todayRecords, todayDate, newAlarmMetadata)
+        processDayRecords(tomorrowRecords, tomorrowDate, newAlarmMetadata)
         
         // Handle add/remove/update for current date window
-        handleAlarmUpdates(currentAlarms, newAlarmMetadata, currentTimeMillis)
+        handleAlarmUpdates(currentAlarms, newAlarmMetadata)
         
         // Save updated metadata
         saveAlarmMetadata(newAlarmMetadata.values.toList())
@@ -211,14 +198,9 @@ class AlarmManagerHelper(private val context: Context) {
     private fun processDayRecords(
         records: List<Map<String, Any>>, 
         dateString: String,
-        newAlarmMetadata: MutableMap<String, AlarmMetadata>,
-        currentTimeMillis: Long
+        newAlarmMetadata: MutableMap<String, AlarmMetadata>
     ) {
-        val currentTimeHHMM = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        val currentDateString = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val isToday = dateString == currentDateString
-        
-        Log.d(TAG, "Processing ${records.size} records for $dateString (isToday: $isToday)")
+        Log.d(TAG, "Processing ${records.size} records for $dateString")
         
         records.forEach { record ->
             try {
@@ -232,8 +214,8 @@ class AlarmManagerHelper(private val context: Context) {
                 if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {
                     return@forEach
                 }
-                  val actualTime = parseTimeForDate(reminderTime, scheduledDate)
-                val alarmTimeHHMM = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(actualTime))
+                
+                val actualTime = parseTimeForDate(reminderTime, scheduledDate)
                 
                 // Let Android AlarmManager handle past times - no manual checking needed
                 
@@ -258,8 +240,7 @@ class AlarmManagerHelper(private val context: Context) {
 
     private fun handleAlarmUpdates(
         currentAlarms: Map<String, AlarmMetadata>,
-        newAlarmMetadata: Map<String, AlarmMetadata>,
-        currentTimeMillis: Long
+        newAlarmMetadata: Map<String, AlarmMetadata>
     ) {
         newAlarmMetadata.values.forEach { newAlarm ->
             val existingAlarm = currentAlarms[newAlarm.key]
