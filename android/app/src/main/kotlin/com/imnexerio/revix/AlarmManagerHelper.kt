@@ -74,6 +74,7 @@ class AlarmManagerHelper(private val context: Context) {
                     category = category,
                     subCategory = subCategory,
                     recordTitle = recordTitle,
+                    scheduledDate = scheduledDate,  // FIX: Add missing parameter
                     actualTime = actualTime,
                     alarmType = alarmType
                 )
