@@ -317,20 +317,27 @@ class AlarmService : Service() {    companion object {
         // Release resources and stop service
         autoStopTimer?.cancel()
         stopSelf()
-    }private fun handleStopSpecificAlarm(intent: Intent) {
+    }
+    private fun handleStopSpecificAlarm(intent: Intent) {
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
+        val actionType = intent.getStringExtra("ACTION_TYPE") ?: "IGNORE" // Default to ignore if not specified
         val alarmKey = "$category$subCategory$recordTitle"
 
-        Log.d(TAG, "Stopping specific alarm: $recordTitle")
+        Log.d(TAG, "Stopping specific alarm: $recordTitle with action: $actionType")
         val alarm = activeAlarms[alarmKey]
         if (alarm != null) {
             // Cancel auto-stop timer for this alarm
             cancelAutoStopTimerForAlarm(alarmKey)
             
-            // Convert to reminder notification BEFORE removing from active alarms
-            convertToReminderNotification(alarm)
+            // Only convert to reminder notification if action is IGNORE (not MARK_AS_DONE)
+            if (actionType == "IGNORE") {
+                convertToReminderNotification(alarm)
+                Log.d(TAG, "Alarm ignored - converted to reminder notification: $recordTitle")
+            } else {
+                Log.d(TAG, "Alarm marked as done - no reminder notification created: $recordTitle")
+            }
             
             // Send broadcast to close alarm screen for this specific alarm
             sendCloseAlarmScreenBroadcast(alarm)
@@ -383,9 +390,10 @@ class AlarmService : Service() {    companion object {
                         // Check for next audio alarm
                         checkForNextAudioAlarm()
                     }
-                      // Convert to reminder notification BEFORE removing from active alarms
+                    // Convert to reminder notification BEFORE removing from active alarms
                     val alarm = activeAlarms[alarmKey]
                     if (alarm != null) {
+                        // Auto-stop always converts to reminder (since user didn't take action)
                         convertToReminderNotification(alarm)
                         
                         // Send broadcast to close alarm screen for this specific alarm

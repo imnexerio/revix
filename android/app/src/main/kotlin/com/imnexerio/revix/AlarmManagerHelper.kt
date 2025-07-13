@@ -323,11 +323,11 @@ class AlarmManagerHelper(private val context: Context) {
     private fun cleanupOldAlarmMetadata() {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val currentAlarms = getStoredAlarmMetadata()
-        
-        val validAlarms = currentAlarms.values.filter { alarm =>
+
+        val validAlarms = currentAlarms.values.filter { alarm ->
             alarm.scheduledDate.isEmpty() || alarm.scheduledDate >= today
         }
-        
+
         if (validAlarms.size < currentAlarms.size) {
             saveAlarmMetadata(validAlarms)
             Log.d(TAG, "Cleaned up ${currentAlarms.size - validAlarms.size} old alarm metadata entries")

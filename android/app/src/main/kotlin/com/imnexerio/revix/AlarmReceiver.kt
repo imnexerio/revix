@@ -51,12 +51,13 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
 
         Log.d(TAG, "Mark as done triggered: $category - $subCategory - $recordTitle")
 
-        // Stop alarm service
+    // Stop alarm service
         val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
             action = "STOP_SPECIFIC_ALARM"
             putExtra(EXTRA_CATEGORY, category)
             putExtra(EXTRA_SUB_CATEGORY, subCategory)
             putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("ACTION_TYPE", "MARK_AS_DONE") // Indicate this is a mark as done action
         }
         context.startForegroundService(stopAlarmIntent)
 
@@ -84,14 +85,13 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
 
         val actionType = if (intent.action == ACTION_DISMISS_ALARM) "dismissed" else "ignored"
-        Log.d(TAG, "Alarm $actionType: $category - $subCategory - $recordTitle")
-
-        // Stop alarm service - this will convert to reminder notification
+        Log.d(TAG, "Alarm $actionType: $category - $subCategory - $recordTitle")        // Stop alarm service - this will convert to reminder notification
         val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
             action = "STOP_SPECIFIC_ALARM"
             putExtra(EXTRA_CATEGORY, category)
             putExtra(EXTRA_SUB_CATEGORY, subCategory)
             putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("ACTION_TYPE", "IGNORE") // Indicate this is an ignore action
         }
         context.startForegroundService(stopAlarmIntent)
 
