@@ -45,9 +45,12 @@ class AlarmManagerHelper(private val context: Context) {
         val tomorrowDate = getTomorrowDateFromRecords(tomorrowRecords)
         
         Log.d(TAG, "Current data dates - Today: $todayDate, Tomorrow: $tomorrowDate")
-        
+
         val currentAlarms = getStoredAlarmMetadata()
         val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()        
+        
+        // Clean up old alarm metadata before processing new alarms
+        cleanupOldAlarmMetadata()
         
         // Process both days
         processDayRecords(todayRecords, todayDate, newAlarmMetadata)
@@ -313,6 +316,20 @@ class AlarmManagerHelper(private val context: Context) {
             Log.d(TAG, "Dismissed notification for updated/deleted record: $recordTitle")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to dismiss notification for $recordTitle", e)
+        }
+    }
+
+    private fun cleanupOldAlarmMetadata() {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val currentAlarms = getStoredAlarmMetadata()
+        
+        val validAlarms = currentAlarms.values.filter { alarm =>
+            alarm.scheduledDate.isEmpty() || alarm.scheduledDate >= today
+        }
+        
+        if (validAlarms.size < currentAlarms.size) {
+            saveAlarmMetadata(validAlarms)
+            Log.d(TAG, "Cleaned up ${currentAlarms.size - validAlarms.size} old alarm metadata entries")
         }
     }
 }
