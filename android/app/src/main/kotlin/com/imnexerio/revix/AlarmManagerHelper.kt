@@ -28,18 +28,17 @@ class AlarmManagerHelper(private val context: Context) {
         private const val TAG = "AlarmManagerHelper"
         private const val PREFS_NAME = "record_alarms"
         private const val ALARM_METADATA_KEY = "alarm_metadata"
-        private const val LAST_PROCESSED_DATES_KEY = "last_processed_dates"  // NEW
     }
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    // NEW METHOD: Enhanced two-day alarm scheduling with date-based cleanup
+    // Simplified alarm scheduling - just schedule based on provided data
     fun scheduleAlarmsForTwoDays(
         todayRecords: List<Map<String, Any>>,
         tomorrowRecords: List<Map<String, Any>>
     ) {
-        Log.d(TAG, "Processing two-day alarm scheduling with ${todayRecords.size} today + ${tomorrowRecords.size} tomorrow records")
+        Log.d(TAG, "Processing alarm scheduling with ${todayRecords.size} today + ${tomorrowRecords.size} tomorrow records")
         
         // Get current dates from the actual data
         val todayDate = getTodayDateFromRecords(todayRecords)
@@ -47,31 +46,21 @@ class AlarmManagerHelper(private val context: Context) {
         
         Log.d(TAG, "Current data dates - Today: $todayDate, Tomorrow: $tomorrowDate")
         
-        // Check if dates changed from last processing
-        val lastProcessedDates = getLastProcessedDates()
-        val datesChanged = lastProcessedDates != "$todayDate,$tomorrowDate"
-        
-        if (datesChanged) {
-            Log.d(TAG, "Date change detected! Last: $lastProcessedDates, Current: $todayDate,$tomorrowDate")
-            cleanupOldDateAlarms(todayDate, tomorrowDate)
-            saveLastProcessedDates(todayDate, tomorrowDate)
-        }
         val currentAlarms = getStoredAlarmMetadata()
         val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()        
+        
         // Process both days
         processDayRecords(todayRecords, todayDate, newAlarmMetadata)
         processDayRecords(tomorrowRecords, tomorrowDate, newAlarmMetadata)
         
-        // Handle add/remove/update for current date window
+        // Handle add/remove/update for current records
         handleAlarmUpdates(currentAlarms, newAlarmMetadata)
         
         // Save updated metadata
         saveAlarmMetadata(newAlarmMetadata.values.toList())
         
-        Log.d(TAG, "Two-day alarm management completed. Active alarms: ${newAlarmMetadata.size}")
-    }
-
-    private fun getTodayDateFromRecords(todayRecords: List<Map<String, Any>>): String {
+        Log.d(TAG, "Alarm scheduling completed. Active alarms: ${newAlarmMetadata.size}")
+    }    private fun getTodayDateFromRecords(todayRecords: List<Map<String, Any>>): String {
         return todayRecords.firstOrNull()?.get("scheduled_date")?.toString()
             ?: SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     }
@@ -81,38 +70,6 @@ class AlarmManagerHelper(private val context: Context) {
             ?: SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
                 Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)
             )
-    }
-
-    private fun getLastProcessedDates(): String {
-        return prefs.getString(LAST_PROCESSED_DATES_KEY, "") ?: ""
-    }
-
-    private fun saveLastProcessedDates(todayDate: String, tomorrowDate: String) {
-        prefs.edit().putString(LAST_PROCESSED_DATES_KEY, "$todayDate,$tomorrowDate").apply()
-    }
-
-    private fun cleanupOldDateAlarms(currentTodayDate: String, currentTomorrowDate: String) {
-        Log.d(TAG, "Cleaning up alarms outside current date window")
-        
-        val currentAlarms = getStoredAlarmMetadata()
-        val validDates = setOf(currentTodayDate, currentTomorrowDate)
-        
-        val oldAlarms = currentAlarms.values.filter { alarm ->
-            alarm.scheduledDate.isNotEmpty() && alarm.scheduledDate !in validDates
-        }
-        
-        oldAlarms.forEach { oldAlarm ->
-            Log.d(TAG, "Removing outdated alarm: ${oldAlarm.recordTitle} on ${oldAlarm.scheduledDate}")
-            cancelAlarm(oldAlarm.key)
-        }
-        
-        // Remove old alarms from storage
-        val remainingAlarms = currentAlarms.values.filter { alarm ->
-            alarm.scheduledDate.isEmpty() || alarm.scheduledDate in validDates
-        }
-        saveAlarmMetadata(remainingAlarms)
-        
-        Log.d(TAG, "Cleaned up ${oldAlarms.size} outdated alarms")
     }
 
     private fun processDayRecords(
@@ -134,10 +91,7 @@ class AlarmManagerHelper(private val context: Context) {
                 if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {
                     return@forEach
                 }
-                
-                val actualTime = parseTimeForDate(reminderTime, scheduledDate)
-                
-                // Let Android AlarmManager handle past times - no manual checking needed
+                  val actualTime = parseTimeForDate(reminderTime, scheduledDate)
                 
                 val uniqueKey = generateUniqueKeyWithDate(category, subCategory, recordTitle, scheduledDate)
                 val newMetadata = AlarmMetadata(
