@@ -43,14 +43,15 @@ class AlarmManagerHelper(private val context: Context) {
         // Get current dates from the actual data
         val todayDate = getTodayDateFromRecords(todayRecords)
         val tomorrowDate = getTomorrowDateFromRecords(tomorrowRecords)
-        
-        Log.d(TAG, "Current data dates - Today: $todayDate, Tomorrow: $tomorrowDate")
 
-        val currentAlarms = getStoredAlarmMetadata()
-        val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()        
+        Log.d(TAG, "Current data dates - Today: $todayDate, Tomorrow: $tomorrowDate")
         
-        // Clean up old alarm metadata before processing new alarms
+        // Clean up old alarm metadata first
         cleanupOldAlarmMetadata()
+        
+        // Get current alarms AFTER cleanup
+        val currentAlarms = getStoredAlarmMetadata()
+        val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()
         
         // Process both days
         processDayRecords(todayRecords, todayDate, newAlarmMetadata)
