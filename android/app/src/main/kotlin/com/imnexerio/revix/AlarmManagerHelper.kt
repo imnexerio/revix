@@ -88,7 +88,8 @@ class AlarmManagerHelper(private val context: Context) {
         newAlarmMetadata: MutableMap<String, AlarmMetadata>
     ) {
         Log.d(TAG, "Processing ${records.size} records for $dateString")
-        
+        val currentTime = System.currentTimeMillis()
+
         records.forEach { record ->
             try {
                 val category = record["category"]?.toString() ?: ""
@@ -97,13 +98,26 @@ class AlarmManagerHelper(private val context: Context) {
                 val reminderTime = record["reminder_time"]?.toString() ?: ""
                 val alarmType = (record["alarm_type"]?.toString()?.toIntOrNull()) ?: 0
                 val scheduledDate = record["scheduled_date"]?.toString() ?: dateString
-                
+
                 if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {
                     return@forEach
                 }
-                  val actualTime = parseTimeForDate(reminderTime, scheduledDate)
-                
-                val uniqueKey = generateUniqueKeyWithDate(category, subCategory, recordTitle, scheduledDate)
+
+                val actualTime = parseTimeForDate(reminderTime, scheduledDate)
+
+                // CRITICAL: Skip alarms that are in the past
+                if (actualTime <= currentTime) {
+                    Log.d(
+                        TAG,
+                        "SKIPPING PAST RECORD: $recordTitle on $scheduledDate at ${Date(actualTime)} (current: ${
+                            Date(currentTime)
+                        })"
+                    )
+                    return@forEach
+                }
+
+                val uniqueKey =
+                    generateUniqueKeyWithDate(category, subCategory, recordTitle, scheduledDate)
                 val newMetadata = AlarmMetadata(
                     key = uniqueKey,
                     category = category,
@@ -113,13 +127,18 @@ class AlarmManagerHelper(private val context: Context) {
                     actualTime = actualTime,
                     alarmType = alarmType
                 )
-                
+
                 newAlarmMetadata[uniqueKey] = newMetadata
-                
+                Log.d(
+                    TAG,
+                    "ADDED FUTURE ALARM: $recordTitle on $scheduledDate at ${Date(actualTime)}"
+                )
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing record for $dateString", e)
             }
-        }    }
+        }
+    }
 
     private fun handleSmartAlarmUpdates(
         currentAlarms: MutableMap<String, AlarmMetadata>,
@@ -247,7 +266,16 @@ class AlarmManagerHelper(private val context: Context) {
             set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-        }.timeInMillis    }    private fun scheduleAlarm(metadata: AlarmMetadata) {
+        }.timeInMillis    }
+
+    private fun scheduleAlarm(metadata: AlarmMetadata) {
+        // CRITICAL: Check if alarm time is in the future before scheduling
+        val currentTime = System.currentTimeMillis()
+        if (metadata.actualTime <= currentTime) {
+            Log.w(TAG, "SKIPPING PAST ALARM: ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)} (current time: ${Date(currentTime)})")
+            return
+        }
+        
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_ALARM_TRIGGER
             putExtra(AlarmReceiver.EXTRA_CATEGORY, metadata.category)
@@ -268,7 +296,8 @@ class AlarmManagerHelper(private val context: Context) {
 
         scheduleExactAlarm(metadata.actualTime, pendingIntent)
         
-        Log.d(TAG, "Scheduled alarm for ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)} with requestCode: $requestCode")    }
+        Log.d(TAG, "Scheduled alarm for ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)} with requestCode: $requestCode")
+    }
 
     fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
         val currentMetadata = getStoredAlarmMetadata().toMutableMap()
@@ -318,6 +347,14 @@ class AlarmManagerHelper(private val context: Context) {
         
         // Create and schedule new alarm
         val actualTime = parseTimeForDate(reminderTime, scheduledDate)
+        
+        // CRITICAL: Check if alarm time is in the future
+        val currentTime = System.currentTimeMillis()
+        if (actualTime <= currentTime) {
+            Log.w(TAG, "SKIPPING PAST ALARM UPDATE: $recordTitle on $scheduledDate at ${Date(actualTime)} (current: ${Date(currentTime)})")
+            return
+        }
+        
         val uniqueKey = generateUniqueKeyWithDate(category, subCategory, recordTitle, scheduledDate)
         
         val newMetadata = AlarmMetadata(
@@ -484,25 +521,36 @@ class AlarmManagerHelper(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to dismiss notification for $recordTitle", e)
         }
-    }
-
-    private fun cleanupOldAlarmMetadata() {
+    }    private fun cleanupOldAlarmMetadata() {
+        val currentTime = System.currentTimeMillis()
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val currentAlarms = getStoredAlarmMetadata()
 
         val (validAlarms, expiredAlarms) = currentAlarms.values.partition { alarm ->
-            alarm.scheduledDate.isEmpty() || alarm.scheduledDate >= today
+            // More comprehensive expiry check:
+            // 1. Check if scheduled date is valid and not in the past
+            // 2. Check if actual alarm time hasn't passed yet
+            val dateValid = alarm.scheduledDate.isNotEmpty() && alarm.scheduledDate >= today
+            val timeValid = alarm.actualTime > currentTime
+            
+            dateValid && timeValid
         }
 
         if (expiredAlarms.isNotEmpty()) {
             // Cancel expired alarms from AlarmManager before removing metadata
             expiredAlarms.forEach { alarm ->
                 cancelAlarm(alarm.key)
-                Log.d(TAG, "Cancelled expired alarm: ${alarm.recordTitle} on ${alarm.scheduledDate}")
+                Log.d(TAG, "Cancelled expired alarm: ${alarm.recordTitle} on ${alarm.scheduledDate} at ${Date(alarm.actualTime)} (reason: ${
+                    when {
+                        alarm.scheduledDate.isEmpty() || alarm.scheduledDate < today -> "past date"
+                        alarm.actualTime <= currentTime -> "past time"
+                        else -> "unknown"
+                    }
+                })")
             }
             
             saveAlarmMetadata(validAlarms)
-            Log.d(TAG, "Cleaned up ${expiredAlarms.size} expired alarm(s)")
+            Log.d(TAG, "Cleaned up ${expiredAlarms.size} expired alarm(s), ${validAlarms.size} remaining")
         }
     }
 }
