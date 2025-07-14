@@ -28,13 +28,15 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
                 handleIgnoreAlarm(context, intent)
             }
         }
-    }private fun handleAlarmTrigger(context: Context, intent: Intent) {
+    }
+    private fun handleAlarmTrigger(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         val alarmType = intent.getIntExtra(EXTRA_ALARM_TYPE, 0)
+        val scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
 
-        Log.d(TAG, "Alarm triggered: $recordTitle (type: $alarmType)")
+        Log.d(TAG, "Alarm triggered: $recordTitle (type: $alarmType) on $scheduledDate")
 
         // Start the alarm service to handle the alarm behavior
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
@@ -42,9 +44,10 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
             putExtra(EXTRA_CATEGORY, category)
             putExtra(EXTRA_SUB_CATEGORY, subCategory)
             putExtra(EXTRA_RECORD_TITLE, recordTitle)
+            putExtra("scheduled_date", scheduledDate)
         }
         context.startForegroundService(serviceIntent)
-    }    private fun handleMarkAsDone(context: Context, intent: Intent) {
+    }private fun handleMarkAsDone(context: Context, intent: Intent) {
         val category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""

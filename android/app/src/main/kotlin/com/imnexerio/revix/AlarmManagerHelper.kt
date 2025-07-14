@@ -189,17 +189,25 @@ class AlarmManagerHelper(private val context: Context) {
 
         scheduleExactAlarm(metadata.actualTime, pendingIntent)
         
-        Log.d(TAG, "Scheduled alarm for ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)}")
-    }fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
-        val uniqueKey = generateUniqueKey(category, subCategory, recordTitle)
+        Log.d(TAG, "Scheduled alarm for ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)}")    }fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
         val currentMetadata = getStoredAlarmMetadata().toMutableMap()
         
-        // Cancel alarm
-        cancelAlarm(uniqueKey)
-        currentMetadata.remove(uniqueKey)
+        // Find all alarms for this record (there might be multiple dates)
+        val alarmsToCancel = currentMetadata.values.filter { alarm ->
+            alarm.category == category && 
+            alarm.subCategory == subCategory && 
+            alarm.recordTitle == recordTitle
+        }
+        
+        // Cancel each alarm found
+        alarmsToCancel.forEach { alarm ->
+            cancelAlarm(alarm.key)
+            currentMetadata.remove(alarm.key)
+            Log.d(TAG, "Cancelled alarm for record: $recordTitle on ${alarm.scheduledDate}")
+        }
         
         saveAlarmMetadata(currentMetadata.values.toList())
-        Log.d(TAG, "Cancelled alarm for record: $recordTitle")
+        Log.d(TAG, "Cancelled ${alarmsToCancel.size} alarm(s) for record: $recordTitle")
     }
 
     private fun scheduleExactAlarm(triggerTime: Long, pendingIntent: PendingIntent) {
@@ -234,29 +242,38 @@ class AlarmManagerHelper(private val context: Context) {
         } else {
             true
         }
-    }
-
-    private fun cancelAlarm(alarmKey: String) {
+    }    private fun cancelAlarm(alarmKey: String) {
         try {
-            val intent = Intent(context, AlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                alarmKey.hashCode(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            alarmManager.cancel(pendingIntent)
-            pendingIntent.cancel()
+            // Get the alarm metadata to recreate the exact intent
+            val alarmMetadata = getStoredAlarmMetadata()[alarmKey]
+            
+            if (alarmMetadata != null) {
+                // Create the exact same intent that was used for scheduling
+                val intent = Intent(context, AlarmReceiver::class.java).apply {
+                    action = AlarmReceiver.ACTION_ALARM_TRIGGER
+                    putExtra(AlarmReceiver.EXTRA_CATEGORY, alarmMetadata.category)
+                    putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, alarmMetadata.subCategory)
+                    putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, alarmMetadata.recordTitle)
+                    putExtra("scheduled_date", alarmMetadata.scheduledDate)
+                    putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmMetadata.alarmType)
+                }
+                
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    alarmKey.hashCode(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                alarmManager.cancel(pendingIntent)
+                pendingIntent.cancel()
+                Log.d(TAG, "Successfully cancelled alarm: $alarmKey")
+            } else {
+                Log.w(TAG, "Alarm metadata not found for key: $alarmKey")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cancel alarm: $alarmKey", e)
         }
-    }
-
-    private fun generateUniqueKey(category: String, subCategory: String, recordTitle: String): String {
-        return "${category}_${subCategory}_${recordTitle}".hashCode().toString()
-    }
-
-    private fun parseTimeToday(timeString: String): Long {
+    }    private fun parseTimeToday(timeString: String): Long {
         val timeParts = timeString.split(":")
         if (timeParts.size != 2) return 0L
 
