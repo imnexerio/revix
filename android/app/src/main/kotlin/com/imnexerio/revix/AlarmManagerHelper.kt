@@ -341,13 +341,19 @@ class AlarmManagerHelper(private val context: Context) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val currentAlarms = getStoredAlarmMetadata()
 
-        val validAlarms = currentAlarms.values.filter { alarm ->
+        val (validAlarms, expiredAlarms) = currentAlarms.values.partition { alarm ->
             alarm.scheduledDate.isEmpty() || alarm.scheduledDate >= today
         }
 
-        if (validAlarms.size < currentAlarms.size) {
+        if (expiredAlarms.isNotEmpty()) {
+            // Cancel expired alarms from AlarmManager before removing metadata
+            expiredAlarms.forEach { alarm ->
+                cancelAlarm(alarm.key)
+                Log.d(TAG, "Cancelled expired alarm: ${alarm.recordTitle} on ${alarm.scheduledDate}")
+            }
+            
             saveAlarmMetadata(validAlarms)
-            Log.d(TAG, "Cleaned up ${currentAlarms.size - validAlarms.size} old alarm metadata entries")
+            Log.d(TAG, "Cleaned up ${expiredAlarms.size} expired alarm(s)")
         }
     }
 }
