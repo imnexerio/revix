@@ -31,14 +31,16 @@ class AlarmManagerHelper(private val context: Context) {
     }
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-    // Simplified alarm scheduling - just schedule based on provided data
+    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)    // Simplified alarm scheduling - just schedule based on provided data
     fun scheduleAlarmsForTwoDays(
         todayRecords: List<Map<String, Any>>,
         tomorrowRecords: List<Map<String, Any>>
     ) {
+        Log.d(TAG, "=== Starting Alarm Scheduling ===")
         Log.d(TAG, "Processing alarm scheduling with ${todayRecords.size} today + ${tomorrowRecords.size} tomorrow records")
+        
+        // Log current state before changes
+        logCurrentAlarms()
         
         // Get current dates from the actual data
         val todayDate = getTodayDateFromRecords(todayRecords)
@@ -49,22 +51,36 @@ class AlarmManagerHelper(private val context: Context) {
         // Clean up old alarm metadata first
         cleanupOldAlarmMetadata()
         
-        // Get current alarms AFTER cleanup
+        // COMPLETE REPLACEMENT APPROACH: Cancel ALL existing alarms first
         val currentAlarms = getStoredAlarmMetadata()
+        Log.d(TAG, "Cancelling ${currentAlarms.size} existing alarms")
+        currentAlarms.values.forEach { alarm ->
+            cancelAlarm(alarm.key)
+            Log.d(TAG, "Cancelled existing alarm: ${alarm.recordTitle} on ${alarm.scheduledDate}")
+        }
+        
         val newAlarmMetadata = mutableMapOf<String, AlarmMetadata>()
         
         // Process both days
         processDayRecords(todayRecords, todayDate, newAlarmMetadata)
         processDayRecords(tomorrowRecords, tomorrowDate, newAlarmMetadata)
         
-        // Handle add/remove/update for current records
-        handleAlarmUpdates(currentAlarms, newAlarmMetadata)
+        // Schedule all new alarms
+        Log.d(TAG, "Scheduling ${newAlarmMetadata.size} new alarms")
+        newAlarmMetadata.values.forEach { alarm ->
+            scheduleAlarm(alarm)
+            Log.d(TAG, "Scheduled alarm: ${alarm.recordTitle} on ${alarm.scheduledDate} at ${Date(alarm.actualTime)}")
+        }
         
         // Save updated metadata
         saveAlarmMetadata(newAlarmMetadata.values.toList())
         
         Log.d(TAG, "Alarm scheduling completed. Active alarms: ${newAlarmMetadata.size}")
-    }    private fun getTodayDateFromRecords(todayRecords: List<Map<String, Any>>): String {
+        Log.d(TAG, "=== Finished Alarm Scheduling ===")
+        
+        // Log final state
+        logCurrentAlarms()
+    }private fun getTodayDateFromRecords(todayRecords: List<Map<String, Any>>): String {
         return todayRecords.firstOrNull()?.get("scheduled_date")?.toString()
             ?: SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     }
@@ -113,36 +129,25 @@ class AlarmManagerHelper(private val context: Context) {
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing record for $dateString", e)
             }
+        }    }
+
+    fun cancelAllStoredAlarms() {
+        val currentAlarms = getStoredAlarmMetadata()
+        currentAlarms.values.forEach { alarm ->
+            cancelAlarm(alarm.key)
+            Log.d(TAG, "Cancelled stored alarm: ${alarm.recordTitle} on ${alarm.scheduledDate}")
         }
+        // Clear all metadata
+        prefs.edit().remove(ALARM_METADATA_KEY).apply()        Log.d(TAG, "Cancelled and cleared all stored alarms: ${currentAlarms.size}")
     }
 
-    private fun handleAlarmUpdates(
-        currentAlarms: Map<String, AlarmMetadata>,
-        newAlarmMetadata: Map<String, AlarmMetadata>
-    ) {
-        newAlarmMetadata.values.forEach { newAlarm ->
-            val existingAlarm = currentAlarms[newAlarm.key]
-            
-            when {
-                existingAlarm == null -> {
-                    scheduleAlarm(newAlarm)
-                    Log.d(TAG, "Scheduled NEW alarm: ${newAlarm.recordTitle} on ${newAlarm.scheduledDate}")
-                }
-                existingAlarm.actualTime != newAlarm.actualTime -> {
-                    cancelAlarm(existingAlarm.key)
-                    scheduleAlarm(newAlarm)
-                    Log.d(TAG, "Updated alarm time: ${newAlarm.recordTitle} on ${newAlarm.scheduledDate}")
-                }
-            }
+    fun logCurrentAlarms() {
+        val currentAlarms = getStoredAlarmMetadata()
+        Log.d(TAG, "=== Current Stored Alarms (${currentAlarms.size}) ===")
+        currentAlarms.values.forEach { alarm ->
+            Log.d(TAG, "Alarm: ${alarm.recordTitle} | Date: ${alarm.scheduledDate} | Time: ${Date(alarm.actualTime)} | Type: ${alarm.alarmType} | Key: ${alarm.key}")
         }
-
-        currentAlarms.keys.minus(newAlarmMetadata.keys).forEach { removedKey ->
-            val removedAlarm = currentAlarms[removedKey]
-            if (removedAlarm != null) {
-                cancelAlarm(removedKey)
-                Log.d(TAG, "Cancelled REMOVED alarm: ${removedAlarm.recordTitle}")
-            }
-        }
+        Log.d(TAG, "=== End Current Alarms ===")
     }
 
     private fun generateUniqueKeyWithDate(
@@ -151,7 +156,8 @@ class AlarmManagerHelper(private val context: Context) {
         recordTitle: String, 
         scheduledDate: String
     ): String {
-        return "${category}_${subCategory}_${recordTitle}_${scheduledDate}".hashCode().toString()
+        // Use a deterministic approach instead of hashCode to ensure consistency
+        return "${category}_${subCategory}_${recordTitle}_${scheduledDate}".replace(" ", "_").replace("[^a-zA-Z0-9_]".toRegex(), "")
     }
 
     private fun parseTimeForDate(timeString: String, dateString: String): Long {
@@ -170,26 +176,29 @@ class AlarmManagerHelper(private val context: Context) {
             set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-        }.timeInMillis    }private fun scheduleAlarm(metadata: AlarmMetadata) {
+        }.timeInMillis    }    private fun scheduleAlarm(metadata: AlarmMetadata) {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_ALARM_TRIGGER
             putExtra(AlarmReceiver.EXTRA_CATEGORY, metadata.category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, metadata.subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, metadata.recordTitle)
-            putExtra("scheduled_date", metadata.scheduledDate)  // NEW
+            putExtra("scheduled_date", metadata.scheduledDate)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, metadata.alarmType)
         }
 
+        // Use a consistent request code based on the key
+        val requestCode = metadata.key.hashCode()
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            metadata.key.hashCode(),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         scheduleExactAlarm(metadata.actualTime, pendingIntent)
         
-        Log.d(TAG, "Scheduled alarm for ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)}")    }fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
+        Log.d(TAG, "Scheduled alarm for ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)} with requestCode: $requestCode")
+    }fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
         val currentMetadata = getStoredAlarmMetadata().toMutableMap()
         
         // Find all alarms for this record (there might be multiple dates)
@@ -258,22 +267,40 @@ class AlarmManagerHelper(private val context: Context) {
                     putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmMetadata.alarmType)
                 }
                 
+                // Use the same request code calculation as in scheduleAlarm
+                val requestCode = alarmKey.hashCode()
                 val pendingIntent = PendingIntent.getBroadcast(
                     context,
-                    alarmKey.hashCode(),
+                    requestCode,
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 alarmManager.cancel(pendingIntent)
                 pendingIntent.cancel()
-                Log.d(TAG, "Successfully cancelled alarm: $alarmKey")
+                Log.d(TAG, "Successfully cancelled alarm: $alarmKey with requestCode: $requestCode")
             } else {
                 Log.w(TAG, "Alarm metadata not found for key: $alarmKey")
+                // Even if metadata is missing, try to cancel with just the key
+                val requestCode = alarmKey.hashCode()
+                val intent = Intent(context, AlarmReceiver::class.java).apply {
+                    action = AlarmReceiver.ACTION_ALARM_TRIGGER
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    requestCode,
+                    intent,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                )
+                if (pendingIntent != null) {
+                    alarmManager.cancel(pendingIntent)
+                    pendingIntent.cancel()
+                    Log.d(TAG, "Cancelled alarm by requestCode only: $requestCode")
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cancel alarm: $alarmKey", e)
         }
-    }    private fun parseTimeToday(timeString: String): Long {
+    }private fun parseTimeToday(timeString: String): Long {
         val timeParts = timeString.split(":")
         if (timeParts.size != 2) return 0L
 
