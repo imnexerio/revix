@@ -52,6 +52,18 @@ class PermissionManager(private val activity: Activity) {
             Log.d(TAG, "Showing overlay permission dialog")
             showOverlayDialog()
         } else {
+            checkBatteryOptimizationFlow()
+        }
+    }
+
+    /**
+     * Check and request battery optimization exemption if needed
+     */
+    private fun checkBatteryOptimizationFlow() {
+        if (!isBatteryOptimizationIgnored()) {
+            Log.d(TAG, "Showing battery optimization dialog")
+            showBatteryOptimizationDialog()
+        } else {
             Log.d(TAG, "All permissions granted!")
         }
     }/**
@@ -191,7 +203,8 @@ class PermissionManager(private val activity: Activity) {
             "notifications" to hasPostNotificationPermission(),
             "exactAlarm" to hasExactAlarmPermission(),
             "notificationsEnabled" to areNotificationsEnabled(),
-            "overlay" to checkOverlayPermission()
+            "overlay" to checkOverlayPermission(),
+            "batteryOptimization" to isBatteryOptimizationIgnored()
         )
     }
 
@@ -272,6 +285,63 @@ class PermissionManager(private val activity: Activity) {
             .setMessage("To display reminders and alerts on top of other apps, please grant overlay permission.")
             .setPositiveButton("Grant Permission") { _, _ ->
                 requestOverlayPermission()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+                // Continue to battery optimization permission even if overlay was denied
+                checkBatteryOptimizationFlow()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    /**
+     * Check if battery optimization is ignored (Android 6.0+)
+     */
+    fun isBatteryOptimizationIgnored(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = activity.getSystemService(Context.POWER_SERVICE) as PowerManager
+            powerManager.isIgnoringBatteryOptimizations(activity.packageName)
+        } else {
+            true // Not applicable on older versions
+        }
+    }
+
+    /**
+     * Request battery optimization exemption
+     */
+    fun requestBatteryOptimizationExemption() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isBatteryOptimizationIgnored()) {
+            try {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:${activity.packageName}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                activity.startActivity(intent)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to open battery optimization settings", e)
+                // Fallback to general battery optimization settings
+                try {
+                    val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    activity.startActivity(fallbackIntent)
+                } catch (e2: Exception) {
+                    Log.e(TAG, "Failed to open battery optimization settings", e2)
+                }
+            }
+        }
+    }
+
+    /**
+     * Show dialog and request battery optimization exemption
+     */
+    fun showBatteryOptimizationDialog() {
+        AlertDialog.Builder(activity, R.style.DialogWithCenteredTitle)
+            .setTitle("Battery Optimization")
+            .setMessage("To ensure your reminders and alarms work reliably in the background, please disable battery optimization for this app.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                requestBatteryOptimizationExemption()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
