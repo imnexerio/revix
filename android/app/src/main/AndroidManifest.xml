@@ -57,8 +57,10 @@
             android:name="com.imnexerio.revix.AlarmReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="revix.ACTION_RECORD_ALARM" />
-                <action android:name="revix.ACTION_RECORD_PRECHECK" />
+                <action android:name="revix.ACTION_ALARM_TRIGGER" />
+                <action android:name="MARK_AS_DONE" />
+                <action android:name="IGNORE_ALARM" />
+                <action android:name="DISMISS_ALARM" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
