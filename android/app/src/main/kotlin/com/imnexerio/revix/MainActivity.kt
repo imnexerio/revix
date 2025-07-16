@@ -42,4 +42,9 @@ class MainActivity : FlutterActivity() {
         permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Resume permission flow when returning from system settings
+        permissionManager.resumePermissionFlow()
+    }
 }

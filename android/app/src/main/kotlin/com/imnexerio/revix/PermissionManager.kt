@@ -21,8 +21,20 @@ class PermissionManager(private val activity: Activity) {
         private const val TAG = "PermissionManager"
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_EXACT_ALARM = 1002
-    }    fun checkAndRequestAllPermissions() {
+        
+        // Preference keys to track permission flow state
+        private const val PREF_NAME = "permission_flow"
+        private const val KEY_CHECKING_EXACT_ALARM = "checking_exact_alarm"
+        private const val KEY_CHECKING_OVERLAY = "checking_overlay"
+        private const val KEY_CHECKING_BATTERY = "checking_battery"
+    }
+
+    private val prefs = activity.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    fun checkAndRequestAllPermissions() {
         Log.d(TAG, "Checking all alarm-related permissions")
+        
+        // Clear any previous flow state
+        clearPermissionFlowState()
         
         if (!hasPostNotificationPermission()) {
             Log.d(TAG, "Showing notification permission dialog")
@@ -30,6 +42,52 @@ class PermissionManager(private val activity: Activity) {
         } else {
             checkExactAlarmPermission()
         }
+    }
+
+    /**
+     * Resume permission checking from where we left off (call this in onResume)
+     */
+    fun resumePermissionFlow() {
+        Log.d(TAG, "Resuming permission flow")
+        
+        when {
+            prefs.getBoolean(KEY_CHECKING_BATTERY, false) -> {
+                prefs.edit().remove(KEY_CHECKING_BATTERY).apply()
+                if (!isBatteryOptimizationIgnored()) {
+                    showBatteryOptimizationDialog()
+                } else {
+                    Log.d(TAG, "All permissions granted!")
+                    clearPermissionFlowState()
+                }
+            }
+            prefs.getBoolean(KEY_CHECKING_OVERLAY, false) -> {
+                prefs.edit().remove(KEY_CHECKING_OVERLAY).apply()
+                if (!checkOverlayPermission()) {
+                    showOverlayDialog()
+                } else {
+                    checkBatteryOptimizationFlow()
+                }
+            }
+            prefs.getBoolean(KEY_CHECKING_EXACT_ALARM, false) -> {
+                prefs.edit().remove(KEY_CHECKING_EXACT_ALARM).apply()
+                if (!hasExactAlarmPermission()) {
+                    showExactAlarmDialog()
+                } else {
+                    checkOverlayPermissionFlow()
+                }
+            }
+        }
+    }
+
+    /**
+     * Clear permission flow state
+     */
+    private fun clearPermissionFlowState() {
+        prefs.edit()
+            .remove(KEY_CHECKING_EXACT_ALARM)
+            .remove(KEY_CHECKING_OVERLAY)
+            .remove(KEY_CHECKING_BATTERY)
+            .apply()
     }
 
     /**
@@ -134,6 +192,8 @@ class PermissionManager(private val activity: Activity) {
             .setTitle("Alarm Permission")
             .setMessage("To ensure your reminders work precisely at the scheduled time, please grant exact alarm permission.")
             .setPositiveButton("Grant Permission") { _, _ ->
+                // Save state before going to settings
+                prefs.edit().putBoolean(KEY_CHECKING_EXACT_ALARM, true).apply()
                 requestExactAlarmPermission()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
@@ -284,6 +344,8 @@ class PermissionManager(private val activity: Activity) {
             .setTitle("Overlay Permission")
             .setMessage("To display reminders and alerts on top of other apps, please grant overlay permission.")
             .setPositiveButton("Grant Permission") { _, _ ->
+                // Save state before going to settings
+                prefs.edit().putBoolean(KEY_CHECKING_OVERLAY, true).apply()
                 requestOverlayPermission()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
@@ -331,9 +393,7 @@ class PermissionManager(private val activity: Activity) {
                 }
             }
         }
-    }
-
-    /**
+    }    /**
      * Show dialog and request battery optimization exemption
      */
     fun showBatteryOptimizationDialog() {
@@ -341,11 +401,14 @@ class PermissionManager(private val activity: Activity) {
             .setTitle("Battery Optimization")
             .setMessage("To ensure your reminders and alarms work reliably in the background, please disable battery optimization for this app.")
             .setPositiveButton("Grant Permission") { _, _ ->
+                // Save state before going to settings
+                prefs.edit().putBoolean(KEY_CHECKING_BATTERY, true).apply()
                 requestBatteryOptimizationExemption()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
                 Log.d(TAG, "All permission checks completed!")
+                clearPermissionFlowState()
             }
             .setCancelable(false)
             .show()
