@@ -20,7 +20,8 @@ data class AlarmMetadata(
     val recordTitle: String,
     val scheduledDate: String,  // NEW - store the date
     val actualTime: Long,
-    val alarmType: Int
+    val alarmType: Int,
+    val reminderTime: String  // NEW - store the original reminder time
 )
 
 class AlarmManagerHelper(private val context: Context) {
@@ -125,7 +126,8 @@ class AlarmManagerHelper(private val context: Context) {
                     recordTitle = recordTitle,
                     scheduledDate = scheduledDate,
                     actualTime = actualTime,
-                    alarmType = alarmType
+                    alarmType = alarmType,
+                    reminderTime = reminderTime
                 )
 
                 newAlarmMetadata[uniqueKey] = newMetadata
@@ -196,7 +198,8 @@ class AlarmManagerHelper(private val context: Context) {
                alarm1.category == alarm2.category &&
                alarm1.subCategory == alarm2.subCategory &&
                alarm1.recordTitle == alarm2.recordTitle &&
-               alarm1.scheduledDate == alarm2.scheduledDate
+               alarm1.scheduledDate == alarm2.scheduledDate &&
+               alarm1.reminderTime == alarm2.reminderTime
     }
 
     private fun logAlarmChanges(oldAlarm: AlarmMetadata, newAlarm: AlarmMetadata) {
@@ -217,6 +220,9 @@ class AlarmManagerHelper(private val context: Context) {
         }
         if (oldAlarm.scheduledDate != newAlarm.scheduledDate) {
             Log.d(TAG, "  Date changed: ${oldAlarm.scheduledDate} -> ${newAlarm.scheduledDate}")
+        }
+        if (oldAlarm.reminderTime != newAlarm.reminderTime) {
+            Log.d(TAG, "  Reminder time changed: ${oldAlarm.reminderTime} -> ${newAlarm.reminderTime}")
         }
     }
 
@@ -275,14 +281,14 @@ class AlarmManagerHelper(private val context: Context) {
             Log.w(TAG, "SKIPPING PAST ALARM: ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)} (current time: ${Date(currentTime)})")
             return
         }
-        
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
+          val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_ALARM_TRIGGER
             putExtra(AlarmReceiver.EXTRA_CATEGORY, metadata.category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, metadata.subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, metadata.recordTitle)
             putExtra("scheduled_date", metadata.scheduledDate)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, metadata.alarmType)
+            putExtra("reminder_time", metadata.reminderTime)
         }
 
         // Use a consistent request code based on the key
@@ -356,7 +362,7 @@ class AlarmManagerHelper(private val context: Context) {
         }
         
         val uniqueKey = generateUniqueKeyWithDate(category, subCategory, recordTitle, scheduledDate)
-        
+
         val newMetadata = AlarmMetadata(
             key = uniqueKey,
             category = category,
@@ -364,7 +370,8 @@ class AlarmManagerHelper(private val context: Context) {
             recordTitle = recordTitle,
             scheduledDate = scheduledDate,
             actualTime = actualTime,
-            alarmType = alarmType
+            alarmType = alarmType,
+            reminderTime = reminderTime
         )
         
         // Schedule the new alarm
@@ -417,13 +424,14 @@ class AlarmManagerHelper(private val context: Context) {
             
             if (alarmMetadata != null) {
                 // Create the exact same intent that was used for scheduling
-                val intent = Intent(context, AlarmReceiver::class.java).apply {
+                 val intent = Intent(context, AlarmReceiver::class.java).apply {
                     action = AlarmReceiver.ACTION_ALARM_TRIGGER
                     putExtra(AlarmReceiver.EXTRA_CATEGORY, alarmMetadata.category)
                     putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, alarmMetadata.subCategory)
                     putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, alarmMetadata.recordTitle)
                     putExtra("scheduled_date", alarmMetadata.scheduledDate)
                     putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmMetadata.alarmType)
+                    putExtra("reminder_time", alarmMetadata.reminderTime)
                 }
                 
                 // Use the same request code calculation as in scheduleAlarm
@@ -483,6 +491,7 @@ class AlarmManagerHelper(private val context: Context) {
                 put("scheduledDate", alarm.scheduledDate)  // NEW
                 put("actualTime", alarm.actualTime)
                 put("alarmType", alarm.alarmType)
+                put("reminderTime", alarm.reminderTime)  // NEW
             }
             jsonArray.put(jsonObject)
         }
@@ -501,7 +510,8 @@ class AlarmManagerHelper(private val context: Context) {
                     recordTitle = jsonObject.getString("recordTitle"),
                     scheduledDate = jsonObject.optString("scheduledDate", ""), // Handle old format
                     actualTime = jsonObject.getLong("actualTime"),
-                    alarmType = jsonObject.getInt("alarmType")
+                    alarmType = jsonObject.getInt("alarmType"),
+                    reminderTime = jsonObject.optString("reminderTime", "") // Handle old format
                 )
                 alarmMap[alarm.key] = alarm
             }

@@ -35,18 +35,19 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-class AlarmScreenActivity : Activity() {
-    companion object {
+class AlarmScreenActivity : Activity() {    companion object {
         private const val TAG = "AlarmScreenActivity"
         const val EXTRA_CATEGORY = "category"
         const val EXTRA_SUB_CATEGORY = "sub_category"
         const val EXTRA_RECORD_TITLE = "record_title"
+        const val EXTRA_REMINDER_TIME = "reminder_time"
         const val ACTION_CLOSE_ALARM_SCREEN = "CLOSE_ALARM_SCREEN"
     }
 
     private var category: String = ""
     private var subCategory: String = ""
     private var recordTitle: String = ""
+    private var reminderTime: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
     
     // Brjoadcast receiver to listen for alarm service events
@@ -87,11 +88,11 @@ class AlarmScreenActivity : Activity() {
             finish()
             return
         }
-        
-        // Extract alarm details from intent
+          // Extract alarm details from intent
         category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
+        reminderTime = intent.getStringExtra("reminder_time") ?: ""
         
         Log.d(TAG, "AlarmScreenActivity created for: $recordTitle")
         
@@ -278,7 +279,23 @@ class AlarmScreenActivity : Activity() {
             ).apply {
                 setMargins(0, 0, 0, dpToPx(48))
             }
-        }        // Container for swipe button only
+        }
+        // Reminder time display
+        val reminderTimeText = TextView(this).apply {
+            text = if (reminderTime.isNotEmpty()) "Reminder Time: $reminderTime" else ""
+            textSize = 18f
+            setTextColor(accentColor)
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.NORMAL)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(32))
+            }
+        }
+
+        // Container for swipe button only
         val swipeButtonContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -339,6 +356,7 @@ class AlarmScreenActivity : Activity() {
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
+        contentLayout.addView(reminderTimeText) // Reminder time text
         
         // Add swipe button in center
         swipeButtonContainer.addView(instructionText)

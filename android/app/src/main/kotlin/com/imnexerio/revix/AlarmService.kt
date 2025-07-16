@@ -20,6 +20,7 @@ data class ActiveAlarm(
     val subCategory: String,
     val recordTitle: String,
     val alarmType: Int,
+    val reminderTime: String,
     val startTime: Long = System.currentTimeMillis()
 )
 
@@ -82,10 +83,9 @@ class AlarmService : Service() {    companion object {
             }
             notificationManager.createNotificationChannel(reminderChannel)
         }
-    }
-      private fun createForegroundNotification(category: String, subCategory: String, recordTitle: String): Notification {
-        val title = "Alarm: $category · $subCategory · $recordTitle"
-        val content = "Time for your scheduled task"
+    }      private fun createForegroundNotification(category: String, subCategory: String, recordTitle: String, reminderTime: String): Notification {
+        val title = "Alarm: $category · $subCategory"
+        val content = "$recordTitle (Reminder: $reminderTime)"
 
         // Create mark as done intent
         val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
@@ -144,11 +144,9 @@ class AlarmService : Service() {    companion object {
                 .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
                 .build()
         }
-    }
-
-    private fun createReminderNotification(category: String, subCategory: String, recordTitle: String): Notification {
+    }    private fun createReminderNotification(category: String, subCategory: String, recordTitle: String, reminderTime: String): Notification {
         val title = "Task Reminder: $category · $subCategory"
-        val content = recordTitle
+        val content = "$recordTitle (Reminder: $reminderTime)"
 
         // Create mark as done intent (same as foreground notification)
         val markDoneIntent = Intent(this, AlarmReceiver::class.java).apply {
@@ -239,9 +237,10 @@ class AlarmService : Service() {    companion object {
         val category = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
+        val reminderTime = intent.getStringExtra("reminder_time") ?: ""
         val alarmKey = "$category$subCategory$recordTitle"
 
-        Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType)")
+        Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType) at $reminderTime")
 
         // Create alarm metadata
         val alarm = ActiveAlarm(
@@ -249,12 +248,12 @@ class AlarmService : Service() {    companion object {
             category = category,
             subCategory = subCategory,
             recordTitle = recordTitle,
-            alarmType = alarmType)        // Add to active alarms
-        activeAlarms[alarmKey] = alarm
-
-        // Start as foreground service if first alarm
+            alarmType = alarmType,
+            reminderTime = reminderTime
+        )// Add to active alarms
+        activeAlarms[alarmKey] = alarm        // Start as foreground service if first alarm
         if (activeAlarms.size == 1) {
-            val notification = createForegroundNotification(category, subCategory, recordTitle)
+            val notification = createForegroundNotification(category, subCategory, recordTitle, reminderTime)
             startForeground(999, notification)
         }
 
@@ -500,11 +499,11 @@ class AlarmService : Service() {    companion object {
     }    private fun launchAlarmScreen(alarm: ActiveAlarm) {
         try {
             Log.d(TAG, "Attempting to launch alarm screen for: ${alarm.recordTitle}")
-            
-            val intent = Intent(this, AlarmScreenActivity::class.java).apply {
+              val intent = Intent(this, AlarmScreenActivity::class.java).apply {
                 putExtra(AlarmScreenActivity.EXTRA_CATEGORY, alarm.category)
                 putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
                 putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
+                putExtra("reminder_time", alarm.reminderTime)
                 addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or 
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or 
@@ -579,7 +578,7 @@ class AlarmService : Service() {    companion object {
         try {
             Log.d(TAG, "Converting foreground notification to reminder for: ${alarm.recordTitle}")
             
-            val reminderNotification = createReminderNotification(alarm.category, alarm.subCategory, alarm.recordTitle)
+            val reminderNotification = createReminderNotification(alarm.category, alarm.subCategory, alarm.recordTitle, alarm.reminderTime)
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val notificationId = (alarm.category + alarm.subCategory + alarm.recordTitle).hashCode()
             
