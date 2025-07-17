@@ -14,6 +14,10 @@ import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.net.Uri
 import java.util.Random
 import android.os.Build
@@ -36,7 +40,7 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-class AlarmScreenActivity : Activity() {    // Data class for shooting stars
+class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class for shooting stars
     data class Star(
         var x: Float,
         var y: Float,
@@ -63,6 +67,13 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
     private var recordTitle: String = ""
     private var reminderTime: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
+    
+    // Sensor properties for device tilt detection
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var deviceTiltX: Float = 0f // Device tilt in X direction (left/right)
+    private var deviceTiltY: Float = 0f // Device tilt in Y direction (forward/back)
+    private val tiltThreshold = 15f // Minimum tilt in degrees to trigger directional change
     
     // Brjoadcast receiver to listen for alarm service events
     private val alarmServiceReceiver = object : BroadcastReceiver() {
@@ -107,8 +118,11 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
         subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         reminderTime = intent.getStringExtra("reminder_time") ?: ""
+          Log.d(TAG, "AlarmScreenActivity created for: $recordTitle")
         
-        Log.d(TAG, "AlarmScreenActivity created for: $recordTitle")
+        // Initialize sensor for device tilt detection
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         
         // Set up full screen over lock screen
         setupFullScreenOverLockScreen()
@@ -731,9 +745,14 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
                     createNewStar()
                 }
             }
-            private fun createNewStar(): Star {                // Random angle for downward direction (±30 degrees from straight down)
-                // 0° = straight down, +30° = down-right, -30° = down-left
-                val angle = Math.toRadians((-30 + random.nextFloat() * 60).toDouble())
+            private fun createNewStar(): Star {
+                // Get dynamic angle range based on device tilt
+                val angleRange = getStarAngleRange()
+                val minAngle = angleRange.first
+                val maxAngle = angleRange.second
+                val angleDifference = maxAngle - minAngle
+                val randomAngle = minAngle + random.nextFloat() * angleDifference
+                val angle = Math.toRadians(randomAngle.toDouble())
                 
                 // Random speed properties
                 val minSpeed = dpToPx(30).toFloat()  // Minimum speed
@@ -939,10 +958,14 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
         override fun onStart() {
         super.onStart()
         Log.d(TAG, "AlarmScreenActivity onStart() called")
-    }
-        override fun onResume() {
+    }        override fun onResume() {
         super.onResume()
         Log.d(TAG, "AlarmScreenActivity onResume() called - should be visible now")
+        
+        // Register sensor listener for device tilt
+        accelerometer?.let { 
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        }
         
         // Register broadcast receiver to listen for alarm service events
         val filter = IntentFilter(ACTION_CLOSE_ALARM_SCREEN)
@@ -955,6 +978,9 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
     }    override fun onPause() {
         super.onPause()
         Log.d(TAG, "AlarmScreenActivity onPause() called")
+        
+        // Unregister sensor listener
+        sensorManager.unregisterListener(this)
         
         // Unregister broadcast receiver
         try {
@@ -979,6 +1005,9 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "AlarmScreenActivity destroyed")
+        
+        // Unregister sensor listener
+        sensorManager.unregisterListener(this)
         
         // Backup check - if user didn't take any action, treat it as ignore
         if (!userActionTaken) {
@@ -1223,5 +1252,41 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
         container.addView(button)
         
         return container
+    }
+
+    // Sensor event handling for device tilt detection
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            val x = event.values[0]
+            val y = event.values[1]
+            val z = event.values[2]
+            
+            // Calculate tilt angles in degrees
+            deviceTiltX = Math.toDegrees(kotlin.math.atan2(x.toDouble(), kotlin.math.sqrt((y * y + z * z).toDouble()))).toFloat()
+            deviceTiltY = Math.toDegrees(kotlin.math.atan2(y.toDouble(), kotlin.math.sqrt((x * x + z * z).toDouble()))).toFloat()
+        }
+    }
+    
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // Not needed for this implementation
+    }
+      // Calculate shooting star angle range based on device tilt
+    private fun getStarAngleRange(): Pair<Float, Float> {
+        val absX = kotlin.math.abs(deviceTiltX)
+        val absY = kotlin.math.abs(deviceTiltY)
+        
+        return when {
+            // Device is upside down (extreme Y tilt) - use left, bottom, right directions
+            absY > 120f -> Pair(-90f, 90f)
+            
+            // Device tilted right (positive X beyond threshold)
+            deviceTiltX > tiltThreshold -> Pair(-30f, 90f)
+            
+            // Device tilted left (negative X beyond threshold)  
+            deviceTiltX < -tiltThreshold -> Pair(-90f, 30f)
+            
+            // Default - minimal tilt or within threshold
+            else -> Pair(-30f, 30f)
+        }
     }
 }
