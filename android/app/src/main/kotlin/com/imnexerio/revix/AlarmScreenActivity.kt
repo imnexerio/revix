@@ -36,12 +36,12 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-class AlarmScreenActivity : Activity() {    
-    // Data class for falling stars
+class AlarmScreenActivity : Activity() {      // Data class for shooting stars
     data class Star(
         var x: Float,
         var y: Float,
-        var speed: Float,
+        var velocityX: Float,
+        var velocityY: Float,
         var size: Float,
         var alpha: Float,
         var twinklePhase: Float,
@@ -713,25 +713,36 @@ class AlarmScreenActivity : Activity() {
             private val trailPaint = Paint().apply {
                 isAntiAlias = true
                 color = textColor
-            }
+                strokeWidth = dpToPx(2).toFloat()
+                strokeCap = Paint.Cap.ROUND            }
             
-            private val maxStars = 25 // Number of stars on screen
+            private val maxStars = 10 // Control number of shooting stars (5-20 recommended)
             private var lastTime = System.currentTimeMillis()
             
             private fun initializeStars() {
                 stars.clear()
-                // Start with stars spread across the screen vertically for initial effect
+                // Start with stars spread across the top of screen
                 repeat(maxStars) {
-                    val star = Star(
-                        x = random.nextFloat() * width,
-                        y = random.nextFloat() * height, // Initially spread across screen
-                        speed = dpToPx(30).toFloat() + random.nextFloat() * dpToPx(40), // Varied speed
-                        size = dpToPx(1).toFloat() + random.nextFloat() * dpToPx(3), // Varied size
-                        alpha = 0.3f + random.nextFloat() * 0.4f, // Subtle transparency
-                        twinklePhase = random.nextFloat() * 2f * Math.PI.toFloat()
-                    )
-                    stars.add(star)
+                    createNewStar()
                 }
+            }
+            
+            private fun createNewStar(): Star {
+                // Random angle for downward direction (30-150 degrees from vertical)
+                val angle = Math.toRadians((30 + random.nextFloat() * 120).toDouble())
+                val speed = dpToPx(150).toFloat() + random.nextFloat() * dpToPx(200) // Much faster
+                
+                val star = Star(
+                    x = random.nextFloat() * width, // Start anywhere across the top
+                    y = -dpToPx(50).toFloat(), // Start above screen
+                    velocityX = (Math.sin(angle) * speed).toFloat(),
+                    velocityY = (Math.cos(angle) * speed).toFloat(),
+                    size = dpToPx(2).toFloat() + random.nextFloat() * dpToPx(4), // Larger stars
+                    alpha = 0.6f + random.nextFloat() * 0.4f, // More visible
+                    twinklePhase = random.nextFloat() * 2f * Math.PI.toFloat()
+                )
+                stars.add(star)
+                return star
             }
             
             override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -745,7 +756,7 @@ class AlarmScreenActivity : Activity() {
                 super.onDraw(canvas)
                 
                 val currentTime = System.currentTimeMillis()
-                val deltaTime = (currentTime - lastTime) / 16f // Normalize to ~60fps
+                val deltaTime = (currentTime - lastTime) / 1000f // Convert to seconds
                 lastTime = currentTime
                 
                 updateStars(deltaTime)
@@ -756,49 +767,53 @@ class AlarmScreenActivity : Activity() {
             }
             
             private fun updateStars(deltaTime: Float) {
+                val starsToRemove = mutableListOf<Star>()
+                
                 stars.forEach { star ->
-                    // Update position (falling down)
-                    star.y += star.speed * deltaTime * 0.016f // Smooth movement
+                    // Update position with velocity
+                    star.x += star.velocityX * deltaTime
+                    star.y += star.velocityY * deltaTime
                     
-                    // Slight horizontal drift for more natural movement
-                    star.x += (Math.sin(star.twinklePhase.toDouble()) * 0.5f * deltaTime * 0.016f).toFloat()
-                    
-                    // Update twinkle phase for subtle alpha variation
-                    star.twinklePhase += deltaTime * 0.05f
-                    
-                    // Update trail
+                    // Update twinkle phase
+                    star.twinklePhase += deltaTime * 3f
+                      // Add to trail with more frequent updates
                     star.trail.add(Pair(star.x, star.y))
-                    if (star.trail.size > 8) { // Keep trail length manageable
+                    if (star.trail.size > 12) { // Shorter trail for better performance
                         star.trail.removeAt(0)
                     }
                     
-                    // Reset star when it goes off screen
-                    if (star.y > height + star.size) {
-                        star.x = random.nextFloat() * width
-                        star.y = -star.size - random.nextFloat() * dpToPx(200) // Start above screen with spacing
-                        star.speed = dpToPx(30).toFloat() + random.nextFloat() * dpToPx(40)
-                        star.size = dpToPx(1).toFloat() + random.nextFloat() * dpToPx(3)
-                        star.alpha = 0.3f + random.nextFloat() * 0.4f
-                        star.trail.clear()
+                    // Remove star when it goes off screen
+                    if (star.y > height + dpToPx(100) || star.x < -dpToPx(100) || star.x > width + dpToPx(100)) {
+                        starsToRemove.add(star)
                     }
+                }
+                
+                // Remove off-screen stars and create new ones
+                starsToRemove.forEach { stars.remove(it) }
+                
+                // Maintain star count by creating new ones
+                while (stars.size < maxStars) {
+                    createNewStar()
                 }
             }
             
             private fun drawStars(canvas: Canvas) {
                 stars.forEach { star ->
                     // Calculate twinkling alpha
-                    val twinkleAlpha = star.alpha + (Math.sin(star.twinklePhase.toDouble()) * 0.2f).toFloat()
-                    val clampedAlpha = twinkleAlpha.coerceIn(0.1f, 0.8f)
-                    
-                    // Draw subtle trail
+                    val twinkleAlpha = star.alpha + (Math.sin(star.twinklePhase.toDouble()) * 0.3f).toFloat()
+                    val clampedAlpha = twinkleAlpha.coerceIn(0.2f, 1.0f)
+                      // Draw bright trail (brightest at head, fading towards tail)
                     if (star.trail.size > 1) {
                         for (i in 0 until star.trail.size - 1) {
-                            val trailAlpha = clampedAlpha * (i.toFloat() / star.trail.size) * 0.4f
+                            // Reverse the trail alpha calculation - brightest at end (head), fading towards start (tail)
+                            val trailProgress = i.toFloat() / (star.trail.size - 1)
+                            val trailAlpha = clampedAlpha * (1f - trailProgress) * 0.7f // Fade from bright to dim
                             trailPaint.alpha = (trailAlpha * 255).toInt()
                             
                             val currentPos = star.trail[i]
                             val nextPos = star.trail[i + 1]
                             
+                            // Draw thicker trail lines
                             canvas.drawLine(
                                 currentPos.first, currentPos.second,
                                 nextPos.first, nextPos.second,
@@ -807,29 +822,40 @@ class AlarmScreenActivity : Activity() {
                         }
                     }
                     
-                    // Draw main star
+                    // Draw main star (brighter and larger)
                     starPaint.alpha = (clampedAlpha * 255).toInt()
                     canvas.drawCircle(star.x, star.y, star.size, starPaint)
                     
-                    // Draw subtle cross sparkle for larger stars
-                    if (star.size > dpToPx(2)) {
-                        val sparkleAlpha = clampedAlpha * 0.6f
-                        starPaint.alpha = (sparkleAlpha * 255).toInt()
-                        
-                        // Horizontal line
-                        canvas.drawLine(
-                            star.x - star.size * 1.5f, star.y,
-                            star.x + star.size * 1.5f, star.y,
-                            starPaint
-                        )
-                        
-                        // Vertical line
-                        canvas.drawLine(
-                            star.x, star.y - star.size * 1.5f,
-                            star.x, star.y + star.size * 1.5f,
-                            starPaint
-                        )
-                    }
+                    // Draw bright cross sparkle for all stars
+                    val sparkleAlpha = clampedAlpha * 0.8f
+                    starPaint.alpha = (sparkleAlpha * 255).toInt()
+                    
+                    // Horizontal line
+                    canvas.drawLine(
+                        star.x - star.size * 2f, star.y,
+                        star.x + star.size * 2f, star.y,
+                        starPaint
+                    )
+                    
+                    // Vertical line
+                    canvas.drawLine(
+                        star.x, star.y - star.size * 2f,
+                        star.x, star.y + star.size * 2f,
+                        starPaint
+                    )
+                    
+                    // Diagonal lines for extra sparkle
+                    canvas.drawLine(
+                        star.x - star.size * 1.4f, star.y - star.size * 1.4f,
+                        star.x + star.size * 1.4f, star.y + star.size * 1.4f,
+                        starPaint
+                    )
+                    
+                    canvas.drawLine(
+                        star.x - star.size * 1.4f, star.y + star.size * 1.4f,
+                        star.x + star.size * 1.4f, star.y - star.size * 1.4f,
+                        starPaint
+                    )
                 }
             }
         }.apply {
