@@ -127,10 +127,10 @@ class RefreshService : Service() {
         }
     }    private fun monitorRefreshCompletion(requestId: String, startId: Int, lastUpdatedBefore: Long) {
         Log.d("RefreshService", "Starting monitoring thread for requestId: $requestId")
-        
-        Thread {
+
+          Thread {
             var retryCount = 0
-            val maxRetries = 150 // 30 seconds max wait time (150 * 200ms = 30 seconds)
+            val maxRetries = 300 // 60 seconds max wait time (300 * 200ms = 60 seconds)
             var refreshCompleted = false
             var refreshSuccess = false
             var errorMessage = ""
