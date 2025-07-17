@@ -797,16 +797,59 @@ class AlarmScreenActivity : Activity() {    companion object {
         super.onNewIntent(intent)
         Log.d(TAG, "AlarmScreenActivity onNewIntent() called with action: ${intent?.action}")
         // Simplified - just log for debugging, actual close is handled by broadcast receiver
-    }
-
-    private fun createSimpleSwipeButton(
+    }    private fun createSimpleSwipeButton(
         text: String,
         accentColor: Int,
         textColor: Int,
         dpToPx: (Int) -> Int,
         onSwipe: () -> Unit
-    ): TextView {
-        return TextView(this).apply {
+    ): View {
+        // Container for button and animated glow ring
+        val container = FrameLayout(this).apply {
+            val containerSize = dpToPx(140) // Slightly larger than button for glow space
+            layoutParams = LinearLayout.LayoutParams(containerSize, containerSize).apply {
+                gravity = Gravity.CENTER
+                setMargins(0, 0, 0, dpToPx(24))
+            }
+        }
+        
+        // Animated glow ring view (like in your images)
+        val glowRing = object : View(this) {
+            private var glowIntensity = 0f
+            private val glowPaint = Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeWidth = dpToPx(4).toFloat()
+            }
+            
+            override fun onDraw(canvas: Canvas) {
+                super.onDraw(canvas)
+                
+                val centerX = width / 2f
+                val centerY = height / 2f
+                val radius = dpToPx(65).toFloat() // Ring around button
+                
+                // Create animated glow color with alpha based on intensity
+                val alpha = (glowIntensity * 255).toInt().coerceIn(0, 255)
+                glowPaint.color = Color.argb(alpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+                
+                // Draw the animated ring
+                canvas.drawCircle(centerX, centerY, radius, glowPaint)
+            }
+            
+            fun setGlowIntensity(intensity: Float) {
+                glowIntensity = intensity
+                invalidate()
+            }
+        }.apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        
+        // Main button (stays constant size)
+        val button = TextView(this).apply {
             this.text = text
             textSize = 14f
             setTextColor(textColor)
@@ -821,19 +864,44 @@ class AlarmScreenActivity : Activity() {    companion object {
             }
             background = circularBackground
             
-            // Set circular dimensions
+            // Set circular dimensions (button stays this size)
             val buttonSize = dpToPx(120)
-            layoutParams = LinearLayout.LayoutParams(buttonSize, buttonSize).apply {
+            layoutParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
                 gravity = Gravity.CENTER
-                setMargins(0, 0, 0, dpToPx(24))
             }
             
             // Track touch state and swipe progress
             var isPressed = false
             var startX = 0f
             var startY = 0f
+            var glowAnimator: ValueAnimator? = null
             
-            // Gesture detector for swipe
+            // Start glow ring animation (like in your images)
+            fun startGlowAnimation() {
+                glowAnimator?.cancel()
+                glowAnimator = ValueAnimator.ofFloat(0.2f, 0.8f).apply {
+                    duration = 2000 // 2 seconds for full cycle
+                    repeatCount = ValueAnimator.INFINITE
+                    repeatMode = ValueAnimator.REVERSE
+                    
+                    addUpdateListener { animator ->
+                        if (!isPressed) { // Only animate when not being touched
+                            val intensity = animator.animatedValue as Float
+                            glowRing.setGlowIntensity(intensity)
+                        }
+                    }
+                    start()
+                }
+            }
+            
+            // Stop glow animation
+            fun stopGlowAnimation() {
+                glowAnimator?.cancel()
+                glowRing.setGlowIntensity(0f)
+            }
+            
+            // Start the glow animation immediately
+            post { startGlowAnimation() }            // Gesture detector for swipe
             val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                 private val MIN_SWIPE_DISTANCE = dpToPx(80)
                 
@@ -852,7 +920,7 @@ class AlarmScreenActivity : Activity() {    companion object {
                     if (distance >= MIN_SWIPE_DISTANCE) {
                         Log.d(TAG, "Swipe completed - distance: $distance")
                         
-                        // Success feedback
+                        // Success feedback (only button scales, not glow)
                         animate()
                             .scaleX(1.2f)
                             .scaleY(1.2f)
@@ -877,7 +945,8 @@ class AlarmScreenActivity : Activity() {    companion object {
                         startX = event.x
                         startY = event.y
                         
-                        // Visual feedback on touch
+                        // Stop glow animation and provide touch feedback (button only)
+                        stopGlowAnimation()
                         animate()
                             .scaleX(1.1f)
                             .scaleY(1.1f)
@@ -892,7 +961,7 @@ class AlarmScreenActivity : Activity() {    companion object {
                             val diffY = event.y - startY
                             val currentDistance = sqrt(diffX * diffX + diffY * diffY)
                             
-                            // Calculate progress and provide visual feedback
+                            // Calculate progress and provide visual feedback (button only)
                             val swipeProgress = min(currentDistance / dpToPx(80), 1f)
                             val progressScale = 1.1f + (swipeProgress * 0.2f)
                             
@@ -911,12 +980,16 @@ class AlarmScreenActivity : Activity() {    companion object {
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         isPressed = false
                         
-                        // Reset to normal state
+                        // Reset button to normal state and restart glow animation
                         animate()
                             .alpha(1.0f)
                             .scaleX(1.0f)
                             .scaleY(1.0f)
                             .setDuration(300)
+                            .withEndAction {
+                                // Restart glow animation after reset
+                                startGlowAnimation()
+                            }
                             .start()
                         
                         setTextColor(textColor)
@@ -925,5 +998,11 @@ class AlarmScreenActivity : Activity() {    companion object {
                 gestureDetector.onTouchEvent(event)
             }
         }
+        
+        // Add glow ring first (behind button), then button
+        container.addView(glowRing)
+        container.addView(button)
+        
+        return container
     }
 }
