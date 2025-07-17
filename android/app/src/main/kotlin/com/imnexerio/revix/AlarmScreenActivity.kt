@@ -15,6 +15,7 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import java.util.Random
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -35,7 +36,19 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-class AlarmScreenActivity : Activity() {    companion object {
+class AlarmScreenActivity : Activity() {    
+    // Data class for falling stars
+    data class Star(
+        var x: Float,
+        var y: Float,
+        var speed: Float,
+        var size: Float,
+        var alpha: Float,
+        var twinklePhase: Float,
+        var trail: MutableList<Pair<Float, Float>> = mutableListOf()
+    )
+    
+    companion object {
         private const val TAG = "AlarmScreenActivity"
         const val EXTRA_CATEGORY = "category"
         const val EXTRA_SUB_CATEGORY = "sub_category"
@@ -165,8 +178,7 @@ class AlarmScreenActivity : Activity() {    companion object {
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
             )
-        }
-    }    private fun createAlarmUI() {
+        }    }    private fun createAlarmUI() {
         val dpToPx = { dp: Int ->
             TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), resources.displayMetrics).toInt()
         }        // Get colors from resources
@@ -182,7 +194,10 @@ class AlarmScreenActivity : Activity() {    companion object {
             )
         }
         
-        // First layer: Gradient background starting from button position
+        // First layer: Animated falling stars background
+        val starsBackground = createFallingStarsBackground(textColor, dpToPx)
+        
+        // Second layer: Gradient background starting from button position
         val gradientLayer = createGradientBackground(accentColor, dpToPx)
           // Second layer: Content overlay with responsive layout
         val contentOverlay = LinearLayout(this).apply {
@@ -318,13 +333,13 @@ class AlarmScreenActivity : Activity() {    companion object {
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
-        
-        // Add swipe button to its container
+          // Add swipe button to its container
         swipeButtonContainer.addView(doneButton)
         
-        // Layer the components: gradient background first, then content overlay
-        mainLayout.addView(gradientLayer)  // First layer
-        mainLayout.addView(contentOverlay) // Second layer
+        // Layer the components: stars background first, then gradient background, then content overlay
+        mainLayout.addView(starsBackground)  // First layer (background stars)
+        mainLayout.addView(gradientLayer)    // Second layer (gradient)
+        mainLayout.addView(contentOverlay)   // Third layer (content)
         
         setContentView(mainLayout)
     }
@@ -678,6 +693,144 @@ class AlarmScreenActivity : Activity() {    companion object {
             fun updateIntensity(intensity: Float) {
                 glowIntensity = intensity
                 invalidate()
+            }
+        }.apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )        }
+    }    private fun createFallingStarsBackground(
+        textColor: Int,
+        dpToPx: (Int) -> Int
+    ): View {
+        return object : View(this) {
+            private val stars = mutableListOf<Star>()
+            private val random = Random()
+            private val starPaint = Paint().apply {
+                isAntiAlias = true
+                color = textColor
+            }
+            private val trailPaint = Paint().apply {
+                isAntiAlias = true
+                color = textColor
+            }
+            
+            private val maxStars = 25 // Number of stars on screen
+            private var lastTime = System.currentTimeMillis()
+            
+            private fun initializeStars() {
+                stars.clear()
+                // Start with stars spread across the screen vertically for initial effect
+                repeat(maxStars) {
+                    val star = Star(
+                        x = random.nextFloat() * width,
+                        y = random.nextFloat() * height, // Initially spread across screen
+                        speed = dpToPx(30).toFloat() + random.nextFloat() * dpToPx(40), // Varied speed
+                        size = dpToPx(1).toFloat() + random.nextFloat() * dpToPx(3), // Varied size
+                        alpha = 0.3f + random.nextFloat() * 0.4f, // Subtle transparency
+                        twinklePhase = random.nextFloat() * 2f * Math.PI.toFloat()
+                    )
+                    stars.add(star)
+                }
+            }
+            
+            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+                super.onSizeChanged(w, h, oldw, oldh)
+                if (w > 0 && h > 0) {
+                    initializeStars()
+                }
+            }
+            
+            override fun onDraw(canvas: Canvas) {
+                super.onDraw(canvas)
+                
+                val currentTime = System.currentTimeMillis()
+                val deltaTime = (currentTime - lastTime) / 16f // Normalize to ~60fps
+                lastTime = currentTime
+                
+                updateStars(deltaTime)
+                drawStars(canvas)
+                
+                // Continue animation
+                invalidate()
+            }
+            
+            private fun updateStars(deltaTime: Float) {
+                stars.forEach { star ->
+                    // Update position (falling down)
+                    star.y += star.speed * deltaTime * 0.016f // Smooth movement
+                    
+                    // Slight horizontal drift for more natural movement
+                    star.x += (Math.sin(star.twinklePhase.toDouble()) * 0.5f * deltaTime * 0.016f).toFloat()
+                    
+                    // Update twinkle phase for subtle alpha variation
+                    star.twinklePhase += deltaTime * 0.05f
+                    
+                    // Update trail
+                    star.trail.add(Pair(star.x, star.y))
+                    if (star.trail.size > 8) { // Keep trail length manageable
+                        star.trail.removeAt(0)
+                    }
+                    
+                    // Reset star when it goes off screen
+                    if (star.y > height + star.size) {
+                        star.x = random.nextFloat() * width
+                        star.y = -star.size - random.nextFloat() * dpToPx(200) // Start above screen with spacing
+                        star.speed = dpToPx(30).toFloat() + random.nextFloat() * dpToPx(40)
+                        star.size = dpToPx(1).toFloat() + random.nextFloat() * dpToPx(3)
+                        star.alpha = 0.3f + random.nextFloat() * 0.4f
+                        star.trail.clear()
+                    }
+                }
+            }
+            
+            private fun drawStars(canvas: Canvas) {
+                stars.forEach { star ->
+                    // Calculate twinkling alpha
+                    val twinkleAlpha = star.alpha + (Math.sin(star.twinklePhase.toDouble()) * 0.2f).toFloat()
+                    val clampedAlpha = twinkleAlpha.coerceIn(0.1f, 0.8f)
+                    
+                    // Draw subtle trail
+                    if (star.trail.size > 1) {
+                        for (i in 0 until star.trail.size - 1) {
+                            val trailAlpha = clampedAlpha * (i.toFloat() / star.trail.size) * 0.4f
+                            trailPaint.alpha = (trailAlpha * 255).toInt()
+                            
+                            val currentPos = star.trail[i]
+                            val nextPos = star.trail[i + 1]
+                            
+                            canvas.drawLine(
+                                currentPos.first, currentPos.second,
+                                nextPos.first, nextPos.second,
+                                trailPaint
+                            )
+                        }
+                    }
+                    
+                    // Draw main star
+                    starPaint.alpha = (clampedAlpha * 255).toInt()
+                    canvas.drawCircle(star.x, star.y, star.size, starPaint)
+                    
+                    // Draw subtle cross sparkle for larger stars
+                    if (star.size > dpToPx(2)) {
+                        val sparkleAlpha = clampedAlpha * 0.6f
+                        starPaint.alpha = (sparkleAlpha * 255).toInt()
+                        
+                        // Horizontal line
+                        canvas.drawLine(
+                            star.x - star.size * 1.5f, star.y,
+                            star.x + star.size * 1.5f, star.y,
+                            starPaint
+                        )
+                        
+                        // Vertical line
+                        canvas.drawLine(
+                            star.x, star.y - star.size * 1.5f,
+                            star.x, star.y + star.size * 1.5f,
+                            starPaint
+                        )
+                    }
+                }
             }
         }.apply {
             layoutParams = FrameLayout.LayoutParams(
