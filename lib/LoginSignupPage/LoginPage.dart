@@ -522,7 +522,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           AssetImage('assets/github.png'), // Path to your GitHub icon
                         ),
                         onPressed: () {
-                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
+                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/revix');
                         },
                       ),
                       const SizedBox(height: 16),
