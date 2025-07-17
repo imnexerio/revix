@@ -213,7 +213,7 @@ class AlarmScreenActivity : Activity() {    companion object {
             )
         }
           // Title text with modern typography
-        val titleText = TextView(this).apply {
+        val timeText = TextView(this).apply {
             text = if (reminderTime.isNotEmpty()) reminderTime else ""
             textSize = 32f
             setTextColor(textColor)
@@ -228,11 +228,10 @@ class AlarmScreenActivity : Activity() {    companion object {
         }
           // Category info with better styling
         val categoryText = TextView(this).apply {
-            text = category.uppercase()
-            textSize = 16f
+            text = "Category : $category"
+            textSize = 20f
             setTextColor(accentColor)
             gravity = Gravity.CENTER
-            setTypeface(null, android.graphics.Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -242,11 +241,10 @@ class AlarmScreenActivity : Activity() {    companion object {
         }
           // Sub-category text
         val subCategoryText = TextView(this).apply {
-            text = subCategory
-            textSize = 18f
+            text = "Sub Category : $subCategory"
+            textSize = 20f
             setTextColor(textColor)
             gravity = Gravity.CENTER
-            alpha = 0.8f
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -256,11 +254,10 @@ class AlarmScreenActivity : Activity() {    companion object {
         }
           // Record title with emphasis
         val recordTitleText = TextView(this).apply {
-            text = recordTitle
-            textSize = 24f
+            text = "Title : $recordTitle"
+            textSize = 20f
             setTextColor(textColor)
             gravity = Gravity.CENTER
-            setTypeface(null, android.graphics.Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -310,7 +307,7 @@ class AlarmScreenActivity : Activity() {    companion object {
         contentOverlay.addView(ignoreButton)  // Ignore button at bottom
         
         // Add content to main layout
-        contentLayout.addView(titleText)
+        contentLayout.addView(timeText)
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
