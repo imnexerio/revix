@@ -36,7 +36,7 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-class AlarmScreenActivity : Activity() {      // Data class for shooting stars
+class AlarmScreenActivity : Activity() {    // Data class for shooting stars
     data class Star(
         var x: Float,
         var y: Float,
@@ -45,6 +45,8 @@ class AlarmScreenActivity : Activity() {      // Data class for shooting stars
         var size: Float,
         var alpha: Float,
         var twinklePhase: Float,
+        var trailLength: Int,
+        var trailThickness: Float,
         var trail: MutableList<Pair<Float, Float>> = mutableListOf()
     )
     
@@ -713,8 +715,9 @@ class AlarmScreenActivity : Activity() {      // Data class for shooting stars
             private val trailPaint = Paint().apply {
                 isAntiAlias = true
                 color = textColor
-                strokeWidth = dpToPx(2).toFloat()
-                strokeCap = Paint.Cap.ROUND            }
+                strokeCap = Paint.Cap.ROUND
+                // strokeWidth will be set dynamically per star
+            }
             
             private val maxStars = 10 // Control number of shooting stars (5-20 recommended)
             private var lastTime = System.currentTimeMillis()
@@ -726,20 +729,34 @@ class AlarmScreenActivity : Activity() {      // Data class for shooting stars
                     createNewStar()
                 }
             }
-            
             private fun createNewStar(): Star {
                 // Random angle for downward direction (30-150 degrees from vertical)
                 val angle = Math.toRadians((30 + random.nextFloat() * 120).toDouble())
-                val speed = dpToPx(150).toFloat() + random.nextFloat() * dpToPx(200) // Much faster
+                
+                // Random speed properties
+                val minSpeed = dpToPx(30).toFloat()  // Minimum speed
+                val maxSpeed = dpToPx(100).toFloat()  // Maximum speed
+                val randomSpeed = minSpeed + random.nextFloat() * (maxSpeed - minSpeed)
+                
+                // Random trail properties
+                val minTrailLength = 2
+                val maxTrailLength = 8
+                val randomTrailLength = minTrailLength + (random.nextFloat() * (maxTrailLength - minTrailLength)).toInt()
+                
+                val minTrailThickness = dpToPx(1).toFloat()
+                val maxTrailThickness = dpToPx(4).toFloat()
+                val randomTrailThickness = minTrailThickness + random.nextFloat() * (maxTrailThickness - minTrailThickness)
                 
                 val star = Star(
                     x = random.nextFloat() * width, // Start anywhere across the top
                     y = -dpToPx(50).toFloat(), // Start above screen
-                    velocityX = (Math.sin(angle) * speed).toFloat(),
-                    velocityY = (Math.cos(angle) * speed).toFloat(),
-                    size = dpToPx(2).toFloat() + random.nextFloat() * dpToPx(4), // Larger stars
+                    velocityX = (Math.sin(angle) * randomSpeed).toFloat(),
+                    velocityY = (Math.cos(angle) * randomSpeed).toFloat(),
+                    size = dpToPx(2).toFloat() + random.nextFloat() * dpToPx(4), // Star size: min 2dp + random 0-4dp = 2-6dp total
                     alpha = 0.6f + random.nextFloat() * 0.4f, // More visible
-                    twinklePhase = random.nextFloat() * 2f * Math.PI.toFloat()
+                    twinklePhase = random.nextFloat() * 2f * Math.PI.toFloat(),
+                    trailLength = randomTrailLength, // Random trail length: 6-18 points
+                    trailThickness = randomTrailThickness // Random trail thickness: 1-4dp
                 )
                 stars.add(star)
                 return star
@@ -775,10 +792,9 @@ class AlarmScreenActivity : Activity() {      // Data class for shooting stars
                     star.y += star.velocityY * deltaTime
                     
                     // Update twinkle phase
-                    star.twinklePhase += deltaTime * 3f
-                      // Add to trail with more frequent updates
+                    star.twinklePhase += deltaTime * 3f                    // Add to trail with more frequent updates
                     star.trail.add(Pair(star.x, star.y))
-                    if (star.trail.size > 12) { // Shorter trail for better performance
+                    if (star.trail.size > star.trailLength) { // Use individual star's trail length
                         star.trail.removeAt(0)
                     }
                     
@@ -803,6 +819,9 @@ class AlarmScreenActivity : Activity() {      // Data class for shooting stars
                     val twinkleAlpha = star.alpha + (Math.sin(star.twinklePhase.toDouble()) * 0.3f).toFloat()
                     val clampedAlpha = twinkleAlpha.coerceIn(0.2f, 1.0f)                    // Draw bright trail (brightest at head, fading towards tail)
                     if (star.trail.size > 1) {
+                        // Set the trail thickness for this specific star
+                        trailPaint.strokeWidth = star.trailThickness
+                        
                         for (i in 0 until star.trail.size - 1) {
                             // Trail alpha: brightest at newest position (end of trail array), fading towards oldest (start of array)
                             val trailProgress = i.toFloat() / (star.trail.size - 1)
@@ -812,7 +831,7 @@ class AlarmScreenActivity : Activity() {      // Data class for shooting stars
                             val currentPos = star.trail[i]
                             val nextPos = star.trail[i + 1]
                             
-                            // Draw thicker trail lines
+                            // Draw trail lines with individual star's thickness
                             canvas.drawLine(
                                 currentPos.first, currentPos.second,
                                 nextPos.first, nextPos.second,
