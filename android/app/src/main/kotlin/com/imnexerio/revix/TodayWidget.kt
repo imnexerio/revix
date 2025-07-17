@@ -316,7 +316,8 @@ internal fun updateAppWidget(
         views.setTextViewText(R.id.title_text_n_refresh, "($count)")
 
         if (!isLoggedIn) {
-            views.setTextViewText(R.id.empty_view, "Please login to view your schedule")        } else {
+            views.setTextViewText(R.id.empty_view, "Please login to view your schedule")
+        } else {
             val emptyMessage = when (currentView) {
                 "tomorrow" -> "No tasks for tomorrow"  // NEW
                 "missed" -> "No missed revisions. Great job!"
@@ -373,7 +374,7 @@ internal fun updateAppWidget(
     views.setOnClickPendingIntent(R.id.switch_view_button, switchViewPendingIntent)    // Set the icon based on current view type
     when (currentView) {
         "today" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_today_24)
-        "tomorrow" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_today_24)  // NEW - can use same icon or create new one
+        "tomorrow" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_upcoming_24)  // NEW - can use same icon or create new one
         "missed" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_history_toggle_off_24)
         "noreminder" -> views.setImageViewResource(R.id.switch_view_button, R.drawable.baseline_alarm_off_24)
     }

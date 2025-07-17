@@ -805,7 +805,7 @@ class AlarmScreenActivity : Activity() {    companion object {
         onSwipe: () -> Unit
     ): View {        // Container for button and animated glow ring
         val container = FrameLayout(this).apply {
-            val containerSize = dpToPx(160) // Increased container size for larger glow
+            val containerSize = dpToPx(200) // Further increased container size for larger ripple
             layoutParams = LinearLayout.LayoutParams(containerSize, containerSize).apply {
                 gravity = Gravity.CENTER
                 setMargins(0, 0, 0, dpToPx(24))
@@ -825,16 +825,15 @@ class AlarmScreenActivity : Activity() {    companion object {
                 
                 val centerX = width / 2f
                 val centerY = height / 2f
-                
-                // Button radius (where ripple starts)
+                  // Button radius (where ripple starts)
                 val buttonRadius = dpToPx(60).toFloat() // Half of button size (120dp)
                 // Maximum ripple radius (where it disappears)
-                val maxRippleRadius = dpToPx(80).toFloat()
+                val maxRippleRadius = dpToPx(100).toFloat() // Increased maximum radius
                 
                 // Calculate current ripple radius based on progress
                 val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
                   // Create fading alpha - starts strong, fades as it expands
-                val alpha = ((1f - rippleProgress) * 180).toInt().coerceIn(0, 255) // Reduced max alpha for transparency
+                val alpha = ((1f - rippleProgress) * 255).toInt().coerceIn(0, 255) // Increased opacity - now full alpha at start
                 
                 // Use same color as button's edge (textColor) but with transparency
                 glowPaint.color = Color.argb(alpha, Color.red(textColor), Color.green(textColor), Color.blue(textColor))
