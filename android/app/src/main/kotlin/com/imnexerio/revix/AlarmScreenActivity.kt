@@ -721,16 +721,16 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     ): View {
         return object : View(this) {
             private val stars = mutableListOf<Star>()
-            private val random = Random()
+            private val random = Random()            // Pre-calculate warm color once for better performance
+            private val warmStarColor = blendWithWarmColor(textColor)
+            
             private val starPaint = Paint().apply {
                 isAntiAlias = true
-                // Blend textColor with warm orange/yellow tint
-                color = blendWithWarmColor(textColor)
+                color = warmStarColor
             }
             private val trailPaint = Paint().apply {
                 isAntiAlias = true
-                // Blend textColor with warm orange/yellow tint  
-                color = blendWithWarmColor(textColor)
+                color = warmStarColor
                 strokeCap = Paint.Cap.ROUND
                 // strokeWidth will be set dynamically per star
                  }
