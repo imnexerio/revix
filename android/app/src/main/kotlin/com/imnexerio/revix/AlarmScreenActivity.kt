@@ -724,13 +724,30 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             private val random = Random()
             private val starPaint = Paint().apply {
                 isAntiAlias = true
-                color = textColor
+                // Blend textColor with warm orange/yellow tint
+                color = blendWithWarmColor(textColor)
             }
             private val trailPaint = Paint().apply {
                 isAntiAlias = true
-                color = textColor
+                // Blend textColor with warm orange/yellow tint  
+                color = blendWithWarmColor(textColor)
                 strokeCap = Paint.Cap.ROUND
                 // strokeWidth will be set dynamically per star
+                 }
+            
+            // Helper function to blend textColor with warm orange/yellow tint
+            private fun blendWithWarmColor(baseColor: Int): Int {
+                val baseRed = Color.red(baseColor)
+                val baseGreen = Color.green(baseColor)
+                val baseBlue = Color.blue(baseColor)
+                val baseAlpha = Color.alpha(baseColor)
+                
+                // Add warm orange/yellow tint (increase red and green, reduce blue slightly)
+                val warmRed = minOf(255, (baseRed * 1.1f + 40).toInt())      // Boost red
+                val warmGreen = minOf(255, (baseGreen * 1.05f + 25).toInt()) // Slight green boost
+                val warmBlue = maxOf(0, (baseBlue * 0.8f).toInt())           // Reduce blue for warmth
+                
+                return Color.argb(baseAlpha, warmRed, warmGreen, warmBlue)
             }
             
             private val minStars = 1 // Minimum stars on screen
@@ -958,7 +975,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         override fun onStart() {
         super.onStart()
         Log.d(TAG, "AlarmScreenActivity onStart() called")
-    }        override fun onResume() {
+    }
+        override fun onResume() {
         super.onResume()
         Log.d(TAG, "AlarmScreenActivity onResume() called - should be visible now")
         
