@@ -135,41 +135,22 @@ class TodayWidget : AppWidgetProvider() {    companion object {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        when (intent.action) {
-            ACTION_REFRESH -> {
-                // Trigger Flutter background callback for refresh
+        when (intent.action) {            ACTION_REFRESH -> {
+                // Check if already refreshing
+                if (RefreshService.isCurrentlyRefreshing()) {
+                    Log.d("TodayWidget", "Refresh already in progress, ignoring request")
+                    Toast.makeText(context, "Refresh already in progress...", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                // Start the RefreshService to handle the refresh operation
                 try {
-                    Log.d("TodayWidget", "Refreshing widget data...")
-                    val views = RemoteViews(context.packageName, R.layout.today_widget)
-                    views.setTextViewText(R.id.title_text_n_refresh, "Refreshing...")
-
-                    val appWidgetManager = AppWidgetManager.getInstance(context)
-                    val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                        ComponentName(context, TodayWidget::class.java)
-                    )
-
-                    // Update each widget to show refreshing state
-                    for (appWidgetId in appWidgetIds) {
-                        appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
-                    }                    // Use the home_widget plugin's built-in background callback mechanism
-                    try {
-                        val uri = Uri.parse("homeWidget://widget_refresh")
-                        val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
-                            context,
-                            uri
-                        )
-                        backgroundIntent.send()
-                        Log.d("TodayWidget", "Background callback triggered for data refresh")                        // Schedule alarms after data refresh - this will check if data actually changed
-                        scheduleAlarmsFromWidgetData(context)
-                    } catch (e: Exception) {
-                        Log.e("TodayWidget", "Error triggering background callback: ${e.message}")
-                        // Fallback: just update the widget with current data (no alarm scheduling)
-                        updateWidgets(context, scheduleAlarms = false)
-                    }
+                    Log.d("TodayWidget", "Starting refresh service...")
+                    val refreshIntent = Intent(context, RefreshService::class.java)
+                    context.startService(refreshIntent)
                 } catch (e: Exception) {
-                    Log.e("TodayWidget", "Error updating widget during refresh: ${e.message}")
-                    Toast.makeText(context, "Error refreshing widget: ${e.message}", Toast.LENGTH_SHORT).show()
-                    // Handle any errors during refresh
+                    Log.e("TodayWidget", "Error starting refresh service: ${e.message}")
+                    Toast.makeText(context, "Error starting refresh: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
             ACTION_ITEM_CLICK -> {
