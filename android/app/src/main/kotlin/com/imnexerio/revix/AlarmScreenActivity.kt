@@ -40,7 +40,6 @@ class AlarmScreenActivity : Activity() {    companion object {
         const val EXTRA_CATEGORY = "category"
         const val EXTRA_SUB_CATEGORY = "sub_category"
         const val EXTRA_RECORD_TITLE = "record_title"
-        const val EXTRA_REMINDER_TIME = "reminder_time"
         const val ACTION_CLOSE_ALARM_SCREEN = "CLOSE_ALARM_SCREEN"
     }
 
@@ -185,37 +184,37 @@ class AlarmScreenActivity : Activity() {    companion object {
         
         // First layer: Gradient background starting from button position
         val gradientLayer = createGradientBackground(accentColor, dpToPx)
-        
-        // Second layer: Content overlay
+          // Second layer: Content overlay with responsive layout
         val contentOverlay = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(32), dpToPx(64), dpToPx(32), dpToPx(64))
+            setPadding(dpToPx(24), dpToPx(32), dpToPx(24), dpToPx(32))
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
         
-        // Top spacer for centering content
+        // Minimal top spacer - responsive to screen size
         val topSpacer = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 0,
-                1.0f
+                0.15f  // Very small weight for minimal top spacing
             )
-        }
-          // Content container (no card styling)
+        }        // Content container with flexible layout
         val contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                0,
+                0.6f  // Reduced to give more space to button area
             )
         }
-          // Title text with modern typography
+        
+        // Title text with responsive typography
         val timeText = TextView(this).apply {
             text = "Time -> $reminderTime"
-            textSize = 32f
+            textSize = 28f  // Slightly smaller for better fit
             setTextColor(textColor)
             gravity = Gravity.CENTER
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -223,57 +222,60 @@ class AlarmScreenActivity : Activity() {    companion object {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(32))
+                setMargins(0, 0, 0, dpToPx(24))  // Reduced margin
             }
         }
-          // Category info with better styling
+        
+        // Category info with responsive styling
         val categoryText = TextView(this).apply {
             text = "Category -> $category"
-            textSize = 20f
+            textSize = 18f  // Slightly smaller
             setTextColor(textColor)
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(12))
+                setMargins(0, 0, 0, dpToPx(8))  // Reduced margin
             }
         }
-          // Sub-category text
+        
+        // Sub-category text
         val subCategoryText = TextView(this).apply {
             text = "Sub Category -> $subCategory"
-            textSize = 20f
+            textSize = 18f  // Slightly smaller
             setTextColor(textColor)
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(20))
+                setMargins(0, 0, 0, dpToPx(12))  // Reduced margin
             }
         }
-          // Record title with emphasis
+        
+        // Record title with emphasis
         val recordTitleText = TextView(this).apply {
             text = "Title -> $recordTitle"
-            textSize = 20f
+            textSize = 18f  // Slightly smaller
             setTextColor(textColor)
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(48))
+                setMargins(0, 0, 0, dpToPx(32))  // Reduced margin
             }
-        }
-
-        // Container for swipe button only
+        }        // Container for swipe button with flexible layout
         val swipeButtonContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )        }
+                0,
+                0.5f  // Increased space for button area
+            )
+        }
         
         // Simple swipe button (gradient will be in background layer)
         val doneButton = createSimpleSwipeButton(
@@ -292,29 +294,33 @@ class AlarmScreenActivity : Activity() {    companion object {
             dpToPx = dpToPx
         ) {
             ignoreAlarm()
-        }
-        
-        // Bottom spacer for centering content
-        val bottomSpacer = View(this).apply {
+        }        // Bottom section for ignore button with more visible space
+        val bottomSection = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.TOP  // Changed to TOP to move button up within its section
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 0,
-                1.0f
+                0.2f  // Increased space for better visibility
             )
-        }        // Assemble the content overlay
+        }
+        
+        // Assemble the content overlay with responsive weights
         contentOverlay.addView(topSpacer)
         contentOverlay.addView(contentLayout)
-        contentOverlay.addView(ignoreButton)  // Ignore button at bottom
+        contentOverlay.addView(swipeButtonContainer)
+        contentOverlay.addView(bottomSection)
         
-        // Add content to main layout
+        // Add ignore button to bottom section
+        bottomSection.addView(ignoreButton)
+          // Add text content to main content layout
         contentLayout.addView(timeText)
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
         
-        // Add swipe button in center
+        // Add swipe button to its container
         swipeButtonContainer.addView(doneButton)
-        contentLayout.addView(swipeButtonContainer)
         
         // Layer the components: gradient background first, then content overlay
         mainLayout.addView(gradientLayer)  // First layer
@@ -353,12 +359,11 @@ class AlarmScreenActivity : Activity() {    companion object {
             
             background = buttonBackground
             setPadding(dpToPx(24), dpToPx(16), dpToPx(24), dpToPx(16))
-            
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(16))
+                setMargins(dpToPx(24), dpToPx(8), dpToPx(24), dpToPx(8))  // More prominent margins
             }
             
             setOnClickListener { onClick() }
