@@ -214,7 +214,7 @@ class AlarmScreenActivity : Activity() {    companion object {
         }
           // Title text with modern typography
         val timeText = TextView(this).apply {
-            text = if (reminderTime.isNotEmpty()) reminderTime else ""
+            text = "Time -> $reminderTime"
             textSize = 32f
             setTextColor(textColor)
             gravity = Gravity.CENTER
@@ -228,9 +228,9 @@ class AlarmScreenActivity : Activity() {    companion object {
         }
           // Category info with better styling
         val categoryText = TextView(this).apply {
-            text = "Category : $category"
+            text = "Category -> $category"
             textSize = 20f
-            setTextColor(accentColor)
+            setTextColor(textColor)
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -241,7 +241,7 @@ class AlarmScreenActivity : Activity() {    companion object {
         }
           // Sub-category text
         val subCategoryText = TextView(this).apply {
-            text = "Sub Category : $subCategory"
+            text = "Sub Category -> $subCategory"
             textSize = 20f
             setTextColor(textColor)
             gravity = Gravity.CENTER
@@ -254,7 +254,7 @@ class AlarmScreenActivity : Activity() {    companion object {
         }
           // Record title with emphasis
         val recordTitleText = TextView(this).apply {
-            text = "Title : $recordTitle"
+            text = "Title -> $recordTitle"
             textSize = 20f
             setTextColor(textColor)
             gravity = Gravity.CENTER
