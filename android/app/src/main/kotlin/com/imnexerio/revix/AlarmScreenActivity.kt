@@ -739,8 +739,8 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
                 val randomSpeed = minSpeed + random.nextFloat() * (maxSpeed - minSpeed)
                 
                 // Random trail properties
-                val minTrailLength = 2
-                val maxTrailLength = 8
+                val minTrailLength = 5
+                val maxTrailLength = 15
                 val randomTrailLength = minTrailLength + (random.nextFloat() * (maxTrailLength - minTrailLength)).toInt()
                 
                 val minTrailThickness = dpToPx(1).toFloat()
