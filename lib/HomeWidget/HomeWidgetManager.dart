@@ -163,6 +163,10 @@ class HomeWidgetService {
       try {
         print('Starting widget background refresh...');
 
+        // Extract requestId from URI if available
+        final requestId = uri?.queryParameters['requestId'] ?? '';
+        print('Widget refresh requestId: $requestId');
+
         final service = CombinedDatabaseService();
         print('CombinedDatabaseService created');
 
@@ -182,20 +186,42 @@ class HomeWidgetService {
           final missedRecords = categorizedData['missed'] ?? [];
           final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');          // Update widget with the new data
+          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');
+
+          // Update widget with the new data
           await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
 
+          // Set success result for RefreshService
+          if (requestId.isNotEmpty) {
+            await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'SUCCESS');
+            print('Widget refresh result stored for requestId $requestId: SUCCESS');
+          }
           
           print('Widget background refresh completed with data');
         } else {
           print('No categorized data available, using empty data');
           // Fallback to empty data if no data available
           await _updateWidgetWithEmptyData();
+          
+          // Set success result even with empty data
+          if (requestId.isNotEmpty) {
+            await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'SUCCESS');
+            print('Widget refresh result stored for requestId $requestId: SUCCESS (empty data)');
+          }
+          
           print('Widget background refresh completed with empty data');
         }
       } catch (e) {
         print('Error in background widget refresh: $e');
         print('Error details: ${e.toString()}');
+        
+        // Set error result for RefreshService
+        final requestId = uri?.queryParameters['requestId'] ?? '';
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'ERROR:${e.toString()}');
+          print('Widget refresh result stored for requestId $requestId: ERROR:${e.toString()}');
+        }
+        
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
       }

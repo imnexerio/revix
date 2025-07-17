@@ -137,7 +137,10 @@ class TodayWidget : AppWidgetProvider() {    companion object {
         super.onReceive(context, intent)
         when (intent.action) {            ACTION_REFRESH -> {
                 // Check if already refreshing
-                if (RefreshService.isCurrentlyRefreshing()) {
+                val currentlyRefreshing = RefreshService.isCurrentlyRefreshing()
+                Log.d("TodayWidget", "Refresh requested, currently refreshing: $currentlyRefreshing")
+                
+                if (currentlyRefreshing) {
                     Log.d("TodayWidget", "Refresh already in progress, ignoring request")
                     Toast.makeText(context, "Refresh already in progress...", Toast.LENGTH_SHORT).show()
                     return
@@ -148,6 +151,7 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                     Log.d("TodayWidget", "Starting refresh service...")
                     val refreshIntent = Intent(context, RefreshService::class.java)
                     context.startService(refreshIntent)
+                    Log.d("TodayWidget", "Refresh service started successfully")
                 } catch (e: Exception) {
                     Log.e("TodayWidget", "Error starting refresh service: ${e.message}")
                     Toast.makeText(context, "Error starting refresh: ${e.message}", Toast.LENGTH_SHORT).show()

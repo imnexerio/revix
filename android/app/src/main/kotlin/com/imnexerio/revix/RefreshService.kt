@@ -15,28 +15,33 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class RefreshService : Service() {
     private val handler = Handler(Looper.getMainLooper())
-    
-    companion object {
+      companion object {
         private val isRefreshing = AtomicBoolean(false)
         private const val PREF_LAST_REFRESH_REQUEST_ID = "last_refresh_request_id"
         
         fun isCurrentlyRefreshing(): Boolean {
-            return isRefreshing.get()
+            val refreshing = isRefreshing.get()
+            Log.d("RefreshService", "isCurrentlyRefreshing() called, returning: $refreshing")
+            return refreshing
         }
     }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    }    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("RefreshService", "onStartCommand called with startId: $startId")
+        
         if (intent == null) {
+            Log.d("RefreshService", "Intent is null, stopping service")
             stopSelf(startId)
             return START_NOT_STICKY
         }
 
         // Check if already refreshing
-        if (isRefreshing.get()) {
+        val currentlyRefreshing = isRefreshing.get()
+        Log.d("RefreshService", "Currently refreshing: $currentlyRefreshing")
+        
+        if (currentlyRefreshing) {
             Log.d("RefreshService", "Refresh already in progress, ignoring new request")
             handler.post {
                 Toast.makeText(
@@ -50,13 +55,13 @@ class RefreshService : Service() {
         }
 
         // Start refresh process
+        Log.d("RefreshService", "Starting refresh process")
         handleRefresh(startId)
         return START_STICKY
-    }
-
-    private fun handleRefresh(startId: Int) {
+    }    private fun handleRefresh(startId: Int) {
         try {
             // Set refreshing state
+            Log.d("RefreshService", "Setting isRefreshing to true")
             isRefreshing.set(true)
             
             // Show refreshing state on widgets
@@ -73,10 +78,14 @@ class RefreshService : Service() {
 
             // Generate unique request ID
             val requestId = System.currentTimeMillis().toString()
-            
-            // Store request ID for tracking
+            Log.d("RefreshService", "Generated requestId: $requestId")
+              // Store request ID for tracking
             val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
             prefs.edit().putString(PREF_LAST_REFRESH_REQUEST_ID, requestId).apply()
+            
+            // Store the current lastUpdated timestamp to detect changes
+            val lastUpdatedBefore = prefs.getLong("lastUpdated", 0L)
+            Log.d("RefreshService", "lastUpdated before refresh: $lastUpdatedBefore")
 
             // Trigger Flutter background callback for refresh
             val uri = android.net.Uri.parse("homeWidget://widget_refresh")
@@ -90,10 +99,8 @@ class RefreshService : Service() {
             )
             backgroundIntent.send()
 
-            Log.d("RefreshService", "Background callback triggered with requestId: $requestId")
-
-            // Monitor refresh completion
-            monitorRefreshCompletion(requestId, startId)
+            Log.d("RefreshService", "Background callback triggered with requestId: $requestId")            // Monitor refresh completion
+            monitorRefreshCompletion(requestId, startId, lastUpdatedBefore)
 
         } catch (e: Exception) {
             Log.e("RefreshService", "Error starting refresh: ${e.message}", e)
@@ -118,12 +125,12 @@ class RefreshService : Service() {
         } catch (e: Exception) {
             Log.e("RefreshService", "Error showing refreshing state: ${e.message}")
         }
-    }
-
-    private fun monitorRefreshCompletion(requestId: String, startId: Int) {
+    }    private fun monitorRefreshCompletion(requestId: String, startId: Int, lastUpdatedBefore: Long) {
+        Log.d("RefreshService", "Starting monitoring thread for requestId: $requestId")
+        
         Thread {
             var retryCount = 0
-            val maxRetries = 300 // 60 seconds max wait time (300 * 200ms = 60 seconds)
+            val maxRetries = 150 // 30 seconds max wait time (150 * 200ms = 30 seconds)
             var refreshCompleted = false
             var refreshSuccess = false
             var errorMessage = ""
@@ -137,6 +144,7 @@ class RefreshService : Service() {
                     val result = prefs.getString(resultKey, null)
                     
                     if (result != null) {
+                        Log.d("RefreshService", "Refresh result found: $result")
                         refreshCompleted = true
                         if (result.startsWith("SUCCESS")) {
                             refreshSuccess = true
@@ -150,7 +158,24 @@ class RefreshService : Service() {
                         break
                     }
                     
+                    // FALLBACK: Check for data changes as indicator of completion
+                    // This is a safety net in case the result key is not set properly
+                    val lastUpdated = prefs.getLong("lastUpdated", 0L)
+                    if (lastUpdated > lastUpdatedBefore && retryCount > 10) {
+                        Log.d("RefreshService", "Data updated after request start, assuming success (fallback)")
+                        Log.d("RefreshService", "lastUpdatedBefore: $lastUpdatedBefore, lastUpdated: $lastUpdated")
+                        refreshCompleted = true
+                        refreshSuccess = true
+                        break
+                    }
+                    
                     retryCount++
+                    
+                    // Log progress every 25 checks (5 seconds)
+                    if (retryCount % 25 == 0) {
+                        Log.d("RefreshService", "Still waiting for refresh completion... ($retryCount/$maxRetries)")
+                    }
+                    
                 } catch (e: InterruptedException) {
                     Log.e("RefreshService", "Refresh monitoring interrupted: ${e.message}")
                     break
@@ -158,6 +183,8 @@ class RefreshService : Service() {
             }
 
             // Handle completion on main thread
+            Log.d("RefreshService", "Monitoring completed. refreshCompleted: $refreshCompleted, refreshSuccess: $refreshSuccess")
+            
             handler.post {
                 if (refreshCompleted) {
                     if (refreshSuccess) {
@@ -173,10 +200,11 @@ class RefreshService : Service() {
             }
             
         }.start()
-    }
-
-    private fun handleRefreshSuccess(startId: Int) {
-        Log.d("RefreshService", "Refresh completed successfully")
+    }private fun handleRefreshSuccess(startId: Int) {
+        Log.d("RefreshService", "Refresh completed successfully, resetting isRefreshing to false")
+        
+        // Reset refreshing state FIRST
+        isRefreshing.set(false)
         
         // Show success message
         Toast.makeText(
@@ -191,14 +219,13 @@ class RefreshService : Service() {
         // Update widgets with new data
         updateWidgets()
         
-        // Reset refreshing state
-        isRefreshing.set(false)
-        
+        Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
-    }
-
-    private fun handleRefreshError(errorMessage: String, startId: Int) {
-        Log.e("RefreshService", "Refresh failed: $errorMessage")
+    }    private fun handleRefreshError(errorMessage: String, startId: Int) {
+        Log.e("RefreshService", "Refresh failed: $errorMessage, resetting isRefreshing to false")
+        
+        // Reset refreshing state FIRST
+        isRefreshing.set(false)
         
         // Show error message
         Toast.makeText(
@@ -213,14 +240,13 @@ class RefreshService : Service() {
         // Update widgets to remove refreshing state
         updateWidgets()
         
-        // Reset refreshing state
-        isRefreshing.set(false)
-        
+        Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
-    }
-
-    private fun handleRefreshTimeout(startId: Int) {
-        Log.w("RefreshService", "Refresh operation timed out")
+    }    private fun handleRefreshTimeout(startId: Int) {
+        Log.w("RefreshService", "Refresh operation timed out, resetting isRefreshing to false")
+        
+        // Reset refreshing state FIRST
+        isRefreshing.set(false)
         
         // Show timeout message
         Toast.makeText(
@@ -235,9 +261,7 @@ class RefreshService : Service() {
         // Update widgets to remove refreshing state
         updateWidgets()
         
-        // Reset refreshing state
-        isRefreshing.set(false)
-        
+        Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
     }
 
@@ -282,10 +306,10 @@ class RefreshService : Service() {
 
         val refreshNotificationId = "widget_refresh_status".hashCode()
         notificationManager.notify(refreshNotificationId, notification)
-    }
-
-    override fun onDestroy() {
+    }    override fun onDestroy() {
         super.onDestroy()
+        Log.d("RefreshService", "Service being destroyed, resetting isRefreshing to false")
+        
         // Reset refreshing state when service is destroyed
         isRefreshing.set(false)
         
