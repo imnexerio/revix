@@ -1,6 +1,6 @@
 {
-    "name": "reTracker",
-    "short_name": "reTracker",
+    "name": "revix",
+    "short_name": "revix",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",

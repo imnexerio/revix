@@ -1,10 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-
+import 'FirebaseDatabaseService.dart';
 
 Future<void> UpdateRecords(
-    String selectedSubject,
-    String selectedSubjectCode,
+    String selectedCategory,
+    String selectedCategoryCode,
     String lectureNo,
     String dateRevised,
     String description,
@@ -17,114 +15,79 @@ Future<void> UpdateRecords(
     String revisionFrequency,
     String status,
     Map<String, dynamic> revisionData,
-    Map<String, dynamic> durationData
+    Map<String, dynamic> durationData,
+    int alarmType
     ) async {
-  // Get the currently authenticated user
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    throw Exception('No authenticated user');
-  }
-  String uid = user.uid;
-
-  // Update the database reference to include the user's UID
-  DatabaseReference ref = FirebaseDatabase.instance
-      .ref('users/$uid/user_data')
-      .child(selectedSubject)
-      .child(selectedSubjectCode)
-      .child(lectureNo);
-
-
-  // Perform the update operation
-  await ref.update({
+  
+  final firebaseService = FirebaseDatabaseService();
+  
+  // Prepare update data
+  Map<String, dynamic> updateData = {
     'reminder_time': reminderTime,
-    'date_revised': dateRevised,
-    'no_revision': noRevision,
-    'date_scheduled': dateScheduled,
-    'missed_revision': missedRevision,
+    'date_updated': dateRevised,
+    'completion_counts': noRevision,
+    'scheduled_date': dateScheduled,
+    'missed_counts': missedRevision,
     'dates_missed_revisions': datesMissedRevisions,
-    'revision_frequency': revisionFrequency,
+    'recurrence_frequency': revisionFrequency,
     'status': status,
-    'dates_revised': datesRevised,
+    'dates_updated': datesRevised,
     'description': description,
-    'revision_data': revisionData,
+    'recurrence_data': revisionData,
     'duration': durationData,
-  });
+    'alarm_type': alarmType,
+  };
+  
+  // Update record using centralized service
+  bool success = await firebaseService.updateRecord(selectedCategory, selectedCategoryCode, lectureNo, updateData);
+  if (!success) {
+    throw Exception('Failed to update record');
+  }
 }
 
 Future<void> moveToDeletedData(
-    String selectedSubject,
-    String selectedSubjectCode,
+    String selectedCategory,
+    String selectedCategoryCode,
     String lectureNo,
     Map<String, dynamic> lectureData,
 ) async {
-  // Get the currently authenticated user
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    throw Exception('No authenticated user');
+  
+  final firebaseService = FirebaseDatabaseService();
+  
+  // Move to deleted data using centralized service
+  bool success = await firebaseService.moveToDeletedData(selectedCategory, selectedCategoryCode, lectureNo, lectureData);
+  if (!success) {
+    throw Exception('Failed to move record to deleted data');
   }
-  String uid = user.uid;
-
-  // Update the database reference to include the user's UID
-  DatabaseReference ref = FirebaseDatabase.instance
-      .ref('users/$uid/deleted_user_data')
-      .child(selectedSubject)
-      .child(selectedSubjectCode)
-      .child(lectureNo);
-
-  // Perform the update operation
-  // Perform the update operation
-  await ref.update({
-    ...lectureData,
-    'deleted_at': DateTime.now().toIso8601String()
-  });
-  // Optionally, you can also remove the record from the original location
-  DatabaseReference originalRef = FirebaseDatabase.instance
-      .ref('users/$uid/user_data')
-      .child(selectedSubject)
-      .child(selectedSubjectCode)
-      .child(lectureNo);
-  await originalRef.remove();
 }
 
 Future<void> UpdateRecordsRevision(
-    String selectedSubject,
-    String selectedSubjectCode,
+    String selectedCategory,
+    String selectedCategoryCode,
     String lectureNo,
     String dateRevised,
-    String description,
-    String reminderTime,
     int noRevision,
     String dateScheduled,
     List<String> datesRevised,
     int missedRevision,
     List<String> datesMissedRevisions,
-    String status,
     ) async {
-  // Get the currently authenticated user
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    throw Exception('No authenticated user');
-  }
-  String uid = user.uid;
-
-  // Update the database reference to include the user's UID
-  DatabaseReference ref = FirebaseDatabase.instance
-      .ref('users/$uid/user_data')
-      .child(selectedSubject)
-      .child(selectedSubjectCode)
-      .child(lectureNo);
-
-
-  // Perform the update operation
-  await ref.update({
-    'reminder_time': reminderTime,
-    'date_revised': dateRevised,
-    'no_revision': noRevision,
-    'date_scheduled': dateScheduled,
-    'missed_revision': missedRevision,
+  
+  final firebaseService = FirebaseDatabaseService();
+  
+  // Prepare update data
+  Map<String, dynamic> updateData = {
+    'date_updated': dateRevised,
+    'completion_counts': noRevision,
+    'scheduled_date': dateScheduled,
+    'missed_counts': missedRevision,
     'dates_missed_revisions': datesMissedRevisions,
-    'dates_revised': datesRevised,
-    'description': description,
-    'status': status,
-  });
+    'dates_updated': datesRevised,
+  };
+  
+  // Update record using centralized service
+  bool success = await firebaseService.updateRecord(selectedCategory, selectedCategoryCode, lectureNo, updateData);
+  if (!success) {
+    throw Exception('Failed to update record revision');
+  }
 }

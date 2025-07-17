@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Utils/fetchFrequencies_utils.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'FrequencyPageSheet.dart';
 
 class FrequencyPage extends StatefulWidget {
@@ -33,10 +33,10 @@ class _FrequencyPageState extends State<FrequencyPage> {
       return false;
     }
   }
-
   void fetchFrequencies() async {
     try {
-      Map<String, dynamic> data = await FetchFrequenciesUtils.fetchFrequencies();
+      final databaseService = FirebaseDatabaseService();
+      Map<String, dynamic> data = await databaseService.fetchCustomFrequencies();
       setState(() {
         frequencies = data.entries.map((entry) {
           String title = entry.key;

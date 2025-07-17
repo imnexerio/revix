@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, EmailAuthProvider;
+import 'package:revix/Utils/CustomSnackBar.dart';
+import '../Utils/FirebaseAuthService.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   @override
   _ChangePasswordPageState createState() => _ChangePasswordPageState();
 }
 
-class _ChangePasswordPageState extends State<ChangePasswordPage> {
-  final _formKey = GlobalKey<FormState>();
+class _ChangePasswordPageState extends State<ChangePasswordPage> {  final _formKey = GlobalKey<FormState>();
   final TextEditingController _newPasswordController = TextEditingController();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   String? _currentPassword;
   String? _newPassword;
   String? _confirmPassword;
@@ -77,37 +78,36 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               Center(
                 child: Container(
                   width: 200,
-                  child: FilledButton(
-                    onPressed: () async {
+                  child: FilledButton(                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
-                        _formKey.currentState!.save();
-                        try {
-                          User? user = FirebaseAuth.instance.currentUser;
-                          AuthCredential credential = EmailAuthProvider.credential(
-                            email: user!.email!,
+                        _formKey.currentState!.save();                        try {
+                          // First reauthenticate the user
+                          final credential = EmailAuthProvider.credential(
+                            email: _authService.currentUser!.email!,
                             password: _currentPassword!,
                           );
-                          await user.reauthenticateWithCredential(credential);
-                          await user.updatePassword(_newPassword!);
+                          await _authService.reauthenticateWithCredential(credential);
+                          
+                          // Then update the password
+                          await _authService.updatePassword(_newPassword!);
 
-
-                            customSnackBar(
-                              context: context,
-                              message: 'Password updated successfully',
+                          customSnackBar(
+                            context: context,
+                            message: 'Password updated successfully',
                           );
 
                           _newPasswordController.clear();
                           _currentPassword = null;
                           _confirmPassword = null;
                           _formKey.currentState!.reset();
-                        } catch (e) {
+                        } on FirebaseAuthException catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Row(
                                 children: [
                                   const Icon(Icons.error, color: Colors.white),
                                   const SizedBox(width: 8),
-                                  Text('Failed to update password: $e'),
+                                  Text(_authService.getAuthErrorMessage(e)),
                                 ],
                               ),
                               backgroundColor: Colors.red,

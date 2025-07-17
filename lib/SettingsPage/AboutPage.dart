@@ -1,12 +1,34 @@
 import 'package:flutter/material.dart';
 import '../LoginSignupPage/UrlLauncher.dart';
 import '../Utils/CustomSnackBar.dart';
+import '../widgets/AnimatedSquareText.dart';
 
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
   final Future<String> Function() getAppVersion;
   final Future<String> Function() fetchReleaseNotes;
 
   AboutPage({required this.getAppVersion, required this.fetchReleaseNotes});
+
+  @override
+  _AboutPageState createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  bool _showLogo = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Show logo with a delay to trigger animation
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _showLogo = true;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,53 +41,45 @@ class AboutPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.grey.withOpacity(0.1),
-                    child: ClipOval(
-                      child: Stack(
-                        children: [
-                          ColorFiltered(
-                            colorFilter: const ColorFilter.mode(
-                              Colors.grey,
-                              BlendMode.saturation,
-                            ),
-                            child: Image.asset(
-                              'assets/icon/icon.png', // Path to your app icon
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.3),
-                                  Colors.transparent,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(                      child: _showLogo ? AnimatedSquareText(
+                        text: 'revix',
+                        size: 80,
+                        borderRadius: 40, // Half of size to make it perfectly round
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        textColor: const Color(0xFF06171F),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                        animationDuration: const Duration(milliseconds: 1500),
+                        autoStart: true, // Auto start when widget is created
+                        loop: false, // No looping for About page
+                        boxShadow: [], // Remove shadow since container already has it
+                      ) : Container(), // Empty container when not showing
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'reTracker',
+                    'revix',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
                   ),
-                  const SizedBox(height: 5),
-                  FutureBuilder<String>(
-                    future: getAppVersion(),
+                  const SizedBox(height: 5),                  FutureBuilder<String>(
+                    future: widget.getAppVersion(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const CircularProgressIndicator();
@@ -106,7 +120,7 @@ class AboutPage extends StatelessWidget {
                                 AssetImage('assets/github.png'), // Path to your GitHub icon
                               ),
                               onPressed: () {
-                                UrlLauncher.launchURL(context, 'https://github.com/imnexerio/retracker');
+                                UrlLauncher.launchURL(context, 'https://github.com/imnexerio/revix');
                               },
                             ),
                           ],
@@ -121,7 +135,7 @@ class AboutPage extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.all(16),
                     child: FutureBuilder<String>(
-                      future: fetchReleaseNotes(),
+                      future: widget.fetchReleaseNotes(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(
@@ -149,7 +163,7 @@ class AboutPage extends StatelessWidget {
                       onPressed: () {
                           customSnackBar(
                             context: context,
-                            message: 'Thank you for using reTracker!',
+                            message: 'Thank you for using revix!',
                         );
 
                       },

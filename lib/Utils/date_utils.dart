@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'FirebaseDatabaseService.dart';
 
 class DateNextRevision {
   static Future<DateTime> calculateNextRevisionDate(DateTime scheduledDate, String frequency, int noRevision) async {
@@ -19,26 +18,13 @@ class DateNextRevision {
 
     return scheduledDate;
   }
-
+  
   static Future<List<Map<String, String>>> fetchFrequencies() async {
-    List<Map<String, String>> frequencies = [];
     try {
-      String uid = FirebaseAuth.instance.currentUser!.uid;
-      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_frequencies');
-      DataSnapshot snapshot = await databaseRef.get();
-      if (snapshot.exists) {
-        Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
-        frequencies = data.entries.map((entry) {
-          return {
-            'title': entry.key,
-            'frequency': (entry.value as List<dynamic>).join(', '),
-          };
-        }).toList();
-      }
+      return await FirebaseDatabaseService().fetchFrequenciesForDateCalculation();
     } catch (e) {
-      // Handle error
+      print('Error fetching frequencies: $e');
+      return [];
     }
-    return frequencies;
   }
-
 }

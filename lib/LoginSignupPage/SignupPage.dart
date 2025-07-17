@@ -1,8 +1,15 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, UserCredential, User;
 import 'package:flutter/material.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:provider/provider.dart';
+import 'package:revix/Utils/ThemeNotifier.dart';
+import 'package:revix/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/GuestAuthService.dart';
+import 'package:revix/Utils/LocalDatabaseService.dart';
+import 'package:revix/main.dart';
 import '../Utils/customSnackBar_error.dart';
+import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/FirebaseAuthService.dart';
+import '../widgets/AnimatedSquareText.dart';
 import 'UrlLauncher.dart';
 
 class SignupPage extends StatefulWidget {
@@ -11,17 +18,17 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage>
-    with SingleTickerProviderStateMixin {
-  final TextEditingController _emailController = TextEditingController();
+    with SingleTickerProviderStateMixin {  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   final _formKey = GlobalKey<FormState>();
-
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _showLogo = false;
 
   bool _passwordVisibility = false;
   bool _confirmPasswordVisibility = false;
@@ -29,8 +36,7 @@ class _SignupPageState extends State<SignupPage>
   String? _errorMessage;
 
   @override
-  void initState() {
-    super.initState();
+  void initState() {    super.initState();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -41,7 +47,17 @@ class _SignupPageState extends State<SignupPage>
         curve: Curves.easeIn,
       ),
     );
+    
     _animationController.forward();
+    
+    // Show logo with a delay to trigger animation
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _showLogo = true;
+        });
+      }
+    });
   }
 
   @override
@@ -94,44 +110,28 @@ class _SignupPageState extends State<SignupPage>
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) {
       return;
-    }
-
-    setState(() {
+    }    setState(() {
       _isLoading = true;
       _errorMessage = null;
-    });
-
-    try {
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+    });    try {
+      UserCredential? userCredential =
+      await _authService.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-      );
-
-      User? user = userCredential.user;
+      );      User? user = userCredential?.user;
       if (user != null) {
-        String uid = user.uid;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid/profile_data');
-        await ref.set({
-          'email': user.email,
-          'name': _nameController.text.trim(),
-          'createdAt': DateTime.now().toIso8601String(),
-          "custom_trackingType": [
-            "Lectures",
-            "Others"
-          ],
-          'custom_frequencies': {
-            'Default': [1, 4, 7, 15, 30, 60],
-            'Priority': [1, 3, 4, 5, 7, 15, 25, 30],
-          },
-        });
+        // Initialize profile data using centralized database service
+        await _databaseService.initializeUserProfile(
+          user.email ?? '', 
+          _nameController.text.trim()
+        );
 
-        await user.sendEmailVerification();
+        await _authService.sendEmailVerification();
 
 
-          customSnackBar(
-            context: context,
-            message: 'Account created successfully. Please check your email for verification.',
+        customSnackBar(
+          context: context,
+          message: 'Account created successfully. Please check your email for verification.',
 
         );
 
@@ -139,12 +139,12 @@ class _SignupPageState extends State<SignupPage>
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _getFirebaseErrorMessage(e.code);
+        _errorMessage = _authService.getAuthErrorMessage(e);
       });
     } catch (e) {
-        customSnackBar_error(
-          context: context,
-          message: 'An unexpected error occurred. Please try again.',
+      customSnackBar_error(
+        context: context,
+        message: 'An unexpected error occurred. Please try again.',
       );
     } finally {
       if (mounted) {
@@ -155,16 +155,35 @@ class _SignupPageState extends State<SignupPage>
     }
   }
 
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'weak-password':
-        return 'The password provided is too weak';
-      case 'email-already-in-use':
-        return 'An account already exists for this email';
-      case 'invalid-email':
-        return 'Please enter a valid email address';
-      default:
-        return 'Authentication failed. Please try again.';
+  Future<void> _continueAsGuest() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Initialize local database for guest mode
+      await LocalDatabaseService.initialize();
+      
+      // Enable guest mode
+      await GuestAuthService.enableGuestMode();
+      
+      // Initialize the local database with default data
+      final localDb = LocalDatabaseService();
+      await localDb.initializeWithDefaultData();      // Set theme preferences
+      ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+      await themeNotifier.fetchRemoteTheme();
+
+      // Navigate to home page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MyHomePage()),
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to initialize guest mode. Please try again.';
+        _isLoading = false;
+      });
     }
   }
 
@@ -196,12 +215,10 @@ class _SignupPageState extends State<SignupPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 20),
-                      Hero(
-                        tag: 'app_logo',
-                        child: Container(
-                          height: 100,
-                          width: 100,
+                      const SizedBox(height: 20),                      Hero(
+                        tag: 'app_logo',                        child: Container(
+                          height: 115,
+                          width: 115,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             boxShadow: [
@@ -212,9 +229,21 @@ class _SignupPageState extends State<SignupPage>
                               ),
                             ],
                           ),
-                          child: Image.asset(
-                            'assets/icon/icon.png',
-                            fit: BoxFit.contain,
+                          child: Center(
+                            child: _showLogo ? AnimatedSquareText(
+                              text: 'revix',
+                              size: 100,
+                              borderRadius: 50, // Half of size to make it perfectly round
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              textColor: const Color(0xFF06171F),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,                              letterSpacing: 1.2,
+                              animationDuration: const Duration(milliseconds: 1500),
+                              autoStart: true, // Auto start when widget is created
+                              loop: true, // Enable looping animation
+                              loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops
+                              boxShadow: [], // Remove shadow since container already has it
+                            ) : Container(), // Empty container when not showing
                           ),
                         ),
                       ),
@@ -438,7 +467,7 @@ class _SignupPageState extends State<SignupPage>
                             onPressed: () {
                               setState(() {
                                 _confirmPasswordVisibility =
-                                    !_confirmPasswordVisibility;
+                                !_confirmPasswordVisibility;
                               });
                             },
                           ),
@@ -452,15 +481,15 @@ class _SignupPageState extends State<SignupPage>
                           onPressed: _isLoading ? null : _signup,
                           child: _isLoading
                               ? SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                )
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.onPrimary,
+                              ),
+                            ),
+                          )
                               : const Text('Create Account'),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: colorScheme.onPrimary,
@@ -471,6 +500,39 @@ class _SignupPageState extends State<SignupPage>
                             ),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 24, vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _continueAsGuest,
+                          child: _isLoading
+                              ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.primary,
+                              ),
+                            ),
+                          )
+                              : const Text(
+                            'Continue as Guest',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colorScheme.primary,
+                            side: BorderSide(color: colorScheme.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
                         ),
                       ),
@@ -523,7 +585,7 @@ class _SignupPageState extends State<SignupPage>
                           AssetImage('assets/github.png'), // Path to your GitHub icon
                         ),
                         onPressed: () {
-                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
+                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/revix');
                         },
                       ),
                     ],

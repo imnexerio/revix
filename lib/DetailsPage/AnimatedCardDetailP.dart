@@ -50,7 +50,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Left side with subject information
+                        // Left side with category information
                         Expanded(
                           flex: 3,
                           child: Column(
@@ -58,7 +58,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '${record['lecture_type']} · ${record['lecture_no']}',
+                                '${record['entry_type']} · ${record['record_title']}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -71,7 +71,7 @@ class AnimatedCardDetailP extends StatelessWidget {
 
                               // Usage
                               Text(
-                                '${formatDate(record['initiated_on'])} · ${record['no_revision']} · ${record['missed_revision']}',
+                                '${formatDate(record['start_timestamp'])} · ${record['completion_counts']} · ${record['missed_counts']}',
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                   fontSize: 13,
@@ -83,14 +83,14 @@ class AnimatedCardDetailP extends StatelessWidget {
                               _buildDateInfo(
                                 context,
                                 'Scheduled',
-                                record['date_scheduled'] ?? '',
+                                record['scheduled_date'] ?? '',
                                 Icons.calendar_today,
                               ),
                               if (isCompleted)
                                 _buildDateInfo(
                                   context,
                                   'Initiated',
-                                  record['date_learnt'] ?? '',
+                                  record['date_initiated'] ?? '',
                                   Icons.check_circle_outline,
                                 ),
                               // ],
@@ -105,10 +105,10 @@ class AnimatedCardDetailP extends StatelessWidget {
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(
-                                key: ValueKey('chart_${record['subject']}_${record['lecture_no']}_${record['dates_revised']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}'),
-                                dateLearnt: record['date_learnt'],
+                                key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}'),
+                                dateLearnt: record['date_initiated'],
                                 datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
-                                datesRevised: List<String>.from(record['dates_revised'] ?? []),
+                                datesRevised: List<String>.from(record['dates_updated'] ?? []),
                                 showLabels: false,
                               ),
                             ),

@@ -4,9 +4,9 @@ double calculateMonthlyCompletion(List<Map<String, dynamic>> records,  int custo
   final startOfMonth = DateTime(now.year, now.month, 1);
 
   int completedLectures = records.where((record) {
-    if (record['details']['date_learnt'] == 'Unspecified') return false;
-    if (record['details']['date_learnt'] == null) return false;
-    final dateLearnt = DateTime.parse(record['details']['date_learnt']);
+    if (record['details']['date_initiated'] == 'Unspecified') return false;
+    if (record['details']['date_initiated'] == null) return false;
+    final dateLearnt = DateTime.parse(record['details']['date_initiated']);
     return dateLearnt.isAfter(startOfMonth) || dateLearnt.isAtSameMomentAs(startOfMonth);
   }).length;
 
@@ -19,9 +19,9 @@ double calculateWeeklyCompletion(List<Map<String, dynamic>> records,  int custom
   final startOfDay = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
 
   int completedLectures = records.where((record) {
-    if (record['details']['date_learnt'] == 'Unspecified') return false;
-    if (record['details']['date_learnt'] == null) return false;
-    final dateLearnt = DateTime.parse(record['details']['date_learnt']);
+    if (record['details']['date_initiated'] == 'Unspecified') return false;
+    if (record['details']['date_initiated'] == null) return false;
+    final dateLearnt = DateTime.parse(record['details']['date_initiated']);
     return dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay);
   }).length;
 
@@ -35,9 +35,9 @@ double calculateDailyCompletion(List<Map<String, dynamic>> records,  int customC
 
 
   int completedLectures = records.where((record) {
-    if (record['details']['date_learnt'] == 'Unspecified') return false;
-    if (record['details']['date_learnt'] == null) return false;
-    final dateLearnt = DateTime.parse(record['details']['date_learnt']);
+    if (record['details']['date_initiated'] == 'Unspecified') return false;
+    if (record['details']['date_initiated'] == null) return false;
+    final dateLearnt = DateTime.parse(record['details']['date_initiated']);
     return dateLearnt.isAfter(startOfDay) || dateLearnt.isAtSameMomentAs(startOfDay);
   }).length;
 

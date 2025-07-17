@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import '../Utils/FirebaseAuthService.dart';
 
 Future<bool> isEmailVerified() async {
-  User? user = FirebaseAuth.instance.currentUser;
-  await user?.reload();
-  return user?.emailVerified ?? false;
+  final FirebaseAuthService _authService = FirebaseAuthService();
+  await _authService.reloadUser();
+  return _authService.isEmailVerified;
 }

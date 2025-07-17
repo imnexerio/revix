@@ -2,15 +2,15 @@ import 'dart:ui';
 
 int calculateTotalLectures(List<Map<String, dynamic>> records) {
   return records.where((record) =>
-  record['details']['date_learnt'] != null
+  record['details']['date_initiated'] != null
   ).length;
 }
 
 int calculateTotalRevisions(List<Map<String, dynamic>> records) {
   int totalRevisions = 0;
   for (var record in records) {
-    if (record['details']['no_revision'] != null) {
-      totalRevisions += (record['details']['no_revision'] as int);
+    if (record['details']['completion_counts'] != null) {
+      totalRevisions += (record['details']['completion_counts'] as int);
     }
   }
   return totalRevisions;
@@ -22,7 +22,7 @@ int calculateMissedRevisions(List<Map<String, dynamic>> records) {
   for (var record in records) {
     if (record.containsKey('details') && record['details'] is Map) {
       var details = record['details'] as Map;
-      if (details.containsKey('missed_revision') && details['missed_revision'] > 0) {
+      if (details.containsKey('missed_counts') && details['missed_counts'] > 0) {
         missedRevisionsCount++;
       }
     }
@@ -41,7 +41,7 @@ Color getCompletionColor(double percentage) {
 
 double calculatePercentageCompletion(List<Map<String, dynamic>> records) {
   int completedLectures = records.where((record) =>
-  record['details']['date_learnt'] != null
+  record['details']['date_initiated'] != null
   ).length;
   int totalLectures = 322;
   double percentageCompletion = totalLectures > 0
@@ -54,8 +54,8 @@ Map<String, int> calculateSubjectDistribution(List<Map<String, dynamic>> records
   Map<String, int> subjectCounts = {};
 
   for (var record in records) {
-    String subject = record['subject'];
-    subjectCounts[subject] = (subjectCounts[subject] ?? 0) + 1;
+    String category = record['category'];
+    subjectCounts[category] = (subjectCounts[category] ?? 0) + 1;
   }
 
   return subjectCounts;

@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+String _trimText(String text, int maxLength) {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return '${text.substring(0, maxLength)}...';
+}
+
 Widget buildPieChartLegend(Map<String, int> subjectCounts, BuildContext context) {
   // Modern color palette - same as in createPieChartSections
   final colors = [
@@ -40,9 +47,7 @@ Widget buildPieChartLegend(Map<String, int> subjectCounts, BuildContext context)
       children: sortedEntries.asMap().entries.map((mapEntry) {
         int index = mapEntry.key;
         var entry = mapEntry.value;
-        double percentage = totalCount > 0 ? (entry.value / totalCount * 100) : 0;
-
-        return Container(
+        double percentage = totalCount > 0 ? (entry.value / totalCount * 100) : 0;        return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -56,12 +61,16 @@ Widget buildPieChartLegend(Map<String, int> subjectCounts, BuildContext context)
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '${entry.key} (${percentage.toStringAsFixed(1)}%)',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                  fontWeight: FontWeight.w500,
+              Flexible(
+                child: Text(
+                  '${_trimText(entry.key, 15)} (${percentage.toStringAsFixed(1)}%)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],

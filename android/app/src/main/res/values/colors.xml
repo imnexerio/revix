@@ -1,6 +1,8 @@
 <resources>
     <color name="white">#FFFAFAFA</color>
     <color name="text">#FF000000</color>
-    <color name="colorOnPrimary">#00B8D4</color>
+    <color name="colorOnPrimary">#00FFFC</color>
     <color name="WidgetBackground">#EBE9E9</color>
+    <color name="cardBackground">#FFFFFF</color>
+    <color name="textSecondary">#666666</color>
 </resources>

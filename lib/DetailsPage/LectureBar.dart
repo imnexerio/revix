@@ -5,12 +5,12 @@ import '../widgets/LectureDetailsModal.dart';
 import 'ScheduleTableDetailP.dart';
 
 class LectureBar extends StatefulWidget {
-  final String selectedSubject;
-  final String selectedSubjectCode;
+  final String selectedCategory;
+  final String selectedCategoryCode;
 
   LectureBar({
-    required this.selectedSubject,
-    required this.selectedSubjectCode,
+    required this.selectedCategory,
+    required this.selectedCategoryCode,
   });
 
   @override
@@ -35,8 +35,8 @@ class _LectureBarState extends State<LectureBar> {
   @override
   void didUpdateWidget(LectureBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedSubject != widget.selectedSubject ||
-        oldWidget.selectedSubjectCode != widget.selectedSubjectCode) {
+    if (oldWidget.selectedCategory != widget.selectedCategory ||
+        oldWidget.selectedCategoryCode != widget.selectedCategoryCode) {
       // Reapply filter on the already-cached records.
       _applyFilter();
     }
@@ -61,10 +61,10 @@ class _LectureBarState extends State<LectureBar> {
   void _applyFilter() {
     List<MapEntry<String, dynamic>> filteredData = _allRecords
         .where((record) =>
-    record['subject'] == widget.selectedSubject &&
-        record['subject_code'] == widget.selectedSubjectCode)
+    record['category'] == widget.selectedCategory &&
+        record['sub_category'] == widget.selectedCategoryCode)
         .map<MapEntry<String, dynamic>>((record) =>
-        MapEntry(record['lecture_no'] as String, record['details']))
+        MapEntry(record['record_title'] as String, record['details']))
         .toList();
 
     // Debug print for verification
@@ -95,8 +95,8 @@ class _LectureBarState extends State<LectureBar> {
         return LectureDetailsModal(
           lectureNo: lectureNo,
           details: details,
-          selectedSubject: widget.selectedSubject,
-          selectedSubjectCode: widget.selectedSubjectCode,
+          selectedCategory: widget.selectedCategory,
+          selectedCategoryCode: widget.selectedCategoryCode,
         );
       },
     );
@@ -106,7 +106,7 @@ class _LectureBarState extends State<LectureBar> {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> formattedRecords = _filteredLectureData.map((entry) {
       Map<String, dynamic> record = Map<String, dynamic>.from(entry.value);
-      record['lecture_no'] = entry.key;
+      record['record_title'] = entry.key;
       return record;
     }).toList();
 
@@ -115,9 +115,9 @@ class _LectureBarState extends State<LectureBar> {
         builder: (context, constraints) {
           return ScheduleTableDetailP(
             initialRecords: formattedRecords,
-            title: '${widget.selectedSubject} - ${widget.selectedSubjectCode}',
+            title: '${widget.selectedCategory} - ${widget.selectedCategoryCode}',
             onSelect: (context, record) {
-              String lectureNo = record['lecture_no'];
+              String lectureNo = record['record_title'];
               _showLectureDetails(context, lectureNo, record);
             },
           );

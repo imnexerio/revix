@@ -3,15 +3,16 @@ import 'ChatMessage.dart';
 
 class GeminiService {
   final String? apiKey;
+  final String modelName;
   GenerativeModel? _model;
   ChatSession? _chatSession;
   bool isAvailable = false;
   String? _currentScheduleData;
 
-  GeminiService({this.apiKey}) {
+  GeminiService({this.apiKey, this.modelName = 'gemini-2.5-flash-preview-05-20'}) {
     if (apiKey != null && apiKey!.isNotEmpty) {
       _model = GenerativeModel(
-        model: 'gemini-2.0-flash',
+        model: modelName,
         apiKey: apiKey!,
       );
       isAvailable = true;

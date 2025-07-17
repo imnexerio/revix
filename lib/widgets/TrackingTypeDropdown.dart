@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:retracker/Utils/FetchTypesUtils.dart';
+import 'package:revix/Utils/FirebaseDatabaseService.dart';
 
 class TrackingTypeDropdown extends StatefulWidget {
   final String trackingType;
@@ -24,7 +24,8 @@ class _TrackingTypeDropdownState extends State<TrackingTypeDropdown> {
   }
 
   Future<void> _fetchFrequencies() async {
-    List<String> trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
+    final databaseService = FirebaseDatabaseService();
+    List<String> trackingTypes = await databaseService.fetchCustomTrackingTypes();
     List<DropdownMenuItem<String>> items = trackingTypes.map((type) {
       return DropdownMenuItem<String>(
         value: type,

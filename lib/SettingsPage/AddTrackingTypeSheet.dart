@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/customSnackBar.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 
 // lib/SettingsPage/AddTrackingTypeSheet.dart
 void showAddtrackingTypeSheet(
@@ -111,32 +110,19 @@ void showAddtrackingTypeSheet(
             // Submit button
             Container(
               padding: const EdgeInsets.all(24),
-              child: FilledButton.icon(
-                onPressed: () async {
+              child: FilledButton.icon(                onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     try {
-                      String trackingTitle = titleController.text.trim();
-
-                      String uid = FirebaseAuth.instance.currentUser!.uid;
-                      DatabaseReference databaseRef = FirebaseDatabase.instance.ref('users/$uid/profile_data/custom_trackingType');
-
-                      DataSnapshot snapshot = await databaseRef.get();
-                      List<String> currentList = [];
-                      if (snapshot.exists) {
-                        currentList = List<String>.from(snapshot.value as List);
-                      }
-
-                      currentList.add(trackingTitle);
-
-                      await databaseRef.set(currentList);
+                      String trackingTitle = titleController.text.trim();                      // Use centralized database service
+                      final firebaseService = FirebaseDatabaseService();
+                      await firebaseService.addCustomTrackingType(trackingTitle);
 
                       titleController.clear();
                       Navigator.pop(context);
 
-                        customSnackBar(
-                          context: context,
-                          message: 'New tracking type added successfully',
-
+                      customSnackBar(
+                        context: context,
+                        message: 'New tracking type added successfully',
                       );
 
                       onTypeAdded(); // Call the callback to refresh the dropdown

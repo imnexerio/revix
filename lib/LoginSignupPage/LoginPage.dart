@@ -1,12 +1,17 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, UserCredential;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:retracker/LoginSignupPage/ForgotPassPage.dart';
-import 'package:retracker/main.dart';
+import 'package:revix/LoginSignupPage/ForgotPassPage.dart';
+import 'package:revix/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../ThemeNotifier.dart';
+import '../Utils/ThemeNotifier.dart';
+import '../Utils/GuestAuthService.dart';
+import '../Utils/LocalDatabaseService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/FirebaseAuthService.dart';
+import '../widgets/AnimatedSquareText.dart';
+import '../HomeWidget/HomeWidgetManager.dart';
 import 'SignupPage.dart';
 import 'UrlLauncher.dart';
 
@@ -19,11 +24,13 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   final _formKey = GlobalKey<FormState>();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _showLogo = false;
 
   bool _passwordVisibility = false;
   bool _isLoading = false;
@@ -32,9 +39,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   Future<String> _getAppVersion() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     return '${packageInfo.version}+${packageInfo.buildNumber}';
-  }
-
-  @override
+  }  @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
@@ -47,7 +52,17 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         curve: Curves.easeIn,
       ),
     );
+    
     _animationController.forward();
+    
+    // Show logo with a delay to trigger animation
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _showLogo = true;
+        });
+      }
+    });
   }
 
   @override
@@ -76,9 +91,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       return 'Password must be at least 6 characters';
     }
     return null;
-  }
-
-  Future<void> _login() async {
+  }  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -86,27 +99,29 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-    });
-
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+    });    try {
+      UserCredential? userCredential = await _authService.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-
-      User? user = userCredential.user;
-      if (user != null) {
-        String uid = user.uid;
-        DatabaseReference ref = FirebaseDatabase.instance.ref('users/$uid');
-
+      
+      if (userCredential?.user != null) {
         try {
-          DataSnapshot snapshot = await ref.get();
-          if (!snapshot.exists) {
-            throw Exception('User data not found');
+          // Check if user data exists using centralized database service
+          bool userDataExists = await _databaseService.checkUserDataExists();
+            if (!userDataExists) {
+            // Initialize user profile if it doesn't exist
+            await _databaseService.initializeUserProfile(
+              _emailController.text.trim(),
+              'User' // Default name, user can update later
+            );
           }
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setBool('isLoggedIn', true);
+
+          // Update home widget with login status
+          await HomeWidgetService.updateWidgetLoginStatus(true);
 
           // Fetch and apply the latest custom theme
           ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
@@ -125,12 +140,49 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _getFirebaseErrorMessage(e.code);
+        _errorMessage = _authService.getAuthErrorMessage(e);
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _errorMessage = 'An unexpected error occurred. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _continueAsGuest() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Initialize local database for guest mode
+      await LocalDatabaseService.initialize();
+      
+      // Enable guest mode
+      await GuestAuthService.enableGuestMode();
+      
+      // Update home widget with login status for guest mode
+      await HomeWidgetService.updateWidgetLoginStatus(true);
+      
+      // Initialize the local database with default data
+      final localDb = LocalDatabaseService();
+      await localDb.initializeWithDefaultData();
+
+      // Set theme preferences
+      ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+      await themeNotifier.fetchRemoteTheme();
+
+      // Navigate to home page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MyHomePage()),
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to initialize guest mode. Please try again.';
         _isLoading = false;
       });
     }
@@ -173,13 +225,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 40),
-                      // Logo
+                      const SizedBox(height: 40),                      // Logo
                       Hero(
                         tag: 'app_logo',
                         child: Container(
-                          height: 120,
-                          width: 120,
+                          height: 135,
+                          width: 135,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             boxShadow: [
@@ -190,9 +241,21 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               ),
                             ],
                           ),
-                          child: Image.asset(
-                            'assets/icon/icon.png', // Make sure to add your logo in assets
-                            fit: BoxFit.contain,
+                          child: Center(
+                            child: _showLogo ? AnimatedSquareText(
+                              text: 'revix',
+                              size: 120,
+                              borderRadius: 60, // Half of size to make it perfectly round
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              textColor: const Color(0xFF06171F),
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5,
+                              animationDuration: const Duration(milliseconds: 1500),
+                              autoStart: true, // Auto start when widget is created
+                              loop: true, // Enable looping animation
+                              loopDelay: const Duration(milliseconds: 2000), // Wait 2 seconds between loops                              boxShadow: [], // Remove shadow since container already has it
+                            ) : Container(), // Empty container when not showing
                           ),
                         ),
                       ),
@@ -387,6 +450,39 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _continueAsGuest,
+                          child: _isLoading
+                              ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.primary,
+                              ),
+                            ),
+                          )
+                              : const Text(
+                            'Continue as Guest',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colorScheme.primary,
+                            side: BorderSide(color: colorScheme.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       InkWell(
                         onTap: () {
@@ -426,7 +522,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           AssetImage('assets/github.png'), // Path to your GitHub icon
                         ),
                         onPressed: () {
-                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/retracker');
+                          UrlLauncher.launchURL(context,'https://github.com/imnexerio/revix');
                         },
                       ),
                       const SizedBox(height: 16),

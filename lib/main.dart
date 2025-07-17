@@ -1,127 +1,189 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:retracker/AddLectureForm.dart';
-import 'package:retracker/DetailsPage/DetailsPage.dart';
-import 'package:retracker/LoginSignupPage/LoginPage.dart';
-import 'package:retracker/theme_data.dart';
+import 'package:revix/AddLectureForm.dart';
+import 'package:revix/DetailsPage/DetailsPage.dart';
+import 'package:revix/Utils/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'AI/ChatPage.dart';
-import 'CustomThemeGenerator.dart';
+import 'Utils/CustomThemeGenerator.dart';
 import 'HomePage/HomePage.dart';
+import 'HomeWidget/HomeWidgetManager.dart';
 import 'SchedulePage/TodayPage.dart';
 import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
-import 'ThemeNotifier.dart';
+import 'Utils/ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
+
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PlatformUtils.init();
+  
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-  // Load cached theme data from SharedPreferences
-  ThemeMode cachedThemeMode = ThemeMode.system;
-  int cachedThemeIndex = 0;
-  Color? cachedCustomColor;
-
-  // Load saved theme mode
-  final themeModeString = prefs.getString(ThemeNotifier.prefThemeMode);
-  if (themeModeString != null) {
-    cachedThemeMode = ThemeMode.values.firstWhere(
-            (e) => e.toString() == themeModeString,
-        orElse: () => ThemeMode.system
-    );
+  await Hive.initFlutter();
+  // Initialize HomeWidget service for background callbacks
+  if (PlatformUtils.instance.isAndroid) {
+    await HomeWidgetService.initialize();
   }
-
-  // Load saved theme index
-  cachedThemeIndex = prefs.getInt(ThemeNotifier.prefThemeIndex) ?? 0;
-
-  // Load custom theme color if exists
-  final customColorValue = prefs.getInt(ThemeNotifier.prefCustomThemeColor);
-  if (customColorValue != null) {
-    cachedCustomColor = Color(customColorValue);
-  }
-
-  // Initialize the correct theme based on cached data
-  ThemeData initialTheme;
-  if (cachedThemeIndex == ThemeNotifier.customThemeIndex && cachedCustomColor != null) {
-    // Apply custom theme
-    if (cachedThemeMode == ThemeMode.system) {
-      final brightness = WidgetsBinding.instance.window.platformBrightness;
-      initialTheme = brightness == Brightness.dark
-          ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
-          : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
-    } else {
-      initialTheme = cachedThemeMode == ThemeMode.dark
-          ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
-          : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
-    }
-  } else {
-    // Apply predefined theme
-    if (cachedThemeMode == ThemeMode.system) {
-      final brightness = WidgetsBinding.instance.window.platformBrightness;
-      initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
-    } else {
-      initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (cachedThemeMode == ThemeMode.dark ? 1 : 0)];
-    }
-  }
-
-  // Create ThemeNotifier with the cached theme data
-  ThemeNotifier themeNotifier = ThemeNotifier(initialTheme, cachedThemeMode);
-
-  // Set the cached values directly (they'll be applied in the constructor)
-  themeNotifier.setInitialValues(cachedThemeIndex, cachedCustomColor);
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => themeNotifier),
-        ChangeNotifierProvider(create: (_) => ProfileProvider()),
-      ],
-      child: MyApp(isLoggedIn: isLoggedIn, prefs: prefs),
-    ),
-  );
+  
+  runApp(const MyApp());
 }
 
-
 class MyApp extends StatefulWidget {
-  final bool isLoggedIn;
-  final SharedPreferences prefs;
-
-  const MyApp({Key? key, required this.isLoggedIn, required this.prefs}) : super(key: key);
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
+  bool _isInitialized = false;
+  bool _isLoggedIn = false;
+  ThemeNotifier? _themeNotifier;
+  ProfileProvider? _profileProvider;
+
   @override
   void initState() {
     super.initState();
+    _initializeApp();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<ThemeNotifier>(
-      builder: (context, themeNotifier, child) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'reTracker',
-          theme: themeNotifier.currentTheme,
-          darkTheme: themeNotifier.currentTheme,
-          themeMode: themeNotifier.currentThemeMode,
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const SplashScreen(),
-            '/home': (context) => widget.isLoggedIn ? const MyHomePage() : LoginPage(),
-          },
+  Future<void> _initializeApp() async {
+    try {
+            
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+      // Load cached theme data from SharedPreferences
+      ThemeMode cachedThemeMode = ThemeMode.system;
+      int cachedThemeIndex = 0;
+      Color? cachedCustomColor;
+
+      // Load saved theme mode
+      final themeModeString = prefs.getString(ThemeNotifier.prefThemeMode);
+      if (themeModeString != null) {
+        cachedThemeMode = ThemeMode.values.firstWhere(
+                (e) => e.toString() == themeModeString,
+            orElse: () => ThemeMode.system
         );
-      },
+      }
+
+      // Load saved theme index
+      cachedThemeIndex = prefs.getInt(ThemeNotifier.prefThemeIndex) ?? 0;
+
+      // Load custom theme color if exists
+      final customColorValue = prefs.getInt(ThemeNotifier.prefCustomThemeColor);
+      if (customColorValue != null) {
+        cachedCustomColor = Color(customColorValue);
+      }
+
+      // Initialize the correct theme based on cached data
+      ThemeData initialTheme;
+      if (cachedThemeIndex == ThemeNotifier.customThemeIndex && cachedCustomColor != null) {
+        // Apply custom theme
+        if (cachedThemeMode == ThemeMode.system) {
+          final brightness = WidgetsBinding.instance.window.platformBrightness;
+          initialTheme = brightness == Brightness.dark
+              ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
+              : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
+        } else {
+          initialTheme = cachedThemeMode == ThemeMode.dark
+              ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
+              : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
+        }
+      } else {
+        // Apply predefined theme
+        if (cachedThemeMode == ThemeMode.system) {
+          final brightness = WidgetsBinding.instance.window.platformBrightness;
+          initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+        } else {
+          initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (cachedThemeMode == ThemeMode.dark ? 1 : 0)];
+        }
+      }
+
+      // Create ThemeNotifier with the cached theme data
+      ThemeNotifier themeNotifier = ThemeNotifier(initialTheme, cachedThemeMode);
+      themeNotifier.setInitialValues(cachedThemeIndex, cachedCustomColor);
+
+      if (mounted) {
+        setState(() {
+          _isLoggedIn = isLoggedIn;
+          _themeNotifier = themeNotifier;
+          _profileProvider = ProfileProvider();
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('Error during app initialization: $e');
+      // Set default values in case of error
+      if (mounted) {
+        setState(() {
+          _isLoggedIn = false;
+          _themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
+          _profileProvider = ProfileProvider();
+          _isInitialized = true;
+        });
+      }
+    }
+  }
+  @override
+  Widget build(BuildContext context) {    // Show splash screen with default theme while initializing
+    if (!_isInitialized || _themeNotifier == null || _profileProvider == null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'revix',
+        theme: AppThemes.themes[0], // Default light theme
+        home: SplashScreen(
+          isLoggedIn: _isLoggedIn,
+          isInitialized: _isInitialized,
+        ),
+        onUnknownRoute: (settings) {
+          // Handle unknown routes by redirecting to splash screen
+          return MaterialPageRoute(
+            builder: (context) => SplashScreen(
+              isLoggedIn: _isLoggedIn,
+              isInitialized: _isInitialized,
+            ),
+          );
+        },
+      );
+    }
+
+    // Once initialized, show the app with proper providers and routing
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _themeNotifier!),
+        ChangeNotifierProvider.value(value: _profileProvider!),
+      ],
+      child: Consumer<ThemeNotifier>(
+        builder: (context, themeNotifier, child) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'revix',
+            theme: themeNotifier.currentTheme,
+            darkTheme: themeNotifier.currentTheme,
+            themeMode: themeNotifier.currentThemeMode,
+            home: SplashScreen(
+              isLoggedIn: _isLoggedIn,
+              isInitialized: _isInitialized,
+            ),
+            onUnknownRoute: (settings) {
+              // Handle unknown routes by redirecting to splash screen
+              return MaterialPageRoute(
+                builder: (context) => SplashScreen(
+                  isLoggedIn: _isLoggedIn,
+                  isInitialized: _isInitialized,
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
 
     <queries>
@@ -13,31 +20,55 @@
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
-    </queries>
-
+    </queries>    
     <application
-        android:label="reTracker"
-        android:icon="@mipmap/ic_launcher">
+        android:label="revix"
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
 
         <receiver
             android:name=".TodayWidget"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.imnexerio.retracker.ACTION_REFRESH" />
+                <action android:name="revix.ACTION_REFRESH" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/today_widget_info" />
         </receiver>
 
-        <service
-            android:name=".WidgetRefreshService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-        <service
+        <!-- HomeWidget background receiver and service for interactive widgets -->
+        <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
+        <service android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"
+            android:permission="android.permission.BIND_JOB_SERVICE" 
+            android:exported="true"/>        <service
             android:name=".RecordUpdateService"
             android:exported="false" />
+        <service
+            android:name=".RefreshService"
+            android:exported="false" />
+        <!-- Alarm system components -->
+        <receiver
+            android:name="com.imnexerio.revix.AlarmReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="revix.ACTION_ALARM_TRIGGER" />
+                <action android:name="MARK_AS_DONE" />
+                <action android:name="IGNORE_ALARM" />
+                <action android:name="DISMISS_ALARM" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <service
+            android:name="com.imnexerio.revix.AlarmService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <service
             android:name=".WidgetListViewService"
@@ -60,13 +91,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
+        </activity>        <activity
             android:name=".AddLectureActivity"
             android:exported="false"
-            android:label="Add New Record(reTracker)"
+            android:label="Add New Record(revix)"
             android:theme="@style/DialogWithCenteredTitle"
             android:windowSoftInputMode="adjustResize">
+        </activity>
+        <activity
+            android:name=".AlarmScreenActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
 
         <meta-data

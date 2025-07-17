@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:retracker/Utils/CustomSnackBar.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, EmailAuthProvider;
+import 'package:revix/Utils/CustomSnackBar.dart';
+import '../Utils/FirebaseAuthService.dart';
 
 class ChangeEmailPage extends StatefulWidget {
   @override
   _ChangeEmailPageState createState() => _ChangeEmailPageState();
 }
 
-class _ChangeEmailPageState extends State<ChangeEmailPage> {
-  final _formKey = GlobalKey<FormState>();
+class _ChangeEmailPageState extends State<ChangeEmailPage> {  final _formKey = GlobalKey<FormState>();
+  final FirebaseAuthService _authService = FirebaseAuthService();
   String? _currentPassword;
   String? _newEmail;
   final TextEditingController _newEmailController = TextEditingController();
@@ -59,36 +60,35 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
               Center(
                 child: Container(
                   width: 200,
-                  child: FilledButton(
-                    onPressed: () async {
+                  child: FilledButton(                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
-                        _formKey.currentState!.save();
-                        try {
-                          User? user = FirebaseAuth.instance.currentUser;
-                          AuthCredential credential = EmailAuthProvider.credential(
-                            email: user!.email!,
+                        _formKey.currentState!.save();                        try {
+                          // First reauthenticate the user
+                          final credential = EmailAuthProvider.credential(
+                            email: _authService.currentUser!.email!,
                             password: _currentPassword!,
                           );
-                          await user.reauthenticateWithCredential(credential);
-                          await user.verifyBeforeUpdateEmail(_newEmail!);
+                          await _authService.reauthenticateWithCredential(credential);
+                          
+                          // Then update the email
+                          await _authService.updateEmail(_newEmail!);
 
-                            customSnackBar(
-                              context: context,
-                              message: 'Verification email sent to $_newEmail. Please verify it and Pull to refresh.',
-
+                          customSnackBar(
+                            context: context,
+                            message: 'Verification email sent to $_newEmail. Please verify it and Pull to refresh.',
                           );
 
                           _newEmailController.clear();
                           _currentPassword = null;
                           _formKey.currentState!.reset();
-                        } catch (e) {
+                        } on FirebaseAuthException catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Row(
                                 children: [
                                   const Icon(Icons.error, color: Colors.white),
                                   const SizedBox(width: 8),
-                                  Text('Failed to update email: $e'),
+                                  Text(_authService.getAuthErrorMessage(e)),
                                 ],
                               ),
                               backgroundColor: Colors.red,

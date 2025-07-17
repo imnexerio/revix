@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'SubjectsBar.dart';
+import 'CategoriesBar.dart';
 
 class DetailsPage extends StatefulWidget {
   @override
@@ -20,7 +20,7 @@ Widget build(BuildContext context) {
     body: Padding(
       padding: const EdgeInsets.all(0.0),
       child: Center(
-        child: SubjectsBar(),
+        child: CategoriesBar(),
       ),
     ),
   );

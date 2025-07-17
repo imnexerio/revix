@@ -1,16 +1,15 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:retracker/HomePage/revision_calculations.dart';
-import 'package:retracker/Utils/customSnackBar_error.dart';
+import 'package:revix/HomePage/revision_calculations.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
-import '../Utils/FetchTypesUtils.dart';
-import 'CustomLectureSave.dart';
+import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/GuestAuthService.dart';
+import '../Utils/LocalDatabaseService.dart';
 import 'DailyProgressCard.dart';
 import 'ProgressCalendarCard.dart';
-import 'SubjectDistributionCard.dart';
+import 'CategoryDistributionCard.dart';
 import 'WeeklyProgressCard.dart';
 import 'calculation_utils.dart';
 import 'completion_utils.dart';
@@ -39,37 +38,50 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     'revision': {},
     'completion': {},
     'missed': {},
-  };
-
-  Map<String, int> _completionTargets = {};
-  int get _customCompletionTarget => _completionTargets[_selectedLectureType] ?? 200;
+  };  Map<String, int> _completionTargets = {};
+  int get _customCompletionTarget {
+    final target = _completionTargets[_selectedLectureType] ?? 200;
+    return target;
+  }
+  
+  bool _isLoadingTargets = true;
 
   Size? _previousSize;
 
   @override
   bool get wantKeepAlive => true;
-
   @override
   void initState() {
     super.initState();
     _recordService.initialize();
     _recordsStream = _recordService.allRecordsStream;
-    _loadSavedPreferences();
-    _fetchTrackingTypesAndTargetFromFirebase();
-    _loadAvailableLectureTypes();
+    _initializeData();
   }
 
-  // Load saved preferences from SharedPreferences
+  // Initialize all data in proper order
+  Future<void> _initializeData() async {
+    await _loadSavedPreferences();
+    await _fetchTrackingTypesAndTargetFromFirebase();
+    await _loadAvailableLectureTypes();
+    
+    if (mounted) {
+      setState(() {
+        _isLoadingTargets = false;
+      });
+    }
+  }  // Load saved preferences from SharedPreferences
   Future<void> _loadSavedPreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    setState(() {
-      _lectureViewType = prefs.getString('lectureViewType') ?? 'Total';
-      _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
-      _completionViewType = prefs.getString('completionViewType') ?? 'Total';
-      _missedViewType = prefs.getString('missedViewType') ?? 'Total';
-      _selectedLectureType = prefs.getString('selectedLectureType') ?? 'All'; // Changed default to 'All'
-    });
+    if (mounted) {
+      setState(() {
+        _lectureViewType = prefs.getString('lectureViewType') ?? 'Total';
+        _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
+        _completionViewType = prefs.getString('completionViewType') ?? 'Total';
+        _missedViewType = prefs.getString('missedViewType') ?? 'Total';
+        _selectedLectureType = prefs.getString('selectedLectureType') ?? 'All'; // Changed default to 'All'
+      });
+    }
   }
 
   // Save preferences to SharedPreferences
@@ -86,7 +98,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   // Modified method to load available lecture types
   Future<void> _loadAvailableLectureTypes() async {
     try {
-      final trackingTypes = await FetchtrackingTypeUtils.fetchtrackingType();
+      final databaseService = FirebaseDatabaseService();
+      final trackingTypes = await databaseService.fetchCustomTrackingTypes();
       setState(() {
         // Ensure 'All' is always the first option and then add other tracking types
         List<String> types = ['All']; // Start with 'All'
@@ -114,46 +127,95 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       _selectedLectureType = _availableLectureTypes[nextIndex];
     });
     _savePreferences(); // Save when lecture type changes
-  }
-
-  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
+  }  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final String uid = user.uid;
+      if (await GuestAuthService.isGuestMode()) {
+        // Use local database for guest users
+        final localDb = LocalDatabaseService();
+        final homePageData = await localDb.getProfileData('home_page', defaultValue: {});
+          if (homePageData.isNotEmpty && homePageData is Map) {
+          // Safe type casting for local database data
+          final homePageMap = Map<String, dynamic>.from(homePageData);
+          final selectedTypesRaw = homePageMap['selectedTrackingTypes'];
+          final completionTargetsRaw = homePageMap['completionTargets'];
+          
+          // Convert to proper Map<String, dynamic> if needed
+          Map<String, dynamic> selectedTypes = {};
+          Map<String, dynamic> completionTargets = {};
+          
+          if (selectedTypesRaw != null) {
+            if (selectedTypesRaw is Map) {
+              selectedTypes = Map<String, dynamic>.from(selectedTypesRaw);
+            }
+          }
+          
+          if (completionTargetsRaw != null) {
+            if (completionTargetsRaw is Map) {
+              completionTargets = Map<String, dynamic>.from(completionTargetsRaw);
+            }
+          }
 
-        DatabaseReference typesRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/selectedTrackingTypes');
-        DatabaseReference targetsRef = FirebaseDatabase.instance
-            .ref('users/$uid/profile_data/home_page/completionTargets');
+          if (mounted) {
+            setState(() {
+              selectedTypes.forEach((key, value) {
+                if (_selectedTrackingTypesMap.containsKey(key)) {
+                  List<dynamic> valueList = value as List<dynamic>;
+                  _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+                }
+              });
 
-        DatabaseEvent typesEvent = await typesRef.once();
-        DatabaseEvent targetsEvent = await targetsRef.once();
-
-        if (typesEvent.snapshot.exists) {
-          Map<dynamic, dynamic> data = typesEvent.snapshot.value as Map<dynamic, dynamic>;
-
-          setState(() {
-            data.forEach((key, value) {
-              if (_selectedTrackingTypesMap.containsKey(key)) {
-                List<dynamic> valueList = value as List<dynamic>;
-                _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
-              }
+              completionTargets.forEach((key, value) {
+                final parsedValue = int.tryParse(value.toString()) ?? 200;
+                _completionTargets[key] = parsedValue;
+              });
             });
-          });
+          }
         }
+      } else {
+        // Use centralized Firebase service for authenticated users
+        final firebaseService = FirebaseDatabaseService();
+        final homePageData = await firebaseService.fetchHomePageSettings();
 
-        if (targetsEvent.snapshot.exists) {
-          setState(() {
-            Map<dynamic, dynamic> targetsData = targetsEvent.snapshot.value as Map<dynamic, dynamic>;
-            targetsData.forEach((lectureType, target) {
-              _completionTargets[lectureType.toString()] = int.parse(target.toString());
+        if (homePageData.isNotEmpty) {
+          // Safe type casting for Firebase data
+          final selectedTypesRaw = homePageData['selectedTrackingTypes'];
+          final completionTargetsRaw = homePageData['completionTargets'];
+          
+          // Convert to proper Map<String, dynamic> if needed
+          Map<String, dynamic> selectedTypes = {};
+          Map<String, dynamic> completionTargets = {};
+          
+          if (selectedTypesRaw != null) {
+            if (selectedTypesRaw is Map) {
+              selectedTypes = Map<String, dynamic>.from(selectedTypesRaw);
+            }
+          }
+          
+          if (completionTargetsRaw != null) {
+            if (completionTargetsRaw is Map) {
+              completionTargets = Map<String, dynamic>.from(completionTargetsRaw);
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              selectedTypes.forEach((key, value) {
+                if (_selectedTrackingTypesMap.containsKey(key)) {
+                  List<dynamic> valueList = value as List<dynamic>;
+                  _selectedTrackingTypesMap[key] = valueList.map((item) => item.toString()).toSet();
+                }
+              });
+
+              completionTargets.forEach((key, value) {
+                final parsedValue = int.tryParse(value.toString()) ?? 200;
+                _completionTargets[key] = parsedValue;
+              });
             });
-          });
+          }
         }
       }
     } catch (e) {
-      // Handle error
+      // Handle error silently
     }
   }
 
@@ -206,7 +268,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             List<Map<String, dynamic>> filteredRecords = _selectedLectureType == 'All'
                 ? allRecords
                 : allRecords.where((record) {
-              return record['details']['lecture_type'] == _selectedLectureType;
+              return record['details']['entry_type'] == _selectedLectureType;
             }).toList();
 
             Map<String, int> subjectDistribution = calculateSubjectDistribution(filteredRecords);
@@ -321,14 +383,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                                   borderRadius: BorderRadius.circular(10),
                                                 ),
                                               ),
-                                              child: const Text('Save'),
-                                              onPressed: () async {
+                                              child: const Text('Save'),                                              onPressed: () async {
                                                 final String targetValue = textFieldController.text;
                                                 if (targetValue.isNotEmpty) {
                                                   final int newTarget = int.parse(targetValue);
 
-                                                  final profileService = ProfileDataService();
-                                                  await profileService.saveCompletionTarget(_selectedLectureType, targetValue);
+                                                  final firebaseService = FirebaseDatabaseService();
+                                                  await firebaseService.saveHomePageCompletionTarget(_selectedLectureType, targetValue);
                                                   setState(() {
                                                     _completionTargets[_selectedLectureType] = newTarget;
                                                   });
@@ -625,7 +686,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
   double calculatePercentageCompletion(List<Map<String, dynamic>> records, int customCompletionTarget) {
     int completedLectures = records.where((record) =>
-    record['details']['date_learnt'] != null
+    record['details']['date_initiated'] != null
     ).length;
     double percentageCompletion = customCompletionTarget > 0
         ? (completedLectures / customCompletionTarget) * 100
@@ -653,7 +714,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 selectedLectureType: _selectedLectureType,  // Pass the selected type
               ),
               const SizedBox(height: 32),
-              buildSubjectDistributionCard(
+              buildCategoryDistributionCard(
                 subjectDistribution,
                 cardPadding,
                 context,
@@ -721,7 +782,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           selectedLectureType: _selectedLectureType,
         ),
         const SizedBox(height: 24),
-        buildSubjectDistributionCard(
+        buildCategoryDistributionCard(
           subjectDistribution,
           cardPadding,
           context,

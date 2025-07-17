@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../CustomFrequencySelector.dart';
-import '../RecordForm/CalculateCustomNextDate.dart';
+import '../Utils/CustomFrequencySelector.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
-import '../Utils/date_utils.dart';
+import '../Utils/MarkAsDoneService.dart';
 import 'DescriptionCard.dart';
 import 'RevisionFrequencyDropdown.dart';
 
 class LectureDetailsModal extends StatefulWidget {
   final String lectureNo;
   final Map<String, dynamic> details;
-  final String selectedSubject;
-  final String selectedSubjectCode;
+  final String selectedCategory;
+  final String selectedCategoryCode;
 
   LectureDetailsModal({
     required this.lectureNo,
     required this.details,
-    required this.selectedSubject,
-    required this.selectedSubjectCode,
+    required this.selectedCategory,
+    required this.selectedCategoryCode,
   });
 
   @override
@@ -42,19 +41,22 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     "numberOfTimes": null,
     "endDate": null
   };
-
-  @override
+  
+  // Alarm type field
+  late int alarmType;
+  final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];  @override
   void initState() {
     super.initState();
-    revisionFrequency = widget.details['revision_frequency'];
-    isEnabled = widget.details['status'] == 'Enabled';
-    noRevision = widget.details['no_revision'];
+    revisionFrequency = widget.details['recurrence_frequency'];
+    isEnabled = widget.details['status'] == 'Enabled'; // Always initialize from widget details
+    noRevision = widget.details['completion_counts'];
     formattedTime = widget.details['reminder_time'];
+    alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
     customFrequencyParams = Map<String, dynamic>.from(
-      widget.details['revision_data']['custom_params'] ?? {},
+      widget.details['recurrence_data']['custom_params'] ?? {},
     );
     durationData = {
       "type": widget.details['duration']['type'],
@@ -108,7 +110,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
           ),
 
-          // Header with subject and lecture info
+          // Header with category and lecture info
           Container(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
             child: Row(
@@ -145,7 +147,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${widget.selectedSubject} · ${widget.selectedSubjectCode} · ${widget.lectureNo}',
+                        '${widget.selectedCategory} · ${widget.selectedCategoryCode} · ${widget.lectureNo}',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -153,7 +155,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${widget.details['lecture_type']}',
+                        '${widget.details['entry_type']}',
                         style: TextStyle(
                           fontSize: 16,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -193,9 +195,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       child: AspectRatio(
                         aspectRatio: 1.0,
                         child: RevisionRadarChart(
-                          dateLearnt: widget.details['date_learnt'],
+                          dateLearnt: widget.details['date_initiated'],
                           datesMissedRevisions: List.from(widget.details['dates_missed_revisions'] ?? []),
-                          datesRevised: List.from(widget.details['dates_revised'] ?? []),
+                          datesRevised: List.from(widget.details['dates_updated'] ?? []),
                         ),
                       ),
                     ),
@@ -218,27 +220,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   _buildTimelineCard(context),
 
                   const SizedBox(height: 24),
-
-                  // Description section
-                  Text(
-                    "Description is che",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DescriptionCard(
-                    details: widget.details,
-                    onDescriptionChanged: (text) {
-                      setState(() {
-                        widget.details['description'] = text;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
                   Text(
                     "Review Settings",
                     style: TextStyle(
@@ -250,13 +231,20 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   const SizedBox(height: 12),
                   _buildRevisionSettingsCard(context),
 
+                  // const SizedBox(height: 12),
+                  DescriptionCard(
+                    details: widget.details,
+                    onDescriptionChanged: (text) {
+                      setState(() {
+                        widget.details['description'] = text;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
-          ),
-
-          // Action buttons
+          ),          // Action buttons
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -266,163 +254,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('MARK AS DONE'),
-                      onPressed: () async {
-                        try {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (BuildContext context) {
-                              return Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: const Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircularProgressIndicator(),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        "Updating...",
-                                        style: TextStyle(fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-
-                          if(!isEnabled) {
-                            Navigator.pop(context);
-                            throw 'Cannot mark as done when the status is disabled';
-                          }
-
-                          if (widget.details['date_learnt'] == 'Unspecified') {
-                            await moveToDeletedData(
-                                widget.selectedSubject,
-                                widget.selectedSubjectCode,
-                                widget.lectureNo,
-                                widget.details
-                            );
-
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                              customSnackBar(
-                                context: context,
-                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
-                            );
-                            return;
-                          }
-
-                          String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
-                          int missedRevision = (widget.details['missed_revision'] as num).toInt();
-                          DateTime scheduledDate = DateTime.parse(widget.details['date_scheduled'].toString());
-
-                          if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised) < 0) {
-                            missedRevision += 1;
-                          }
-                          List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
-
-                          if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
-                            datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
-                          }
-                          List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
-                          datesRevised.add(dateRevised);
-
-
-                            if (widget.details['revision_frequency']== 'No Repetition'){
-                              await moveToDeletedData(
-                                  widget.selectedSubject,
-                                  widget.selectedSubjectCode,
-                                  widget.lectureNo,
-                                  widget.details
-                              );
-
-                              Navigator.pop(context);
-                              Navigator.pop(context);
-                                customSnackBar(
-                                  context: context,
-                                  message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo} has been marked as done and moved to deleted data.',
-                              );
-                              return;
-                            }else{
-                              if (widget.details['revision_frequency'] == 'Custom') {
-
-                                Map<String, dynamic> revisionData = extractRevisionData(widget.details);
-                                // print('revisionData: $revisionData');
-                                DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
-                                    DateTime.parse(widget.details['date_scheduled']),
-                                    revisionData
-                                );
-                                dateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                              } else {
-                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                                  scheduledDate,
-                                  revisionFrequency,
-                                  noRevision + 1,
-                                )).toIso8601String().split('T')[0];
-                              }
-                              Map<String, dynamic> revisionData = {
-                                'frequency': revisionFrequency,
-                              };
-                              if(customFrequencyParams.isNotEmpty) {
-                                revisionData['custom_params'] = customFrequencyParams;
-                              }
-
-                              if (widget.details['no_revision'] < 0) {
-                                datesRevised = [];
-                                dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
-                                  DateTime.parse(dateRevised),
-                                  widget.details['revision_frequency'],
-                                  widget.details['no_revision'] + 1,
-                                )).toIso8601String().split('T')[0];
-                              }
-                              Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(widget.details);
-                              updatedDetails['no_revision'] = noRevision+1;
-                              isEnabled = determineEnabledStatus(updatedDetails);
-
-
-                          await UpdateRecords(
-                            widget.selectedSubject,
-                            widget.selectedSubjectCode,
-                            widget.lectureNo,
-                            dateRevised,
-                            widget.details['description'],
-                            widget.details['reminder_time'],
-                            noRevision + 1,
-                            dateScheduled,
-                            datesRevised,
-                            missedRevision,
-                            datesMissedRevisions,
-                            revisionFrequency,
-                            isEnabled ? 'Enabled' : 'Disabled',
-                            revisionData,
-                            durationData
-                          );
-
-                          Navigator.pop(context);
-                          Navigator.pop(context);
-
-
-
-                              customSnackBar(
-                                context: context,
-                                message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, done. Next schedule is on $dateScheduled.',
-                            );
-                          }
-                        } catch (e) {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
-                            customSnackBar_error(
-                              context: context,
-                              message: 'Failed to mark as done: ${e.toString()}',
-                          );
-                        }
-                      },
+                      onPressed: () => MarkAsDoneService.markAsDone(
+                        context: context,
+                        category: widget.selectedCategory,
+                        subCategory: widget.selectedCategoryCode,
+                        lectureNo: widget.lectureNo,
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -469,36 +306,39 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           );
 
                           List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
-                          List<String> datesRevised = List<String>.from(widget.details['dates_revised'] ?? []);
-                          String dateScheduled = widget.details['date_scheduled'];
+                          List<String> datesRevised = List<String>.from(widget.details['dates_updated'] ?? []);
+                          String dateScheduled = widget.details['scheduled_date'];
 
                           if (isEnabled && widget.details['status'] == 'Disabled' &&
-                              DateTime.parse(widget.details['date_scheduled']).isBefore(DateTime.now())) {
+                              DateTime.parse(widget.details['scheduled_date']).isBefore(DateTime.now())) {
                             dateScheduled = DateTime.now().toIso8601String().split('T')[0];
-                          }
-                          Map<String, dynamic> revisionData = {
+                          }                          Map<String, dynamic> revisionData = {
                             'frequency': revisionFrequency,
                           };
                           if(customFrequencyParams.isNotEmpty) {
                             revisionData['custom_params'] = customFrequencyParams;
                           }
 
+                          // Set alarm type to 0 if "All Day" is selected
+                          int finalAlarmType = formattedTime == 'All Day' ? 0 : alarmType;
+
                           await UpdateRecords(
-                            widget.selectedSubject,
-                            widget.selectedSubjectCode,
+                            widget.selectedCategory,
+                            widget.selectedCategoryCode,
                             widget.lectureNo,
-                            widget.details['date_revised'],
+                            widget.details['date_updated'],
                             widget.details['description'],
                             formattedTime,
                             noRevision,
                             dateScheduled,
                             datesRevised,
-                            widget.details['missed_revision'],
+                            widget.details['missed_counts'],
                             datesMissedRevisions,
                             revisionFrequency,
                             isEnabled ? 'Enabled' : 'Disabled',
                             revisionData,
-                            durationData
+                            durationData,
+                            finalAlarmType
                           );
 
                           Navigator.pop(context);
@@ -507,7 +347,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                             customSnackBar(
                               context: context,
-                              message: '${widget.selectedSubject} ${widget.selectedSubjectCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
+                              message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
                           );
                         } catch (e) {
                           if (Navigator.canPop(context)) {
@@ -568,27 +408,60 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             "Timing",
             formattedTime, // Changed from widget.details['reminder_time'] to formattedTime
             Icons.refresh,
-            Theme.of(context).colorScheme.primary,
-                () async {
-              TimeOfDay? pickedTime = await showTimePicker(
+            Theme.of(context).colorScheme.primary,                () async {
+              // Show options: "All Day" or "Set Time"
+              showDialog(
                 context: context,
-                initialTime: TimeOfDay.now(),
-                builder: (BuildContext context, Widget? child) {
-                  return MediaQuery(
-                    data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-                    child: child!,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Reminder Time'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.access_time),
+                          title: const Text('Set Specific Time'),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            TimeOfDay? pickedTime = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                              builder: (BuildContext context, Widget? child) {
+                                return MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            
+                            if (pickedTime != null) {
+                              final now = DateTime.now();
+                              setState(() {
+                                formattedTime = DateFormat('HH:mm').format(
+                                  DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
+                                );
+                                // Reset alarm type to "No Reminder" when switching from "All Day" to a specific time
+                                // The alarm type dropdown will now be visible for user selection
+                              });
+                            }
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.all_inclusive),
+                          title: const Text('All Day'),
+                          onTap: () {
+                            setState(() {
+                              formattedTime = 'All Day';
+                              alarmType = 0; // Reset alarm type to "No Reminder" when "All Day" is selected
+                            });
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
                   );
                 },
               );
-
-              if (pickedTime != null) {
-                final now = DateTime.now();
-                setState(() {
-                  formattedTime = DateFormat('HH:mm').format(
-                    DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute),
-                  );
-                });
-              }
             },
           ),
           const SizedBox(width: 8),
@@ -613,9 +486,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildStatusItem(
             context,
             "Missed",
-            "${widget.details['missed_revision']}",
+            "${widget.details['missed_counts']}",
             Icons.cancel_outlined,
-            int.parse(widget.details['missed_revision'].toString()) > 0
+            int.parse(widget.details['missed_counts'].toString()) > 0
                 ? Theme.of(context).colorScheme.error
                 : Theme.of(context).colorScheme.onSurface,
           ),
@@ -708,20 +581,20 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildTimelineItem(
             context,
             "Initiated on",
-            widget.details['date_learnt'],
+            widget.details['date_initiated'],
             Icons.school_outlined,
             isFirst: true,
           ),
           _buildTimelineItem(
             context,
             "Last Reviewed",
-            widget.details['date_revised'] != null ? formatDate(widget.details['date_revised']) : 'NA',
+            widget.details['date_updated'] != null ? formatDate(widget.details['date_updated']) : 'NA',
             Icons.history,
           ),
           _buildTimelineItem(
             context,
             "Next Review",
-            widget.details['date_scheduled'],
+            widget.details['scheduled_date'],
             Icons.event_outlined,
             isLast: true,
             isHighlighted: true,
@@ -837,7 +710,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       // print('extractRevisionData: ${extractRevisionData(widget.details)}');
                       showCustomFrequencySelector();
                     } else {
-                      customFrequencyParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+                      customFrequencyParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
                     }
                   });
                 }
@@ -914,7 +787,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Number of Times',
-                                    hintText: 'Enter a value ≥ 1',
+                                    hintText: 'Enter a value >= 1',
                                   ),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
@@ -1018,8 +891,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           if (revisionFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              // child: Text(
-              //   getCustomFrequencyDescription(),
+              // child: Text(              //   getCustomFrequencyDescription(),
               //   style: TextStyle(
               //     fontStyle: FontStyle.italic,
               //     color: Theme.of(context).colorScheme.secondary,
@@ -1028,6 +900,48 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
 
           const SizedBox(height: 20),
+
+          // Alarm Type section (only shown when not "All Day")
+          if (formattedTime != 'All Day') ...[
+            Text(
+              "Alarm Type",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Theme.of(context).cardColor,
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: alarmType,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                isExpanded: true,
+                items: _alarmOptions.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String option = entry.value;
+                  return DropdownMenuItem<int>(
+                    value: index,
+                    child: Text(option),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    alarmType = newValue!;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // Status toggle
           Text(
@@ -1051,12 +965,13 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
-              ),
-              Switch(
+              ),              Switch(
                 value: isEnabled,
                 onChanged: (bool newValue) {
                   setState(() {
                     isEnabled = newValue;
+                    // Don't update widget.details['status'] here - only update in local state
+                    // The actual data will only be updated when user clicks "SAVE CHANGES"
                   });
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
@@ -1089,9 +1004,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     // Get the actual custom params from the nested structure
     Map<String, dynamic> initialParams = {};
 
-    if (widget.details['revision_data'] != null &&
-        widget.details['revision_data']['custom_params'] != null) {
-      initialParams = Map<String, dynamic>.from(widget.details['revision_data']['custom_params']);
+    if (widget.details['recurrence_data'] != null &&
+        widget.details['recurrence_data']['custom_params'] != null) {
+      initialParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
     }
 
     // For debugging
@@ -1120,8 +1035,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   Map<String, dynamic> extractRevisionData(Map<String, dynamic> details) {
     Map<String, dynamic> revisionData = {};
 
-    if (details['revision_data'] != null) {
-      final rawData = details['revision_data'];
+    if (details['recurrence_data'] != null) {
+      final rawData = details['recurrence_data'];
       revisionData['frequency'] = rawData['frequency'];
 
       if (rawData['custom_params'] != null) {
@@ -1146,46 +1061,4 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
     return revisionData;
   }
-
-  bool determineEnabledStatus(Map<String, dynamic> details) {
-    // Default to the current status (convert from string to bool)
-    bool isEnabled = details['status'] == 'Enabled';
-
-    // Get the duration data with proper casting
-    Map<String, dynamic> durationData = {};
-    if (details['duration'] != null) {
-      // Cast the LinkedMap to Map<String, dynamic>
-      durationData = Map<String, dynamic>.from(details['duration'] as Map);
-    } else {
-      durationData = {'type': 'forever'};
-    }
-
-    String durationType = durationData['type'] as String? ?? 'forever';
-
-    // Check duration conditions
-    if (durationType == 'specificTimes') {
-      int? numberOfTimes = durationData['numberOfTimes'] as int?;
-      int currentRevisions = (details['no_revision'] as num?)?.toInt() ?? 0;
-
-      // Disable if we've reached or exceeded the specified number of revisions
-      if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
-        isEnabled = false;
-      }
-    }
-    else if (durationType == 'until') {
-      String? endDateStr = durationData['endDate'] as String?;
-      if (endDateStr != null) {
-        DateTime endDate = DateTime.parse(endDateStr);
-        DateTime today = DateTime.now();
-
-        // Compare only the date part (ignore time)
-        if (today.isAfter(DateTime(endDate.year, endDate.month, endDate.day))) {
-          isEnabled = false;
-        }
-      }
-    }
-
-    return isEnabled;
-  }
-
 }

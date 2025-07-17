@@ -1,52 +1,102 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../widgets/AnimatedSquareText.dart';
+import '../main.dart';
+import '../LoginSignupPage/LoginPage.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  final bool isLoggedIn;
+  final bool isInitialized;
+  
+  const SplashScreen({
+    Key? key, 
+    required this.isLoggedIn, 
+    required this.isInitialized
+  }) : super(key: key);
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  late AnimationController _subtitleController;
+  late Animation<double> _subtitleAnimation;
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    
+    // Controller for subtitle animation only
+    _subtitleController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(milliseconds: 800),
     );
 
-    _fadeAnimation = Tween<double>(
+    // Subtitle animation
+    _subtitleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeIn,
+        parent: _subtitleController,
+        curve: Curves.easeInOut,
       ),
     );
 
-    _controller.forward().whenComplete(() => _navigateToHome());
+    // Start subtitle animation after square animation completes
+    _scheduleSubtitleAnimation();
+    
+    // Set minimum splash screen duration and navigate after app is ready
+    _scheduleNavigation();
+  }
+  void _scheduleSubtitleAnimation() {
+    // Start subtitle animation after the square animation completes
+    // Container animation (800ms) + Text animation (2000ms) = 2800ms total
+    Future.delayed(const Duration(milliseconds: 2800), () {
+      if (mounted) {
+        _subtitleController.forward();
+      }
+    });
+  }  void _scheduleNavigation() {
+    // Wait for both animations to complete AND app initialization
+    // Minimum splash duration: 4 seconds or until app is fully initialized
+    Future.delayed(const Duration(milliseconds: 4000), () {
+      _checkAndNavigate();
+    });
   }
 
-  void _navigateToHome() {
-    Navigator.of(context).pushReplacementNamed('/home');
+  void _checkAndNavigate() {
+
+    if (mounted) {
+      // Wait until app is fully initialized before navigating
+      if (widget.isInitialized) {
+        _navigateToNextScreen();
+      } else {
+        // If not initialized yet, check again after a short delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _checkAndNavigate();
+        });
+      }
+    }
   }
 
+  void _navigateToNextScreen() {
+    if (mounted) {
+      Widget nextScreen = widget.isLoggedIn 
+          ? const MyHomePage() 
+          : LoginPage();
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => nextScreen),
+      );
+    }
+  }
   @override
   void dispose() {
-    _controller.dispose();
+    _subtitleController.dispose();
     super.dispose();
-  }
-
-  @override
+  }@override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final TextTheme textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       body: Container(
@@ -59,67 +109,63 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               colorScheme.surfaceContainerHighest,
             ],
           ),
-        ),
-        child: SafeArea(
+        ),        child: SafeArea(
           child: Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withOpacity(0.1),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [                // Animated square container with text using the modular component
+                AnimatedSquareText(
+                  text: 'revix',
+                  size: 230,
+                  borderRadius: 40,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  textColor: const Color(0xFF06171F),
+                  fontSize: 48,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.0,
+                  animationDuration: const Duration(milliseconds: 2000),
+                  autoStart: true,
+                ),
+                const SizedBox(height: 40),
+                // Animated subtitle outside the square
+                AnimatedBuilder(
+                  animation: _subtitleAnimation,
+                  builder: (context, child) {
+                    double animationValue = _subtitleAnimation.value.clamp(0.0, 1.0);
+                    
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - animationValue)),
+                      child: Opacity(
+                        opacity: animationValue,
+                        child: Container(
+                          width: 230, // Same width as the square
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: colorScheme.primary.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Track • Analyze • Improve',
+                            textAlign: TextAlign.center, // Center the text within the container
+                            style: GoogleFonts.nunito(
+                              color: colorScheme.primary.withOpacity(0.8),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(24),
-                    child: Lottie.asset(
-                      'assets/reTracker.json',
-                      controller: _controller,
-                      onLoaded: (composition) {
-                        _controller.duration = composition.duration;
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Text(
-                    'reTracker',
-                    style: textTheme.displayMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Track • Analyze • Improve',
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.primary.withOpacity(0.8),
-                        letterSpacing: 0.5,
-                        fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ),
