@@ -212,21 +212,9 @@ class AlarmScreenActivity : Activity() {    companion object {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
         }
-          // Alarm icon (using text for now)
-        val alarmIcon = TextView(this).apply {
-            text = "⏰"
-            textSize = 64f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(24))
-            }
-        }
           // Title text with modern typography
         val titleText = TextView(this).apply {
-            text = "REMINDER ALERT"
+            text = if (reminderTime.isNotEmpty()) reminderTime else ""
             textSize = 32f
             setTextColor(textColor)
             gravity = Gravity.CENTER
@@ -280,20 +268,6 @@ class AlarmScreenActivity : Activity() {    companion object {
                 setMargins(0, 0, 0, dpToPx(48))
             }
         }
-        // Reminder time display
-        val reminderTimeText = TextView(this).apply {
-            text = if (reminderTime.isNotEmpty()) "Reminder Time: $reminderTime" else ""
-            textSize = 18f
-            setTextColor(accentColor)
-            gravity = Gravity.CENTER
-            setTypeface(null, android.graphics.Typeface.NORMAL)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(32))
-            }
-        }
 
         // Container for swipe button only
         val swipeButtonContainer = LinearLayout(this).apply {
@@ -303,21 +277,6 @@ class AlarmScreenActivity : Activity() {    companion object {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )        }
-        
-        // Instruction text for swipe button
-        val instructionText = TextView(this).apply {
-            text = "Hold and swipe the glowing circle to mark as done"
-            textSize = 12f
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            alpha = 0.7f
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(16))
-            }
-        }
         
         // Simple swipe button (gradient will be in background layer)
         val doneButton = createSimpleSwipeButton(
@@ -351,15 +310,12 @@ class AlarmScreenActivity : Activity() {    companion object {
         contentOverlay.addView(ignoreButton)  // Ignore button at bottom
         
         // Add content to main layout
-        contentLayout.addView(alarmIcon)
         contentLayout.addView(titleText)
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
-        contentLayout.addView(reminderTimeText) // Reminder time text
         
         // Add swipe button in center
-        swipeButtonContainer.addView(instructionText)
         swipeButtonContainer.addView(doneButton)
         contentLayout.addView(swipeButtonContainer)
         
