@@ -833,13 +833,11 @@ class AlarmScreenActivity : Activity() {    companion object {
                 
                 // Calculate current ripple radius based on progress
                 val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
+                  // Create fading alpha - starts strong, fades as it expands
+                val alpha = ((1f - rippleProgress) * 180).toInt().coerceIn(0, 255) // Reduced max alpha for transparency
                 
-                // Create fading alpha - starts strong, fades as it expands
-                val alpha = ((1f - rippleProgress) * 255).toInt().coerceIn(0, 255)
-                
-                // Custom glow color with fading alpha
-                val glowColor = Color.CYAN
-                glowPaint.color = Color.argb(alpha, Color.red(glowColor), Color.green(glowColor), Color.blue(glowColor))
+                // Use same color as button's edge (textColor) but with transparency
+                glowPaint.color = Color.argb(alpha, Color.red(textColor), Color.green(textColor), Color.blue(textColor))
                 
                 // Draw the expanding ripple ring
                 if (rippleProgress > 0f) {
