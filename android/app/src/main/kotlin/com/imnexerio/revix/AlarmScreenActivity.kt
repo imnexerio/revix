@@ -1292,16 +1292,15 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     private fun getStarAngleRange(): Pair<Float, Float> {
         val absX = kotlin.math.abs(deviceTiltX)
         val absY = kotlin.math.abs(deviceTiltY)
-        
-        return when {
+          return when {
             // Device is upside down (extreme Y tilt) - use left, bottom, right directions
             absY > 120f -> Pair(-90f, 90f)
             
-            // Device tilted right (positive X beyond threshold)
-            deviceTiltX > tiltThreshold -> Pair(-30f, 90f)
+            // Device tilted right (positive X beyond threshold) - stars should go right
+            deviceTiltX > tiltThreshold -> Pair(-90f, 30f)
             
-            // Device tilted left (negative X beyond threshold)  
-            deviceTiltX < -tiltThreshold -> Pair(-90f, 30f)
+            // Device tilted left (negative X beyond threshold) - stars should go left
+            deviceTiltX < -tiltThreshold -> Pair(-30f, 90f)
             
             // Default - minimal tilt or within threshold
             else -> Pair(-30f, 30f)
