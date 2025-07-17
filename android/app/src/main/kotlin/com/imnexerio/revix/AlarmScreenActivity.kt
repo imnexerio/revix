@@ -801,13 +801,12 @@ class AlarmScreenActivity : Activity() {      // Data class for shooting stars
                 stars.forEach { star ->
                     // Calculate twinkling alpha
                     val twinkleAlpha = star.alpha + (Math.sin(star.twinklePhase.toDouble()) * 0.3f).toFloat()
-                    val clampedAlpha = twinkleAlpha.coerceIn(0.2f, 1.0f)
-                      // Draw bright trail (brightest at head, fading towards tail)
+                    val clampedAlpha = twinkleAlpha.coerceIn(0.2f, 1.0f)                    // Draw bright trail (brightest at head, fading towards tail)
                     if (star.trail.size > 1) {
                         for (i in 0 until star.trail.size - 1) {
-                            // Reverse the trail alpha calculation - brightest at end (head), fading towards start (tail)
+                            // Trail alpha: brightest at newest position (end of trail array), fading towards oldest (start of array)
                             val trailProgress = i.toFloat() / (star.trail.size - 1)
-                            val trailAlpha = clampedAlpha * (1f - trailProgress) * 0.7f // Fade from bright to dim
+                            val trailAlpha = clampedAlpha * trailProgress * 0.7f // Start dim (old positions), get brighter towards current position
                             trailPaint.alpha = (trailAlpha * 255).toInt()
                             
                             val currentPos = star.trail[i]
