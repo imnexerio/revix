@@ -719,13 +719,15 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
                 // strokeWidth will be set dynamically per star
             }
             
-            private val maxStars = 10 // Control number of shooting stars (5-20 recommended)
+            private val minStars = 1 // Minimum stars on screen
+            private val maxStars = 6 // Maximum stars on screen
             private var lastTime = System.currentTimeMillis()
             
             private fun initializeStars() {
                 stars.clear()
-                // Start with stars spread across the top of screen
-                repeat(maxStars) {
+                // Create random number of stars between 1-6 at initialization
+                val initialStarCount = minStars + random.nextInt(maxStars - minStars + 1)
+                repeat(initialStarCount) {
                     createNewStar()
                 }
             }
@@ -803,13 +805,26 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
                         starsToRemove.add(star)
                     }
                 }
-                
-                // Remove off-screen stars and create new ones
+                  // Remove off-screen stars and create new ones
                 starsToRemove.forEach { stars.remove(it) }
                 
-                // Maintain star count by creating new ones
-                while (stars.size < maxStars) {
-                    createNewStar()
+                // Smart star replacement logic
+                if (starsToRemove.isNotEmpty()) {
+                    // Calculate how many new stars to create (1-6 random, but don't exceed maxStars)
+                    val randomNewStars = minStars + random.nextInt(maxStars - minStars + 1)
+                    val availableSlots = maxStars - stars.size
+                    val starsToCreate = minOf(randomNewStars, availableSlots)
+                    
+                    repeat(starsToCreate) {
+                        createNewStar()
+                    }
+                }
+                
+                // Ensure minimum star count (safety check)
+                if (stars.size < minStars) {
+                    repeat(minStars - stars.size) {
+                        createNewStar()
+                    }
                 }
             }
             
@@ -921,10 +936,12 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
     override fun onBackPressed() {
         // Prevent back button from closing the alarm
         // User must explicitly choose an action
-    }    override fun onStart() {
+    }
+        override fun onStart() {
         super.onStart()
         Log.d(TAG, "AlarmScreenActivity onStart() called")
-    }    override fun onResume() {
+    }
+        override fun onResume() {
         super.onResume()
         Log.d(TAG, "AlarmScreenActivity onResume() called - should be visible now")
         
