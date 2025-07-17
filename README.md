@@ -9,11 +9,16 @@ revix is a comprehensive task management solution designed to help you organize,
 ## 🎯 App Screenshots
 
 ### Preview Gallery
-![App Preview](public-portfolio/preview.png)
 
 <div align="center">
-  <img src="public-portfolio/preview1.png" alt="App Screenshot 1" width="300"/>
-  <img src="public-portfolio/preview.gif" alt="App Demo" width="300"/>
+  <img src="public-portfolio/preview.png" alt="App Preview" width="600" style="max-width: 80%; height: auto; margin-bottom: 20px;"/>
+</div>
+
+<div align="center">
+   <img src="public-portfolio/preview1.png" alt="App Screenshot 1" width="600" style="max-width: 80%; height: auto; margin-bottom: 20px;"/>
+</div>
+<div align="center">
+   <img src="public-portfolio/preview.gif" alt="App Demo" width="600" style="max-width: 80%; height: auto; margin-bottom: 20px;"/>
 </div>
 
 ## ✨ Key Features
