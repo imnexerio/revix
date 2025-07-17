@@ -803,19 +803,17 @@ class AlarmScreenActivity : Activity() {    companion object {
         textColor: Int,
         dpToPx: (Int) -> Int,
         onSwipe: () -> Unit
-    ): View {
-        // Container for button and animated glow ring
+    ): View {        // Container for button and animated glow ring
         val container = FrameLayout(this).apply {
-            val containerSize = dpToPx(140) // Slightly larger than button for glow space
+            val containerSize = dpToPx(160) // Increased container size for larger glow
             layoutParams = LinearLayout.LayoutParams(containerSize, containerSize).apply {
                 gravity = Gravity.CENTER
                 setMargins(0, 0, 0, dpToPx(24))
             }
         }
-        
-        // Animated glow ring view (like in your images)
+          // Animated ripple ring view (expanding from button edge)
         val glowRing = object : View(this) {
-            private var glowIntensity = 0f
+            private var rippleProgress = 0f
             private val glowPaint = Paint().apply {
                 isAntiAlias = true
                 style = Paint.Style.STROKE
@@ -827,18 +825,30 @@ class AlarmScreenActivity : Activity() {    companion object {
                 
                 val centerX = width / 2f
                 val centerY = height / 2f
-                val radius = dpToPx(65).toFloat() // Ring around button
                 
-                // Create animated glow color with alpha based on intensity
-                val alpha = (glowIntensity * 255).toInt().coerceIn(0, 255)
-                glowPaint.color = Color.argb(alpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+                // Button radius (where ripple starts)
+                val buttonRadius = dpToPx(60).toFloat() // Half of button size (120dp)
+                // Maximum ripple radius (where it disappears)
+                val maxRippleRadius = dpToPx(80).toFloat()
                 
-                // Draw the animated ring
-                canvas.drawCircle(centerX, centerY, radius, glowPaint)
+                // Calculate current ripple radius based on progress
+                val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
+                
+                // Create fading alpha - starts strong, fades as it expands
+                val alpha = ((1f - rippleProgress) * 255).toInt().coerceIn(0, 255)
+                
+                // Custom glow color with fading alpha
+                val glowColor = Color.CYAN
+                glowPaint.color = Color.argb(alpha, Color.red(glowColor), Color.green(glowColor), Color.blue(glowColor))
+                
+                // Draw the expanding ripple ring
+                if (rippleProgress > 0f) {
+                    canvas.drawCircle(centerX, centerY, currentRadius, glowPaint)
+                }
             }
             
-            fun setGlowIntensity(intensity: Float) {
-                glowIntensity = intensity
+            fun setRippleProgress(progress: Float) {
+                rippleProgress = progress
                 invalidate()
             }
         }.apply {
@@ -875,29 +885,28 @@ class AlarmScreenActivity : Activity() {    companion object {
             var startX = 0f
             var startY = 0f
             var glowAnimator: ValueAnimator? = null
-            
-            // Start glow ring animation (like in your images)
+              // Start ripple animation (expanding from button edge)
             fun startGlowAnimation() {
                 glowAnimator?.cancel()
-                glowAnimator = ValueAnimator.ofFloat(0.2f, 0.8f).apply {
-                    duration = 2000 // 2 seconds for full cycle
+                glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                    duration = 1500 // 1.5 seconds for each ripple
                     repeatCount = ValueAnimator.INFINITE
-                    repeatMode = ValueAnimator.REVERSE
+                    repeatMode = ValueAnimator.RESTART // Restart (not reverse) for ripple effect
                     
                     addUpdateListener { animator ->
                         if (!isPressed) { // Only animate when not being touched
-                            val intensity = animator.animatedValue as Float
-                            glowRing.setGlowIntensity(intensity)
+                            val progress = animator.animatedValue as Float
+                            glowRing.setRippleProgress(progress)
                         }
                     }
                     start()
                 }
             }
             
-            // Stop glow animation
+            // Stop ripple animation
             fun stopGlowAnimation() {
                 glowAnimator?.cancel()
-                glowRing.setGlowIntensity(0f)
+                glowRing.setRippleProgress(0f)
             }
             
             // Start the glow animation immediately
