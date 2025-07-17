@@ -731,9 +731,9 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
                     createNewStar()
                 }
             }
-            private fun createNewStar(): Star {
-                // Random angle for downward direction (30-150 degrees from vertical)
-                val angle = Math.toRadians((30 + random.nextFloat() * 120).toDouble())
+            private fun createNewStar(): Star {                // Random angle for downward direction (±30 degrees from straight down)
+                // 0° = straight down, +30° = down-right, -30° = down-left
+                val angle = Math.toRadians((-30 + random.nextFloat() * 60).toDouble())
                 
                 // Random speed properties
                 val minSpeed = dpToPx(30).toFloat()  // Minimum speed
@@ -748,12 +748,11 @@ class AlarmScreenActivity : Activity() {    // Data class for shooting stars
                 val minTrailThickness = dpToPx(1).toFloat()
                 val maxTrailThickness = dpToPx(4).toFloat()
                 val randomTrailThickness = minTrailThickness + random.nextFloat() * (maxTrailThickness - minTrailThickness)
-                
-                val star = Star(
+                  val star = Star(
                     x = random.nextFloat() * width, // Start anywhere across the top
                     y = -dpToPx(50).toFloat(), // Start above screen
-                    velocityX = (Math.sin(angle) * randomSpeed).toFloat(),
-                    velocityY = (Math.cos(angle) * randomSpeed).toFloat(),
+                    velocityX = (Math.sin(angle) * randomSpeed).toFloat(), // Horizontal component (left/right)
+                    velocityY = (Math.cos(angle) * randomSpeed).toFloat(), // Vertical component (down)
                     size = dpToPx(2).toFloat() + random.nextFloat() * dpToPx(4), // Star size: min 2dp + random 0-4dp = 2-6dp total
                     alpha = 0.6f + random.nextFloat() * 0.4f, // More visible
                     twinklePhase = random.nextFloat() * 2f * Math.PI.toFloat(),
