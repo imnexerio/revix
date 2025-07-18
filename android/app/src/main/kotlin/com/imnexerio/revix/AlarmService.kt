@@ -327,6 +327,7 @@ class AlarmService : Service() {    companion object {
         Log.d(TAG, "Stopping specific alarm: $recordTitle with action: $actionType")
         val alarm = activeAlarms[alarmKey]
         if (alarm != null) {
+            Log.d(TAG, "Found active alarm to stop: $recordTitle")
             // Cancel auto-stop timer for this alarm
             cancelAutoStopTimerForAlarm(alarmKey)
             
@@ -353,10 +354,12 @@ class AlarmService : Service() {    companion object {
             activeAlarms.remove(alarmKey)
             
             // If no more alarms, stop service and release wake lock
-            if (activeAlarms.isEmpty()) {
+             if (activeAlarms.isEmpty()) {
                 releaseWakeLock()
                 stopSelf()
             }
+        } else {
+            Log.d(TAG, "No active alarm found for: $recordTitle (alarmKey: $alarmKey)")
         }}
 
     private fun checkForNextAudioAlarm() {
@@ -504,10 +507,10 @@ class AlarmService : Service() {    companion object {
                 putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
                 putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
                 putExtra("reminder_time", alarm.reminderTime)
+                // Use FLAG_ACTIVITY_MULTIPLE_TASK to ensure separate task instances
                 addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or 
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or 
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
                     Intent.FLAG_ACTIVITY_NO_USER_ACTION or
                     Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
                 )
@@ -518,12 +521,13 @@ class AlarmService : Service() {    companion object {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to launch alarm screen for: ${alarm.recordTitle}", e)
             // Fallback: try to show with less restrictive flags
-            try {
+             try {
                 val fallbackIntent = Intent(this, AlarmScreenActivity::class.java).apply {
                     putExtra(AlarmScreenActivity.EXTRA_CATEGORY, alarm.category)
                     putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
                     putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra("reminder_time", alarm.reminderTime)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
                 }
                 startActivity(fallbackIntent)
                 Log.d(TAG, "Fallback launch successful for: ${alarm.recordTitle}")

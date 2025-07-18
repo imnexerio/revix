@@ -97,15 +97,12 @@
             android:label="Add New Record(revix)"
             android:theme="@style/DialogWithCenteredTitle"
             android:windowSoftInputMode="adjustResize">
-        </activity>
-        <activity
+        </activity>        <activity
             android:name=".AlarmScreenActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:excludeFromRecents="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
 
