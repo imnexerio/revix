@@ -777,8 +777,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 val randomSpeed = minSpeed + random.nextFloat() * (maxSpeed - minSpeed)
                 
                 // Random trail properties
-                val minTrailLength = 5
-                val maxTrailLength = 15
+                val minTrailLength = 8
+                val maxTrailLength = 18
                 val randomTrailLength = minTrailLength + (random.nextFloat() * (maxTrailLength - minTrailLength)).toInt()
                 
                 val minTrailThickness = dpToPx(1).toFloat()
