@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
-import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
@@ -24,56 +23,9 @@ class HomeWidgetService {
   static const String frequencyDataKey = 'frequencyData';
   static const String trackingTypesKey = 'trackingTypes';
   static const String categoriesDataKey = 'categoriesData';
-  
-  // NEW: Method channel for alarm scheduling
-  static const MethodChannel _alarmChannel = MethodChannel('alarm_scheduler');
-  
   static bool _isInitialized = false;
   static bool _isBackgroundInitialized = false;
-  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();  // NEW: Method to schedule alarms from fresh data via method channel
-  static Future<void> scheduleAlarmsFromFreshData() async {
-    try {
-      print('Scheduling alarms from fresh data via method channel...');
-      
-      // Get fresh data from CombinedDatabaseService
-      final service = CombinedDatabaseService();
-      await service.initialize();
-      await service.forceDataReprocessing();
-      
-      final categorizedData = service.currentCategorizedData;
-      if (categorizedData != null) {
-        final todayRecords = categorizedData['today'] ?? [];
-        final tomorrowRecords = categorizedData['nextDay'] ?? [];
-        
-        print('Sending ${todayRecords.length} today + ${tomorrowRecords.length} tomorrow records to native alarm scheduler');
-        
-        // Send directly to native AlarmManagerHelper via method channel
-        await _alarmChannel.invokeMethod('scheduleAlarms', {
-          'todayRecords': todayRecords,
-          'tomorrowRecords': tomorrowRecords,
-        });
-        
-        print('Alarms scheduled successfully via method channel');
-      } else {
-        print('No categorized data available for alarm scheduling');
-      }
-    } catch (e) {
-      print('Error scheduling alarms from fresh data: $e');
-    }
-  }
-
-  // NEW: Method to cancel all alarms via method channel
-  static Future<void> cancelAllAlarms() async {
-    try {
-      print('Cancelling all alarms via method channel...');
-      await _alarmChannel.invokeMethod('cancelAllAlarms');
-      print('All alarms cancelled successfully via method channel');
-    } catch (e) {
-      print('Error cancelling alarms: $e');
-    }
-  }
-
-  static Future<void> initialize() async {
+  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();  static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
@@ -115,7 +67,7 @@ class HomeWidgetService {
 
       // Simple Firebase initialization (same as main.dart)
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-      
+
       // Simple Hive initialization (same as main.dart)
       await Hive.initFlutter();
 
@@ -132,8 +84,8 @@ class HomeWidgetService {
         print('Error initializing background context: $e');
         _isBackgroundInitialized = false;
       }
-    }  
     }
+  }
 
   // Initialize all widget data using existing database services
   static Future<void> _initializeWidgetData() async {
@@ -244,32 +196,32 @@ class HomeWidgetService {
             await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'SUCCESS');
             print('Widget refresh result stored for requestId $requestId: SUCCESS');
           }
-          
+
           print('Widget background refresh completed with data');
         } else {
           print('No categorized data available, using empty data');
           // Fallback to empty data if no data available
           await _updateWidgetWithEmptyData();
-          
+
           // Set success result even with empty data
           if (requestId.isNotEmpty) {
             await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'SUCCESS');
             print('Widget refresh result stored for requestId $requestId: SUCCESS (empty data)');
           }
-          
+
           print('Widget background refresh completed with empty data');
         }
       } catch (e) {
         print('Error in background widget refresh: $e');
         print('Error details: ${e.toString()}');
-        
+
         // Set error result for RefreshService
         final requestId = uri?.queryParameters['requestId'] ?? '';
         if (requestId.isNotEmpty) {
           await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'ERROR:${e.toString()}');
           print('Widget refresh result stored for requestId $requestId: ERROR:${e.toString()}');
         }
-        
+
         // Fallback to empty data
         await _updateWidgetWithEmptyData();
       }
@@ -299,37 +251,37 @@ class HomeWidgetService {
         String updateResult = 'SUCCESS';
 
         try {
-            final service = CombinedDatabaseService();
-            await service.initialize();
+          final service = CombinedDatabaseService();
+          await service.initialize();
 
-            try {
-              print('All services ready, updating record using MarkAsDoneService...');
+          try {
+            print('All services ready, updating record using MarkAsDoneService...');
 
-              await MarkAsDoneService.markAsDone(
-                context: null, // Background processing - no UI context
-                category: category,
-                subCategory: subCategory,
-                lectureNo: recordTitle,
-              );
+            await MarkAsDoneService.markAsDone(
+              context: null, // Background processing - no UI context
+              category: category,
+              subCategory: subCategory,
+              lectureNo: recordTitle,
+            );
 
-              print('Record update completed successfully using MarkAsDoneService');
+            print('Record update completed successfully using MarkAsDoneService');
 
-              // Refresh widget data after update              await service.forceDataReprocessing();
-              final categorizedData = service.currentCategorizedData;
-              if (categorizedData != null) {
-                final todayRecords = categorizedData['today'] ?? [];
-                final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
-                final missedRecords = categorizedData['missed'] ?? [];
-                final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+            // Refresh widget data after update              await service.forceDataReprocessing();
+            final categorizedData = service.currentCategorizedData;
+            if (categorizedData != null) {
+              final todayRecords = categorizedData['today'] ?? [];
+              final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
+              final missedRecords = categorizedData['missed'] ?? [];
+              final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
-                
-                print('Widget refreshed after record update');
-              }
-            } catch (e) {
-              updateResult = 'ERROR:${e.toString()}';
-              print('Record update failed: $e');
+              await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+
+              print('Widget refreshed after record update');
             }
+          } catch (e) {
+            updateResult = 'ERROR:${e.toString()}';
+            print('Record update failed: $e');
+          }
         } catch (e) {
           print('Error in background record update: $e');
           updateResult = 'ERROR:${e.toString()}';
@@ -430,7 +382,7 @@ class HomeWidgetService {
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
                 await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
-                
+
                 print('Widget refreshed after record creation');
               }
             } catch (e) {
@@ -510,11 +462,10 @@ class HomeWidgetService {
       await HomeWidget.saveWidgetData(
         'lastUpdated',
         DateTime.now().millisecondsSinceEpoch,
-      );      // Request widget update
+      );
+
+      // Request widget update
       await _updateWidget();
-      
-      // NEW: Schedule alarms from fresh data via method channel
-      await scheduleAlarmsFromFreshData();
     } catch (e) {
       debugPrint('Error updating widget data: $e');
     }
@@ -558,17 +509,15 @@ class HomeWidgetService {
   // Method to update login status in widget
   static Future<void> updateWidgetLoginStatus(bool isLoggedIn) async {
     try {
-      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);      if (!isLoggedIn) {
+      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
+      if (!isLoggedIn) {
         // Clear widget data when logging out
         await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
         await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-        
-        // NEW: Cancel all alarms when logging out
-        await cancelAllAlarms();
       }
-      
+
       await _updateWidget();
     } catch (e) {
       print('Error updating widget login status: $e');
