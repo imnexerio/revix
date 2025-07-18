@@ -25,6 +25,9 @@ class MainActivity : FlutterActivity() {
 
         // Initialize update records channel for communication with services
         updateRecordsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_RECORDS_CHANNEL)
+        
+        // Register AlarmSchedulerPlugin
+        flutterEngine.plugins.add(AlarmSchedulerPlugin())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

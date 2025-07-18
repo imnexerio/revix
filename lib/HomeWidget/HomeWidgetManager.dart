@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
@@ -23,9 +24,56 @@ class HomeWidgetService {
   static const String frequencyDataKey = 'frequencyData';
   static const String trackingTypesKey = 'trackingTypes';
   static const String categoriesDataKey = 'categoriesData';
+  
+  // NEW: Method channel for alarm scheduling
+  static const MethodChannel _alarmChannel = MethodChannel('alarm_scheduler');
+  
   static bool _isInitialized = false;
   static bool _isBackgroundInitialized = false;
-  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();  static Future<void> initialize() async {
+  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();  // NEW: Method to schedule alarms from fresh data via method channel
+  static Future<void> scheduleAlarmsFromFreshData() async {
+    try {
+      print('Scheduling alarms from fresh data via method channel...');
+      
+      // Get fresh data from CombinedDatabaseService
+      final service = CombinedDatabaseService();
+      await service.initialize();
+      await service.forceDataReprocessing();
+      
+      final categorizedData = service.currentCategorizedData;
+      if (categorizedData != null) {
+        final todayRecords = categorizedData['today'] ?? [];
+        final tomorrowRecords = categorizedData['nextDay'] ?? [];
+        
+        print('Sending ${todayRecords.length} today + ${tomorrowRecords.length} tomorrow records to native alarm scheduler');
+        
+        // Send directly to native AlarmManagerHelper via method channel
+        await _alarmChannel.invokeMethod('scheduleAlarms', {
+          'todayRecords': todayRecords,
+          'tomorrowRecords': tomorrowRecords,
+        });
+        
+        print('Alarms scheduled successfully via method channel');
+      } else {
+        print('No categorized data available for alarm scheduling');
+      }
+    } catch (e) {
+      print('Error scheduling alarms from fresh data: $e');
+    }
+  }
+
+  // NEW: Method to cancel all alarms via method channel
+  static Future<void> cancelAllAlarms() async {
+    try {
+      print('Cancelling all alarms via method channel...');
+      await _alarmChannel.invokeMethod('cancelAllAlarms');
+      print('All alarms cancelled successfully via method channel');
+    } catch (e) {
+      print('Error cancelling alarms: $e');
+    }
+  }
+
+  static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
@@ -462,10 +510,11 @@ class HomeWidgetService {
       await HomeWidget.saveWidgetData(
         'lastUpdated',
         DateTime.now().millisecondsSinceEpoch,
-      );
-
-      // Request widget update
+      );      // Request widget update
       await _updateWidget();
+      
+      // NEW: Schedule alarms from fresh data via method channel
+      await scheduleAlarmsFromFreshData();
     } catch (e) {
       debugPrint('Error updating widget data: $e');
     }
@@ -509,13 +558,15 @@ class HomeWidgetService {
   // Method to update login status in widget
   static Future<void> updateWidgetLoginStatus(bool isLoggedIn) async {
     try {
-      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
-        if (!isLoggedIn) {
+      await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);      if (!isLoggedIn) {
         // Clear widget data when logging out
         await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
         await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
+        
+        // NEW: Cancel all alarms when logging out
+        await cancelAllAlarms();
       }
       
       await _updateWidget();

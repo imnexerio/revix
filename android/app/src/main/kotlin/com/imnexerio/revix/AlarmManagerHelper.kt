@@ -32,7 +32,60 @@ class AlarmManagerHelper(private val context: Context) {
     }
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)    // Smart alarm scheduling - only update what actually changed
+    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)    // NEW: Method to schedule alarms from SharedPreferences data (for RecordUpdateService)
+    fun scheduleAlarmsFromWidgetData(context: Context, forceUpdate: Boolean = false) {
+        try {
+            Log.d(TAG, "Checking if alarm scheduling needed from SharedPreferences...")
+
+            val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            val todayRecordsJson = prefs.getString("todayRecords", "[]") ?: "[]"
+            val tomorrowRecordsJson = prefs.getString("tomorrowRecords", "[]") ?: "[]"
+
+            // Parse JSON to get records
+            val todayRecords = parseRecordsFromJson(todayRecordsJson)
+            val tomorrowRecords = parseRecordsFromJson(tomorrowRecordsJson)
+
+            Log.d(TAG, "Parsed ${todayRecords.size} today + ${tomorrowRecords.size} tomorrow records from SharedPreferences")
+
+            if (todayRecords.isNotEmpty() || tomorrowRecords.isNotEmpty()) {
+                scheduleAlarmsForTwoDays(todayRecords, tomorrowRecords)
+                Log.d(TAG, "Successfully scheduled alarms from SharedPreferences")
+            } else {
+                Log.d(TAG, "No records found for alarm scheduling from SharedPreferences")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scheduling alarms from SharedPreferences: ${e.message}", e)
+        }
+    }
+
+    private fun parseRecordsFromJson(jsonString: String): List<Map<String, Any>> {
+        val records = mutableListOf<Map<String, Any>>()
+
+        try {
+            val jsonArray = org.json.JSONArray(jsonString)
+            for (i in 0 until jsonArray.length()) {
+                val jsonObject = jsonArray.getJSONObject(i)
+                val record = mutableMapOf<String, Any>()
+
+                // Extract all fields needed for alarm scheduling
+                record["category"] = jsonObject.optString("category", "")
+                record["sub_category"] = jsonObject.optString("sub_category", "")
+                record["record_title"] = jsonObject.optString("record_title", "")
+                record["reminder_time"] = jsonObject.optString("reminder_time", "")
+                record["alarm_type"] = jsonObject.optString("alarm_type", "0").toIntOrNull() ?: 0
+                record["scheduled_date"] = jsonObject.optString("scheduled_date", "")
+                record["status"] = jsonObject.optString("status", "")
+
+                records.add(record)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing records JSON: ${e.message}", e)
+        }
+
+        return records
+    }
+
+    // Smart alarm scheduling - only update what actually changed
     fun scheduleAlarmsForTwoDays(
         todayRecords: List<Map<String, Any>>,
         tomorrowRecords: List<Map<String, Any>>
