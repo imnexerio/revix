@@ -251,19 +251,15 @@ class AlarmService : Service() {    companion object {
             alarmType = alarmType,
             reminderTime = reminderTime
         )
-
-        // Add to active alarms
+        // Add to active alarms (timer will start only when alarm becomes active)
         activeAlarms[alarmKey] = alarm
-        
-        // Start auto-stop timer for this specific alarm
-        startAutoStopTimerForAlarm(alarmKey)
 
         // Check if there's already an active alarm with UI
         if (currentActiveAlarm == null) {
             // No active alarm, make this one active
             processAlarm(alarm)
         } else {
-            // There's already an active alarm, queue this one
+            // There's already an active alarm, queue this one (no timer yet)
             alarmQueue.add(alarm)
             Log.d(TAG, "Alarm queued: $recordTitle (Queue size: ${alarmQueue.size})")
         }
@@ -274,6 +270,9 @@ class AlarmService : Service() {    companion object {
         
         // Set as current active alarm
         currentActiveAlarm = alarm.alarmKey
+        
+        // Start auto-stop timer only when alarm becomes active
+        startAutoStopTimerForAlarm(alarm.alarmKey)
         
         // Start as foreground service if first alarm
         if (activeAlarms.size == 1) {
@@ -359,8 +358,7 @@ class AlarmService : Service() {    companion object {
             }
               // Send broadcast to close alarm screen for this specific alarm
             sendCloseAlarmScreenBroadcast(alarm)
-            
-            // If this alarm was the currently active one, process next in queue
+              // If this alarm was the currently active one, process next in queue
             if (currentActiveAlarm == alarmKey) {
                 currentActiveAlarm = null
                 currentAudioAlarm = null
@@ -369,7 +367,7 @@ class AlarmService : Service() {    companion object {
                 // Remove from active alarms
                 activeAlarms.remove(alarmKey)
                 
-                // Process next alarm in queue
+                // Process next alarm in queue immediately
                 processNextAlarm()
             } else {
                 // This alarm wasn't currently active, just remove it from queue and activeAlarms
@@ -410,8 +408,9 @@ class AlarmService : Service() {    companion object {
         
         val autoStopTimeout = getAutoStopTimeout()
         val timer = Timer().apply {
-            schedule(object : TimerTask() {                override fun run() {
-                    Log.d(TAG, "Auto-stopping alarm completely after ${autoStopTimeout / 1000}s for alarm: $alarmKey")
+            schedule(object : TimerTask() {
+                override fun run() {
+                    Log.d(TAG, "Auto-stopping alarm after ${autoStopTimeout / 1000}s for alarm: $alarmKey")
                     
                     // Convert to reminder notification BEFORE removing from active alarms
                     val alarm = activeAlarms[alarmKey]
@@ -422,7 +421,7 @@ class AlarmService : Service() {    companion object {
                         // Send broadcast to close alarm screen for this specific alarm
                         sendCloseAlarmScreenBroadcast(alarm)
                         
-                        // If this alarm was the currently active one, process next in queue
+                        // If this alarm was the currently active one, process next in queue automatically
                         if (currentActiveAlarm == alarmKey) {
                             currentActiveAlarm = null
                             currentAudioAlarm = null
@@ -431,7 +430,7 @@ class AlarmService : Service() {    companion object {
                             // Remove from active alarms
                             activeAlarms.remove(alarmKey)
                             
-                            // Process next alarm in queue
+                            // Automatically process next alarm in queue
                             processNextAlarm()
                         } else {
                             // This alarm wasn't currently active, just remove it from queue and activeAlarms
@@ -439,11 +438,8 @@ class AlarmService : Service() {    companion object {
                             activeAlarms.remove(alarmKey)
                         }
                     }
-                    
-                    // Remove the alarm directly
-                    activeAlarms.remove(alarmKey)
                       // If this was the last alarm, release wake lock AND stop service
-                    if (activeAlarms.isEmpty()) {
+                    if (activeAlarms.isEmpty() && alarmQueue.isEmpty()) {
                         releaseWakeLock()
                         stopSelf() // Stop service - reminder notification will persist
                         Log.d(TAG, "All alarms completed - service stopped, reminder notifications persist")
