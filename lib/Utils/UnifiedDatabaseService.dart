@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:revix/Utils/platform_utils.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
+import 'AlarmManager.dart';
 import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import 'FirebaseDatabaseService.dart';
@@ -170,6 +171,9 @@ class CombinedDatabaseService {
 
       if (PlatformUtils.instance.isAndroid ) {
         _updateHomeWidget([], [], [],[]);
+        
+        // Cancel all alarms when there's no data
+        _cancelAllAlarms();
       }
       return;
     }
@@ -191,10 +195,40 @@ class CombinedDatabaseService {
           categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? []);
+
+      _scheduleAlarms(categorizedData['today'] ?? [], 
+          categorizedData['nextDay'] ?? []);
     }
   }
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
       HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+  }
+
+  void _scheduleAlarms(List<Map<String, dynamic>> todayRecords, List<Map<String, dynamic>> tomorrowRecords) {
+    try {
+      print('UnifiedDatabaseService: Scheduling alarms with data...');
+      print('Today records: ${todayRecords.length}, Tomorrow records: ${tomorrowRecords.length}');
+      
+      // Call AlarmManager to schedule alarms with the provided data
+      AlarmManager.scheduleAlarmsWithData(todayRecords, tomorrowRecords);
+      
+      print('UnifiedDatabaseService: Alarms scheduled successfully');
+    } catch (e) {
+      print('UnifiedDatabaseService: Error scheduling alarms: $e');
+    }
+  }
+
+  void _cancelAllAlarms() {
+    try {
+      print('UnifiedDatabaseService: Cancelling all alarms...');
+      
+      // Call AlarmManager to cancel all alarms
+      AlarmManager.cancelAllAlarms();
+      
+      print('UnifiedDatabaseService: All alarms cancelled successfully');
+    } catch (e) {
+      print('UnifiedDatabaseService: Error cancelling alarms: $e');
+    }
   }
 
   void _processCategoriesData(Map<Object?, Object?> rawData) {
@@ -345,7 +379,7 @@ class CombinedDatabaseService {
         Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(_cachedRawData);
         _cachedCategorizedData = categorizedData;
         _categorizedRecordsController.add(categorizedData);
-        
+
         List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
         _allRecordsController.add({'allRecords': allRecords});
         if (PlatformUtils.instance.isAndroid ) {
@@ -353,6 +387,10 @@ class CombinedDatabaseService {
               categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? []);
+          
+          // Schedule alarms with the same data
+          _scheduleAlarms(categorizedData['today'] ?? [], 
+              categorizedData['nextDay'] ?? []);
         }
       }
       return;
