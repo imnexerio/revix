@@ -9,6 +9,7 @@ import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/MarkAsDoneService.dart';
+import '../Utils/AlarmManager.dart';
 
 import '../firebase_options.dart';
 
@@ -516,6 +517,9 @@ class HomeWidgetService {
         await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
         await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
+
+        // cancel all the alarms when logging out
+        AlarmManager.cancelAllAlarms();
       }
 
       await _updateWidget();
