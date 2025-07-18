@@ -1169,7 +1169,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             // Start the glow animation immediately
             post { startGlowAnimation() }            // Gesture detector for swipe
             val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                private val MIN_SWIPE_DISTANCE = dpToPx(150)
+                private val MIN_SWIPE_DISTANCE = dpToPx(100)
                 
                 override fun onFling(
                     e1: MotionEvent?,
@@ -1227,7 +1227,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                             val currentDistance = sqrt(diffX * diffX + diffY * diffY)
                             
                             // Calculate progress and provide visual feedback (button only)
-                            val swipeProgress = min(currentDistance / dpToPx(150), 1f)
+                            val swipeProgress = min(currentDistance / dpToPx(100), 1f)
                             val progressScale = 1.1f + (swipeProgress * 0.2f)
                             
                             scaleX = progressScale
