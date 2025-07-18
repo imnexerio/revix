@@ -777,8 +777,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 val randomSpeed = minSpeed + random.nextFloat() * (maxSpeed - minSpeed)
                 
                 // Random trail properties
-                val minTrailLength = 5
-                val maxTrailLength = 15
+                val minTrailLength = 8
+                val maxTrailLength = 18
                 val randomTrailLength = minTrailLength + (random.nextFloat() * (maxTrailLength - minTrailLength)).toInt()
                 
                 val minTrailThickness = dpToPx(1).toFloat()
@@ -1169,7 +1169,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             // Start the glow animation immediately
             post { startGlowAnimation() }            // Gesture detector for swipe
             val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                private val MIN_SWIPE_DISTANCE = dpToPx(80)
+                private val MIN_SWIPE_DISTANCE = dpToPx(100)
                 
                 override fun onFling(
                     e1: MotionEvent?,
@@ -1220,15 +1220,14 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                             .setDuration(200)
                             .start()
                     }
-                    
-                    MotionEvent.ACTION_MOVE -> {
+                      MotionEvent.ACTION_MOVE -> {
                         if (isPressed) {
                             val diffX = event.x - startX
                             val diffY = event.y - startY
                             val currentDistance = sqrt(diffX * diffX + diffY * diffY)
                             
                             // Calculate progress and provide visual feedback (button only)
-                            val swipeProgress = min(currentDistance / dpToPx(80), 1f)
+                            val swipeProgress = min(currentDistance / dpToPx(100), 1f)
                             val progressScale = 1.1f + (swipeProgress * 0.2f)
                             
                             scaleX = progressScale

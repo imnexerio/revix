@@ -91,7 +91,15 @@ class RecordUpdateService : Service() {
             context.sendBroadcast(intent)
 
             // Widget refresh will be handled by Flutter background callback
-            // No need for separate service
+            // No need for separate service            // NEW: Direct alarm scheduling call - works even without widget
+            try {
+                Log.d("RecordUpdateService", "Scheduling alarms from updated data...")
+                val alarmHelper = AlarmManagerHelper(context)
+                alarmHelper.scheduleAlarmsFromWidgetData(context)
+                Log.d("RecordUpdateService", "Alarms scheduled successfully from RecordUpdateService")
+            } catch (e: Exception) {
+                Log.e("RecordUpdateService", "Error scheduling alarms: ${e.message}", e)
+            }
 
             // Complete this task
             finishTask(startId)

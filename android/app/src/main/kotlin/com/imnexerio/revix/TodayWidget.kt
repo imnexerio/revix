@@ -25,77 +25,8 @@ class TodayWidget : AppWidgetProvider() {    companion object {
         private const val VIEW_TOMORROW = "tomorrow"  // NEW
         private const val VIEW_MISSED = "missed"
         private const val VIEW_NO_REMINDER = "noreminder"
-        const val PREF_CURRENT_VIEW = "widget_current_view"
-        
-        // Add this new preference key for alarm data hash tracking
-        private const val PREF_LAST_ALARM_DATA_HASH = "last_alarm_data_hash"
-
-        // Enhanced method to schedule alarms for two days with change detection
-        fun scheduleAlarmsFromWidgetData(context: Context, forceUpdate: Boolean = false) {
-            try {
-                Log.d("TodayWidget", "Checking if alarm scheduling needed...")
-
-                val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                val todayRecordsJson = prefs.getString("todayRecords", "[]") ?: "[]"
-                val tomorrowRecordsJson = prefs.getString("tomorrowRecords", "[]") ?: "[]"  // NEW
-
-                // Calculate hash of current data (both days)
-                val currentDataHash = (todayRecordsJson + tomorrowRecordsJson).hashCode()
-                val lastDataHash = prefs.getInt(PREF_LAST_ALARM_DATA_HASH, -1)
-
-                // Only schedule alarms if data has changed or forced update
-                if (forceUpdate || currentDataHash != lastDataHash) {
-                    Log.d("TodayWidget", "Data changed, scheduling alarms for two days...")
-                    
-                    val todayRecords = parseRecordsFromJson(todayRecordsJson)
-                    val tomorrowRecords = parseRecordsFromJson(tomorrowRecordsJson)  // NEW
-                    Log.d("TodayWidget", "Parsed ${todayRecords.size} today + ${tomorrowRecords.size} tomorrow records")
-
-                    if (todayRecords.isNotEmpty() || tomorrowRecords.isNotEmpty()) {
-                        val alarmHelper = AlarmManagerHelper(context)
-                        alarmHelper.scheduleAlarmsForTwoDays(todayRecords, tomorrowRecords)  // NEW METHOD
-                        Log.d("TodayWidget", "Successfully scheduled alarms for two days")
-                    } else {
-                        Log.d("TodayWidget", "No records found for alarm scheduling")
-                    }
-
-                    // Save the new data hash
-                    prefs.edit().putInt(PREF_LAST_ALARM_DATA_HASH, currentDataHash).apply()
-                } else {
-                    Log.d("TodayWidget", "No data changes detected, skipping alarm scheduling")
-                }
-            } catch (e: Exception) {
-                Log.e("TodayWidget", "Error scheduling alarms from widget data: ${e.message}", e)
-            }
-        }
-
-    private fun parseRecordsFromJson(jsonString: String): List<Map<String, Any>> {
-        val records = mutableListOf<Map<String, Any>>()
-
-        try {
-            val jsonArray = JSONArray(jsonString)
-            for (i in 0 until jsonArray.length()) {
-                val jsonObject = jsonArray.getJSONObject(i)
-                val record = mutableMapOf<String, Any>()
-
-                // Extract all fields needed for alarm scheduling
-                record["category"] = jsonObject.optString("category", "")
-                record["sub_category"] = jsonObject.optString("sub_category", "")
-                record["record_title"] = jsonObject.optString("record_title", "")
-                record["reminder_time"] = jsonObject.optString("reminder_time", "")
-                record["alarm_type"] = jsonObject.optString("alarm_type", "0").toIntOrNull() ?: 0
-                record["scheduled_date"] = jsonObject.optString("scheduled_date", "")
-                record["status"] = jsonObject.optString("status", "")
-
-                records.add(record)
-            }
-        } catch (e: JSONException) {
-            Log.e("TodayWidget", "Error parsing records JSON: ${e.message}", e)
-        }
-
-        return records
-    }        // Modified updateWidgets method
-        fun updateWidgets(context: Context, scheduleAlarms: Boolean = false) {
+        const val PREF_CURRENT_VIEW = "widget_current_view"        // Modified updateWidgets method - no longer handles alarm scheduling
+        fun updateWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(
                 ComponentName(context, TodayWidget::class.java)
@@ -114,11 +45,6 @@ class TodayWidget : AppWidgetProvider() {    companion object {
             updateIntent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
             updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
             context.sendBroadcast(updateIntent)
-
-            // Only schedule alarms if explicitly requested
-            if (scheduleAlarms) {
-                scheduleAlarmsFromWidgetData(context)
-            }
         }
     }override fun onUpdate(
     context: Context,
@@ -128,9 +54,7 @@ class TodayWidget : AppWidgetProvider() {    companion object {
     for (appWidgetId in appWidgetIds) {
         updateAppWidget(context, appWidgetManager, appWidgetId)
     }
-
-    // Schedule alarms from widget data after update
-    scheduleAlarmsFromWidgetData(context)
+    // Note: Alarm scheduling is now handled by method channel and RecordUpdateService
 }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -229,10 +153,8 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                 }
 
                 // Save the new view type
-                prefs.edit().putString(PREF_CURRENT_VIEW, nextView).apply()
-
-                // Update all widgets (no alarm scheduling needed for view switch)
-                updateWidgets(context, scheduleAlarms = false)
+                prefs.edit().putString(PREF_CURRENT_VIEW, nextView).apply()                // Update all widgets (no alarm scheduling needed for view switch)
+                updateWidgets(context)
 
                 // Show toast with the new view type
                 val viewName = when (nextView) {
