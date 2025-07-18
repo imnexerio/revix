@@ -116,7 +116,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               children: [                // Animated square container with text using the modular component
                 AnimatedSquareText(
                   text: 'revix',
-                  size: 230,
+                  size: 180,
                   borderRadius: 40,
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   textColor: const Color(0xFF06171F),
@@ -138,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       child: Opacity(
                         opacity: animationValue,
                         child: Container(
-                          width: 230, // Same width as the square
+                          width: 180, // Same width as the square
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
                             vertical: 12,
