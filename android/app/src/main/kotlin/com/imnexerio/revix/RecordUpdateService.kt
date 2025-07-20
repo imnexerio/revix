@@ -76,34 +76,18 @@ class RecordUpdateService : Service() {
         }
     }
 
-    private fun refreshWidgets(startId: Int) {
+    private fun triggerWidgetRefresh(startId: Int) {
         try {
-            // Instead of direct widget updates, send a broadcast
-            val context = applicationContext
-            val intent = Intent(context, TodayWidget::class.java).apply {
-                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                    ComponentName(context, TodayWidget::class.java)
-                )
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-            }
-            context.sendBroadcast(intent)
-
-            try {
-                Log.d("RecordUpdateService", "Scheduling alarms from updated data...")
-                val alarmHelper = AlarmManagerHelper(context)
-                alarmHelper.scheduleAlarmsFromWidgetData(context)
-                Log.d("RecordUpdateService", "Alarms scheduled successfully from RecordUpdateService")
-            } catch (e: Exception) {
-                Log.e("RecordUpdateService", "Error scheduling alarms: ${e.message}", e)
-            }
-
+            // Simulate refresh button tap by sending refresh action to TodayWidget
+            val refreshIntent = Intent(applicationContext, TodayWidget::class.java)
+            refreshIntent.action = TodayWidget.ACTION_REFRESH
+            applicationContext.sendBroadcast(refreshIntent)
+            
             // Complete this task
             finishTask(startId)
         } catch (e: Exception) {
-            // Handle any exceptions that occur during the refresh
-            Toast.makeText(this, "Error refreshing widgets: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error triggering refresh: ${e.message}", Toast.LENGTH_SHORT).show()
+            finishTask(startId)
         }
     }
 
@@ -225,9 +209,9 @@ class RecordUpdateService : Service() {
                     }
                 }
 
-                // Clear processing state and refresh widgets
+                // Clear processing state and trigger refresh
                 clearProcessingState(category, subCategory, lectureNo)
-                refreshWidgets(startId)
+                triggerWidgetRefresh(startId)
                 
             }.start()
 
@@ -235,7 +219,7 @@ class RecordUpdateService : Service() {
             Toast.makeText(applicationContext, "Error updating record: ${e.message}", Toast.LENGTH_SHORT).show()
             Log.e("RecordUpdateService", "Error triggering background update: ${e.message}")
             clearProcessingState(category, subCategory, lectureNo)
-            refreshWidgets(startId)
+            triggerWidgetRefresh(startId)
             stopSelf(startId)
         }
     }

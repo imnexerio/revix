@@ -216,6 +216,16 @@ class RefreshService : Service() {
         // Show success notification
         showStatusNotification("Data refresh completed successfully!", true)
 
+        // Schedule alarms from updated data
+        try {
+            Log.d("RefreshService", "Scheduling alarms from updated data...")
+            val alarmHelper = AlarmManagerHelper(applicationContext)
+            alarmHelper.scheduleAlarmsFromWidgetData(applicationContext)
+            Log.d("RefreshService", "Alarms scheduled successfully from RefreshService")
+        } catch (e: Exception) {
+            Log.e("RefreshService", "Error scheduling alarms: ${e.message}", e)
+        }
+
         // Update widgets with new data
         updateWidgets()
         
