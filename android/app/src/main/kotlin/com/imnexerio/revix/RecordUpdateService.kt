@@ -90,8 +90,6 @@ class RecordUpdateService : Service() {
             }
             context.sendBroadcast(intent)
 
-            // Widget refresh will be handled by Flutter background callback
-            // No need for separate service            // NEW: Direct alarm scheduling call - works even without widget
             try {
                 Log.d("RecordUpdateService", "Scheduling alarms from updated data...")
                 val alarmHelper = AlarmManagerHelper(context)
@@ -118,8 +116,6 @@ class RecordUpdateService : Service() {
         startId: Int
     ) {
         try {
-            // Simplified approach - just call updateRecord with minimal data
-            // Let Flutter handle all the business logic including checking if already revised today
             updateRecord(emptyMap<String, Any>(), category, subCategory, lectureNo, extras, externalRequestId, startId)
         } catch (e: Exception) {
             Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -145,11 +141,9 @@ class RecordUpdateService : Service() {
                     "Updating record...",
                     Toast.LENGTH_SHORT
                 ).show()
-            }            // Use external request ID if provided, otherwise create new one
+            }
             val requestId = externalRequestId ?: System.currentTimeMillis().toString()
-            
-            // Use simplified approach - just send the essential parameters
-            // Let Flutter handle all the complex logic
+
             val uri = android.net.Uri.parse("homeWidget://record_update")
                 .buildUpon()
                 .appendQueryParameter("category", category)
@@ -162,7 +156,7 @@ class RecordUpdateService : Service() {
                 applicationContext,
                 uri
             )
-            backgroundIntent.send()            // Always monitor results and show status notifications
+            backgroundIntent.send()
             // This provides consistent feedback for both widget and notification updates
             Thread {
                 var retryCount = 0
