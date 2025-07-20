@@ -342,31 +342,7 @@ class AlarmManagerHelper(private val context: Context) {
         Log.d(TAG, "Scheduled alarm for ${metadata.recordTitle} on ${metadata.scheduledDate} at ${Date(metadata.actualTime)} with requestCode: $requestCode")
     }
 
-    fun cancelAlarmByRecord(category: String, subCategory: String, recordTitle: String) {
-        val currentMetadata = getStoredAlarmMetadata().toMutableMap()
-        
-        // Find all alarms for this record (there might be multiple dates)
-        val alarmsToCancel = currentMetadata.values.filter { alarm ->
-            alarm.category == category && 
-            alarm.subCategory == subCategory && 
-            alarm.recordTitle == recordTitle
-        }
-        
-        if (alarmsToCancel.isEmpty()) {
-            Log.d(TAG, "No alarms found to cancel for record: $recordTitle")
-            return
-        }
-        
-        // Cancel each alarm found
-        alarmsToCancel.forEach { alarm ->
-            cancelAlarm(alarm.key)
-            currentMetadata.remove(alarm.key)
-            Log.d(TAG, "Cancelled alarm for record: $recordTitle on ${alarm.scheduledDate}")
-        }
-        
-        saveAlarmMetadata(currentMetadata.values.toList())
-        Log.d(TAG, "Successfully cancelled ${alarmsToCancel.size} alarm(s) for record: $recordTitle")
-    }    // Efficient update for single record changes
+    // Efficient update for single record changes
     fun updateAlarmForRecord(
         category: String,
         subCategory: String, 
@@ -376,9 +352,6 @@ class AlarmManagerHelper(private val context: Context) {
         alarmType: Int
     ) {
         Log.d(TAG, "Updating alarm for single record: $recordTitle on $scheduledDate")
-        
-        // First cancel any existing alarms for this record
-        cancelAlarmByRecord(category, subCategory, recordTitle)
         
         // If alarm type is 0 or time is "all day", don't schedule new alarm
         if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {

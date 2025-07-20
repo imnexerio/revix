@@ -66,10 +66,6 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         }
         context.startForegroundService(stopAlarmIntent)
 
-        // Cancel all alarms for this record
-        val alarmHelper = AlarmManagerHelper(context)
-        alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
-
         // Dismiss the notification
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notificationId = (category + subCategory + recordTitle).hashCode()
@@ -100,11 +96,6 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         }
         context.startForegroundService(stopAlarmIntent)
 
-        // Note: NOT cancelling notification here - let AlarmService convert to reminder
-
-        // Cancel alarm to prevent it from triggering again
-        val alarmHelper = AlarmManagerHelper(context)
-        alarmHelper.cancelAlarmByRecord(category, subCategory, recordTitle)
 
         Log.d(TAG, "Alarm $actionType and will be converted to reminder for: $recordTitle")
     }
