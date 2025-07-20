@@ -133,7 +133,9 @@ class AlarmManagerHelper(private val context: Context) {
             ?: SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
                 Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)
             )
-    }    private fun processDayRecords(
+    }
+
+    private fun processDayRecords(
         records: List<Map<String, Any>>, 
         dateString: String,
         processedAlarmMetadata: MutableMap<String, AlarmMetadata>
@@ -176,7 +178,9 @@ class AlarmManagerHelper(private val context: Context) {
                 Log.e(TAG, "Error processing record for $dateString", e)
             }
         }
-    }    private fun handleSmartAlarmUpdates(
+    }
+
+    private fun handleSmartAlarmUpdates(
         currentAlarms: MutableMap<String, AlarmMetadata>,
         processedAlarmMetadata: Map<String, AlarmMetadata>
     ) {
@@ -317,7 +321,9 @@ class AlarmManagerHelper(private val context: Context) {
             set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-        }.timeInMillis    }    private fun scheduleAlarm(metadata: AlarmMetadata) {
+        }.timeInMillis    }
+
+    private fun scheduleAlarm(metadata: AlarmMetadata) {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_ALARM_TRIGGER
             putExtra(AlarmReceiver.EXTRA_CATEGORY, metadata.category)
@@ -424,7 +430,9 @@ class AlarmManagerHelper(private val context: Context) {
         } else {
             true
         }
-    }    private fun cancelAlarm(alarmKey: String) {
+    }
+
+    private fun cancelAlarm(alarmKey: String) {
         try {
             // Get the alarm metadata to recreate the exact intent
             val alarmMetadata = getStoredAlarmMetadata()[alarmKey]
@@ -474,7 +482,9 @@ class AlarmManagerHelper(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cancel alarm: $alarmKey", e)
         }
-    }private fun parseTimeToday(timeString: String): Long {
+    }
+
+    private fun parseTimeToday(timeString: String): Long {
         val timeParts = timeString.split(":")
         if (timeParts.size != 2) return 0L
 
@@ -487,7 +497,9 @@ class AlarmManagerHelper(private val context: Context) {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
-    }    private fun saveAlarmMetadata(alarmList: List<AlarmMetadata>) {
+    }
+
+    private fun saveAlarmMetadata(alarmList: List<AlarmMetadata>) {
         val jsonArray = JSONArray()
         alarmList.forEach { alarm ->
             val jsonObject = JSONObject().apply {
@@ -503,7 +515,9 @@ class AlarmManagerHelper(private val context: Context) {
             jsonArray.put(jsonObject)
         }
         prefs.edit().putString(ALARM_METADATA_KEY, jsonArray.toString()).apply()
-    }private fun getStoredAlarmMetadata(): Map<String, AlarmMetadata> {
+    }
+
+    private fun getStoredAlarmMetadata(): Map<String, AlarmMetadata> {
         val jsonString = prefs.getString(ALARM_METADATA_KEY, "[]") ?: "[]"
         val alarmMap = mutableMapOf<String, AlarmMetadata>()
         try {
@@ -538,7 +552,9 @@ class AlarmManagerHelper(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to dismiss notification for $recordTitle", e)
         }
-    }    private fun cleanupOldAlarmMetadata() {
+    }
+
+    private fun cleanupOldAlarmMetadata() {
         val currentTime = System.currentTimeMillis()
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val currentAlarms = getStoredAlarmMetadata()
