@@ -208,12 +208,21 @@ class CombinedDatabaseService {
       print('UnifiedDatabaseService: Scheduling alarms with data...');
       print('Today records: ${todayRecords.length}, Tomorrow records: ${tomorrowRecords.length}');
       
-      // Call AlarmManager to schedule alarms with the provided data
-      AlarmManager.scheduleAlarmsWithData(todayRecords, tomorrowRecords);
-      
-      print('UnifiedDatabaseService: Alarms scheduled successfully');
+      // Try to call AlarmManager - if it fails due to background context, that's okay
+      // because RefreshService will handle alarm scheduling natively
+      try {
+        AlarmManager.scheduleAlarmsWithData(todayRecords, tomorrowRecords);
+        print('UnifiedDatabaseService: Alarms scheduled successfully via Flutter');
+      } catch (e) {
+        if (e.toString().contains('MissingPluginException')) {
+          print('UnifiedDatabaseService: Background context detected - native Android will handle alarm scheduling');
+        } else {
+          print('UnifiedDatabaseService: Error scheduling alarms: $e');
+          rethrow;
+        }
+      }
     } catch (e) {
-      print('UnifiedDatabaseService: Error scheduling alarms: $e');
+      print('UnifiedDatabaseService: Error in alarm scheduling: $e');
     }
   }
 
