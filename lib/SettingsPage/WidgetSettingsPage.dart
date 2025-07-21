@@ -147,11 +147,15 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   Future<void> _updateAutoRefreshSchedule() async {
     try {
       if (_autoRefreshEnabled) {
+        // Get lastUpdated timestamp from HomeWidget preferences
+        // Note: HomeWidget saves to native SharedPreferences with key "lastUpdated"
+        // We need to read this differently as HomeWidget uses native storage
         debugPrint('Starting auto-refresh with interval: ${_autoRefreshIntervalMinutes}m');
-        await platform.invokeMethod('startAutoRefresh', {
+        await platform.invokeMethod('scheduleAutoRefreshFromLastUpdate', {
           'intervalMinutes': _autoRefreshIntervalMinutes,
+          'lastUpdated': 0, // Will be read from native side
         });
-        debugPrint('Auto-refresh started successfully');
+        debugPrint('Auto-refresh scheduled successfully');
       } else {
         debugPrint('Stopping auto-refresh');
         await platform.invokeMethod('stopAutoRefresh');

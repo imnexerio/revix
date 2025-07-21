@@ -76,8 +76,12 @@ class AutoRefreshService : Service() {
 
     private fun scheduleNextAutoRefresh(intervalMinutes: Int) {
         try {
-            Log.d(TAG, "Scheduling next auto-refresh in ${intervalMinutes} minutes")
-            AutoRefreshManager.scheduleAutoRefresh(applicationContext, intervalMinutes)
+            // Get the latest lastUpdated timestamp from widget preferences
+            val widgetPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            val lastUpdated = widgetPrefs.getLong("lastUpdated", 0L)
+            
+            Log.d(TAG, "Scheduling next auto-refresh based on lastUpdated: ${java.util.Date(lastUpdated)}, interval: ${intervalMinutes} minutes")
+            AutoRefreshManager.scheduleAutoRefreshFromLastUpdate(applicationContext, intervalMinutes, lastUpdated)
         } catch (e: Exception) {
             Log.e(TAG, "Error scheduling next auto-refresh: ${e.message}", e)
         }
