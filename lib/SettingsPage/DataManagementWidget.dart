@@ -86,7 +86,7 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
         // Use unified file picker for all platforms
         final filePath = await file_helper.FileHelper.saveToFile(formattedData, filename);
         if (filePath != null) {
-          await _showExportSuccessDialog(filePath);
+          await _showExportSuccessDialog(filePath, filename);
         } else {
           // User canceled the save dialog
           customSnackBar(
@@ -101,6 +101,7 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
         );
       }
     } catch (e) {
+      print("Error exporting user data: $e");
       setState(() {
         _isExporting = false;
       });
@@ -136,7 +137,11 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
     }
   }
 
-  Future<void> _showExportSuccessDialog(String filePath) async {
+  Future<void> _showExportSuccessDialog(String filePath, String filename) async {
+    // Check if the path is a URI/content path or a regular file path
+    final bool isReadablePath = filePath.startsWith('/') || filePath.contains('\\') || filePath.contains(':/');
+    final String displayPath = isReadablePath ? filePath : 'Downloaded to your device as: $filename';
+    
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -160,7 +165,7 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            const Text('File saved to:'),
+            Text(isReadablePath ? 'File saved to:' : 'File saved:'),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
@@ -170,9 +175,9 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
               padding: const EdgeInsets.all(12),
               width: double.infinity,
               child: Text(
-                filePath,
+                displayPath,
                 style: TextStyle(
-                  fontFamily: 'monospace',
+                  fontFamily: isReadablePath ? 'monospace' : null,
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -186,16 +191,6 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: filePath));
-              customSnackBar(
-                context: context,
-                message: 'File path copied to clipboard'
-              );
-            },
-            child: const Text('Copy Path'),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('OK'),

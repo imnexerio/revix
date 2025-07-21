@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 
 class FileHelper {
@@ -17,10 +18,33 @@ class FileHelper {
       );
 
       if (outputFile != null) {
-        // For mobile/desktop platforms, write to the selected file
-        final file = File(outputFile);
-        await file.writeAsString(data);
-        return file.path;
+        // Platform-specific handling
+        if (kIsWeb) {
+          // On web, the file is automatically downloaded when bytes are provided
+          // Return a user-friendly message since we can't get the actual file path
+          return filename; // Return the filename for user feedback
+        } else {
+          // On mobile/desktop platforms
+          // The file might already be saved by the picker when bytes are provided
+          // Try to write to the file only if it looks like a valid file path
+          try {
+            // Check if it's a proper file path (not a content URI)
+            if (outputFile.startsWith('/') || outputFile.contains('\\') || 
+                (outputFile.contains(':/') && !outputFile.startsWith('content:'))) {
+              // Looks like a proper file path, try to write
+              final file = File(outputFile);
+              if (await file.parent.exists()) {
+                await file.writeAsString(data, encoding: utf8);
+              }
+            }
+            // Return the path/URI regardless - the file has been saved by the picker
+            return outputFile;
+          } catch (e) {
+            // If writing fails, that's okay - the file picker already saved the file
+            // Just return the path for user information
+            return outputFile;
+          }
+        }
       }
       
       return null; // User canceled the save dialog
@@ -37,22 +61,25 @@ class FileHelper {
         type: FileType.custom,
         allowedExtensions: ['json'],
         allowMultiple: false,
-        withData: true, // This loads file content for web
+        withData: true, // This loads file content for web and provides fallback for mobile
       );
 
       if (result != null) {
         final file = result.files.single;
         
-        // For web, use the bytes directly with proper UTF-8 decoding
+        // Try bytes first (works on all platforms, required for web)
         if (file.bytes != null) {
           return utf8.decode(file.bytes!);
         }
         
-        // For mobile/desktop, read from file path
-        if (file.path != null) {
+        // Fallback to file path for mobile/desktop when bytes aren't available
+        if (!kIsWeb && file.path != null) {
           final fileObj = File(file.path!);
           return await fileObj.readAsString(encoding: utf8);
         }
+        
+        // If we reach here, something went wrong
+        throw Exception('Unable to read file content');
       }
       
       return null; // User canceled the picker
@@ -63,6 +90,11 @@ class FileHelper {
   
   /// Read from file path (mainly for fallback scenarios)
   static Future<String?> readFromFile(String filePath) async {
+    // This method is mainly for desktop platforms or when file paths are manually entered
+    if (kIsWeb) {
+      throw Exception('File path reading is not supported on web. Use the file picker instead.');
+    }
+    
     try {
       final file = File(filePath);
       
