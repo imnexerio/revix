@@ -24,6 +24,7 @@ import 'ProfilePage.dart';
 import 'ProfileProvider.dart';
 import 'ThemePage.dart';
 import 'TrackingTypePage.dart';
+import 'WidgetSettingsPage.dart';
 import 'buildDetailPageAppBar.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -281,6 +282,10 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     _navigateToPage(context, NotificationSettingsPage(), 'Notification Settings');
   }
 
+  void _showWidgetSettingsPage(BuildContext context) {
+    _navigateToPage(context, WidgetSettingsPage(), 'Widget Settings');
+  }
+
   void _showAboutPage(BuildContext context) {
     _navigateToPage(
       context,
@@ -482,6 +487,13 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             'icon': Icons.notifications_none,
             'onTap': () => _showNotificationSettingsPage(context),
             'isSelected': _shouldShowSelectionHighlight('Notification Settings'),
+          },
+          if (PlatformUtils.instance.isAndroid) {
+            'title': 'Widget Settings',
+            'subtitle': 'Configure home widget preferences',
+            'icon': Icons.widgets_outlined,
+            'onTap': () => _showWidgetSettingsPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Widget Settings'),
           },
           {
             'title': 'About',
