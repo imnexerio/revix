@@ -7,11 +7,8 @@ import 'package:revix/Utils/DataMigrationService.dart';
 import 'package:revix/Utils/GuestAuthService.dart';
 import 'package:revix/Utils/FirebaseDatabaseService.dart';
 import 'package:revix/Utils/LocalDatabaseService.dart';
+import 'file_helper.dart' as file_helper;
 
-// Conditional imports for platform-specific functionality
-import 'web_file_helper.dart' if (dart.library.io) 'mobile_file_helper.dart' as file_helper;
-
-/// Universal Data Management Widget for both guest and authenticated users
 /// Features:
 /// - Export user data as JSON (works for both guest and authenticated users)
 /// - Import data from JSON (works for both guest and authenticated users)
@@ -58,16 +55,28 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
         _isExporting = false;
       });
 
-      if (data != null) {
-        // Format the JSON data with proper indentation
+      if (data != null && data.trim().isNotEmpty) {
+        // Validate that the data is actually valid JSON before formatting
         String formattedData;
         try {
           final jsonData = json.decode(data);
+          // Ensure we have actual data to export
+          if (jsonData is Map && jsonData.isEmpty) {
+            customSnackBar_error(
+              context: context,
+              message: 'No data available to export'
+            );
+            return;
+          }
           const encoder = JsonEncoder.withIndent('  '); // 2 spaces indentation
           formattedData = encoder.convert(jsonData);
         } catch (e) {
-          // If JSON parsing fails, use original data
-          formattedData = data;
+          // If JSON parsing fails, it means our export data is corrupted
+          customSnackBar_error(
+            context: context,
+            message: 'Error formatting export data: $e'
+          );
+          return;
         }
         
         final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -402,14 +411,42 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
     });
 
     try {
-      // Validate JSON format
+      // Validate input data
+      if (data.trim().isEmpty) {
+        customSnackBar_error(
+          context: context,
+          message: 'Empty file or no data found'
+        );
+        setState(() {
+          _isImporting = false;
+        });
+        return;
+      }
+
+      // Validate JSON format with detailed error reporting
       Map<String, dynamic> importData;
       try {
         importData = json.decode(data);
       } catch (e) {
+        String errorMessage = 'Invalid JSON format';
+        if (e is FormatException) {
+          errorMessage = 'Invalid JSON format: ${e.message}';
+        }
         customSnackBar_error(
           context: context,
-          message: 'Invalid data format'
+          message: errorMessage
+        );
+        setState(() {
+          _isImporting = false;
+        });
+        return;
+      }
+
+      // Additional validation: ensure we have valid data structure
+      if (importData.isEmpty) {
+        customSnackBar_error(
+          context: context,
+          message: 'File contains no data to import'
         );
         setState(() {
           _isImporting = false;
