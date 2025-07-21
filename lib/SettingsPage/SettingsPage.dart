@@ -12,8 +12,7 @@ import '../Utils/LocalDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/platform_utils.dart';
 import 'AboutPage.dart';
-import 'ChangePassPage.dart';
-import 'ChangeMailPage.dart';
+import 'ChangeCredentialsPage.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
 import 'DataManagementWidget.dart';
@@ -270,12 +269,8 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     _navigateToPage(context, TrackingTypePage(), 'Custom Tracking Type');
   }
 
-  void _showChangePasswordPage(BuildContext context) {
-    _navigateToPage(context, ChangePasswordPage(), 'Change Password');
-  }
-
-  void _showChangeEmailPage(BuildContext context) {
-    _navigateToPage(context, ChangeEmailPage(), 'Change Email');
+  void _showChangeCredentialsPage(BuildContext context) {
+    _navigateToPage(context, ChangeCredentialsPage(), 'Account Security');
   }
 
   void _showNotificationSettingsPage(BuildContext context) {
@@ -467,18 +462,11 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         // Options only for authenticated users
         final List<Map<String, dynamic>> authOnlyOptions = [
           {
-            'title': 'Change Password',
-            'subtitle': 'Update your security credentials',
-            'icon': Icons.lock_outline,
-            'onTap': () => _showChangePasswordPage(context),
-            'isSelected': _shouldShowSelectionHighlight('Change Password'),
-          },
-          {
-            'title': 'Change Email',
-            'subtitle': 'Update your email address',
-            'icon': Icons.email_outlined,
-            'onTap': () => _showChangeEmailPage(context),
-            'isSelected': _shouldShowSelectionHighlight('Change Email'),
+            'title': 'Account Security',
+            'subtitle': 'Change password or email',
+            'icon': Icons.security,
+            'onTap': () => _showChangeCredentialsPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Account Security'),
           },
         ];
         
