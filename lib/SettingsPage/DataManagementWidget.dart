@@ -112,18 +112,16 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
         return null;
       }
       
-      // Get user data from Firebase
-      final userData = await firebaseService.getUserData(userId);
-      final profileData = await firebaseService.getProfileData(userId);
+      // Get all user data from Firebase in a single call
+      final allUserData = await firebaseService.getAllUserData(userId);
       
-      if (userData == null && profileData == null) {
+      if (allUserData == null || allUserData.isEmpty) {
         return null; // No data to export
       }
       
-      // Create export data structure
+      // Add export metadata
       Map<String, dynamic> exportData = {
-        'user_data': userData ?? {},
-        'profile_data': profileData ?? {},
+        ...allUserData,
         'export_info': {
           'user_id': userId,
           'export_date': DateTime.now().toIso8601String(),
@@ -466,8 +464,12 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
         return false;
       }
       
-      if (!importData.containsKey('user_data')) {
-        return false; // Invalid import data
+      // Remove export_info if it exists (it's metadata, not user data)
+      Map<String, dynamic> cleanedData = Map.from(importData);
+      cleanedData.remove('export_info');
+      
+      if (cleanedData.isEmpty) {
+        return false; // No valid data to import
       }
       
       // Show confirmation dialog for authenticated users
@@ -476,15 +478,8 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
         return false;
       }
       
-      // Import user data to Firebase
-      if (importData['user_data'] != null) {
-        await firebaseService.setUserData(userId, importData['user_data']);
-      }
-      
-      // Import profile data if available
-      if (importData['profile_data'] != null) {
-        await firebaseService.setProfileData(userId, importData['profile_data']);
-      }
+      // Import all user data to Firebase in a single call
+      await firebaseService.setAllUserData(userId, cleanedData);
       
       return true;
     } catch (e) {
