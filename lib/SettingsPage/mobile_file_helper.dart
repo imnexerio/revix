@@ -1,38 +1,66 @@
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 
 class FileHelper {
+  /// Save file using native file picker on all platforms
   static Future<String?> saveToFile(String data, String filename) async {
     try {
-      Directory? directory;
-      
-      if (Platform.isAndroid) {
-        // For Android, use the Downloads directory
-        directory = Directory('/storage/emulated/0/Download');
-        if (!await directory.exists()) {
-          directory = await getExternalStorageDirectory();
-        }
-      } else if (Platform.isIOS) {
-        // For iOS, use the Documents directory
-        directory = await getApplicationDocumentsDirectory();
-      } else {
-        // For other platforms (Windows, macOS, Linux), use Downloads
-        directory = await getDownloadsDirectory();
-      }
+      // Use file_picker for all platforms - it handles web, mobile, and desktop
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save your data backup',
+        fileName: filename,
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(data.codeUnits), // Convert to Uint8List for web compatibility
+      );
 
-      if (directory == null) {
-        throw Exception('Unable to access storage directory');
+      if (outputFile != null) {
+        // For mobile/desktop platforms, write to the selected file
+        final file = File(outputFile);
+        await file.writeAsString(data);
+        return file.path;
       }
-
-      final file = File('${directory.path}/$filename');
-      await file.writeAsString(data);
       
-      return file.path;
+      return null; // User canceled the save dialog
     } catch (e) {
       throw Exception('Error saving file: $e');
     }
   }
   
+  /// Pick and read a file using native file picker on all platforms
+  static Future<String?> pickAndReadFile() async {
+    try {
+      // Use file_picker for all platforms
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        allowMultiple: false,
+        withData: true, // This loads file content for web
+      );
+
+      if (result != null) {
+        final file = result.files.single;
+        
+        // For web, use the bytes directly
+        if (file.bytes != null) {
+          return String.fromCharCodes(file.bytes!);
+        }
+        
+        // For mobile/desktop, read from file path
+        if (file.path != null) {
+          final fileObj = File(file.path!);
+          return await fileObj.readAsString();
+        }
+      }
+      
+      return null; // User canceled the picker
+    } catch (e) {
+      throw Exception('Error picking file: $e');
+    }
+  }
+  
+  /// Read from file path (mainly for fallback scenarios)
   static Future<String?> readFromFile(String filePath) async {
     try {
       final file = File(filePath);
@@ -47,24 +75,14 @@ class FileHelper {
     }
   }
   
+  /// Get hint text for manual file path entry (fallback only)
   static String getHintText() {
-    if (Platform.isAndroid) {
-      return '/storage/emulated/0/Download/revix_data_xxxxx.json';
-    } else if (Platform.isIOS) {
-      return 'Documents/revix_data_xxxxx.json';
-    } else if (Platform.isWindows) {
-      return 'C:\\Users\\YourName\\Downloads\\revix_data_xxxxx.json';
-    } else {
-      return '/Users/YourName/Downloads/revix_data_xxxxx.json';
-    }
+    return 'Use the file picker to select your exported JSON file';
   }
   
-  // Mobile doesn't use these methods but need them for compatibility
+  /// Download file (legacy method for compatibility)
   static Future<void> downloadFile(String data, String filename) async {
-    throw UnsupportedError('Use saveToFile for mobile');
-  }
-  
-  static Future<String?> pickAndReadFile() async {
-    throw UnsupportedError('Use file path input for mobile');
+    // Use saveToFile instead - it works on all platforms
+    await saveToFile(data, filename);
   }
 }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:revix/Utils/CustomSnackBar.dart';
@@ -75,17 +74,16 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
         final userType = isGuestMode ? 'guest' : 'user';
         final filename = 'revix_${userType}_data_$timestamp.json';
         
-        if (kIsWeb) {
-          await file_helper.FileHelper.downloadFile(formattedData, filename);
+        // Use unified file picker for all platforms
+        final filePath = await file_helper.FileHelper.saveToFile(formattedData, filename);
+        if (filePath != null) {
+          await _showExportSuccessDialog(filePath);
+        } else {
+          // User canceled the save dialog
           customSnackBar(
             context: context,
-            message: 'Data exported successfully! Check your Downloads folder for $filename'
+            message: 'Export canceled'
           );
-        } else {
-          final filePath = await file_helper.FileHelper.saveToFile(formattedData, filename);
-          if (filePath != null) {
-            await _showExportSuccessDialog(filePath);
-          }
         }
       } else {
         customSnackBar_error(
@@ -209,94 +207,13 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
     );
   }
 
-  Future<void> _showImportDialog() async {
-    final isGuestMode = await GuestAuthService.isGuestMode();
-    
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import Data'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isGuestMode 
-                ? 'Choose how you want to import your data:'
-                : 'Import data from a previously exported backup file:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            if (kIsWeb) ...[
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _pickFileOnWeb();
-                  },
-                  icon: const Icon(Icons.file_upload),
-                  label: const Text('Select File'),
-                ),
-              ),
-            ] else ...[
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _pickAndImportFile();
-                  },
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('Select File'),
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            const Text(
-              'OR',
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showPasteDataDialog();
-                },
-                icon: const Icon(Icons.content_paste),
-                label: const Text('Paste Data'),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _pickAndImportFile() async {
-    try {
-      await _showFilePickerDialog();
-    } catch (e) {
-      customSnackBar_error(
-        context: context,
-        message: 'Error picking file: $e'
-      );
-    }
-  }
-
-  Future<void> _pickFileOnWeb() async {
     setState(() {
       _isImporting = true;
     });
 
     try {
+      // Use the mobile file helper to pick and read file directly with native file picker
       final content = await file_helper.FileHelper.pickAndReadFile();
       
       setState(() {
@@ -305,6 +222,12 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
       
       if (content != null) {
         await _importUserData(content);
+      } else {
+        // User canceled the file picker
+        customSnackBar(
+          context: context,
+          message: 'File selection canceled'
+        );
       }
     } catch (e) {
       setState(() {
@@ -734,7 +657,7 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _isImporting ? null : _showImportDialog,
+                        onPressed: _isImporting ? null : _pickAndImportFile,
                         icon: _isImporting
                             ? SizedBox(
                                 width: 16,

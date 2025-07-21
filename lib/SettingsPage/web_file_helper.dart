@@ -1,59 +1,88 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:html' as html;
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 
 class FileHelper {
-  static Future<void> downloadFile(String data, String filename) async {
-    final bytes = utf8.encode(data);
-    final blob = html.Blob([bytes]);
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    
-    final anchor = html.AnchorElement(href: url)
-      ..setAttribute('download', filename)
-      ..click();
-    
-    html.Url.revokeObjectUrl(url);
-  }
-  
-  static Future<String?> pickAndReadFile() async {
-    final input = html.FileUploadInputElement()
-      ..accept = '.json'
-      ..click();
-
-    await input.onChange.first;
-    
-    if (input.files?.isNotEmpty ?? false) {
-      final file = input.files!.first;
-      final reader = html.FileReader();
-      
-      // Use a completer to handle the async file reading
-      final completer = Completer<String>();
-      
-      reader.onLoadEnd.listen((e) {
-        completer.complete(reader.result as String);
-      });
-      
-      reader.onError.listen((e) {
-        completer.completeError('Error reading file');
-      });
-      
-      reader.readAsText(file);
-      return await completer.future;
-    }
-    
-    return null;
-  }
-  
-  // Web doesn't use these methods but need them for compatibility
+  /// Save file using native file picker on all platforms
   static Future<String?> saveToFile(String data, String filename) async {
-    throw UnsupportedError('Use downloadFile for web');
+    try {
+      // Use file_picker for all platforms - it handles web, mobile, and desktop
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save your data backup',
+        fileName: filename,
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(data.codeUnits), // Convert to Uint8List for web compatibility
+      );
+
+      if (outputFile != null) {
+        // For mobile/desktop platforms, write to the selected file
+        final file = File(outputFile);
+        await file.writeAsString(data);
+        return file.path;
+      }
+      
+      return null; // User canceled the save dialog
+    } catch (e) {
+      throw Exception('Error saving file: $e');
+    }
   }
   
+  /// Pick and read a file using native file picker on all platforms
+  static Future<String?> pickAndReadFile() async {
+    try {
+      // Use file_picker for all platforms
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        allowMultiple: false,
+        withData: true, // This loads file content for web
+      );
+
+      if (result != null) {
+        final file = result.files.single;
+        
+        // For web, use the bytes directly
+        if (file.bytes != null) {
+          return String.fromCharCodes(file.bytes!);
+        }
+        
+        // For mobile/desktop, read from file path
+        if (file.path != null) {
+          final fileObj = File(file.path!);
+          return await fileObj.readAsString();
+        }
+      }
+      
+      return null; // User canceled the picker
+    } catch (e) {
+      throw Exception('Error picking file: $e');
+    }
+  }
+  
+  /// Read from file path (mainly for fallback scenarios)
   static Future<String?> readFromFile(String filePath) async {
-    throw UnsupportedError('Use pickAndReadFile for web');
+    try {
+      final file = File(filePath);
+      
+      if (!await file.exists()) {
+        throw Exception('File not found: $filePath');
+      }
+
+      return await file.readAsString();
+    } catch (e) {
+      throw Exception('Error reading file: $e');
+    }
   }
   
+  /// Get hint text for manual file path entry (fallback only)
   static String getHintText() {
-    return 'Select a JSON file from your computer';
+    return 'Use the file picker to select your exported JSON file';
+  }
+  
+  /// Download file (legacy method for compatibility)
+  static Future<void> downloadFile(String data, String filename) async {
+    // Use saveToFile instead - it works on all platforms
+    await saveToFile(data, filename);
   }
 }
