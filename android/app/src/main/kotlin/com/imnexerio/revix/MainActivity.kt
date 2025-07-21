@@ -4,6 +4,8 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.os.Bundle
+import android.util.Log
+import android.content.Context
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.imnexerio.revix/widget_refresh"
