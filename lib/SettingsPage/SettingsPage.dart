@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,6 +104,15 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       final databaseService = CombinedDatabaseService();
       databaseService.stopListening();
 
+      // Stop auto-refresh before logout
+      try {
+        const platform = MethodChannel('com.imnexerio.revix/auto_refresh');
+        await platform.invokeMethod('stopAutoRefresh');
+        debugPrint('Auto-refresh stopped during logout');
+      } catch (e) {
+        debugPrint('Error stopping auto-refresh during logout: $e');
+      }
+
       if (PlatformUtils.instance.isAndroid) {
         await HomeWidgetService.updateWidgetLoginStatus(false);
       }
@@ -122,7 +132,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         // Handle regular authentication logout
         await _databaseService.signOut();
       }
-
 
       // Clear all shared preferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
