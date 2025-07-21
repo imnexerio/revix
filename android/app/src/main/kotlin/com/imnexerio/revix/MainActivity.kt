@@ -8,6 +8,7 @@ import android.os.Bundle
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.imnexerio.revix/widget_refresh"
     private val UPDATE_RECORDS_CHANNEL = "revix/update_records"
+    private val AUTO_REFRESH_CHANNEL = "com.imnexerio.revix/auto_refresh"
     private lateinit var alarmManagerHelper: AlarmManagerHelper
     private lateinit var permissionManager: PermissionManager
 
@@ -25,6 +26,29 @@ class MainActivity : FlutterActivity() {
 
         // Initialize update records channel for communication with services
         updateRecordsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_RECORDS_CHANNEL)
+        
+        // Setup auto-refresh method channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUTO_REFRESH_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startAutoRefresh" -> {
+                    val intervalMinutes = call.argument<Int>("intervalMinutes") ?: 1440
+                    AutoRefreshManager.startAutoRefreshImmediately(this, intervalMinutes)
+                    result.success(true)
+                }
+                "stopAutoRefresh" -> {
+                    AutoRefreshManager.cancelAutoRefresh(this)
+                    result.success(true)
+                }
+                "scheduleAutoRefresh" -> {
+                    val intervalMinutes = call.argument<Int>("intervalMinutes") ?: 1440
+                    AutoRefreshManager.scheduleAutoRefresh(this, intervalMinutes)
+                    result.success(true)
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
         
         // Register AlarmSchedulerPlugin
         flutterEngine.plugins.add(AlarmSchedulerPlugin())
