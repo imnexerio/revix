@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
@@ -12,7 +13,7 @@ class FileHelper {
         fileName: filename,
         type: FileType.custom,
         allowedExtensions: ['json'],
-        bytes: Uint8List.fromList(data.codeUnits), // Convert to Uint8List for web compatibility
+        bytes: Uint8List.fromList(utf8.encode(data)), // Use UTF-8 encoding for proper Unicode support
       );
 
       if (outputFile != null) {

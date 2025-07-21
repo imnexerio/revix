@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
@@ -11,8 +12,8 @@ class FileHelper {
         dialogTitle: 'Save your data backup',
         fileName: filename,
         type: FileType.custom,
-        allowedExtensions: ['json'],
-        bytes: Uint8List.fromList(data.codeUnits), // Convert to Uint8List for web compatibility
+        allowedExtensions: ['json'],      
+        bytes: Uint8List.fromList(utf8.encode(data)), // Use UTF-8 encoding for proper Unicode support
       );
 
       if (outputFile != null) {
@@ -42,15 +43,15 @@ class FileHelper {
       if (result != null) {
         final file = result.files.single;
         
-        // For web, use the bytes directly
+        // For web, use the bytes directly with proper UTF-8 decoding
         if (file.bytes != null) {
-          return String.fromCharCodes(file.bytes!);
+          return utf8.decode(file.bytes!);
         }
         
         // For mobile/desktop, read from file path
         if (file.path != null) {
           final fileObj = File(file.path!);
-          return await fileObj.readAsString();
+          return await fileObj.readAsString(encoding: utf8);
         }
       }
       
