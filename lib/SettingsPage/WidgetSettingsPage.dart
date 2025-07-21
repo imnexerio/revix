@@ -151,15 +151,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                 'Display missed tasks in widget',
                 Icons.warning_amber_outlined,
                 true,
-              ),
-              const Divider(height: 32),
-              _buildWidgetOption(
-                context,
-                'Compact View',
-                'Show more tasks in less space',
-                Icons.view_compact_outlined,
-                false,
-              ),
+              )
             ],
           ),
         ),

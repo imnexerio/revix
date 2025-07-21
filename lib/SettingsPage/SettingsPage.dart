@@ -434,6 +434,13 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             'onTap': () => _navigateToPage(context, DataManagementWidget(), 'Data Management'),
             'isSelected': _shouldShowSelectionHighlight('Data Management'),
           },
+          if (PlatformUtils.instance.isAndroid) {
+            'title': 'Widget Settings',
+            'subtitle': 'Configure home widget preferences',
+            'icon': Icons.widgets_outlined,
+            'onTap': () => _showWidgetSettingsPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Widget Settings'),
+          },
           {
             'title': 'Set Theme',
             'subtitle': 'Choose your style',
@@ -483,13 +490,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             'icon': Icons.notifications_none,
             'onTap': () => _showNotificationSettingsPage(context),
             'isSelected': _shouldShowSelectionHighlight('Notification Settings'),
-          },
-          if (PlatformUtils.instance.isAndroid) {
-            'title': 'Widget Settings',
-            'subtitle': 'Configure home widget preferences',
-            'icon': Icons.widgets_outlined,
-            'onTap': () => _showWidgetSettingsPage(context),
-            'isSelected': _shouldShowSelectionHighlight('Widget Settings'),
           },
           {
             'title': 'About',

@@ -32,7 +32,14 @@ class AutoRefreshService : Service() {
         // Check if auto-refresh is still enabled
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         val autoRefreshEnabled = prefs.getBoolean("flutter.auto_refresh_enabled", true)
-        val intervalMinutes = prefs.getInt("flutter.auto_refresh_interval_minutes", 1440)
+        
+        // Handle potential Long to Int conversion issue
+        val intervalMinutes = try {
+            prefs.getInt("flutter.auto_refresh_interval_minutes", 1440)
+        } catch (e: ClassCastException) {
+            // If stored as Long, get it as Long and convert to Int
+            prefs.getLong("flutter.auto_refresh_interval_minutes", 1440L).toInt()
+        }
 
         if (!autoRefreshEnabled) {
             Log.d(TAG, "Auto-refresh is disabled, not triggering refresh")
