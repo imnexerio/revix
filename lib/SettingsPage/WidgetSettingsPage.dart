@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
+import '../Utils/GuestAuthService.dart';
 
 class WidgetSettingsPage extends StatefulWidget {
   @override
@@ -47,18 +48,55 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       final autoRefreshEnabled = prefs.getBool('auto_refresh_enabled');
       final autoRefreshInterval = prefs.getInt('auto_refresh_interval_minutes');
       
+      // Check if user is in guest mode
+      final isGuestMode = await GuestAuthService.isGuestMode();
+      
+      // Track if we need to save defaults
+      bool needsToSaveDefaults = false;
+      
+      // Set values and check if defaults need to be saved
+      int finalAlarmDuration = duration ?? 60;
+      bool finalAutoRefreshEnabled = isGuestMode ? false : (autoRefreshEnabled ?? true);
+      int finalAutoRefreshInterval = autoRefreshInterval ?? 1440;
+      
+      // Save defaults to SharedPreferences if they don't exist
+      if (duration == null) {
+        await prefs.setInt('alarm_duration_seconds', finalAlarmDuration);
+        needsToSaveDefaults = true;
+        debugPrint('Saved default alarm duration: ${finalAlarmDuration}s');
+      }
+      
+      if (autoRefreshEnabled == null && !isGuestMode) {
+        // Only save auto-refresh default for non-guest users
+        await prefs.setBool('auto_refresh_enabled', finalAutoRefreshEnabled);
+        needsToSaveDefaults = true;
+        debugPrint('Saved default auto-refresh enabled: $finalAutoRefreshEnabled');
+      }
+      
+      if (autoRefreshInterval == null) {
+        await prefs.setInt('auto_refresh_interval_minutes', finalAutoRefreshInterval);
+        needsToSaveDefaults = true;
+        debugPrint('Saved default auto-refresh interval: ${finalAutoRefreshInterval}m');
+      }
+      
       setState(() {
-        _alarmDurationSeconds = duration ?? 60; // Default to 1 minute if null
-        _autoRefreshEnabled = autoRefreshEnabled ?? true; // Default enabled
-        _autoRefreshIntervalMinutes = autoRefreshInterval ?? 1440; // Default 24 hours
+        _alarmDurationSeconds = finalAlarmDuration;
+        _autoRefreshEnabled = finalAutoRefreshEnabled;
+        _autoRefreshIntervalMinutes = finalAutoRefreshInterval;
       });
       
-      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled, Interval: ${_autoRefreshIntervalMinutes}m');
+      if (needsToSaveDefaults) {
+        debugPrint('Default settings saved to SharedPreferences on first visit');
+      }
+      
+      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled (Guest: $isGuestMode), Interval: ${_autoRefreshIntervalMinutes}m');
     } catch (e) {
       debugPrint('Failed to load settings: $e');
+      // Check guest mode for fallback as well
+      final isGuestMode = await GuestAuthService.isGuestMode();
       setState(() {
         _alarmDurationSeconds = 60; // Default to 1 minute
-        _autoRefreshEnabled = true;
+        _autoRefreshEnabled = isGuestMode ? false : true; // Disable for guest users
         _autoRefreshIntervalMinutes = 1440; // Default 24 hours
       });
     }
@@ -94,6 +132,20 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
 
   Future<void> _saveAutoRefreshSettings(bool enabled, int intervalMinutes, {bool showSnackBar = true}) async {
     try {
+      // Check if user is in guest mode
+      final isGuestMode = await GuestAuthService.isGuestMode();
+      
+      // Don't allow enabling auto-refresh for guest users
+      if (isGuestMode && enabled) {
+        if (mounted && showSnackBar) {
+          customSnackBar_error(
+            context: context,
+            message: 'Auto-refresh is not available in guest mode and is not needed',
+          );
+        }
+        return;
+      }
+      
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('auto_refresh_enabled', enabled);
       await prefs.setInt('auto_refresh_interval_minutes', intervalMinutes);
@@ -245,108 +297,119 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   }
 
   Widget _buildAutoRefreshSetting(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return FutureBuilder<bool>(
+      future: GuestAuthService.isGuestMode(),
+      builder: (context, snapshot) {
+        final isGuestMode = snapshot.data ?? false;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.refresh_outlined),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Auto Refresh',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    'Automatically refresh widget data at regular intervals',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-            Switch.adaptive(
-              value: _autoRefreshEnabled,
-              onChanged: (value) {
-                _saveAutoRefreshSettings(value, _autoRefreshIntervalMinutes);
-              },
-            ),
-          ],
-        ),
-        if (_autoRefreshEnabled) ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Text(
-                  'Refresh Interval: ${_formatRefreshInterval(_autoRefreshIntervalMinutes)}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.refresh_outlined),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Auto Refresh',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        isGuestMode 
+                          ? 'Not available in guest mode - as not syncing with other platforms'
+                          : 'Automatically refresh widget data at regular intervals',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: isGuestMode ? Colors.grey : null,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Slider(
-                  value: _getSliderValue(_autoRefreshIntervalMinutes).toDouble(),
-                  min: 0.0, // 15 minutes
-                  max: 8.0, // 24 hours (9 discrete steps: 0-8)
-                  divisions: 8,
-                  label: _formatRefreshInterval(_autoRefreshIntervalMinutes),
-                  onChanged: (value) {
-                    final newInterval = _getIntervalFromSliderValue(value.round());
-                    _debouncedSaveAutoRefreshInterval(newInterval);
+                Switch.adaptive(
+                  value: _autoRefreshEnabled,
+                  onChanged: isGuestMode ? null : (value) {
+                    _saveAutoRefreshSettings(value, _autoRefreshIntervalMinutes);
                   },
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '15m',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Text(
-                      '24h',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    _buildQuickIntervalButton(context, 15, '15m'),
-                    _buildQuickIntervalButton(context, 30, '30m'),
-                    _buildQuickIntervalButton(context, 60, '1h'),
-                    _buildQuickIntervalButton(context, 120, '2h'),
-                    _buildQuickIntervalButton(context, 240, '4h'),
-                    _buildQuickIntervalButton(context, 360, '6h'),
-                    _buildQuickIntervalButton(context, 480, '8h'),
-                    _buildQuickIntervalButton(context, 720, '12h'),
-                    _buildQuickIntervalButton(context, 1440, '24h'),
-                  ],
                 ),
               ],
             ),
-          ),
-        ],
-      ],
+            if (_autoRefreshEnabled && !isGuestMode) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Refresh Interval: ${_formatRefreshInterval(_autoRefreshIntervalMinutes)}',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Slider(
+                      value: _getSliderValue(_autoRefreshIntervalMinutes).toDouble(),
+                      min: 0.0, // 15 minutes
+                      max: 8.0, // 24 hours (9 discrete steps: 0-8)
+                      divisions: 8,
+                      label: _formatRefreshInterval(_autoRefreshIntervalMinutes),
+                      onChanged: (value) {
+                        final newInterval = _getIntervalFromSliderValue(value.round());
+                        _debouncedSaveAutoRefreshInterval(newInterval);
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '15m',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          '24h',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        _buildQuickIntervalButton(context, 15, '15m'),
+                        _buildQuickIntervalButton(context, 30, '30m'),
+                        _buildQuickIntervalButton(context, 60, '1h'),
+                        _buildQuickIntervalButton(context, 120, '2h'),
+                        _buildQuickIntervalButton(context, 240, '4h'),
+                        _buildQuickIntervalButton(context, 360, '6h'),
+                        _buildQuickIntervalButton(context, 480, '8h'),
+                        _buildQuickIntervalButton(context, 720, '12h'),
+                        _buildQuickIntervalButton(context, 1440, '24h'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 

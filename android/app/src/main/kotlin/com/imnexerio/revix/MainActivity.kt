@@ -38,7 +38,7 @@ class MainActivity : FlutterActivity() {
                 }
                 "scheduleAutoRefreshFromLastUpdate" -> {
                     val intervalMinutes = call.argument<Int>("intervalMinutes") ?: 1440
-                    val lastUpdated = call.argument<Long>("lastUpdated") ?: 0L
+                    val lastUpdated = (call.argument<Any>("lastUpdated") as? Number)?.toLong() ?: 0L
                     AutoRefreshManager.scheduleAutoRefreshFromLastUpdate(this, intervalMinutes, lastUpdated)
                     result.success(true)
                 }
