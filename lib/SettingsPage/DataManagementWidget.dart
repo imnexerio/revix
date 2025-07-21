@@ -127,18 +127,9 @@ class _DataManagementWidgetState extends State<DataManagementWidget> {
       if (allUserData == null || allUserData.isEmpty) {
         return null; // No data to export
       }
+
       
-      // Add export metadata
-      Map<String, dynamic> exportData = {
-        ...allUserData,
-        'export_info': {
-          'user_id': userId,
-          'export_date': DateTime.now().toIso8601String(),
-          'user_type': 'authenticated'
-        }
-      };
-      
-      return jsonEncode(exportData);
+      return jsonEncode(allUserData);
     } catch (e) {
       print("Error exporting authenticated user data: $e");
       return null;
