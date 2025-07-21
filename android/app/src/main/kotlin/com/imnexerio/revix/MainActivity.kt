@@ -32,18 +32,8 @@ class MainActivity : FlutterActivity() {
         // Setup auto-refresh method channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUTO_REFRESH_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
-                "startAutoRefresh" -> {
-                    val intervalMinutes = call.argument<Int>("intervalMinutes") ?: 1440
-                    AutoRefreshManager.startAutoRefreshImmediately(this, intervalMinutes)
-                    result.success(true)
-                }
                 "stopAutoRefresh" -> {
                     AutoRefreshManager.cancelAutoRefresh(this)
-                    result.success(true)
-                }
-                "scheduleAutoRefresh" -> {
-                    val intervalMinutes = call.argument<Int>("intervalMinutes") ?: 1440
-                    AutoRefreshManager.scheduleAutoRefresh(this, intervalMinutes)
                     result.success(true)
                 }
                 "scheduleAutoRefreshFromLastUpdate" -> {
