@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +17,18 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   int _alarmDurationSeconds = 60; // Default 1 minute (60 seconds)
   bool _autoRefreshEnabled = true; // Default enabled
   int _autoRefreshIntervalMinutes = 1440; // Default 24 hours (1440 minutes)
+  
+  // Debounce timers
+  Timer? _autoRefreshDebounceTimer;
+  Timer? _alarmDurationDebounceTimer;
+
+  @override
+  void dispose() {
+    // Cancel any pending timers
+    _autoRefreshDebounceTimer?.cancel();
+    _alarmDurationDebounceTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -64,7 +77,22 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
     }
   }
 
-  Future<void> _saveAutoRefreshSettings(bool enabled, int intervalMinutes) async {
+  void _debouncedSaveAlarmDuration(int seconds) {
+    // Cancel the previous timer if it's still active
+    _alarmDurationDebounceTimer?.cancel();
+    
+    // Update UI immediately (optimistic update)
+    setState(() {
+      _alarmDurationSeconds = seconds;
+    });
+    
+    // Start a new timer to save after 500ms of inactivity
+    _alarmDurationDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _saveAlarmDuration(seconds);
+    });
+  }
+
+  Future<void> _saveAutoRefreshSettings(bool enabled, int intervalMinutes, {bool showSnackBar = true}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('auto_refresh_enabled', enabled);
@@ -80,8 +108,8 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       // Update the native scheduling
       await _updateAutoRefreshSchedule();
       
-      // Show success feedback
-      if (mounted) {
+      // Show success feedback only if requested
+      if (mounted && showSnackBar) {
         customSnackBar(
           context: context,
           message: enabled 
@@ -91,7 +119,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       }
     } catch (e) {
       debugPrint('Failed to save auto-refresh settings: $e');
-      // Show error feedback
+
       if (mounted) {
         customSnackBar_error(
           context: context,
@@ -99,6 +127,21 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
         );
       }
     }
+  }
+
+  void _debouncedSaveAutoRefreshInterval(int intervalMinutes) {
+    // Cancel the previous timer if it's still active
+    _autoRefreshDebounceTimer?.cancel();
+    
+    // Update UI immediately (optimistic update)
+    setState(() {
+      _autoRefreshIntervalMinutes = intervalMinutes;
+    });
+    
+    // Start a new timer to save after 800ms of inactivity
+    _autoRefreshDebounceTimer = Timer(const Duration(milliseconds: 800), () {
+      _saveAutoRefreshSettings(_autoRefreshEnabled, intervalMinutes, showSnackBar: false);
+    });
   }
 
   Future<void> _updateAutoRefreshSchedule() async {
@@ -264,7 +307,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                   label: _formatRefreshInterval(_autoRefreshIntervalMinutes),
                   onChanged: (value) {
                     final newInterval = _getIntervalFromSliderValue(value.round());
-                    _saveAutoRefreshSettings(_autoRefreshEnabled, newInterval);
+                    _debouncedSaveAutoRefreshInterval(newInterval);
                   },
                 ),
                 Row(
@@ -362,7 +405,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                 divisions: 27, // 30s, 60s, 90s, 120s, 150s, 180s, 210s, 240s, 270s, 300s (every 10 seconds)
                 label: _formatDuration(_alarmDurationSeconds),
                 onChanged: (value) {
-                  _saveAlarmDuration(value.round());
+                  _debouncedSaveAlarmDuration(value.round());
                 },
               ),
               Row(
