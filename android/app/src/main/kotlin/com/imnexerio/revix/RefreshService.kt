@@ -226,12 +226,50 @@ class RefreshService : Service() {
             Log.e("RefreshService", "Error scheduling alarms: ${e.message}", e)
         }
 
+        // Schedule next auto-refresh if enabled (with fresh lastUpdated timestamp)
+        scheduleNextAutoRefreshIfEnabled()
+
         // Update widgets with new data
         updateWidgets()
         
         Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
-    }    private fun handleRefreshError(errorMessage: String, startId: Int) {
+    }
+
+    private fun scheduleNextAutoRefreshIfEnabled() {
+        try {
+            // Check if auto-refresh is enabled
+            val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val autoRefreshEnabled = flutterPrefs.getBoolean("flutter.auto_refresh_enabled", true)
+            
+            if (!autoRefreshEnabled) {
+                Log.d("RefreshService", "Auto-refresh is disabled, not scheduling next refresh")
+                return
+            }
+            
+            // Get auto-refresh interval
+            val intervalMinutes = try {
+                flutterPrefs.getInt("flutter.auto_refresh_interval_minutes", 1440)
+            } catch (e: ClassCastException) {
+                flutterPrefs.getLong("flutter.auto_refresh_interval_minutes", 1440L).toInt()
+            }
+            
+            // Get the fresh lastUpdated timestamp
+            val widgetPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            val lastUpdated = widgetPrefs.getLong("lastUpdated", 0L)
+            
+            Log.d("RefreshService", "Scheduling next auto-refresh after successful refresh")
+            Log.d("RefreshService", "lastUpdated: ${java.util.Date(lastUpdated)}, interval: ${intervalMinutes}m")
+            
+            AutoRefreshManager.scheduleAutoRefreshFromLastUpdate(applicationContext, intervalMinutes, lastUpdated)
+            Log.d("RefreshService", "Next auto-refresh scheduled successfully")
+            
+        } catch (e: Exception) {
+            Log.e("RefreshService", "Error scheduling next auto-refresh: ${e.message}", e)
+        }
+    }
+
+    private fun handleRefreshError(errorMessage: String, startId: Int) {
         Log.e("RefreshService", "Refresh failed: $errorMessage, resetting isRefreshing to false")
         
         // Reset refreshing state FIRST

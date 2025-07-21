@@ -52,8 +52,7 @@ class AutoRefreshService : Service() {
         // Simulate refresh button click
         triggerWidgetRefresh()
 
-        // Schedule next auto-refresh
-        scheduleNextAutoRefresh(intervalMinutes)
+        // Note: Next auto-refresh will be scheduled by RefreshService after refresh completes
 
         stopSelf(startId)
         return START_NOT_STICKY
@@ -71,19 +70,6 @@ class AutoRefreshService : Service() {
             Log.d(TAG, "Widget refresh triggered successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Error triggering widget refresh: ${e.message}", e)
-        }
-    }
-
-    private fun scheduleNextAutoRefresh(intervalMinutes: Int) {
-        try {
-            // Get the latest lastUpdated timestamp from widget preferences
-            val widgetPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-            val lastUpdated = widgetPrefs.getLong("lastUpdated", 0L)
-            
-            Log.d(TAG, "Scheduling next auto-refresh based on lastUpdated: ${java.util.Date(lastUpdated)}, interval: ${intervalMinutes} minutes")
-            AutoRefreshManager.scheduleAutoRefreshFromLastUpdate(applicationContext, intervalMinutes, lastUpdated)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error scheduling next auto-refresh: ${e.message}", e)
         }
     }
 
