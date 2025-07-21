@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/platform_utils.dart';
+import '../Utils/CustomSnackBar.dart';
+import '../Utils/customSnackBar_error.dart';
 
 class WidgetSettingsPage extends StatefulWidget {
   @override
@@ -80,25 +82,20 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       
       // Show success feedback
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(enabled 
-              ? 'Auto-refresh enabled (${_formatRefreshInterval(intervalMinutes)})' 
-              : 'Auto-refresh disabled'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
+        customSnackBar(
+          context: context,
+          message: enabled 
+            ? 'Auto-refresh enabled (${_formatRefreshInterval(intervalMinutes)})' 
+            : 'Auto-refresh disabled',
         );
       }
     } catch (e) {
       debugPrint('Failed to save auto-refresh settings: $e');
       // Show error feedback
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving settings: $e'),
-            backgroundColor: Colors.red,
-          ),
+        customSnackBar_error(
+          context: context,
+          message: 'Error saving settings: $e',
         );
       }
     }
@@ -121,11 +118,9 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       debugPrint('Error updating auto-refresh schedule: $e');
       // Show error to user
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating auto-refresh: $e'),
-            backgroundColor: Colors.red,
-          ),
+        customSnackBar_error(
+          context: context,
+          message: 'Error updating auto-refresh: $e',
         );
       }
     }
