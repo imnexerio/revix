@@ -834,4 +834,62 @@ class FirebaseDatabaseService {
       onError: onError,
     );
   }
+
+  // ====================================================================================
+  // DATA EXPORT/IMPORT OPERATIONS (For Data Management)
+  // ====================================================================================
+
+  /// Get complete user data for export purposes
+  Future<Map<String, dynamic>?> getUserData(String userId) async {
+    try {
+      final ref = _database.ref('users/$userId/user_data');
+      final snapshot = await ref.get();
+      
+      if (snapshot.exists) {
+        return Map<String, dynamic>.from(snapshot.value as Map);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user data: $e');
+      return null;
+    }
+  }
+
+  /// Get complete profile data for export purposes
+  Future<Map<String, dynamic>?> getProfileData(String userId) async {
+    try {
+      final ref = _database.ref('users/$userId/profile_data');
+      final snapshot = await ref.get();
+      
+      if (snapshot.exists) {
+        return Map<String, dynamic>.from(snapshot.value as Map);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting profile data: $e');
+      return null;
+    }
+  }
+
+  /// Set complete user data for import purposes
+  Future<void> setUserData(String userId, Map<String, dynamic> userData) async {
+    try {
+      final ref = _database.ref('users/$userId/user_data');
+      await ref.set(userData);
+    } catch (e) {
+      print('Error setting user data: $e');
+      rethrow;
+    }
+  }
+
+  /// Set complete profile data for import purposes
+  Future<void> setProfileData(String userId, Map<String, dynamic> profileData) async {
+    try {
+      final ref = _database.ref('users/$userId/profile_data');
+      await ref.set(profileData);
+    } catch (e) {
+      print('Error setting profile data: $e');
+      rethrow;
+    }
+  }
 }

@@ -16,7 +16,7 @@ import 'ChangePassPage.dart';
 import 'ChangeMailPage.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
-import 'GuestDataManagementWidget.dart';
+import 'DataManagementWidget.dart';
 import 'NotificationPage.dart';
 import 'ProfileHeader.dart';
 import 'ProfileOptionCard.dart';
@@ -428,6 +428,13 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             'isSelected': _shouldShowSelectionHighlight('Edit Profile'),
           },
           {
+            'title': 'Data Management',
+            'subtitle': 'Export or import your data',
+            'icon': Icons.import_export,
+            'onTap': () => _navigateToPage(context, DataManagementWidget(), 'Data Management'),
+            'isSelected': _shouldShowSelectionHighlight('Data Management'),
+          },
+          {
             'title': 'Set Theme',
             'subtitle': 'Choose your style',
             'icon': Icons.color_lens_outlined,
@@ -468,17 +475,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
           },
         ];
         
-        // Options only for guest mode users
-        final List<Map<String, dynamic>> guestOnlyOptions = [
-          {
-            'title': 'Guest Data Management',
-            'subtitle': 'Export or import your data',
-            'icon': Icons.import_export,
-            'onTap': () => _navigateToPage(context, GuestDataManagementWidget(), 'Guest Data Management'),
-            'isSelected': _shouldShowSelectionHighlight('Guest Data Management'),
-          },
-        ];
-        
         // Common options for all users at the bottom of the list
         final List<Map<String, dynamic>> bottomOptions = [
           {
@@ -507,7 +503,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         // Combine options based on auth status
         List<Map<String, dynamic>> options = [
           ...commonOptions,
-          ...isGuestMode ? guestOnlyOptions : authOnlyOptions,
+          ...isGuestMode ? [] : authOnlyOptions,
           ...bottomOptions,
         ];
         

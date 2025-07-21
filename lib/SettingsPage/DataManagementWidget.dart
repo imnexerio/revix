@@ -6,25 +6,26 @@ import 'package:revix/Utils/CustomSnackBar.dart';
 import 'package:revix/Utils/customSnackBar_error.dart';
 import 'package:revix/Utils/DataMigrationService.dart';
 import 'package:revix/Utils/GuestAuthService.dart';
+import 'package:revix/Utils/FirebaseDatabaseService.dart';
+import 'package:revix/Utils/LocalDatabaseService.dart';
 
 // Conditional imports for platform-specific functionality
 import 'web_file_helper.dart' if (dart.library.io) 'mobile_file_helper.dart' as file_helper;
 
-/// Widget for managing guest user data with options to:
-/// 1. Create a new account and automatically upload data to Firebase
-/// 2. Export data manually as JSON
-/// 3. Import data manually from JSON
-/// 
-/// The "Create Account" feature provides a seamless way for guest users
-/// to transition to a permanent account without losing their data.
-class GuestDataManagementWidget extends StatefulWidget {
-  const GuestDataManagementWidget({Key? key}) : super(key: key);
+/// Universal Data Management Widget for both guest and authenticated users
+/// Features:
+/// - Export user data as JSON (works for both guest and authenticated users)
+/// - Import data from JSON (works for both guest and authenticated users)
+/// - For guest users: Create account and migrate data to Firebase
+/// - For authenticated users: Manual backup and restore capabilities
+class DataManagementWidget extends StatefulWidget {
+  const DataManagementWidget({Key? key}) : super(key: key);
 
   @override
-  _GuestDataManagementWidgetState createState() => _GuestDataManagementWidgetState();
+  _DataManagementWidgetState createState() => _DataManagementWidgetState();
 }
 
-class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
+class _DataManagementWidgetState extends State<DataManagementWidget> {
   bool _isExporting = false;
   bool _isImporting = false;
   bool _isCreatingAccount = false;
@@ -36,13 +37,24 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
     super.dispose();
   }
   
-  Future<void> _exportGuestData() async {
+  /// Export user data - works for both guest and authenticated users
+  Future<void> _exportUserData() async {
     setState(() {
       _isExporting = true;
     });
 
     try {
-      final data = await DataMigrationService.exportGuestData();
+      final isGuestMode = await GuestAuthService.isGuestMode();
+      String? data;
+      
+      if (isGuestMode) {
+        // Use existing guest export functionality
+        data = await DataMigrationService.exportGuestData();
+      } else {
+        // Export authenticated user data
+        data = await _exportAuthenticatedUserData();
+      }
+      
       setState(() {
         _isExporting = false;
       });
@@ -60,7 +72,8 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         }
         
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final filename = 'revix_data_$timestamp.json';
+        final userType = isGuestMode ? 'guest' : 'user';
+        final filename = 'revix_${userType}_data_$timestamp.json';
         
         if (kIsWeb) {
           await file_helper.FileHelper.downloadFile(formattedData, filename);
@@ -88,6 +101,42 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         context: context,
         message: 'Error exporting data: $e'
       );
+    }
+  }
+
+  /// Export data for authenticated users
+  Future<String?> _exportAuthenticatedUserData() async {
+    try {
+      final firebaseService = FirebaseDatabaseService();
+      final userId = firebaseService.currentUserId;
+      
+      if (userId == null) {
+        return null;
+      }
+      
+      // Get user data from Firebase
+      final userData = await firebaseService.getUserData(userId);
+      final profileData = await firebaseService.getProfileData(userId);
+      
+      if (userData == null && profileData == null) {
+        return null; // No data to export
+      }
+      
+      // Create export data structure
+      Map<String, dynamic> exportData = {
+        'user_data': userData ?? {},
+        'profile_data': profileData ?? {},
+        'export_info': {
+          'user_id': userId,
+          'export_date': DateTime.now().toIso8601String(),
+          'user_type': 'authenticated'
+        }
+      };
+      
+      return jsonEncode(exportData);
+    } catch (e) {
+      print("Error exporting authenticated user data: $e");
+      return null;
     }
   }
 
@@ -161,6 +210,8 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
   }
 
   Future<void> _showImportDialog() async {
+    final isGuestMode = await GuestAuthService.isGuestMode();
+    
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -168,11 +219,14 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Choose how you want to import your data:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              isGuestMode 
+                ? 'Choose how you want to import your data:'
+                : 'Import data from a previously exported backup file:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),            if (kIsWeb) ...[
+            const SizedBox(height: 16),
+            if (kIsWeb) ...[
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -225,9 +279,9 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       ),
     );
   }
+
   Future<void> _pickAndImportFile() async {
     try {
-      // Create a simple file picker dialog for non-web platforms
       await _showFilePickerDialog();
     } catch (e) {
       customSnackBar_error(
@@ -236,6 +290,7 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       );
     }
   }
+
   Future<void> _pickFileOnWeb() async {
     setState(() {
       _isImporting = true;
@@ -247,8 +302,9 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       setState(() {
         _isImporting = false;
       });
-        if (content != null) {
-        await _importGuestData(content);
+      
+      if (content != null) {
+        await _importUserData(content);
       }
     } catch (e) {
       setState(() {
@@ -274,7 +330,8 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
               'Enter the full path to your exported JSON file:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),            TextField(
+            const SizedBox(height: 12),
+            TextField(
               controller: _importController,
               decoration: InputDecoration(
                 hintText: file_helper.FileHelper.getHintText(),
@@ -302,7 +359,8 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
             child: const Text('Cancel'),
           ),
           FilledButton.icon(
-            onPressed: () async {              if (_importController.text.isEmpty) {
+            onPressed: () async {
+              if (_importController.text.isEmpty) {
                 customSnackBar_error(
                   context: context,
                   message: 'Please enter file path'
@@ -319,12 +377,14 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       ),
     );
   }
+
   Future<void> _importFromFile(String filePath) async {
     setState(() {
       _isImporting = true;
     });
 
-    try {      final data = await file_helper.FileHelper.readFromFile(filePath);
+    try {
+      final data = await file_helper.FileHelper.readFromFile(filePath);
       if (data != null) {
         // Validate JSON format
         try {
@@ -340,28 +400,14 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
           return;
         }
 
-        final success = await DataMigrationService.importGuestData(data);
-        setState(() {
-          _isImporting = false;
-        });
-        
-        if (success) {
-          customSnackBar(
-            context: context,
-            message: 'Data imported successfully from file'
-          );
-        } else {
-          customSnackBar_error(
-            context: context,
-            message: 'Failed to import data from file'
-          );
-        }
+        await _importUserData(data);
       } else {
         setState(() {
           _isImporting = false;
         });
         customSnackBar_error(
-          context: context,          message: 'Could not read file'
+          context: context,
+          message: 'Could not read file'
         );
       }
     } catch (e) {
@@ -409,7 +455,8 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
             child: const Text('Cancel'),
           ),
           FilledButton.icon(
-            onPressed: () async {              if (_importController.text.isEmpty) {
+            onPressed: () async {
+              if (_importController.text.isEmpty) {
                 customSnackBar_error(
                   context: context,
                   message: 'Please paste data to import'
@@ -417,7 +464,7 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
                 return;
               }
               Navigator.pop(context);
-              await _importGuestData(_importController.text);
+              await _importUserData(_importController.text);
             },
             icon: const Icon(Icons.upload),
             label: const Text('Import'),
@@ -427,13 +474,17 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
     );
   }
 
-  Future<void> _importGuestData(String data) async {
+  /// Import user data - works for both guest and authenticated users
+  Future<void> _importUserData(String data) async {
     setState(() {
       _isImporting = true;
-    });    try {
+    });
+
+    try {
       // Validate JSON format
+      Map<String, dynamic> importData;
       try {
-        json.decode(data);
+        importData = json.decode(data);
       } catch (e) {
         customSnackBar_error(
           context: context,
@@ -445,7 +496,18 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         return;
       }
 
-      final success = await DataMigrationService.importGuestData(data);      setState(() {
+      final isGuestMode = await GuestAuthService.isGuestMode();
+      bool success = false;
+      
+      if (isGuestMode) {
+        // Use existing guest import functionality
+        success = await DataMigrationService.importGuestData(data);
+      } else {
+        // Import for authenticated users
+        success = await _importAuthenticatedUserData(importData);
+      }
+
+      setState(() {
         _isImporting = false;
       });
       
@@ -456,7 +518,8 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
         );
       } else {
         customSnackBar_error(
-          context: context,          message: 'Failed to import data'
+          context: context,
+          message: 'Failed to import data'
         );
       }
     } catch (e) {
@@ -469,6 +532,81 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       );
     }
   }
+
+  /// Import data for authenticated users
+  Future<bool> _importAuthenticatedUserData(Map<String, dynamic> importData) async {
+    try {
+      final firebaseService = FirebaseDatabaseService();
+      final userId = firebaseService.currentUserId;
+      
+      if (userId == null) {
+        return false;
+      }
+      
+      if (!importData.containsKey('user_data')) {
+        return false; // Invalid import data
+      }
+      
+      // Show confirmation dialog for authenticated users
+      final confirmed = await _showImportConfirmationDialog();
+      if (!confirmed) {
+        return false;
+      }
+      
+      // Import user data to Firebase
+      if (importData['user_data'] != null) {
+        await firebaseService.setUserData(userId, importData['user_data']);
+      }
+      
+      // Import profile data if available
+      if (importData['profile_data'] != null) {
+        await firebaseService.setProfileData(userId, importData['profile_data']);
+      }
+      
+      return true;
+    } catch (e) {
+      print("Error importing authenticated user data: $e");
+      return false;
+    }
+  }
+
+  Future<bool> _showImportConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning,
+              color: Colors.orange,
+              size: 28,
+            ),
+            const SizedBox(width: 8),
+            const Text('Confirm Import'),
+          ],
+        ),
+        content: const Text(
+          'This will replace your current data with the imported data. '
+          'This action cannot be undone. Are you sure you want to continue?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange,
+            ),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<void> _createAccountAndMigrate() async {
     setState(() {
       _isCreatingAccount = true;
@@ -479,9 +617,6 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
       setState(() {
         _isCreatingAccount = false;
       });
-
-      // Note: If successful, the user will be navigated to the login page
-      // so this setState might not execute if the widget is disposed
     } catch (e) {
       setState(() {
         _isCreatingAccount = false;
@@ -493,17 +628,12 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
       future: GuestAuthService.isGuestMode(),
       builder: (context, snapshot) {
         final isGuestMode = snapshot.data ?? false;
-        
-        if (!isGuestMode) {
-          return const SizedBox.shrink();
-        }
         
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -520,67 +650,74 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Guest Data Management',
+                      'Data Management',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
                   ],
-                ),                const SizedBox(height: 16),                const Text(
-                  'In guest mode, all your data is stored locally on this device. '
-                  'Create an account to sync your data to the cloud, or export your data as a file for backup.',
                 ),
                 const SizedBox(height: 16),
                 
-                // Create Account Button (Primary Action)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isCreatingAccount ? null : _createAccountAndMigrate,
-                    icon: _isCreatingAccount
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                          )
-                        : const Icon(Icons.person_add),
-                    label: const Text('Create Account & Upload Data'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
+                // Different descriptions based on user type
+                Text(
+                  isGuestMode
+                      ? 'In guest mode, all your data is stored locally on this device. '
+                        'Create an account to sync your data to the cloud, or export your data as a file for backup.'
+                      : 'Backup and restore your data. Export your data as a file for safekeeping, '
+                        'or import data from a previous backup.',
                 ),
+                const SizedBox(height: 16),
                 
-                const SizedBox(height: 12),
-                
-                // Divider with text
-                Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
+                // Create Account Button (Only for guest users)
+                if (isGuestMode) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isCreatingAccount ? null : _createAccountAndMigrate,
+                      icon: _isCreatingAccount
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            )
+                          : const Icon(Icons.person_add),
+                      label: const Text('Create Account & Upload Data'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Divider with text
+                  Row(
+                    children: [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 
-                const SizedBox(height: 12),
-                
-                // Manual Export/Import Buttons
+                // Export/Import Buttons (Available for all users)
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _isExporting ? null : _exportGuestData,
+                        onPressed: _isExporting ? null : _exportUserData,
                         icon: _isExporting
                             ? SizedBox(
                                 width: 16,
@@ -591,7 +728,7 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
                                 ),
                               )
                             : const Icon(Icons.download),
-                        label: const Text('Export as File'),
+                        label: const Text('Export Data'),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -608,7 +745,7 @@ class _GuestDataManagementWidgetState extends State<GuestDataManagementWidget> {
                                 ),
                               )
                             : const Icon(Icons.upload),
-                        label: const Text('Import from File'),
+                        label: const Text('Import Data'),
                       ),
                     ),
                   ],
