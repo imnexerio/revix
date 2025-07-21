@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../Utils/platform_utils.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
   @override
@@ -10,14 +8,6 @@ class NotificationSettingsPage extends StatefulWidget {
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   final _formKey = GlobalKey<FormState>();
 
-  @override
-  void initState() {
-    super.initState();
-    // Initialize platform utils if not already done
-    if (!PlatformUtils.instance.isInitialized) {
-      PlatformUtils.init();
-    }
-  }
   @override
   Widget build(BuildContext context) {
 
