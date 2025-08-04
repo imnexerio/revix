@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,11 +13,10 @@ import '../Utils/LocalDatabaseService.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/platform_utils.dart';
 import 'AboutPage.dart';
-import 'ChangePassPage.dart';
-import 'ChangeMailPage.dart';
+import 'ChangeCredentialsPage.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
-import 'GuestDataManagementWidget.dart';
+import 'DataManagementWidget.dart';
 import 'NotificationPage.dart';
 import 'ProfileHeader.dart';
 import 'ProfileOptionCard.dart';
@@ -24,6 +24,7 @@ import 'ProfilePage.dart';
 import 'ProfileProvider.dart';
 import 'ThemePage.dart';
 import 'TrackingTypePage.dart';
+import 'WidgetSettingsPage.dart';
 import 'buildDetailPageAppBar.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -103,6 +104,15 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       final databaseService = CombinedDatabaseService();
       databaseService.stopListening();
 
+      // Stop auto-refresh before logout
+      try {
+        const platform = MethodChannel('com.imnexerio.revix/auto_refresh');
+        await platform.invokeMethod('stopAutoRefresh');
+        debugPrint('Auto-refresh stopped during logout');
+      } catch (e) {
+        debugPrint('Error stopping auto-refresh during logout: $e');
+      }
+
       if (PlatformUtils.instance.isAndroid) {
         await HomeWidgetService.updateWidgetLoginStatus(false);
       }
@@ -122,7 +132,6 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         // Handle regular authentication logout
         await _databaseService.signOut();
       }
-
 
       // Clear all shared preferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -269,16 +278,16 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
     _navigateToPage(context, TrackingTypePage(), 'Custom Tracking Type');
   }
 
-  void _showChangePasswordPage(BuildContext context) {
-    _navigateToPage(context, ChangePasswordPage(), 'Change Password');
-  }
-
-  void _showChangeEmailPage(BuildContext context) {
-    _navigateToPage(context, ChangeEmailPage(), 'Change Email');
+  void _showChangeCredentialsPage(BuildContext context) {
+    _navigateToPage(context, ChangeCredentialsPage(), 'Account Security');
   }
 
   void _showNotificationSettingsPage(BuildContext context) {
     _navigateToPage(context, NotificationSettingsPage(), 'Notification Settings');
+  }
+
+  void _showWidgetSettingsPage(BuildContext context) {
+    _navigateToPage(context, WidgetSettingsPage(), 'Widget Settings');
   }
 
   void _showAboutPage(BuildContext context) {
@@ -423,6 +432,20 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             'isSelected': _shouldShowSelectionHighlight('Edit Profile'),
           },
           {
+            'title': 'Data Management',
+            'subtitle': 'Export or import your data',
+            'icon': Icons.import_export,
+            'onTap': () => _navigateToPage(context, DataManagementWidget(), 'Data Management'),
+            'isSelected': _shouldShowSelectionHighlight('Data Management'),
+          },
+          if (PlatformUtils.instance.isAndroid) {
+            'title': 'Widget Settings',
+            'subtitle': 'Configure home widget preferences',
+            'icon': Icons.widgets_outlined,
+            'onTap': () => _showWidgetSettingsPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Widget Settings'),
+          },
+          {
             'title': 'Set Theme',
             'subtitle': 'Choose your style',
             'icon': Icons.color_lens_outlined,
@@ -448,29 +471,11 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         // Options only for authenticated users
         final List<Map<String, dynamic>> authOnlyOptions = [
           {
-            'title': 'Change Password',
-            'subtitle': 'Update your security credentials',
-            'icon': Icons.lock_outline,
-            'onTap': () => _showChangePasswordPage(context),
-            'isSelected': _shouldShowSelectionHighlight('Change Password'),
-          },
-          {
-            'title': 'Change Email',
-            'subtitle': 'Update your email address',
-            'icon': Icons.email_outlined,
-            'onTap': () => _showChangeEmailPage(context),
-            'isSelected': _shouldShowSelectionHighlight('Change Email'),
-          },
-        ];
-        
-        // Options only for guest mode users
-        final List<Map<String, dynamic>> guestOnlyOptions = [
-          {
-            'title': 'Guest Data Management',
-            'subtitle': 'Export or import your data',
-            'icon': Icons.import_export,
-            'onTap': () => _navigateToPage(context, GuestDataManagementWidget(), 'Guest Data Management'),
-            'isSelected': _shouldShowSelectionHighlight('Guest Data Management'),
+            'title': 'Account Security',
+            'subtitle': 'Change password or email',
+            'icon': Icons.security,
+            'onTap': () => _showChangeCredentialsPage(context),
+            'isSelected': _shouldShowSelectionHighlight('Account Security'),
           },
         ];
         
@@ -495,7 +500,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
         // Combine options based on auth status
         List<Map<String, dynamic>> options = [
           ...commonOptions,
-          ...isGuestMode ? guestOnlyOptions : authOnlyOptions,
+          ...isGuestMode ? [] : authOnlyOptions,
           ...bottomOptions,
         ];
         

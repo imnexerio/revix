@@ -834,4 +834,35 @@ class FirebaseDatabaseService {
       onError: onError,
     );
   }
+
+  // ====================================================================================
+  // DATA EXPORT/IMPORT OPERATIONS (For Data Management)
+  // ====================================================================================
+
+  /// Get complete user data for export purposes (more efficient single call)
+  Future<Map<String, dynamic>?> getAllUserData(String userId) async {
+    try {
+      final ref = _database.ref('users/$userId');
+      final snapshot = await ref.get();
+      
+      if (snapshot.exists) {
+        return Map<String, dynamic>.from(snapshot.value as Map);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting all user data: $e');
+      return null;
+    }
+  }
+
+  /// Set complete user data for import purposes (more efficient single call)
+  Future<void> setAllUserData(String userId, Map<String, dynamic> allData) async {
+    try {
+      final ref = _database.ref('users/$userId');
+      await ref.set(allData);
+    } catch (e) {
+      print('Error setting all user data: $e');
+      rethrow;
+    }
+  }
 }

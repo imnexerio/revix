@@ -25,7 +25,7 @@ class TodayWidget : AppWidgetProvider() {    companion object {
         private const val VIEW_TOMORROW = "tomorrow"  // NEW
         private const val VIEW_MISSED = "missed"
         private const val VIEW_NO_REMINDER = "noreminder"
-        const val PREF_CURRENT_VIEW = "widget_current_view"        // Modified updateWidgets method - no longer handles alarm scheduling
+        const val PREF_CURRENT_VIEW = "widget_current_view"
         fun updateWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(
@@ -54,7 +54,6 @@ class TodayWidget : AppWidgetProvider() {    companion object {
     for (appWidgetId in appWidgetIds) {
         updateAppWidget(context, appWidgetManager, appWidgetId)
     }
-    // Note: Alarm scheduling is now handled by method channel and RecordUpdateService
 }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -153,7 +152,7 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                 }
 
                 // Save the new view type
-                prefs.edit().putString(PREF_CURRENT_VIEW, nextView).apply()                // Update all widgets (no alarm scheduling needed for view switch)
+                prefs.edit().putString(PREF_CURRENT_VIEW, nextView).apply()
                 updateWidgets(context)
 
                 // Show toast with the new view type

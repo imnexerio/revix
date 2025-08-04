@@ -55,6 +55,9 @@
         <service
             android:name=".RefreshService"
             android:exported="false" />
+        <service
+            android:name=".AutoRefreshService"
+            android:exported="false" />
         <!-- Alarm system components -->
         <receiver
             android:name="com.imnexerio.revix.AlarmReceiver"
