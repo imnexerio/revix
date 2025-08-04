@@ -22,7 +22,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   final TextEditingController _descriptionController = TextEditingController();
   String _selectedCategory = 'DEFAULT_VALUE';
   String _selectedCategoryCode = '';
-  String _lectureType = 'Lectures';
+  String _lectureType = 'DEFAULT_LECTURE_TYPE';
   String _lectureNo = '';
   String _description = '';
   String _revisionFrequency = 'Default';  String _duration = 'Forever';
@@ -467,6 +467,14 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         setState(() {
                           _lectureType = newValue!;
                         });
+                      },
+                      onLectureTypesLoaded: (String firstLectureType) {
+                        // Set default lecture type when lecture types are loaded
+                        if (_lectureType == 'DEFAULT_LECTURE_TYPE') {
+                          setState(() {
+                            _lectureType = firstLectureType;
+                          });
+                        }
                       },
                     ),
 

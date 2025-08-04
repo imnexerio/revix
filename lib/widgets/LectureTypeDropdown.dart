@@ -5,10 +5,12 @@ import '../SettingsPage/AddTrackingTypeSheet.dart'; // Adjust the import path as
 class LectureTypeDropdown extends StatefulWidget {
   final String lectureType;
   final ValueChanged<String?> onChanged;
+  final Function(String)? onLectureTypesLoaded;
 
   const LectureTypeDropdown({
     required this.lectureType,
     required this.onChanged,
+    this.onLectureTypesLoaded,
   });
 
   @override
@@ -33,6 +35,11 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
       _lectureTypes.add('Add new'); // Add the 'Add new' option
       _isLoading = false;
     });
+    
+    // Notify parent that lecture types are loaded and provide the first one as default
+    if (widget.onLectureTypesLoaded != null && types.isNotEmpty) {
+      widget.onLectureTypesLoaded!(types[0]);
+    }
   }
 
   @override
@@ -47,7 +54,8 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : DropdownButtonFormField<String>(
-        value: widget.lectureType,
+        value: widget.lectureType == 'DEFAULT_LECTURE_TYPE' ? null : 
+               (_lectureTypes.contains(widget.lectureType) ? widget.lectureType : null),
         decoration: const InputDecoration(
           labelText: 'Type',
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
