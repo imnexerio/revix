@@ -69,6 +69,10 @@ class _AddLectureFormState extends State<AddLectureForm> {
         // Set appropriate selection
         if (_subjects.isNotEmpty) {
           _selectedCategory = _subjects[0];
+          // Set default sub-category for the selected category
+          if (_subCategories[_subjects[0]]?.isNotEmpty == true) {
+            _selectedCategoryCode = _subCategories[_subjects[0]]![0];
+          }
         } else {
           _selectedCategory = 'DEFAULT_VALUE';
         }
@@ -325,6 +329,10 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               _selectedCategory = newValue!;
                               _selectedCategoryCode = '';
                               _showAddNewCategory = false;
+                              // Set default sub-category for the newly selected category
+                              if (_subCategories[newValue]?.isNotEmpty == true) {
+                                _selectedCategoryCode = _subCategories[newValue]![0];
+                              }
                             }
                           });
                         },
