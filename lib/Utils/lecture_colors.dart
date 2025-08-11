@@ -70,6 +70,11 @@ class LectureColors {
   }
 
   /// Generate a consistent color from string input
+  static Color generateColorFromString(String input) {
+    return _generateColorFromString(input);
+  }
+
+  /// Generate a consistent color from string input
   static Color _generateColorFromString(String input) {
     final int hash = _customHash(input);
     // Generate more vibrant colors with better contrast
