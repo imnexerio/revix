@@ -9,6 +9,8 @@ import '../Utils/customSnackBar_error.dart';
 import '../Utils/MarkAsDoneService.dart';
 import '../Utils/lecture_colors.dart';
 import '../Utils/FirebaseDatabaseService.dart';
+import '../Utils/CalculateCustomNextDate.dart';
+import '../Utils/date_utils.dart';
 import 'DescriptionCard.dart';
 import 'RevisionFrequencyDropdown.dart';
 
@@ -337,9 +339,45 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           List<String> datesRevised = List<String>.from(widget.details['dates_updated'] ?? []);
                           String dateScheduled = widget.details['scheduled_date'];
 
-                          if (isEnabled && widget.details['status'] == 'Disabled' &&
-                              DateTime.parse(widget.details['scheduled_date']).isBefore(DateTime.now())) {
-                            dateScheduled = DateTime.now().toIso8601String().split('T')[0];
+                          // Check if frequency has changed or if enabling a disabled lecture
+                          bool frequencyChanged = revisionFrequency != widget.details['recurrence_frequency'];
+                          bool enablingDisabledLecture = isEnabled && widget.details['status'] == 'Disabled';
+                          
+                          if (frequencyChanged || enablingDisabledLecture) {
+                            // Calculate next review date based on the new frequency
+                            DateTime baseDate;
+                            
+                            // Use date_updated as base, or today's date if date_updated is in past or null
+                            if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
+                              DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
+                              DateTime today = DateTime.now();
+                              
+                              // If last updated date is in the past, use today as base
+                              if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
+                                baseDate = today;
+                              } else {
+                                baseDate = lastUpdated;
+                              }
+                            } else {
+                              baseDate = DateTime.now();
+                            }
+                            
+                            // Calculate next date based on frequency
+                            if (revisionFrequency == 'Custom') {
+                              Map<String, dynamic> revisionData = _extractRevisionData();
+                              DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+                                baseDate,
+                                revisionData,
+                              );
+                              dateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                            } else {
+                              DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
+                                baseDate,
+                                revisionFrequency,
+                                noRevision, // Use current completion_counts, don't increment
+                              );
+                              dateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                            }
                           }                          Map<String, dynamic> revisionData = {
                             'frequency': revisionFrequency,
                           };
@@ -1150,6 +1188,19 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
         revisionData['custom_params'] = customParams;
       }
+    }
+
+    return revisionData;
+  }
+
+  /// Extract revision data using current state variables (for frequency changes)
+  Map<String, dynamic> _extractRevisionData() {
+    Map<String, dynamic> revisionData = {
+      'frequency': revisionFrequency,
+    };
+    
+    if (customFrequencyParams.isNotEmpty) {
+      revisionData['custom_params'] = customFrequencyParams;
     }
 
     return revisionData;
