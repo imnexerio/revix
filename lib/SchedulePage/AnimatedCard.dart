@@ -99,77 +99,89 @@ class _AnimatedCardState extends State<AnimatedCard> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => widget.onSelect(context, widget.record),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    // child: SingleChildScrollView(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Left side with category information
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${widget.record['category']} · ${widget.record['sub_category']} · ${widget.record['record_title']}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                  child: Stack(
+                    children: [
+                      // Main content
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Left side with category information
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${widget.record['category']} · ${widget.record['sub_category']} · ${widget.record['record_title']}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${widget.record['entry_type']} · ${widget.record['reminder_time']}',
+                                    style: TextStyle(
+                                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildDateInfo(
+                                    context,
+                                    'Scheduled',
+                                    widget.record['scheduled_date'] ?? '',
+                                    Icons.calendar_today,
+                                  ),
+                                  if (widget.isCompleted)
+                                    _buildDateInfo(
+                                      context,
+                                      'Initiated',
+                                      widget.record['date_initiated'] ?? '',
+                                      Icons.check_circle_outline,
+                                    ),
+                                ],
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${widget.record['entry_type']} · ${widget.record['reminder_time']}',
-                                style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                                  fontSize: 13,
+                            ),
+                            // Right side with the revision graph
+                            Expanded(
+                              flex: 2,
+                              child: SizedBox(
+                                // height: 200,
+                                child: Center(
+                                  // Add a key to force rebuild of RevisionRadarChart when data changes
+                                  child: RevisionRadarChart(
+                                    key: ValueKey('chart_${widget.record['category']}_${widget.record['record_title']}_${widget.record['dates_updated']?.length ?? 0}_${widget.record['dates_missed_revisions']?.length ?? 0}'),
+                                    dateLearnt: widget.record['date_initiated'],
+                                    datesMissedRevisions: List<String>.from(widget.record['dates_missed_revisions'] ?? []),
+                                    datesRevised: List<String>.from(widget.record['dates_updated'] ?? []),
+                                    showLabels: false,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
-                              _buildDateInfo(
-                                context,
-                                'Scheduled',
-                                widget.record['scheduled_date'] ?? '',
-                                Icons.calendar_today,
-                              ),
-                              if (widget.isCompleted)
-                                _buildDateInfo(
-                                  context,
-                                  'Initiated',
-                                  widget.record['date_initiated'] ?? '',
-                                  Icons.check_circle_outline,
-                                ),
-                              // ],
-                              // ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        // Right side with the revision graph
-                        Expanded(
-                          flex: 2,
-                          child: SizedBox(
-                            // height: 200,
-                            child: Center(
-                              // Add a key to force rebuild of RevisionRadarChart when data changes
-                              child: RevisionRadarChart(
-                                key: ValueKey('chart_${widget.record['category']}_${widget.record['record_title']}_${widget.record['dates_updated']?.length ?? 0}_${widget.record['dates_missed_revisions']?.length ?? 0}'),
-                                dateLearnt: widget.record['date_initiated'],
-                                datesMissedRevisions: List<String>.from(widget.record['dates_missed_revisions'] ?? []),
-                                datesRevised: List<String>.from(widget.record['dates_updated'] ?? []),
-                                showLabels: false,
-                              ),
+                      ),
+                      // L-shaped border accent (like phone case design)
+                      if (_backgroundColor != null)
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: LShapedBorderPainter(
+                              color: _backgroundColor!.withOpacity(0.9),
+                              borderRadius: 12,
+                              borderWidth: 3.0,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    // ),
+                    ],
                   ),
                 ),
               ),
@@ -214,5 +226,51 @@ class _AnimatedCardState extends State<AnimatedCard> {
         ),
       ],
     );
+  }
+}
+
+/// Custom painter for L-shaped border accent (like phone case design)
+class LShapedBorderPainter extends CustomPainter {
+  final Color color;
+  final double borderRadius;
+  final double borderWidth;
+
+  LShapedBorderPainter({
+    required this.color,
+    required this.borderRadius,
+    required this.borderWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth
+      ..strokeCap = StrokeCap.round;
+
+    // Create a rounded rectangle for the full border outline
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        borderWidth / 2, 
+        borderWidth / 2, 
+        size.width - borderWidth, 
+        size.height - borderWidth
+      ),
+      Radius.circular(borderRadius - borderWidth / 2),
+    );
+
+    // Draw the complete rounded border
+    canvas.drawRRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    if (oldDelegate is LShapedBorderPainter) {
+      return oldDelegate.color != color || 
+             oldDelegate.borderRadius != borderRadius ||
+             oldDelegate.borderWidth != borderWidth;
+    }
+    return true;
   }
 }
