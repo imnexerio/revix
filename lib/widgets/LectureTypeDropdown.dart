@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Utils/FirebaseDatabaseService.dart'; // Adjust the import path as necessary
+import '../Utils/lecture_colors.dart'; // Add this import for colors
 import '../SettingsPage/AddTrackingTypeSheet.dart'; // Adjust the import path as necessary
 
 class LectureTypeDropdown extends StatefulWidget {
@@ -61,10 +62,73 @@ class _LectureTypeDropdownState extends State<LectureTypeDropdown> {
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           border: InputBorder.none,
         ),
+        hint: widget.lectureType != 'DEFAULT_LECTURE_TYPE' && !_lectureTypes.contains(widget.lectureType)
+            ? Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: LectureColors.generateColorFromString(widget.lectureType),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.lectureType,
+                    style: TextStyle(
+                      color: LectureColors.generateColorFromString(widget.lectureType),
+                    ),
+                  ),
+                ],
+              )
+            : null,
+        selectedItemBuilder: (BuildContext context) {
+          return _lectureTypes.map((String type) {
+            if (type == 'Add new') {
+              return Text(type);
+            }
+            return Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: LectureColors.generateColorFromString(type),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  type,
+                  style: TextStyle(
+                    color: LectureColors.generateColorFromString(type),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            );
+          }).toList();
+        },
         items: _lectureTypes.map((String type) {
           return DropdownMenuItem<String>(
             value: type,
-            child: Text(type),
+            child: type == 'Add new' 
+                ? Text(type)
+                : Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: LectureColors.generateColorFromString(type),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(type),
+                    ],
+                  ),
           );
         }).toList(),
         onChanged: (String? newValue) {
