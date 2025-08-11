@@ -193,6 +193,9 @@ class _AddTrackingTypeWidgetState extends State<AddTrackingTypeWidget> {
                       final firebaseService = FirebaseDatabaseService();
                       await firebaseService.addCustomTrackingType(trackingTitle);
 
+                      // Cache color for the new tracking type
+                      LectureColors.cacheColorForNewType(trackingTitle);
+
                       widget.titleController.clear();
                       Navigator.pop(context);
 

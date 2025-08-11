@@ -5,17 +5,35 @@ import android.graphics.Color
 import android.content.SharedPreferences
 
 /**
- * Android/Kotlin version of LectureColors with caching
- * Mirrors the logic from Flutter's lecture_colors.dart
+ * Android/Kotlin version of LectureColors with permanent caching
+ * Mirrors the simplified logic from Flutter's lecture_colors.dart
  */
 class LectureColors private constructor() {
     companion object {
-        private const val CACHE_EXPIRY_MINUTES = 10
-        private const val PREF_CACHE_PREFIX = "lecture_color_"
-        private const val PREF_CACHE_TIME_PREFIX = "lecture_color_time_"
+        private const val PREF_COLOR_PREFIX = "lecture_color_"
+        private const val PREF_INITIALIZED = "colors_initialized"
         
         /**
-         * Get color for a lecture type with caching mechanism
+         * Initialize colors for all existing tracking types (call once on app start)
+         */
+        fun initializeColors(context: Context) {
+            val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
+            
+            // Check if already initialized
+            if (sharedPrefs.getBoolean(PREF_INITIALIZED, false)) {
+                return
+            }
+            
+            // Note: In Android widgets, we don't typically fetch from Firebase directly
+            // Colors will be generated and cached as they're encountered
+            // Mark as initialized to avoid repeated checks
+            sharedPrefs.edit()
+                .putBoolean(PREF_INITIALIZED, true)
+                .apply()
+        }
+        
+        /**
+         * Get color for a lecture type - generates and caches permanently if new
          */
         fun getLectureTypeColor(context: Context, entryType: String): Int {
             if (entryType.isEmpty()) {
@@ -23,57 +41,54 @@ class LectureColors private constructor() {
             }
             
             val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
-            
-            // Check cache first
-            val cacheKey = PREF_CACHE_PREFIX + entryType
-            val cacheTimeKey = PREF_CACHE_TIME_PREFIX + entryType
+            val cacheKey = PREF_COLOR_PREFIX + entryType
             val cachedColor = sharedPrefs.getInt(cacheKey, Int.MIN_VALUE)
-            val cacheTime = sharedPrefs.getLong(cacheTimeKey, 0)
             
-            val currentTime = System.currentTimeMillis()
-            val cacheExpiryTime = CACHE_EXPIRY_MINUTES * 60 * 1000 // Convert to milliseconds
-            
-            // Return cached color if valid and not expired
-            if (cachedColor != Int.MIN_VALUE && (currentTime - cacheTime) < cacheExpiryTime) {
+            // Return cached color if available
+            if (cachedColor != Int.MIN_VALUE) {
                 return cachedColor
             }
             
-            // Generate new color for any non-empty entry_type (no validation needed)
+            // Generate new color and cache permanently
             val color = generateColorFromString(entryType)
             
-            // Cache the color
+            // Cache the color permanently
             sharedPrefs.edit()
                 .putInt(cacheKey, color)
-                .putLong(cacheTimeKey, currentTime)
                 .apply()
                 
             return color
         }
         
         /**
-         * Get color synchronously if already cached, otherwise return default
+         * Add color for a newly created tracking type
          */
-        fun getLectureTypeColorSync(context: Context, entryType: String): Int {
-            if (entryType.isEmpty()) {
-                return getDefaultTextColor()
-            }
+        fun cacheColorForNewType(context: Context, trackingType: String) {
+            if (trackingType.isEmpty()) return
             
             val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
-            val cacheKey = PREF_CACHE_PREFIX + entryType
-            val cachedColor = sharedPrefs.getInt(cacheKey, Int.MIN_VALUE)
+            val cacheKey = PREF_COLOR_PREFIX + trackingType
             
-            return if (cachedColor != Int.MIN_VALUE) {
-                cachedColor
-            } else {
-                // Generate and cache immediately
-                getLectureTypeColor(context, entryType)
+            // Only cache if not already cached
+            if (sharedPrefs.getInt(cacheKey, Int.MIN_VALUE) == Int.MIN_VALUE) {
+                val color = generateColorFromString(trackingType)
+                sharedPrefs.edit()
+                    .putInt(cacheKey, color)
+                    .apply()
             }
+        }
+        
+        /**
+         * Get color synchronously - same as getLectureTypeColor for Android
+         */
+        fun getLectureTypeColorSync(context: Context, entryType: String): Int {
+            return getLectureTypeColor(context, entryType)
         }
         
         /**
          * Generate consistent color from string input (same logic as Flutter version)
          */
-        private fun generateColorFromString(input: String): Int {
+        fun generateColorFromString(input: String): Int {
             val hash = customHash(input)
             // Generate more vibrant colors with better contrast (same logic as Flutter)
             val r = ((hash and 0x0000FF) % 120) + 100
@@ -101,16 +116,16 @@ class LectureColors private constructor() {
         }
         
         /**
-         * Clear color cache (useful for testing or when tracking types change)
+         * Clear all cached colors (useful for testing)
          */
         fun clearCache(context: Context) {
             val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
             val editor = sharedPrefs.edit()
             
-            // Remove all cached colors
+            // Remove all cached colors and initialization flag
             val allPrefs = sharedPrefs.all
             for ((key, _) in allPrefs) {
-                if (key.startsWith(PREF_CACHE_PREFIX) || key.startsWith(PREF_CACHE_TIME_PREFIX)) {
+                if (key.startsWith(PREF_COLOR_PREFIX) || key == PREF_INITIALIZED) {
                     editor.remove(key)
                 }
             }

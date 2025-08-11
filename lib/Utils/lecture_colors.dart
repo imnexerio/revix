@@ -3,70 +3,98 @@ import 'FirebaseDatabaseService.dart';
 import 'UnifiedDatabaseService.dart';
 
 class LectureColors {
-  // Cache for tracking types and colors to avoid repeated database calls
-  static List<String>? _cachedTrackingTypes;
+  // Permanent color cache - colors are cached forever once generated
   static Map<String, Color> _colorCache = {};
-  static DateTime? _lastFetchTime;
-  static const Duration _cacheExpireDuration = Duration(minutes: 10);
+  static bool _isInitialized = false;
 
-  /// Get color for a lecture type with caching mechanism
+  /// Initialize colors for all existing tracking types (call once on app start)
+  static Future<void> initializeColors() async {
+    if (_isInitialized) return;
+    
+    try {
+      final databaseService = FirebaseDatabaseService();
+      final trackingTypes = await databaseService.fetchCustomTrackingTypes();
+      
+      // Generate and cache colors for all existing tracking types
+      for (String trackingType in trackingTypes) {
+        if (!_colorCache.containsKey(trackingType)) {
+          _colorCache[trackingType] = _generateColorFromString(trackingType);
+        }
+      }
+      
+      _isInitialized = true;
+    } catch (e) {
+      // Even if fetch fails, mark as initialized to avoid repeated attempts
+      _isInitialized = true;
+    }
+  }
+
+  /// Get color for a lecture type - generates and caches if new
   static Future<Color> getLectureTypeColor(BuildContext context, String type) async {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     
-    // Check if we have a cached color for this type
+    if (type.isEmpty) {
+      return colorScheme.surfaceVariant.withOpacity(0.3);
+    }
+    
+    // Check if color is already cached
     if (_colorCache.containsKey(type)) {
       return _colorCache[type]!;
     }
-
-    // Check if we need to refresh tracking types cache
-    final now = DateTime.now();
-    if (_cachedTrackingTypes == null || 
-        _lastFetchTime == null || 
-        now.difference(_lastFetchTime!) > _cacheExpireDuration) {
-      await _refreshTrackingTypesCache();
+    
+    // If not cached, this might be a new tracking type
+    // Fetch latest tracking types to verify it exists
+    try {
+      final databaseService = FirebaseDatabaseService();
+      final trackingTypes = await databaseService.fetchCustomTrackingTypes();
+      
+      if (trackingTypes.contains(type)) {
+        // It's a valid tracking type - generate and cache color permanently
+        final color = _generateColorFromString(type);
+        _colorCache[type] = color;
+        return color;
+      } else {
+        // Unknown type - return default color (don't cache)
+        return colorScheme.surfaceVariant.withOpacity(0.3);
+      }
+    } catch (e) {
+      // If fetch fails, generate color anyway (might be valid)
+      final color = _generateColorFromString(type);
+      _colorCache[type] = color;
+      return color;
     }
+  }
 
-    Color color;
-    if (_cachedTrackingTypes!.contains(type)) {
-      color = _generateColorFromString(type);
-    } else {
-      // Default color for unknown types
-      color = colorScheme.surfaceVariant.withOpacity(0.3);
+  /// Add color for a newly created tracking type
+  static void cacheColorForNewType(String trackingType) {
+    if (trackingType.isNotEmpty && !_colorCache.containsKey(trackingType)) {
+      _colorCache[trackingType] = _generateColorFromString(trackingType);
     }
+  }
 
-    // Cache the color for future use
+  /// Get color synchronously if already cached, otherwise generate and cache
+  static Color getLectureTypeColorSync(BuildContext context, String type) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    
+    if (type.isEmpty) {
+      return colorScheme.surfaceVariant.withOpacity(0.3);
+    }
+    
+    // Return cached color if available
+    if (_colorCache.containsKey(type)) {
+      return _colorCache[type]!;
+    }
+    
+    // Generate and cache color immediately for sync usage
+    final color = _generateColorFromString(type);
     _colorCache[type] = color;
     return color;
   }
 
-  /// Refresh the tracking types cache from database
-  static Future<void> _refreshTrackingTypesCache() async {
-    try {
-      final databaseService = FirebaseDatabaseService();
-      _cachedTrackingTypes = await databaseService.fetchCustomTrackingTypes();
-      _lastFetchTime = DateTime.now();
-    } catch (e) {
-      // Fallback to empty list if fetch fails
-      _cachedTrackingTypes = [];
-    }
-  }
-
-  /// Clear all cached data (useful for testing or when tracking types change)
+  /// Clear all cached colors (useful for testing)
   static void clearCache() {
-    _cachedTrackingTypes = null;
     _colorCache.clear();
-    _lastFetchTime = null;
-  }
-
-  /// Get color synchronously if already cached, otherwise return default
-  static Color getLectureTypeColorSync(BuildContext context, String type) {
-    if (_colorCache.containsKey(type)) {
-      return _colorCache[type]!;
-    }
-    
-    // Return default color if not cached
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    return colorScheme.surfaceVariant.withOpacity(0.3);
+    _isInitialized = false;
   }
 
   /// Generate a consistent color from string input

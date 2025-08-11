@@ -16,6 +16,7 @@ import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'Utils/ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
+import 'Utils/lecture_colors.dart';
 import 'Utils/platform_utils.dart';
 
 import 'firebase_options.dart';
@@ -26,6 +27,7 @@ void main() async {
   
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
+  await LectureColors.initializeColors();
   // Initialize HomeWidget service for background callbacks
   if (PlatformUtils.instance.isAndroid) {
     await HomeWidgetService.initialize();
