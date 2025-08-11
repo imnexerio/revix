@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../SchedulePage/RevisionGraph.dart';
+import '../Utils/lecture_colors.dart';
 
 class AnimatedCardDetailP extends StatelessWidget {
   final Animation<double> animation;
@@ -50,6 +51,16 @@ class AnimatedCardDetailP extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        // Colored line indicator (like Android widget)
+                        Container(
+                          width: 4,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: LectureColors.generateColorFromString(record['entry_type']?.toString() ?? 'default'),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         // Left side with category information
                         Expanded(
                           flex: 3,
