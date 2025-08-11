@@ -815,33 +815,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   });
                   
                   // Calculate and update the next review date immediately
-                  try {
-                    DateTime baseDate = _calculateBaseDate();
-                    
-                    // Calculate next date based on frequency
-                    String newDateScheduled;
-                    if (newValue == 'Custom') {
-                      Map<String, dynamic> revisionData = _extractRevisionData();
-                      DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
-                        baseDate,
-                        revisionData,
-                      );
-                      newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                    } else {
-                      DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
-                        baseDate,
-                        newValue,
-                        noRevision, // Use current completion_counts, don't increment
-                      );
-                      newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                    }
-                    
-                    setState(() {
-                      dateScheduled = newDateScheduled;
-                    });
-                  } catch (e) {
-                    print('Error calculating next review date: $e');
-                  }
+                  await _calculateAndUpdateNextDate(newValue);
                 }
               },
             ),
@@ -1110,33 +1084,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   
                   // Recalculate next review date when enabling a disabled lecture
                   if (newValue && widget.details['status'] == 'Disabled') {
-                    try {
-                      DateTime baseDate = _calculateBaseDate();
-                      
-                      // Calculate next date based on frequency
-                      String newDateScheduled;
-                      if (revisionFrequency == 'Custom') {
-                        Map<String, dynamic> revisionData = _extractRevisionData();
-                        DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
-                          baseDate,
-                          revisionData,
-                        );
-                        newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                      } else {
-                        DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
-                          baseDate,
-                          revisionFrequency,
-                          noRevision, // Use current completion_counts, don't increment
-                        );
-                        newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                      }
-                      
-                      setState(() {
-                        dateScheduled = newDateScheduled;
-                      });
-                    } catch (e) {
-                      print('Error calculating next review date when enabling: $e');
-                    }
+                    await _calculateAndUpdateNextDate(revisionFrequency);
                   }
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
@@ -1182,6 +1130,36 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     }
   }
 
+  /// Helper method to calculate and update next review date
+  Future<void> _calculateAndUpdateNextDate(String frequency) async {
+    try {
+      DateTime baseDate = _calculateBaseDate();
+      
+      String newDateScheduled;
+      if (frequency == 'Custom') {
+        Map<String, dynamic> revisionData = _extractRevisionData();
+        DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+          baseDate,
+          revisionData,
+        );
+        newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
+      } else {
+        DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
+          baseDate,
+          frequency,
+          noRevision,
+        );
+        newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
+      }
+      
+      setState(() {
+        dateScheduled = newDateScheduled;
+      });
+    } catch (e) {
+      print('Error calculating next review date: $e');
+    }
+  }
+
   Future<void> showCustomFrequencySelector() async {
     // Get the actual custom params from the nested structure
     Map<String, dynamic> initialParams = {};
@@ -1214,23 +1192,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       });
       
       // Recalculate next review date with new custom parameters
-      try {
-        DateTime baseDate = _calculateBaseDate();
-        
-        // Calculate next date based on custom frequency
-        Map<String, dynamic> revisionData = _extractRevisionData();
-        DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
-          baseDate,
-          revisionData,
-        );
-        String newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
-        
-        setState(() {
-          dateScheduled = newDateScheduled;
-        });
-      } catch (e) {
-        print('Error calculating next review date for custom frequency: $e');
-      }
+      await _calculateAndUpdateNextDate('Custom');
     }
   }
 
