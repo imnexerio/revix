@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../SchedulePage/RevisionGraph.dart';
-import '../Utils/lecture_colors.dart';
 
-class AnimatedCardDetailP extends StatefulWidget {
+class AnimatedCardDetailP extends StatelessWidget {
   final Animation<double> animation;
   final Map<String, dynamic> record;
   final bool isCompleted;
@@ -18,65 +17,13 @@ class AnimatedCardDetailP extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AnimatedCardDetailP> createState() => _AnimatedCardDetailPState();
-}
-
-class _AnimatedCardDetailPState extends State<AnimatedCardDetailP> {
-  Color? _backgroundColor;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBackgroundColor();
-  }
-
-  @override
-  void didUpdateWidget(AnimatedCardDetailP oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Reload color if entry_type changed
-    if (widget.record['entry_type'] != oldWidget.record['entry_type']) {
-      _loadBackgroundColor();
-    }
-  }
-
-  Future<void> _loadBackgroundColor() async {
-    if (mounted) {
-      final entryType = widget.record['entry_type']?.toString() ?? '';
-      if (entryType.isNotEmpty) {
-        try {
-          final color = await LectureColors.getLectureTypeColor(context, entryType);
-          if (mounted) {
-            setState(() {
-              _backgroundColor = color.withOpacity(0.15); // Subtle background opacity
-            });
-          }
-        } catch (e) {
-          // Fallback to default color on error
-          if (mounted) {
-            setState(() {
-              _backgroundColor = Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.1);
-            });
-          }
-        }
-      } else {
-        // Default color for empty entry_type
-        if (mounted) {
-          setState(() {
-            _backgroundColor = Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.05);
-          });
-        }
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(widget.animation);
-    final fadeAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(widget.animation);
-    final slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(widget.animation);
+    final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(animation);
+    final fadeAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(animation);
+    final slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(animation);
 
     return AnimatedBuilder(
-      animation: widget.animation,
+      animation: animation,
       builder: (context, child) {
         return FadeTransition(
           opacity: fadeAnimation,
@@ -87,7 +34,6 @@ class _AnimatedCardDetailPState extends State<AnimatedCardDetailP> {
               child: Card(
                 elevation: 5,
                 margin: const EdgeInsets.all(4),
-                color: _backgroundColor ?? Theme.of(context).cardColor, // Apply background color
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
@@ -97,89 +43,80 @@ class _AnimatedCardDetailPState extends State<AnimatedCardDetailP> {
                 ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () => widget.onSelect(context, widget.record),
-                  child: Stack(
-                    children: [
-                      // Main content
-                      Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Left side with category information
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${widget.record['entry_type']} · ${widget.record['record_title']}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  // Usage
-                                  Text(
-                                    '${formatDate(widget.record['start_timestamp'])} · ${widget.record['completion_counts']} · ${widget.record['missed_counts']}',
-                                    style: TextStyle(
-                                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                                      fontSize: 13,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _buildDateInfo(
-                                    context,
-                                    'Scheduled',
-                                    widget.record['scheduled_date'] ?? '',
-                                    Icons.calendar_today,
-                                  ),
-                                  if (widget.isCompleted)
-                                    _buildDateInfo(
-                                      context,
-                                      'Initiated',
-                                      widget.record['date_initiated'] ?? '',
-                                      Icons.check_circle_outline,
-                                    ),
-                                ],
-                              ),
-                            ),
-                            // Right side with the revision graph
-                            Expanded(
-                              flex: 2,
-                              child: SizedBox(
-                                child: Center(
-                                  child: RevisionRadarChart(
-                                    key: ValueKey('chart_${widget.record['category']}_${widget.record['record_title']}_${widget.record['dates_updated']?.length ?? 0}_${widget.record['dates_missed_revisions']?.length ?? 0}'),
-                                    dateLearnt: widget.record['date_initiated'],
-                                    datesMissedRevisions: List<String>.from(widget.record['dates_missed_revisions'] ?? []),
-                                    datesRevised: List<String>.from(widget.record['dates_updated'] ?? []),
-                                    showLabels: false,
-                                  ),
+                  onTap: () => onSelect(context, record),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    // child: SingleChildScrollView(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Left side with category information
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${record['entry_type']} · ${record['record_title']}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+
+
+                              // Usage
+                              Text(
+                                '${formatDate(record['start_timestamp'])} · ${record['completion_counts']} · ${record['missed_counts']}',
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              _buildDateInfo(
+                                context,
+                                'Scheduled',
+                                record['scheduled_date'] ?? '',
+                                Icons.calendar_today,
+                              ),
+                              if (isCompleted)
+                                _buildDateInfo(
+                                  context,
+                                  'Initiated',
+                                  record['date_initiated'] ?? '',
+                                  Icons.check_circle_outline,
+                                ),
+                              // ],
+                              // ),
+                            ],
+                          ),
                         ),
-                      ),
-                      // Complete rounded border accent
-                      if (_backgroundColor != null)
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: LShapedBorderPainter(
-                              color: _backgroundColor!.withOpacity(0.9),
-                              borderRadius: 12,
-                              borderWidth: 3.0,
+                        // Right side with the revision graph
+                        Expanded(
+                          flex: 2,
+                          child: SizedBox(
+                            child: Center(
+                              // Add a key to force rebuild of RevisionRadarChart when data changes
+                              child: RevisionRadarChart(
+                                key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}'),
+                                dateLearnt: record['date_initiated'],
+                                datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
+                                datesRevised: List<String>.from(record['dates_updated'] ?? []),
+                                showLabels: false,
+                              ),
                             ),
                           ),
                         ),
-                    ],
+                      ],
+                    ),
+                    // ),
                   ),
                 ),
               ),
@@ -233,51 +170,5 @@ class _AnimatedCardDetailPState extends State<AnimatedCardDetailP> {
     final DateTime parsedDate = DateTime.parse(date);
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
     return formatter.format(parsedDate);
-  }
-}
-
-/// Custom painter for complete rounded border accent
-class LShapedBorderPainter extends CustomPainter {
-  final Color color;
-  final double borderRadius;
-  final double borderWidth;
-
-  LShapedBorderPainter({
-    required this.color,
-    required this.borderRadius,
-    required this.borderWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = borderWidth
-      ..strokeCap = StrokeCap.round;
-
-    // Create a rounded rectangle for the full border outline
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        borderWidth / 2, 
-        borderWidth / 2, 
-        size.width - borderWidth, 
-        size.height - borderWidth
-      ),
-      Radius.circular(borderRadius - borderWidth / 2),
-    );
-
-    // Draw the complete rounded border
-    canvas.drawRRect(rect, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    if (oldDelegate is LShapedBorderPainter) {
-      return oldDelegate.color != color || 
-             oldDelegate.borderRadius != borderRadius ||
-             oldDelegate.borderWidth != borderWidth;
-    }
-    return true;
   }
 }
