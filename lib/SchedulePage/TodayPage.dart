@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/lecture_colors.dart';
 import 'ScheduleTable.dart';
 import 'showLectureScheduleP.dart';
 
@@ -23,9 +24,37 @@ class _TodayPageState extends State<TodayPage> {
     _databaseListener.initialize();
     _databaseListener.categorizedRecordsStream.listen((data) {
       _recordsController.add(data);
+      // Preload colors for all entry types when new data arrives
+      _preloadColors(data);
     }, onError: (error) {
       _recordsController.addError(error);
     });
+  }
+
+  /// Preload colors for all unique entry types to improve performance
+  Future<void> _preloadColors(Map<String, List<Map<String, dynamic>>> data) async {
+    if (!mounted) return;
+    
+    // Extract all unique entry types from the data
+    Set<String> entryTypes = {};
+    for (var recordList in data.values) {
+      for (var record in recordList) {
+        final entryType = record['entry_type']?.toString();
+        if (entryType != null && entryType.isNotEmpty) {
+          entryTypes.add(entryType);
+        }
+      }
+    }
+
+    // Preload colors for all entry types
+    for (String entryType in entryTypes) {
+      try {
+        await LectureColors.getLectureTypeColor(context, entryType);
+      } catch (e) {
+        // Silently handle errors during preloading
+        print('Error preloading color for $entryType: $e');
+      }
+    }
   }
 
   @override

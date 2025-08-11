@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'RevisionGraph.dart';
+import '../Utils/lecture_colors.dart';
 
-class AnimatedCard extends StatelessWidget {
+class AnimatedCard extends StatefulWidget {
   final Animation<double> animation;
   final Map<String, dynamic> record;
   final bool isCompleted;
@@ -16,15 +17,67 @@ class AnimatedCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<AnimatedCard> createState() => _AnimatedCardState();
+}
+
+class _AnimatedCardState extends State<AnimatedCard> {
+  Color? _backgroundColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBackgroundColor();
+  }
+
+  @override
+  void didUpdateWidget(AnimatedCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload color if entry_type changed
+    if (widget.record['entry_type'] != oldWidget.record['entry_type']) {
+      _loadBackgroundColor();
+    }
+  }
+
+  Future<void> _loadBackgroundColor() async {
+    if (mounted) {
+      final entryType = widget.record['entry_type']?.toString() ?? '';
+      if (entryType.isNotEmpty) {
+        try {
+          final color = await LectureColors.getLectureTypeColor(context, entryType);
+          if (mounted) {
+            setState(() {
+              _backgroundColor = color.withOpacity(0.15); // Subtle background opacity
+            });
+          }
+        } catch (e) {
+          // Fallback to default color on error
+          if (mounted) {
+            setState(() {
+              _backgroundColor = Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.1);
+            });
+          }
+        }
+      } else {
+        // Default color for empty entry_type
+        if (mounted) {
+          setState(() {
+            _backgroundColor = Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.05);
+          });
+        }
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // print('record : $record');
     // Apply multiple animations
-    final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(animation);
-    final fadeAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(animation);
-    final slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(animation);
+    final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(widget.animation);
+    final fadeAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(widget.animation);
+    final slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(widget.animation);
 
     return AnimatedBuilder(
-      animation: animation,
+      animation: widget.animation,
       builder: (context, child) {
         return FadeTransition(
           opacity: fadeAnimation,
@@ -35,6 +88,7 @@ class AnimatedCard extends StatelessWidget {
               child: Card(
                 elevation: 5,
                 margin: const EdgeInsets.all(4),
+                color: _backgroundColor ?? Theme.of(context).cardColor, // Apply background color
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
@@ -44,7 +98,7 @@ class AnimatedCard extends StatelessWidget {
                 ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () => onSelect(context, record),
+                  onTap: () => widget.onSelect(context, widget.record),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     // child: SingleChildScrollView(
@@ -59,7 +113,7 @@ class AnimatedCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '${record['category']} · ${record['sub_category']} · ${record['record_title']}',
+                                '${widget.record['category']} · ${widget.record['sub_category']} · ${widget.record['record_title']}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -69,7 +123,7 @@ class AnimatedCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${record['entry_type']} · ${record['reminder_time']}',
+                                '${widget.record['entry_type']} · ${widget.record['reminder_time']}',
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                   fontSize: 13,
@@ -81,14 +135,14 @@ class AnimatedCard extends StatelessWidget {
                               _buildDateInfo(
                                 context,
                                 'Scheduled',
-                                record['scheduled_date'] ?? '',
+                                widget.record['scheduled_date'] ?? '',
                                 Icons.calendar_today,
                               ),
-                              if (isCompleted)
+                              if (widget.isCompleted)
                                 _buildDateInfo(
                                   context,
                                   'Initiated',
-                                  record['date_initiated'] ?? '',
+                                  widget.record['date_initiated'] ?? '',
                                   Icons.check_circle_outline,
                                 ),
                               // ],
@@ -104,10 +158,10 @@ class AnimatedCard extends StatelessWidget {
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(
-                                key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}'),
-                                dateLearnt: record['date_initiated'],
-                                datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
-                                datesRevised: List<String>.from(record['dates_updated'] ?? []),
+                                key: ValueKey('chart_${widget.record['category']}_${widget.record['record_title']}_${widget.record['dates_updated']?.length ?? 0}_${widget.record['dates_missed_revisions']?.length ?? 0}'),
+                                dateLearnt: widget.record['date_initiated'],
+                                datesMissedRevisions: List<String>.from(widget.record['dates_missed_revisions'] ?? []),
+                                datesRevised: List<String>.from(widget.record['dates_updated'] ?? []),
                                 showLabels: false,
                               ),
                             ),
