@@ -8,6 +8,17 @@
     android:background="@drawable/rounded_background"
     android:gravity="center_vertical">
 
+    <!-- Colored strip for lecture type identification -->
+    <View
+        android:id="@+id/lecture_type_strip"
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="8dp"
+        android:background="#CCCCCC" />
+
     <ImageView
         android:id="@+id/mark_as_done"
         android:layout_width="20dp"

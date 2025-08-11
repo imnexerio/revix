@@ -133,12 +133,7 @@ class WidgetListViewFactory(
         val itemKey = "${record["category"]}_${record["sub_category"]}_${record["record_title"]}"
         val isProcessing = processingItems.contains(itemKey)        // Set the combined subject info
         val subjectInfo = "${record["category"]} · ${record["sub_category"]} · ${record["record_title"]}"
-        rv.setTextViewText(R.id.item_subject_info, subjectInfo)
-        
-        // Apply lecture type color to subject info text based on entry_type
-        val entryType = record["entry_type"] ?: ""
-        val textColor = LectureColors.getLectureTypeColorSync(context, entryType)
-        rv.setTextColor(R.id.item_subject_info, textColor)        // Set the combined reminder info
+        rv.setTextViewText(R.id.item_subject_info, subjectInfo)        // Set the combined reminder info
         val reminderInfoParts = mutableListOf<String>()
         if (record.containsKey("reminder_time") && !record["reminder_time"].isNullOrEmpty()) {
             reminderInfoParts.add(record["reminder_time"]!!)
@@ -151,9 +146,6 @@ class WidgetListViewFactory(
         }
         val reminderInfo = reminderInfoParts.joinToString(" · ")
         rv.setTextViewText(R.id.item_reminder_info, reminderInfo)
-        
-        // Apply same lecture type color to reminder info text
-        rv.setTextColor(R.id.item_reminder_info, textColor)
 
         val normalFlags = Paint.ANTI_ALIAS_FLAG
         val strikethroughFlags = Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG        // Set the paint flags based on whether the item is being processed
