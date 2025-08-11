@@ -16,7 +16,7 @@
         android:layout_marginTop="6dp"
         android:layout_marginBottom="6dp"
         android:layout_marginStart="6dp"
-        android:background="#CCCCCC"
+        android:src="@drawable/rounded_line_indicator"
         android:contentDescription="Lecture type indicator" />
 
     <ImageView

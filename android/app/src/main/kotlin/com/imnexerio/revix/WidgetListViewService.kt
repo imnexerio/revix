@@ -142,7 +142,8 @@ class WidgetListViewFactory(
         // Debug log to check if colors are being generated
         android.util.Log.d("WidgetColors", "Entry Type: $entryType, Color: ${Integer.toHexString(indicatorColor)}")
         
-        rv.setInt(R.id.lecture_type_indicator, "setBackgroundColor", indicatorColor)        // Set the combined reminder info
+        // Use setImageTintList to tint the drawable while preserving rounded corners
+        rv.setInt(R.id.lecture_type_indicator, "setColorFilter", indicatorColor)        // Set the combined reminder info
         val reminderInfoParts = mutableListOf<String>()
         if (record.containsKey("reminder_time") && !record["reminder_time"].isNullOrEmpty()) {
             reminderInfoParts.add(record["reminder_time"]!!)
