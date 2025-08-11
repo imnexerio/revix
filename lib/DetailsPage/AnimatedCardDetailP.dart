@@ -68,11 +68,26 @@ class AnimatedCardDetailP extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                '${record['entry_type']} · ${record['record_title']}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '${record['entry_type']}',
+                                      style: TextStyle(
+                                        color: LectureColors.generateColorFromString(record['entry_type']?.toString() ?? 'default'),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: ' · ${record['record_title']}',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

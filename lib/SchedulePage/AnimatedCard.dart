@@ -79,11 +79,25 @@ class AnimatedCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                '${record['entry_type']} · ${record['reminder_time']}',
-                                style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                                  fontSize: 13,
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '${record['entry_type']}',
+                                      style: TextStyle(
+                                        color: LectureColors.generateColorFromString(record['entry_type']?.toString() ?? 'default'),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: ' · ${record['reminder_time']}',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
