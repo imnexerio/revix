@@ -62,6 +62,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     isEnabled = widget.details['status'] == 'Enabled'; // Always initialize from widget details
     noRevision = widget.details['completion_counts'];
     formattedTime = widget.details['reminder_time'];
+    dateScheduled = widget.details['scheduled_date']; // Initialize with current scheduled date
     entryType = widget.details['entry_type'] ?? '';
     alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
     _descriptionController = TextEditingController(
@@ -342,48 +343,10 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                           List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
                           List<String> datesRevised = List<String>.from(widget.details['dates_updated'] ?? []);
-                          String dateScheduled = widget.details['scheduled_date'];
-
-                          // Check if frequency has changed or if enabling a disabled lecture
-                          bool frequencyChanged = revisionFrequency != widget.details['recurrence_frequency'];
-                          bool enablingDisabledLecture = isEnabled && widget.details['status'] == 'Disabled';
                           
-                          if (frequencyChanged || enablingDisabledLecture) {
-                            // Calculate next review date based on the new frequency
-                            DateTime baseDate;
-                            
-                            // Use date_updated as base, or today's date if date_updated is in past or null
-                            if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
-                              DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
-                              DateTime today = DateTime.now();
-                              
-                              // If last updated date is in the past, use today as base
-                              if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
-                                baseDate = today;
-                              } else {
-                                baseDate = lastUpdated;
-                              }
-                            } else {
-                              baseDate = DateTime.now();
-                            }
-                            
-                            // Calculate next date based on frequency
-                            if (revisionFrequency == 'Custom') {
-                              Map<String, dynamic> revisionData = _extractRevisionData();
-                              DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
-                                baseDate,
-                                revisionData,
-                              );
-                              dateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                            } else {
-                              DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
-                                baseDate,
-                                revisionFrequency,
-                                noRevision, // Use current completion_counts, don't increment
-                              );
-                              dateScheduled = nextDateTime.toIso8601String().split('T')[0];
-                            }
-                          }                          Map<String, dynamic> revisionData = {
+                          // Use the already calculated dateScheduled value (no need to recalculate)
+                          String finalDateScheduled = dateScheduled;
+                          Map<String, dynamic> revisionData = {
                             'frequency': revisionFrequency,
                           };
                           if(customFrequencyParams.isNotEmpty) {
@@ -401,7 +364,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             widget.details['description'],
                             formattedTime,
                             noRevision,
-                            dateScheduled,
+                            finalDateScheduled,
                             datesRevised,
                             widget.details['missed_counts'],
                             datesMissedRevisions,
@@ -419,7 +382,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                             customSnackBar(
                               context: context,
-                              message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.lectureNo}, updated. Next schedule is on $dateScheduled.',
+                              message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.lectureNo}, updated. Next schedule is on $finalDateScheduled.',
                           );
                         } catch (e) {
                           if (Navigator.canPop(context)) {
@@ -666,7 +629,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildTimelineItem(
             context,
             "Next Review",
-            frequencyChanged ? "Will be updated after saving..." : widget.details['scheduled_date'],
+            frequencyChanged ? "Updated to $dateScheduled" : widget.details['scheduled_date'],
             Icons.event_outlined,
             isLast: true,
             isHighlighted: true,
@@ -836,7 +799,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
             child: RevisionFrequencyDropdown(
               revisionFrequency: revisionFrequency,
-              onChanged: (String? newValue) {
+              onChanged: (String? newValue) async {
                 if (newValue != null) {
                   setState(() {
                     revisionFrequency = newValue;
@@ -850,6 +813,50 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       customFrequencyParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
                     }
                   });
+                  
+                  // Calculate and update the next review date immediately
+                  try {
+                    DateTime baseDate;
+                    
+                    // Use date_updated as base, or today's date if date_updated is in past or null
+                    if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
+                      DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
+                      DateTime today = DateTime.now();
+                      
+                      // If last updated date is in the past, use today as base
+                      if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
+                        baseDate = today;
+                      } else {
+                        baseDate = lastUpdated;
+                      }
+                    } else {
+                      baseDate = DateTime.now();
+                    }
+                    
+                    // Calculate next date based on frequency
+                    String newDateScheduled;
+                    if (newValue == 'Custom') {
+                      Map<String, dynamic> revisionData = _extractRevisionData();
+                      DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+                        baseDate,
+                        revisionData,
+                      );
+                      newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                    } else {
+                      DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
+                        baseDate,
+                        newValue,
+                        noRevision, // Use current completion_counts, don't increment
+                      );
+                      newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                    }
+                    
+                    setState(() {
+                      dateScheduled = newDateScheduled;
+                    });
+                  } catch (e) {
+                    print('Error calculating next review date: $e');
+                  }
                 }
               },
             ),
@@ -1104,7 +1111,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                 ),
               ),              Switch(
                 value: isEnabled,
-                onChanged: (bool newValue) {
+                onChanged: (bool newValue) async {
                   setState(() {
                     isEnabled = newValue;
                     // Don't update widget.details['status'] here - only update in local state
@@ -1115,6 +1122,52 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       frequencyChanged = true;
                     }
                   });
+                  
+                  // Recalculate next review date when enabling a disabled lecture
+                  if (newValue && widget.details['status'] == 'Disabled') {
+                    try {
+                      DateTime baseDate;
+                      
+                      // Use date_updated as base, or today's date if date_updated is in past or null
+                      if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
+                        DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
+                        DateTime today = DateTime.now();
+                        
+                        // If last updated date is in the past, use today as base
+                        if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
+                          baseDate = today;
+                        } else {
+                          baseDate = lastUpdated;
+                        }
+                      } else {
+                        baseDate = DateTime.now();
+                      }
+                      
+                      // Calculate next date based on frequency
+                      String newDateScheduled;
+                      if (revisionFrequency == 'Custom') {
+                        Map<String, dynamic> revisionData = _extractRevisionData();
+                        DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+                          baseDate,
+                          revisionData,
+                        );
+                        newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                      } else {
+                        DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
+                          baseDate,
+                          revisionFrequency,
+                          noRevision, // Use current completion_counts, don't increment
+                        );
+                        newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
+                      }
+                      
+                      setState(() {
+                        dateScheduled = newDateScheduled;
+                      });
+                    } catch (e) {
+                      print('Error calculating next review date when enabling: $e');
+                    }
+                  }
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
               ),
@@ -1172,37 +1225,41 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         customFrequencyParams = result;
         frequencyChanged = true; // Mark that frequency has been changed
       });
-    }
-  }
-
-  Map<String, dynamic> extractRevisionData(Map<String, dynamic> details) {
-    Map<String, dynamic> revisionData = {};
-
-    if (details['recurrence_data'] != null) {
-      final rawData = details['recurrence_data'];
-      revisionData['frequency'] = rawData['frequency'];
-
-      if (rawData['custom_params'] != null) {
-        Map<String, dynamic> customParams = {};
-        final rawCustomParams = rawData['custom_params'];
-
-        if (rawCustomParams['frequencyType'] != null) {
-          customParams['frequencyType'] = rawCustomParams['frequencyType'];
+      
+      // Recalculate next review date with new custom parameters
+      try {
+        DateTime baseDate;
+        
+        // Use date_updated as base, or today's date if date_updated is in past or null
+        if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
+          DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
+          DateTime today = DateTime.now();
+          
+          // If last updated date is in the past, use today as base
+          if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
+            baseDate = today;
+          } else {
+            baseDate = lastUpdated;
+          }
+        } else {
+          baseDate = DateTime.now();
         }
-
-        if (rawCustomParams['value'] != null) {
-          customParams['value'] = rawCustomParams['value'];
-        }
-
-        if (rawCustomParams['daysOfWeek'] != null) {
-          customParams['daysOfWeek'] = List<bool>.from(rawCustomParams['daysOfWeek']);
-        }
-
-        revisionData['custom_params'] = customParams;
+        
+        // Calculate next date based on custom frequency
+        Map<String, dynamic> revisionData = _extractRevisionData();
+        DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
+          baseDate,
+          revisionData,
+        );
+        String newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
+        
+        setState(() {
+          dateScheduled = newDateScheduled;
+        });
+      } catch (e) {
+        print('Error calculating next review date for custom frequency: $e');
       }
     }
-
-    return revisionData;
   }
 
   /// Extract revision data using current state variables (for frequency changes)
