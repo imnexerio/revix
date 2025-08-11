@@ -7,6 +7,8 @@ import '../Utils/CustomSnackBar.dart';
 import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/MarkAsDoneService.dart';
+import '../Utils/lecture_colors.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import 'DescriptionCard.dart';
 import 'RevisionFrequencyDropdown.dart';
 
@@ -34,6 +36,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   late TextEditingController _descriptionController;
   late String formattedTime;
   late String dateScheduled;
+  late String entryType;
+  List<String> availableEntryTypes = [];
   Map<String, dynamic> customFrequencyParams = {};
   String duration = 'Forever';
   Map<String, dynamic> durationData = {
@@ -51,6 +55,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     isEnabled = widget.details['status'] == 'Enabled'; // Always initialize from widget details
     noRevision = widget.details['completion_counts'];
     formattedTime = widget.details['reminder_time'];
+    entryType = widget.details['entry_type'] ?? '';
     alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
@@ -72,12 +77,34 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     } else if (durationData["type"] == "until") {
       duration = "Until";
     }
+    
+    // Load available entry types
+    _loadEntryTypes();
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadEntryTypes() async {
+    try {
+      final databaseService = FirebaseDatabaseService();
+      final types = await databaseService.fetchCustomTrackingTypes();
+      setState(() {
+        availableEntryTypes = types;
+        // Ensure current entry type is in the list if not already
+        if (entryType.isNotEmpty && !availableEntryTypes.contains(entryType)) {
+          availableEntryTypes.add(entryType);
+        }
+      });
+    } catch (e) {
+      // Handle error - maybe show a snackbar or use default types
+      setState(() {
+        availableEntryTypes = [entryType]; // At least include current type
+      });
+    }
   }
 
 
@@ -155,10 +182,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${widget.details['entry_type']}',
+                        entryType,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: LectureColors.generateColorFromString(entryType),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -338,7 +366,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             isEnabled ? 'Enabled' : 'Disabled',
                             revisionData,
                             durationData,
-                            finalAlarmType
+                            finalAlarmType,
+                            entryType
                           );
 
                           Navigator.pop(context);
@@ -691,6 +720,70 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
         children: [
           const SizedBox(height: 8),
+          
+          // Entry Type section
+          Text(
+            "Entry Type",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).cardColor,
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: availableEntryTypes.contains(entryType) ? entryType : null,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              isExpanded: true,
+              hint: Text(
+                entryType.isEmpty ? 'Select Entry Type' : entryType,
+                style: TextStyle(
+                  color: entryType.isNotEmpty 
+                      ? LectureColors.generateColorFromString(entryType)
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              items: availableEntryTypes.map((String type) {
+                return DropdownMenuItem<String>(
+                  value: type,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: LectureColors.generateColorFromString(type),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(type),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    entryType = newValue;
+                    widget.details['entry_type'] = newValue; // Update the details
+                  });
+                }
+              },
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
           // Wrap the RevisionFrequencyDropdown in a Container with styling
           Container(
             decoration: BoxDecoration(
