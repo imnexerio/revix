@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// import '../RecordForm/CalculateCustomNextDate.dart';
-// import '../Utils/CustomSnackBar.dart';
-// import '../Utils/UpdateRecords.dart';
-// import '../Utils/customSnackBar_error.dart';
-// import '../Utils/date_utils.dart';
 import '../Utils/MarkAsDoneService.dart';
-import '../widgets/DescriptionCard.dart';
 import 'RevisionGraph.dart';
 
 
@@ -158,23 +152,28 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
                         const SizedBox(height: 24),
 
-                        Text(
-                          "Description",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: "Description: ",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              TextSpan(
+                                text: description.isEmpty ? 'No description available' : description,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.normal,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        DescriptionCard(
-                          details: details,
-                          onDescriptionChanged: (text) {
-                            setState(() {
-                              description = text;
-                              details['description'] = text;
-                            });
-                          },
                         ),
                         const SizedBox(height: 24),
                       ],
