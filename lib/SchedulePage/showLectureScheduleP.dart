@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Utils/MarkAsDoneService.dart';
+import '../Utils/lecture_colors.dart';
 import 'RevisionGraph.dart';
 
 
@@ -85,12 +86,32 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              '${details['entry_type']} · ${details['reminder_time']}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: LectureColors.generateColorFromString(details['entry_type']?.toString() ?? 'default'),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  details['entry_type']?.toString() ?? 'N/A',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: LectureColors.generateColorFromString(details['entry_type']?.toString() ?? 'default'),
+                                  ),
+                                ),
+                                Text(
+                                  ' · ${details['reminder_time']}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
