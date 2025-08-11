@@ -816,22 +816,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   
                   // Calculate and update the next review date immediately
                   try {
-                    DateTime baseDate;
-                    
-                    // Use date_updated as base, or today's date if date_updated is in past or null
-                    if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
-                      DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
-                      DateTime today = DateTime.now();
-                      
-                      // If last updated date is in the past, use today as base
-                      if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
-                        baseDate = today;
-                      } else {
-                        baseDate = lastUpdated;
-                      }
-                    } else {
-                      baseDate = DateTime.now();
-                    }
+                    DateTime baseDate = _calculateBaseDate();
                     
                     // Calculate next date based on frequency
                     String newDateScheduled;
@@ -1126,22 +1111,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   // Recalculate next review date when enabling a disabled lecture
                   if (newValue && widget.details['status'] == 'Disabled') {
                     try {
-                      DateTime baseDate;
-                      
-                      // Use date_updated as base, or today's date if date_updated is in past or null
-                      if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
-                        DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
-                        DateTime today = DateTime.now();
-                        
-                        // If last updated date is in the past, use today as base
-                        if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
-                          baseDate = today;
-                        } else {
-                          baseDate = lastUpdated;
-                        }
-                      } else {
-                        baseDate = DateTime.now();
-                      }
+                      DateTime baseDate = _calculateBaseDate();
                       
                       // Calculate next date based on frequency
                       String newDateScheduled;
@@ -1195,6 +1165,23 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     }
   }
 
+  /// Helper method to calculate base date for next review calculation
+  DateTime _calculateBaseDate() {
+    if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
+      DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
+      DateTime today = DateTime.now();
+      
+      // If last updated date is in the past, use today as base
+      if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
+        return today;
+      } else {
+        return lastUpdated;
+      }
+    } else {
+      return DateTime.now();
+    }
+  }
+
   Future<void> showCustomFrequencySelector() async {
     // Get the actual custom params from the nested structure
     Map<String, dynamic> initialParams = {};
@@ -1228,22 +1215,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       
       // Recalculate next review date with new custom parameters
       try {
-        DateTime baseDate;
-        
-        // Use date_updated as base, or today's date if date_updated is in past or null
-        if (widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified') {
-          DateTime lastUpdated = DateTime.parse(widget.details['date_updated']);
-          DateTime today = DateTime.now();
-          
-          // If last updated date is in the past, use today as base
-          if (lastUpdated.isBefore(DateTime(today.year, today.month, today.day))) {
-            baseDate = today;
-          } else {
-            baseDate = lastUpdated;
-          }
-        } else {
-          baseDate = DateTime.now();
-        }
+        DateTime baseDate = _calculateBaseDate();
         
         // Calculate next date based on custom frequency
         Map<String, dynamic> revisionData = _extractRevisionData();
