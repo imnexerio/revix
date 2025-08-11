@@ -133,7 +133,12 @@ class WidgetListViewFactory(
         val itemKey = "${record["category"]}_${record["sub_category"]}_${record["record_title"]}"
         val isProcessing = processingItems.contains(itemKey)        // Set the combined subject info
         val subjectInfo = "${record["category"]} · ${record["sub_category"]} · ${record["record_title"]}"
-        rv.setTextViewText(R.id.item_subject_info, subjectInfo)        // Set the combined reminder info
+        rv.setTextViewText(R.id.item_subject_info, subjectInfo)
+        
+        // Apply lecture type color to the line indicator based on entry_type
+        val entryType = record["entry_type"] ?: ""
+        val indicatorColor = LectureColors.getLectureTypeColorSync(context, entryType)
+        rv.setInt(R.id.lecture_type_indicator, "setBackgroundColor", indicatorColor)        // Set the combined reminder info
         val reminderInfoParts = mutableListOf<String>()
         if (record.containsKey("reminder_time") && !record["reminder_time"].isNullOrEmpty()) {
             reminderInfoParts.add(record["reminder_time"]!!)
