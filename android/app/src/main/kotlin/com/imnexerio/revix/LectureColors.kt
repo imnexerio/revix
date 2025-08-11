@@ -38,7 +38,7 @@ class LectureColors private constructor() {
                 return cachedColor
             }
             
-            // Generate new color for any non-empty entry_type
+            // Generate new color for any non-empty entry_type (no validation needed)
             val color = generateColorFromString(entryType)
             
             // Cache the color

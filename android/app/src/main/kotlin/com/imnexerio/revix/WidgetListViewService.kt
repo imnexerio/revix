@@ -135,9 +135,13 @@ class WidgetListViewFactory(
         val subjectInfo = "${record["category"]} · ${record["sub_category"]} · ${record["record_title"]}"
         rv.setTextViewText(R.id.item_subject_info, subjectInfo)
         
-        // Apply lecture type color to the line indicator based on entry_type
+        // Apply lecture type color to the rounded line indicator based on entry_type
         val entryType = record["entry_type"] ?: ""
         val indicatorColor = LectureColors.getLectureTypeColorSync(context, entryType)
+        
+        // Debug log to check if colors are being generated
+        android.util.Log.d("WidgetColors", "Entry Type: $entryType, Color: ${Integer.toHexString(indicatorColor)}")
+        
         rv.setInt(R.id.lecture_type_indicator, "setBackgroundColor", indicatorColor)        // Set the combined reminder info
         val reminderInfoParts = mutableListOf<String>()
         if (record.containsKey("reminder_time") && !record["reminder_time"].isNullOrEmpty()) {

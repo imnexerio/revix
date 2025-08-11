@@ -16,7 +16,6 @@
         android:layout_marginTop="6dp"
         android:layout_marginBottom="6dp"
         android:layout_marginStart="6dp"
-        android:layout_marginEnd="8dp"
         android:background="#CCCCCC"
         android:contentDescription="Lecture type indicator" />
 
