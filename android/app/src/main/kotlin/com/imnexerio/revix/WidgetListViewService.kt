@@ -151,6 +151,9 @@ class WidgetListViewFactory(
         }
         val reminderInfo = reminderInfoParts.joinToString(" · ")
         rv.setTextViewText(R.id.item_reminder_info, reminderInfo)
+        
+        // Apply same lecture type color to reminder info text
+        rv.setTextColor(R.id.item_reminder_info, textColor)
 
         val normalFlags = Paint.ANTI_ALIAS_FLAG
         val strikethroughFlags = Paint.STRIKE_THRU_TEXT_FLAG or Paint.ANTI_ALIAS_FLAG        // Set the paint flags based on whether the item is being processed
