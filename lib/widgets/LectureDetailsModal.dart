@@ -50,7 +50,12 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   
   // Alarm type field
   late int alarmType;
-  final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];  @override
+  final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];
+  
+  // Track if frequency has been changed to show appropriate message
+  bool frequencyChanged = false;
+
+  @override
   void initState() {
     super.initState();
     revisionFrequency = widget.details['recurrence_frequency'];
@@ -661,7 +666,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           _buildTimelineItem(
             context,
             "Next Review",
-            widget.details['scheduled_date'],
+            frequencyChanged ? "Will be updated after saving..." : widget.details['scheduled_date'],
             Icons.event_outlined,
             isLast: true,
             isHighlighted: true,
@@ -835,6 +840,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                 if (newValue != null) {
                   setState(() {
                     revisionFrequency = newValue;
+                    frequencyChanged = true; // Mark that frequency has been changed
 
                     // If custom is selected, show custom options
                     if (newValue == 'Custom') {
@@ -1103,6 +1109,11 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     isEnabled = newValue;
                     // Don't update widget.details['status'] here - only update in local state
                     // The actual data will only be updated when user clicks "SAVE CHANGES"
+                    
+                    // Mark frequency as changed when enabling a disabled lecture (triggers new date calculation)
+                    if (newValue && widget.details['status'] == 'Disabled') {
+                      frequencyChanged = true;
+                    }
                   });
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
@@ -1159,6 +1170,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     if (result != null) {
       setState(() {
         customFrequencyParams = result;
+        frequencyChanged = true; // Mark that frequency has been changed
       });
     }
   }
