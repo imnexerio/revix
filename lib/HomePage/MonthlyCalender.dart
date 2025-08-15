@@ -112,6 +112,12 @@ class _StudyCalendarState extends State<StudyCalendar> {
       // Add scheduled dates
       if (details['date_initiated']!='Unspecified')
       if (details.containsKey('scheduled_date')) {
+        // Skip records with Disabled status
+        final status = details['status'] ?? 'Enabled';
+        if (status == 'Disabled') {
+          continue;
+        }
+        
         final dateScheduledStr = details['scheduled_date'] as String;
         final dateScheduled = DateTime.parse(dateScheduledStr);
         final key = DateTime(dateScheduled.year, dateScheduled.month, dateScheduled.day);
@@ -126,7 +132,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
           'sub_category': record['sub_category'],
           'record_title': record['record_title'],
           'description': details['description'],
-          'status': details['status'] ?? 'Enabled',
+          'status': status,
         });
       }
     }
