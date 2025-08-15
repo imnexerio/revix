@@ -392,22 +392,70 @@ class _StudyCalendarState extends State<StudyCalendar> {
         ...events.map((event) => Card(
           elevation: 2,
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: color,
-              child: Icon(
-                _getEventTypeIcon(event['type']),
-                color: Theme.of(context).colorScheme.onPrimary,
-                size: 20,
-              ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Visual indicator line (similar to AnimatedCardDetailP)
+                Container(
+                  width: 4,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      bottomLeft: Radius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Main content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: color,
+                          radius: 20,
+                          child: Icon(
+                            _getEventTypeIcon(event['type']),
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${event['category']} (${event['sub_category']}) - ${event['record_title']}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                event['description'] ?? 'No description',
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            title: Text(
-              '${event['category']} (${event['sub_category']}) - ${event['record_title']}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            subtitle: Text(event['description'] ?? 'No description'),
           ),
         )).toList(),
         const Divider(thickness: 1),
