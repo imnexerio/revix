@@ -31,6 +31,15 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
   startDate = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
 
   for (var record in records) {
+    // Skip records with Disabled status
+    final details = record['details'] as Map<String, dynamic>?;
+    if (details != null) {
+      final status = details['status'] ?? 'Enabled';
+      if (status == 'Disabled') {
+        continue;
+      }
+    }
+
     // Extract dates for different actions
     String? dateLearnt;
     List<dynamic>? datesRevised;
