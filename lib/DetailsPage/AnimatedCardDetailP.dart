@@ -200,7 +200,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                     bottom: index < 4 ? dashHeight * 0.8 : 0,
                   ),
                   decoration: BoxDecoration(
-                    color: lineColor.withOpacity(0.6),
+                    color: lineColor,
                     borderRadius: index == 0
                         ? const BorderRadius.only(topLeft: Radius.circular(12))
                         : index == 4
