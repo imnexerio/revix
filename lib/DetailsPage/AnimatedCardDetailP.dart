@@ -45,18 +45,17 @@ class AnimatedCardDetailP extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => onSelect(context, record),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    // child: SingleChildScrollView(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Colored line indicator (like Android widget) - solid if enabled, dashed if disabled
-                        _buildStatusIndicatorLine(),
-                        const SizedBox(width: 12),
-                        // Left side with category information
-                        Expanded(
-                          flex: 3,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Colored line indicator (like Android widget) - solid if enabled, dashed if disabled
+                      _buildStatusIndicatorLine(),
+                      const SizedBox(width: 12),
+                      // Left side with category information
+                      Expanded(
+                        flex: 3,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
@@ -86,8 +85,6 @@ class AnimatedCardDetailP extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
-
-
                               // Usage
                               Text(
                                 '${formatDate(record['start_timestamp'])} · ${record['completion_counts']} · ${record['missed_counts']}',
@@ -112,14 +109,15 @@ class AnimatedCardDetailP extends StatelessWidget {
                                   record['date_initiated'] ?? '',
                                   Icons.check_circle_outline,
                                 ),
-                              // ],
-                              // ),
                             ],
                           ),
                         ),
-                        // Right side with the revision graph
-                        Expanded(
-                          flex: 2,
+                      ),
+                      // Right side with the revision graph
+                      Expanded(
+                        flex: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
                           child: SizedBox(
                             child: Center(
                               // Add a key to force rebuild of RevisionRadarChart when data changes
@@ -133,9 +131,8 @@ class AnimatedCardDetailP extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    // ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -158,7 +155,10 @@ class AnimatedCardDetailP extends StatelessWidget {
         height: 100,
         decoration: BoxDecoration(
           color: lineColor,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            bottomLeft: Radius.circular(12),
+          ),
         ),
       );
     } else {
@@ -171,10 +171,18 @@ class AnimatedCardDetailP extends StatelessWidget {
             return Expanded(
               child: Container(
                 width: 4,
-                margin: const EdgeInsets.symmetric(vertical: 1),
+                margin: const EdgeInsets.symmetric(vertical: 0.5),
                 decoration: BoxDecoration(
                   color: index % 2 == 0 ? lineColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: index == 0
+                      ? const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                  )
+                      : index == 4
+                      ? const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                  )
+                      : BorderRadius.zero,
                 ),
               ),
             );
@@ -220,12 +228,13 @@ class AnimatedCardDetailP extends StatelessWidget {
     );
   }
 
-  // import 'package:intl/intl.dart';
-
-  // Inside your build method or wherever you need to format the date
   String formatDate(String date) {
-    final DateTime parsedDate = DateTime.parse(date);
-    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
-    return formatter.format(parsedDate);
+    try {
+      final DateTime parsedDate = DateTime.parse(date);
+      final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+      return formatter.format(parsedDate);
+    } catch (e) {
+      return date; // Return original string if parsing fails
+    }
   }
 }
