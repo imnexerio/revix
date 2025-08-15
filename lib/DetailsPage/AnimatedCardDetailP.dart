@@ -175,7 +175,7 @@ class AnimatedCardDetailP extends StatelessWidget {
     if (isEnabled) {
       // Solid line for enabled status
       return Container(
-        width: 4,
+        width: 5,
         decoration: BoxDecoration(
           color: lineColor,
           borderRadius: const BorderRadius.only(
@@ -187,14 +187,14 @@ class AnimatedCardDetailP extends StatelessWidget {
     } else {
       // Dashed line for disabled status
       return SizedBox(
-        width: 4,
+        width: 5,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final dashHeight = constraints.maxHeight / 9; // 5 dashes + 4 gaps
             return Column(
               children: List.generate(5, (index) {
                 return Container(
-                  width: 4,
+                  width: 5,
                   height: dashHeight,
                   margin: EdgeInsets.only(
                     bottom: index < 4 ? dashHeight * 0.8 : 0,
