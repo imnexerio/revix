@@ -51,15 +51,8 @@ class AnimatedCardDetailP extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Colored line indicator (like Android widget)
-                        Container(
-                          width: 4,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: LectureColors.generateColorFromString(record['entry_type']?.toString() ?? 'default'),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
+                        // Colored line indicator (like Android widget) - solid if enabled, dashed if disabled
+                        _buildStatusIndicatorLine(),
                         const SizedBox(width: 12),
                         // Left side with category information
                         Expanded(
@@ -151,6 +144,44 @@ class AnimatedCardDetailP extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Build status indicator line - solid if enabled, dashed if disabled
+  Widget _buildStatusIndicatorLine() {
+    final bool isEnabled = record['status'] == 'Enabled';
+    final Color lineColor = LectureColors.generateColorFromString(record['entry_type']?.toString() ?? 'default');
+
+    if (isEnabled) {
+      // Solid line for enabled status
+      return Container(
+        width: 4,
+        height: 100,
+        decoration: BoxDecoration(
+          color: lineColor,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      );
+    } else {
+      // Dashed line for disabled status
+      return SizedBox(
+        width: 4,
+        height: 100,
+        child: Column(
+          children: List.generate(5, (index) {
+            return Expanded(
+              child: Container(
+                width: 4,
+                margin: const EdgeInsets.symmetric(vertical: 1),
+                decoration: BoxDecoration(
+                  color: index % 2 == 0 ? lineColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            );
+          }),
+        ),
+      );
+    }
   }
 
   Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon) {
