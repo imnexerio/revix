@@ -63,6 +63,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
           'sub_category': record['sub_category'],
           'record_title': record['record_title'],
           'description': details['description'],
+          'status': details['status'] ?? 'Enabled',
         });
       }
 
@@ -82,6 +83,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             'sub_category': record['sub_category'],
             'record_title': record['record_title'],
             'description': details['description'],
+            'status': details['status'] ?? 'Enabled',
           });
         }
       }
@@ -102,6 +104,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             'sub_category': record['sub_category'],
             'record_title': record['record_title'],
             'description': details['description'],
+            'status': details['status'] ?? 'Enabled',
           });
         }
       }
@@ -123,6 +126,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
           'sub_category': record['sub_category'],
           'record_title': record['record_title'],
           'description': details['description'],
+          'status': details['status'] ?? 'Enabled',
         });
       }
     }
@@ -399,17 +403,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Visual indicator line (similar to AnimatedCardDetailP)
-                Container(
-                  width: 4,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      bottomLeft: Radius.circular(12),
-                    ),
-                  ),
-                ),
+                // Visual indicator line with status-based appearance (similar to AnimatedCardDetailP)
+                _buildStatusIndicatorLine(color, event['status']),
                 const SizedBox(width: 12),
                 // Main content
                 Expanded(
@@ -463,6 +458,51 @@ class _StudyCalendarState extends State<StudyCalendar> {
     );
   }
 
+  // Build status indicator line - solid if enabled, dashed if disabled (similar to AnimatedCardDetailP)
+  Widget _buildStatusIndicatorLine(Color lineColor, String? status) {
+    final bool isEnabled = status == 'Enabled';
+
+    if (isEnabled) {
+      // Solid line for enabled status
+      return Container(
+        width: 4,
+        decoration: BoxDecoration(
+          color: lineColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            bottomLeft: Radius.circular(12),
+          ),
+        ),
+      );
+    } else {
+      // Dashed line for disabled status
+      return SizedBox(
+        width: 4,
+        child: Column(
+          children: List.generate(10, (index) {
+            return Expanded(
+              child: Container(
+                width: 4,
+                margin: const EdgeInsets.symmetric(vertical: 0.5),
+                decoration: BoxDecoration(
+                  color: index % 2 == 0 ? lineColor : Colors.transparent,
+                  borderRadius: index == 0 
+                    ? const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                      )
+                    : index == 9
+                      ? const BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                        )
+                      : BorderRadius.zero,
+                ),
+              ),
+            );
+          }),
+        ),
+      );
+    }
+  }
 
   IconData _getEventTypeIcon(String type) {
     switch (type) {
