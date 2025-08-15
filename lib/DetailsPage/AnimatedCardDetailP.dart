@@ -190,23 +190,28 @@ class AnimatedCardDetailP extends StatelessWidget {
         width: 5,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final dashHeight = constraints.maxHeight / 9; // 5 dashes + 4 gaps
+            const int dashCount = 4; // Change this number to control dash count
+            final totalHeight = constraints.maxHeight;
+            final dashHeight = totalHeight / (dashCount * 2 - 1); // Equal space for dashes and gaps
+            
             return Column(
-              children: List.generate(5, (index) {
-                return Container(
-                  width: 5,
-                  height: dashHeight,
-                  margin: EdgeInsets.only(
-                    bottom: index < 4 ? dashHeight * 0.8 : 0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: lineColor,
-                    borderRadius: index == 0
-                        ? const BorderRadius.only(topLeft: Radius.circular(12))
-                        : index == 4
-                        ? const BorderRadius.only(bottomLeft: Radius.circular(12))
-                        : null,
-                  ),
+              children: List.generate(dashCount, (index) {
+                return Column(
+                  children: [
+                    Container(
+                      width: 5,
+                      height: dashHeight,
+                      decoration: BoxDecoration(
+                        color: lineColor,
+                        borderRadius: index == 0
+                            ? const BorderRadius.only(topLeft: Radius.circular(12))
+                            : index == dashCount - 1
+                            ? const BorderRadius.only(bottomLeft: Radius.circular(12))
+                            : null,
+                      ),
+                    ),
+                    if (index < dashCount - 1) SizedBox(height: dashHeight), // Gap between dashes
+                  ],
                 );
               }),
             );
