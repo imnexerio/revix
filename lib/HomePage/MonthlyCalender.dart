@@ -459,7 +459,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
   }
 
   // Build status indicator line - solid if enabled, dashed if disabled (similar to AnimatedCardDetailP)
-  Widget _buildStatusIndicatorLine(Color lineColor, String? status) {
+  Widget _buildStatusIndicatorLine(Color lineColor, String? status, {int dashCount = 3}) {
     final bool isEnabled = status == 'Enabled';
 
     if (isEnabled) {
@@ -479,7 +479,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
       return SizedBox(
         width: 4,
         child: Column(
-          children: List.generate(10, (index) {
+          children: List.generate(dashCount, (index) {
             return Expanded(
               child: Container(
                 width: 4,
@@ -490,7 +490,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
                     ? const BorderRadius.only(
                         topLeft: Radius.circular(12),
                       )
-                    : index == 9
+                    : index == (dashCount - 1)
                       ? const BorderRadius.only(
                           bottomLeft: Radius.circular(12),
                         )
