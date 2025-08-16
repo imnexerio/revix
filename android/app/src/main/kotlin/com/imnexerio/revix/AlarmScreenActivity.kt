@@ -202,7 +202,9 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         }    }    private fun createAlarmUI() {
         val dpToPx = { dp: Int ->
             TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), resources.displayMetrics).toInt()
-        }        // Get colors from resources
+        }
+
+        // Get colors from resources
         val backgroundColor = ContextCompat.getColor(this, R.color.WidgetBackground)
         val textColor = ContextCompat.getColor(this, R.color.text)
         
@@ -212,7 +214,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         } else {
             ContextCompat.getColor(this, R.color.colorOnPrimary)
         }
-          // Main container - FrameLayout for layering
+
+        // Main container - FrameLayout for layering
         val mainLayout = FrameLayout(this).apply {
             setBackgroundColor(backgroundColor)
             layoutParams = ViewGroup.LayoutParams(
@@ -226,314 +229,294 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         
         // Second layer: Gradient background starting from button position
         val gradientLayer = createGradientBackground(accentColor, dpToPx)
-          // Second layer: Content overlay with responsive layout
+
+        // Third layer: Glassmorphism content overlay
         val contentOverlay = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(24), dpToPx(32), dpToPx(24), dpToPx(32))
+            setPadding(dpToPx(20), dpToPx(40), dpToPx(20), dpToPx(40))
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
         
-        // Minimal top spacer - responsive to screen size
+        // Top spacer for better positioning
         val topSpacer = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 0,
-                0.15f  // Very small weight for minimal top spacing
+                0.1f
             )
-        }        // Content container with flexible layout
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        }
+
+        // Time and Date Glass Card
+        val timeCard = createGlassCard(dpToPx, accentColor).apply {
+            val cardContent = LinearLayout(this@AlarmScreenActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
+                
+                // Time text
+                val timeText = TextView(this@AlarmScreenActivity).apply {
+                    text = reminderTime
+                    textSize = 32f
+                    setTextColor(textColor)
+                    gravity = Gravity.CENTER
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, 0, dpToPx(8))
+                    }
+                }
+                
+                // Date text
+                val dateText = TextView(this@AlarmScreenActivity).apply {
+                    text = scheduledDate
+                    textSize = 18f
+                    setTextColor(textColor)
+                    gravity = Gravity.CENTER
+                    alpha = 0.8f
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                }
+                
+                addView(timeText)
+                addView(dateText)
+            }
+            
+            addView(cardContent)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(24))
+            }
+        }
+        
+        // Information Glass Card
+        val infoCard = createGlassCard(dpToPx, accentColor).apply {
+            val cardContent = LinearLayout(this@AlarmScreenActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
+                
+                // Category text
+                val categoryText = TextView(this@AlarmScreenActivity).apply {
+                    text = "📚 $category"
+                    textSize = 16f
+                    setTextColor(textColor)
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, 0, dpToPx(8))
+                    }
+                }
+                
+                // Sub-category text
+                val subCategoryText = TextView(this@AlarmScreenActivity).apply {
+                    text = "📐 $subCategory"
+                    textSize = 16f
+                    setTextColor(textColor)
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, 0, dpToPx(8))
+                    }
+                }
+                
+                // Record title text
+                val recordTitleText = TextView(this@AlarmScreenActivity).apply {
+                    text = "📝 $recordTitle"
+                    textSize = 16f
+                    setTextColor(textColor)
+                    gravity = Gravity.CENTER
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, 0, dpToPx(12))
+                    }
+                }
+                
+                // Description text with truncation
+                val descriptionText = TextView(this@AlarmScreenActivity).apply {
+                    val displayDescription = if (description.isNotEmpty()) {
+                        if (description.length > 80) {
+                            description.take(77) + "..."
+                        } else {
+                            description
+                        }
+                    } else {
+                        "No description available"
+                    }
+                    text = "📋 $displayDescription"
+                    textSize = 14f
+                    setTextColor(textColor)
+                    gravity = Gravity.CENTER
+                    alpha = 0.8f
+                    maxLines = 2
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                }
+                
+                addView(categoryText)
+                addView(subCategoryText)
+                addView(recordTitleText)
+                addView(descriptionText)
+            }
+            
+            addView(cardContent)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(32))
+            }
+        }        
+        // Flexible spacer
+        val flexSpacer = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 0,
-                0.6f  // Reduced to give more space to button area
+                1f
             )
         }
-        
-        // Title text with responsive typography
-        val timeText = TextView(this).apply {
-            text = reminderTime
-            textSize = 28f  // Slightly smaller for better fit
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(24))  // Reduced margin
-            }
-        }
-        
-        // Category info with responsive styling
-        val categoryText = TextView(this).apply {
-            text = "Category -> $category"
-            textSize = 18f  // Slightly smaller
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(8))  // Reduced margin
-            }
-        }
-        
-        // Sub-category text
-        val subCategoryText = TextView(this).apply {
-            text = "Sub Category -> $subCategory"
-            textSize = 18f  // Slightly smaller
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(12))  // Reduced margin
-            }
-        }
-        
-        // Record title with emphasis
-        val recordTitleText = TextView(this).apply {
-            text = "Title -> $recordTitle"
-            textSize = 18f  // Slightly smaller
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(16))  // Reduced margin
-            }
-        }
-        
-        // Scheduled date text
-        val scheduledDateText = TextView(this).apply {
-            text = scheduledDate
-            textSize = 28f
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(16))
-            }
-        }
-        
-        // Description text
-        val descriptionText = TextView(this).apply {
-            text = if (description.isNotEmpty()) "Description -> $description" else "Description -> No description available"
-            textSize = 18f
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(32))  // Larger margin before button section
-            }
-        }        // Container for swipe button with flexible layout
-        val swipeButtonContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                0.5f  // Increased space for button area
-            )
-        }
-        
-        // Simple swipe button (gradient will be in background layer)
-        val doneButton = createSimpleSwipeButton(
+
+        // Glass swipe button with glassmorphism effect
+        val glassSwipeButton = createGlassSwipeButton(
             text = "SWIPE TO\nMARK DONE",
             accentColor = accentColor,
-            textColor = backgroundColor,
+            textColor = textColor,
             dpToPx = dpToPx
         ) {
             markAsDone()
-        }// Ignore button with secondary styling - will be placed at bottom
-        val ignoreButton = createModernButton(
+        }
+
+        // Glass ignore button
+        val glassIgnoreButton = createGlassButton(
             text = "IGNORE",
-            isPrimary = false,
             accentColor = accentColor,
             textColor = textColor,
             dpToPx = dpToPx
         ) {
             ignoreAlarm()
-        }        // Bottom section for ignore button with more visible space
-        val bottomSection = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.TOP  // Changed to TOP to move button up within its section
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                0.2f  // Increased space for better visibility
-            )
         }
-        
-        // Assemble the content overlay with responsive weights
+
+        // Assemble the glassmorphism layout
         contentOverlay.addView(topSpacer)
-        contentOverlay.addView(contentLayout)
-        contentOverlay.addView(swipeButtonContainer)
-        contentOverlay.addView(bottomSection)
-        
-        // Add ignore button to bottom section
-        bottomSection.addView(ignoreButton)
-          // Add text content to main content layout
-        contentLayout.addView(scheduledDateText)
-        contentLayout.addView(timeText)
-        contentLayout.addView(categoryText)
-        contentLayout.addView(subCategoryText)
-        contentLayout.addView(recordTitleText)
-        contentLayout.addView(descriptionText)
-          // Add swipe button to its container
-        swipeButtonContainer.addView(doneButton)
-        
-        // Layer the components: stars background first, then gradient background, then content overlay
-        mainLayout.addView(starsBackground)  // First layer (background stars)
-        mainLayout.addView(gradientLayer)    // Second layer (gradient)
-        mainLayout.addView(contentOverlay)   // Third layer (content)
+        contentOverlay.addView(timeCard)
+        contentOverlay.addView(infoCard)
+        contentOverlay.addView(flexSpacer)
+        contentOverlay.addView(glassSwipeButton)
+        contentOverlay.addView(glassIgnoreButton)
+
+        // Layer the components: stars background, gradient, content overlay
+        mainLayout.addView(starsBackground)
+        mainLayout.addView(gradientLayer)
+        mainLayout.addView(contentOverlay)
         
         setContentView(mainLayout)
     }
-      private fun createModernButton(
-        text: String,
-        isPrimary: Boolean,
-        accentColor: Int,
-        textColor: Int,
-        dpToPx: (Int) -> Int,
-        onClick: () -> Unit
-    ): Button {
-        return Button(this).apply {
-            this.text = text
-            textSize = 16f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            isAllCaps = false
-            
-            // Set text color before creating background
-            setTextColor(textColor)
-            
-            val buttonBackground = GradientDrawable().apply {
+
+    // Create glassmorphism card with clear readable content
+    private fun createGlassCard(dpToPx: (Int) -> Int, accentColor: Int): FrameLayout {
+        return FrameLayout(this).apply {
+            // Create glass background with NO blur effect on content
+            val glassBackground = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(12).toFloat()
+                cornerRadius = dpToPx(16).toFloat()
                 
-                if (isPrimary) {
-                    setColor(accentColor)
-                } else {
-                    setColor(android.graphics.Color.TRANSPARENT)
-                    setStroke(dpToPx(2), accentColor)
-                }
+                // Semi-transparent white with slight accent tint for glassmorphism
+                val glassAlpha = 35 // Slightly more opaque for better readability
+                
+                // Blend white with slight accent color
+                val glassColor = Color.argb(
+                    glassAlpha,
+                    (Color.red(accentColor) * 0.1f + 255 * 0.9f).toInt(),
+                    (Color.green(accentColor) * 0.1f + 255 * 0.9f).toInt(),
+                    (Color.blue(accentColor) * 0.1f + 255 * 0.9f).toInt()
+                )
+                setColor(glassColor)
+                
+                // Subtle border for glass effect
+                setStroke(dpToPx(1), Color.argb(60, 255, 255, 255))
             }
             
-            background = buttonBackground
-            setPadding(dpToPx(24), dpToPx(16), dpToPx(24), dpToPx(16))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(dpToPx(24), dpToPx(8), dpToPx(24), dpToPx(8))  // More prominent margins
-            }
+            background = glassBackground
             
-            setOnClickListener { onClick() }
+            // Add subtle shadow effect
+            elevation = dpToPx(8).toFloat()
             
-            // Add touch feedback
-            foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+            // NO blur effect on cards - content stays perfectly readable
         }
-    }    private fun createCircularSwipeButton(
+    }
+
+    // Create glassmorphism swipe button
+    private fun createGlassSwipeButton(
         text: String,
         accentColor: Int,
         textColor: Int,
         dpToPx: (Int) -> Int,
         onSwipe: () -> Unit
-    ): View {        // Container for button and glow effect - full screen size for edge-to-edge gradient
+    ): View {
+        // Container for button and animated glow ring
         val container = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(24))
+            val containerSize = dpToPx(200)
+            layoutParams = LinearLayout.LayoutParams(containerSize, containerSize).apply {
+                gravity = Gravity.CENTER
+                setMargins(0, 0, 0, dpToPx(16))
             }
         }
-        // Glow effect view with circular gradient, clipped to circle
-        val glowView = object : View(this) {            private var baseGlowIntensity = 0.4f // More subtle base glow
-            private var interactionGlowIntensity = 0f // Additional glow during interaction
-            
-            private val gradientPaint = Paint().apply {
+
+        // Animated ripple ring view (same as before but with glass effect)
+        val glowRing = object : View(this) {
+            private var rippleProgress = 0f
+            private val glowPaint = Paint().apply {
                 isAntiAlias = true
-            }
-              private fun updateGradient() {
-                val centerX = width / 2f
-                val centerY = height / 2f
-                
-                // Use a moderate radius to avoid square edge effect
-                val baseRadius = dpToPx(180).toFloat() // Fixed moderate radius
-                val glowRadius = baseRadius + (interactionGlowIntensity * dpToPx(80))
-                
-                // Create subtle radial gradient with lower opacity
-                val totalIntensity = baseGlowIntensity + interactionGlowIntensity
-                val centerAlpha = (totalIntensity * 80).toInt().coerceIn(0, 255) // Reduced alpha
-                val midAlpha = (totalIntensity * 40).toInt().coerceIn(0, 255)
-                val edgeAlpha = (totalIntensity * 15).toInt().coerceIn(0, 255)
-                
-                gradientPaint.shader = RadialGradient(
-                    centerX, centerY, glowRadius,
-                    intArrayOf(
-                        Color.argb(centerAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb((centerAlpha * 0.7f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb((centerAlpha * 0.5f).toInt(), Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb(midAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb(edgeAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.TRANSPARENT
-                    ),
-                    floatArrayOf(0f, 0.25f, 0.5f, 0.75f, 0.9f, 1f),
-                    Shader.TileMode.CLAMP
-                )
+                style = Paint.Style.STROKE
+                strokeWidth = dpToPx(3).toFloat()
             }
             
-            var totalGlowIntensity: Float
-                get() = baseGlowIntensity + interactionGlowIntensity
-                set(value) {
-                    interactionGlowIntensity = (value - baseGlowIntensity).coerceAtLeast(0f)
-                    invalidate()
-                }
-            
-            fun setBaseGlowIntensity(intensity: Float) {
-                baseGlowIntensity = intensity
-                invalidate()
-            }
-            
-            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-                super.onSizeChanged(w, h, oldw, oldh)
-                updateGradient()
-            }            override fun onDraw(canvas: Canvas) {
+            override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
-                updateGradient()
                 
                 val centerX = width / 2f
                 val centerY = height / 2f
+                val buttonRadius = dpToPx(60).toFloat()
+                val maxRippleRadius = dpToPx(100).toFloat()
+                val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
+                val alpha = ((1f - rippleProgress) * 120).toInt().coerceIn(0, 120) // More subtle
                 
-                // Use moderate radius to avoid square edge effect
-                val baseRadius = dpToPx(180).toFloat()
-                val glowRadius = baseRadius + (interactionGlowIntensity * dpToPx(80))
+                // Glass-like ripple with accent color
+                glowPaint.color = Color.argb(alpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
                 
-                // Draw circular gradient with smooth edges (no square boundary)
-                canvas.drawCircle(centerX, centerY, glowRadius, gradientPaint)
+                if (rippleProgress > 0f) {
+                    canvas.drawCircle(centerX, centerY, currentRadius, glowPaint)
+                }
+            }
+            
+            fun setRippleProgress(progress: Float) {
+                rippleProgress = progress
+                invalidate()
             }
         }.apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
-            setLayerType(View.LAYER_TYPE_SOFTWARE, null) // Enable advanced rendering
-            
-            // No breathing animation - stable glow
         }
-        
-        // Main button
+
+        // Glass button
         val button = TextView(this).apply {
             this.text = text
             textSize = 14f
@@ -541,30 +524,59 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             gravity = Gravity.CENTER
             setTypeface(null, android.graphics.Typeface.BOLD)
             
-            // Create circular background
-            val circularBackground = GradientDrawable().apply {
+            // Create glass circular background
+            val glassBackground = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(accentColor)
-                setStroke(dpToPx(3), textColor)
+                
+                // Glass effect with accent color tint
+                val glassColor = Color.argb(
+                    40, // More opacity for button
+                    (Color.red(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                    (Color.green(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                    (Color.blue(accentColor) * 0.3f + 255 * 0.7f).toInt()
+                )
+                setColor(glassColor)
+                setStroke(dpToPx(2), Color.argb(60, 255, 255, 255))
             }
-            background = circularBackground
+            background = glassBackground
             
-            // Set circular dimensions (smaller than container for glow space)
             val buttonSize = dpToPx(120)
             layoutParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
                 gravity = Gravity.CENTER
             }
             
-            // Track touch state and swipe progress
+            // NO blur effect on button text - keep "SWIPE TO MARK DONE" readable
+            
+            // Keep all the existing touch and swipe functionality
             var isPressed = false
-            var swipeProgress = 0f
-            var startX = 0f
-            var startY = 0f
             var glowAnimator: ValueAnimator? = null
             
-            // Gesture detector for swipe
+            fun startGlowAnimation() {
+                glowAnimator?.cancel()
+                glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                    duration = 1500
+                    repeatCount = ValueAnimator.INFINITE
+                    repeatMode = ValueAnimator.RESTART
+                    
+                    addUpdateListener { animator ->
+                        if (!isPressed) {
+                            val progress = animator.animatedValue as Float
+                            glowRing.setRippleProgress(progress)
+                        }
+                    }
+                    start()
+                }
+            }
+            
+            fun stopGlowAnimation() {
+                glowAnimator?.cancel()
+                glowRing.setRippleProgress(0f)
+            }
+            
+            post { startGlowAnimation() }
+            
             val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                private val MIN_SWIPE_DISTANCE = dpToPx(80) // Minimum swipe distance
+                private val MIN_SWIPE_DISTANCE = dpToPx(100)
                 
                 override fun onFling(
                     e1: MotionEvent?,
@@ -578,11 +590,9 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     val diffY = e2.y - e1.y
                     val distance = sqrt(diffX * diffX + diffY * diffY)
                     
-                    // Check if minimum swipe distance is met
                     if (distance >= MIN_SWIPE_DISTANCE) {
-                        Log.d(TAG, "Swipe completed - distance: $distance, required: $MIN_SWIPE_DISTANCE")
+                        Log.d(TAG, "Swipe completed - distance: $distance")
                         
-                        // Success feedback
                         animate()
                             .scaleX(1.2f)
                             .scaleY(1.2f)
@@ -601,47 +611,33 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             })
             
             setOnTouchListener { _, event ->
-                when (event.action) {                    MotionEvent.ACTION_DOWN -> {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
                         isPressed = true
-                        startX = event.x
-                        startY = event.y
-                        
-                        // Enhance glow animation on touch
-                        glowAnimator?.cancel()
-                        glowAnimator = ValueAnimator.ofFloat(glowView.totalGlowIntensity, 2.5f).apply {
-                            duration = 300
-                            addUpdateListener { animator ->
-                                val intensity = animator.animatedValue as Float
-                                glowView.totalGlowIntensity = intensity
-                                alpha = 0.8f + ((intensity - 1f) * 0.2f)
-                                scaleX = 1f + ((intensity - 1f) * 0.1f)
-                                scaleY = 1f + ((intensity - 1f) * 0.1f)
-                            }
-                            start()
-                        }
+                        stopGlowAnimation()
+                        animate()
+                            .scaleX(1.1f)
+                            .scaleY(1.1f)
+                            .alpha(0.9f)
+                            .setDuration(200)
+                            .start()
                     }
                     
                     MotionEvent.ACTION_MOVE -> {
                         if (isPressed) {
-                            val diffX = event.x - startX
-                            val diffY = event.y - startY
-                            val currentDistance = sqrt(diffX * diffX + diffY * diffY)
+                            val diffX = event.x - (width / 2f)
+                            val diffY = event.y - (height / 2f)
+                            val distance = sqrt(diffX * diffX + diffY * diffY)
+                            val progress = (distance / dpToPx(100)).coerceIn(0f, 1f)
                             
-                            // Calculate progress (0 to 1) based on minimum swipe distance
-                            swipeProgress = min(currentDistance / dpToPx(80), 1f)
-                            
-                            // Enhanced visual feedback based on progress
-                            val progressAlpha = 0.8f + (swipeProgress * 0.2f)
-                            val progressScale = 1f + (swipeProgress * 0.3f)
-                            val progressGlow = 2.5f + (swipeProgress * 1.5f) // Increase glow further during swipe
+                            val progressAlpha = 0.9f + (progress * 0.1f)
+                            val progressScale = 1.1f + (progress * 0.2f)
                             
                             alpha = progressAlpha
                             scaleX = progressScale
                             scaleY = progressScale
-                            glowView.totalGlowIntensity = progressGlow
                             
-                            // Change color tint as user gets closer to completion
-                            if (swipeProgress > 0.7f) {
+                            if (progress > 0.7f) {
                                 setTextColor(Color.WHITE)
                             } else {
                                 setTextColor(textColor)
@@ -651,40 +647,80 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         isPressed = false
-                        swipeProgress = 0f
-                        
-                        // Reset to base glow state
-                        glowAnimator?.cancel()
-                        glowAnimator = ValueAnimator.ofFloat(glowView.totalGlowIntensity, 1f).apply {
-                            duration = 400
-                            addUpdateListener { animator ->
-                                val intensity = animator.animatedValue as Float
-                                glowView.totalGlowIntensity = intensity
-                            }
-                            start()
-                        }
                         
                         animate()
                             .alpha(1.0f)
                             .scaleX(1.0f)
                             .scaleY(1.0f)
-                            .setDuration(400)
+                            .setDuration(300)
+                            .withEndAction {
+                                startGlowAnimation()
+                            }
                             .start()
                         
                         setTextColor(textColor)
                     }
                 }
-                gestureDetector.onTouchEvent(event)            }
-            
-            // No breathing animation - button remains stable
+                gestureDetector.onTouchEvent(event)
+            }
         }
         
-        // Add views to container
-        container.addView(glowView)
+        container.addView(glowRing)
         container.addView(button)
         
         return container
     }
+
+    // Create glassmorphism ignore button
+    private fun createGlassButton(
+        text: String,
+        accentColor: Int,
+        textColor: Int,
+        dpToPx: (Int) -> Int,
+        onClick: () -> Unit
+    ): Button {
+        return Button(this).apply {
+            this.text = text
+            textSize = 16f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            isAllCaps = false
+            setTextColor(textColor)
+            
+            // Glass background
+            val glassBackground = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dpToPx(12).toFloat()
+                
+                // Transparent glass with accent tint
+                val glassColor = Color.argb(
+                    25,
+                    (Color.red(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                    (Color.green(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                    (Color.blue(accentColor) * 0.3f + 255 * 0.7f).toInt()
+                )
+                setColor(glassColor)
+                setStroke(dpToPx(1), Color.argb(50, 255, 255, 255))
+            }
+            
+            background = glassBackground
+            
+            // NO blur effect on button text - keep text readable
+            
+            setPadding(dpToPx(32), dpToPx(16), dpToPx(32), dpToPx(16))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(dpToPx(40), dpToPx(16), dpToPx(40), dpToPx(20))
+            }
+            
+            setOnClickListener { onClick() }
+            
+            // Add touch feedback
+            foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+        }
+    }
+
 
     private fun createGradientBackground(
         accentColor: Int,
@@ -756,7 +792,9 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )        }
-    }    private fun createFallingStarsBackground(
+    }
+
+    private fun createFallingStarsBackground(
         textColor: Int,
         dpToPx: (Int) -> Int
     ): View {
@@ -1017,7 +1055,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         super.onStart()
         Log.d(TAG, "AlarmScreenActivity onStart() called")
     }
-        override fun onResume() {
+
+    override fun onResume() {
         super.onResume()
         Log.d(TAG, "AlarmScreenActivity onResume() called - should be visible now")
         
@@ -1034,7 +1073,9 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             registerReceiver(alarmServiceReceiver, filter)
         }
         Log.d(TAG, "Registered alarm service receiver")
-    }    override fun onPause() {
+    }
+
+    override fun onPause() {
         super.onPause()
         Log.d(TAG, "AlarmScreenActivity onPause() called")
         
@@ -1094,223 +1135,14 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         sendBroadcast(intent)
         
         Log.d(TAG, "Sent ignore broadcast for: $recordTitle")
-    }    override fun onNewIntent(intent: Intent?) {
+    }
+
+    override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         Log.d(TAG, "AlarmScreenActivity onNewIntent() called with action: ${intent?.action}")
         // Simplified - just log for debugging, actual close is handled by broadcast receiver
-    }    private fun createSimpleSwipeButton(
-        text: String,
-        accentColor: Int,
-        textColor: Int,
-        dpToPx: (Int) -> Int,
-        onSwipe: () -> Unit
-    ): View {        // Container for button and animated glow ring
-        val container = FrameLayout(this).apply {
-            val containerSize = dpToPx(200) // Further increased container size for larger ripple
-            layoutParams = LinearLayout.LayoutParams(containerSize, containerSize).apply {
-                gravity = Gravity.CENTER
-                setMargins(0, 0, 0, dpToPx(24))
-            }
-        }
-          // Animated ripple ring view (expanding from button edge)
-        val glowRing = object : View(this) {
-            private var rippleProgress = 0f
-            private val glowPaint = Paint().apply {
-                isAntiAlias = true
-                style = Paint.Style.STROKE
-                strokeWidth = dpToPx(4).toFloat()
-            }
-            
-            override fun onDraw(canvas: Canvas) {
-                super.onDraw(canvas)
-                
-                val centerX = width / 2f
-                val centerY = height / 2f
-                  // Button radius (where ripple starts)
-                val buttonRadius = dpToPx(60).toFloat() // Half of button size (120dp)
-                // Maximum ripple radius (where it disappears)
-                val maxRippleRadius = dpToPx(100).toFloat() // Increased maximum radius
-                
-                // Calculate current ripple radius based on progress
-                val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
-                  // Create fading alpha - starts strong, fades as it expands
-                val alpha = ((1f - rippleProgress) * 255).toInt().coerceIn(0, 255) // Increased opacity - now full alpha at start
-                
-                // Use same color as button's edge (textColor) but with transparency
-                glowPaint.color = Color.argb(alpha, Color.red(textColor), Color.green(textColor), Color.blue(textColor))
-                
-                // Draw the expanding ripple ring
-                if (rippleProgress > 0f) {
-                    canvas.drawCircle(centerX, centerY, currentRadius, glowPaint)
-                }
-            }
-            
-            fun setRippleProgress(progress: Float) {
-                rippleProgress = progress
-                invalidate()
-            }
-        }.apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-        
-        // Main button (stays constant size)
-        val button = TextView(this).apply {
-            this.text = text
-            textSize = 14f
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            
-            // Create circular background
-            val circularBackground = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(accentColor)
-                setStroke(dpToPx(3), textColor)
-            }
-            background = circularBackground
-            
-            // Set circular dimensions (button stays this size)
-            val buttonSize = dpToPx(120)
-            layoutParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
-                gravity = Gravity.CENTER
-            }
-            
-            // Track touch state and swipe progress
-            var isPressed = false
-            var startX = 0f
-            var startY = 0f
-            var glowAnimator: ValueAnimator? = null
-              // Start ripple animation (expanding from button edge)
-            fun startGlowAnimation() {
-                glowAnimator?.cancel()
-                glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-                    duration = 1500 // 1.5 seconds for each ripple
-                    repeatCount = ValueAnimator.INFINITE
-                    repeatMode = ValueAnimator.RESTART // Restart (not reverse) for ripple effect
-                    
-                    addUpdateListener { animator ->
-                        if (!isPressed) { // Only animate when not being touched
-                            val progress = animator.animatedValue as Float
-                            glowRing.setRippleProgress(progress)
-                        }
-                    }
-                    start()
-                }
-            }
-            
-            // Stop ripple animation
-            fun stopGlowAnimation() {
-                glowAnimator?.cancel()
-                glowRing.setRippleProgress(0f)
-            }
-            
-            // Start the glow animation immediately
-            post { startGlowAnimation() }            // Gesture detector for swipe
-            val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                private val MIN_SWIPE_DISTANCE = dpToPx(100)
-                
-                override fun onFling(
-                    e1: MotionEvent?,
-                    e2: MotionEvent,
-                    velocityX: Float,
-                    velocityY: Float
-                ): Boolean {
-                    if (e1 == null) return false
-                    
-                    val diffX = e2.x - e1.x
-                    val diffY = e2.y - e1.y
-                    val distance = sqrt(diffX * diffX + diffY * diffY)
-                    
-                    if (distance >= MIN_SWIPE_DISTANCE) {
-                        Log.d(TAG, "Swipe completed - distance: $distance")
-                        
-                        // Success feedback (only button scales, not glow)
-                        animate()
-                            .scaleX(1.2f)
-                            .scaleY(1.2f)
-                            .setDuration(150)
-                            .withEndAction {
-                                onSwipe()
-                            }
-                        return true
-                    }
-                    return false
-                }
-                
-                override fun onDown(e: MotionEvent): Boolean {
-                    return true
-                }
-            })
-            
-            setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        isPressed = true
-                        startX = event.x
-                        startY = event.y
-                        
-                        // Stop glow animation and provide touch feedback (button only)
-                        stopGlowAnimation()
-                        animate()
-                            .scaleX(1.1f)
-                            .scaleY(1.1f)
-                            .alpha(0.9f)
-                            .setDuration(200)
-                            .start()
-                    }
-                      MotionEvent.ACTION_MOVE -> {
-                        if (isPressed) {
-                            val diffX = event.x - startX
-                            val diffY = event.y - startY
-                            val currentDistance = sqrt(diffX * diffX + diffY * diffY)
-                            
-                            // Calculate progress and provide visual feedback (button only)
-                            val swipeProgress = min(currentDistance / dpToPx(100), 1f)
-                            val progressScale = 1.1f + (swipeProgress * 0.2f)
-                            
-                            scaleX = progressScale
-                            scaleY = progressScale
-                            
-                            // Change color as user swipes
-                            if (swipeProgress > 0.7f) {
-                                setTextColor(Color.WHITE)
-                            } else {
-                                setTextColor(textColor)
-                            }
-                        }
-                    }
-                    
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        isPressed = false
-                        
-                        // Reset button to normal state and restart glow animation
-                        animate()
-                            .alpha(1.0f)
-                            .scaleX(1.0f)
-                            .scaleY(1.0f)
-                            .setDuration(300)
-                            .withEndAction {
-                                // Restart glow animation after reset
-                                startGlowAnimation()
-                            }
-                            .start()
-                        
-                        setTextColor(textColor)
-                    }
-                }
-                gestureDetector.onTouchEvent(event)
-            }
-        }
-        
-        // Add glow ring first (behind button), then button
-        container.addView(glowRing)
-        container.addView(button)
-        
-        return container
     }
+
 
     // Sensor event handling for device tilt detection
     override fun onSensorChanged(event: SensorEvent?) {
