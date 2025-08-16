@@ -304,7 +304,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 
                 // Category text
                 val categoryText = TextView(this@AlarmScreenActivity).apply {
-                    text = "📚 $category"
+                    text = "Category : $category"
                     textSize = 16f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
@@ -318,7 +318,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 
                 // Sub-category text
                 val subCategoryText = TextView(this@AlarmScreenActivity).apply {
-                    text = "📐 $subCategory"
+                    text = "Sub Category : $subCategory"
                     textSize = 16f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
@@ -332,7 +332,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 
                 // Record title text
                 val recordTitleText = TextView(this@AlarmScreenActivity).apply {
-                    text = "📝 $recordTitle"
+                    text = "Title : $recordTitle"
                     textSize = 16f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
@@ -348,15 +348,15 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 // Description text with truncation
                 val descriptionText = TextView(this@AlarmScreenActivity).apply {
                     val displayDescription = if (description.isNotEmpty()) {
-                        if (description.length > 80) {
-                            description.take(77) + "..."
+                        if (description.length > 120) {
+                            description.take(115) + "..."
                         } else {
                             description
                         }
                     } else {
                         "No description available"
                     }
-                    text = "📋 $displayDescription"
+                    text = "Description : $displayDescription"
                     textSize = 14f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
