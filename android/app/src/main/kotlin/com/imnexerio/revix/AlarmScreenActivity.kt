@@ -66,6 +66,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     private var subCategory: String = ""
     private var recordTitle: String = ""
     private var reminderTime: String = ""
+    private var entryType: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
     
     // Sensor properties for device tilt detection
@@ -118,6 +119,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         reminderTime = intent.getStringExtra("reminder_time") ?: ""
+        entryType = intent.getStringExtra("entry_type") ?: ""
           Log.d(TAG, "AlarmScreenActivity created for: $recordTitle")
         
         // Initialize sensor for device tilt detection
@@ -200,7 +202,13 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         }        // Get colors from resources
         val backgroundColor = ContextCompat.getColor(this, R.color.WidgetBackground)
         val textColor = ContextCompat.getColor(this, R.color.text)
-        val accentColor = ContextCompat.getColor(this, R.color.colorOnPrimary)
+        
+        // Get dynamic accent color based on entry_type, fallback to default if empty
+        val accentColor = if (entryType.isNotEmpty()) {
+            LectureColors.getLectureTypeColorSync(this, entryType)
+        } else {
+            ContextCompat.getColor(this, R.color.colorOnPrimary)
+        }
           // Main container - FrameLayout for layering
         val mainLayout = FrameLayout(this).apply {
             setBackgroundColor(backgroundColor)
