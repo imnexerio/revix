@@ -345,24 +345,20 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     }
                 }
                 
-                // Description text with truncation
+                // Description text with proper 4-line truncation
                 val descriptionText = TextView(this@AlarmScreenActivity).apply {
                     val displayDescription = if (description.isNotEmpty()) {
-                        if (description.length > 120) {
-                            description.take(115) + "..."
-                        } else {
-                            description
-                        }
+                        description
                     } else {
                         "No description available"
                     }
                     text = "Description : $displayDescription"
-                    textSize = 14f
+                    textSize = 16f  // Increased from 14f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
-                    alpha = 0.8f
-                    maxLines = 2
-                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    // Removed alpha for better visibility
+                    maxLines = 4  // Show maximum 4 lines
+                    ellipsize = android.text.TextUtils.TruncateAt.END  // Auto truncate with "..."
                     layoutParams = LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
