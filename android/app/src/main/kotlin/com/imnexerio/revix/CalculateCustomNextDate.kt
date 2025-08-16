@@ -15,7 +15,7 @@ class CalculateCustomNextDate {
             }
 
             // Extract base parameters with safe fallbacks
-            val frequencyType = (customParams["frequencyType"] as? String)?.toLowerCase(Locale.ROOT) ?: "week"
+            val frequencyType = (customParams["frequencyType"] as? String)?.lowercase() ?: "week"
             val value = customParams["value"] as? Int ?: 1
             val nextDate = Calendar.getInstance()
             nextDate.timeInMillis = startDate.timeInMillis
@@ -161,7 +161,7 @@ class CalculateCustomNextDate {
                                 "sunday" to Calendar.SUNDAY,
                                 "sun" to Calendar.SUNDAY
                             )
-                            val targetWeekday = dayMap[dayOfWeek.toLowerCase(Locale.ROOT)] ?: Calendar.MONDAY
+                            val targetWeekday = dayMap[dayOfWeek.lowercase()] ?: Calendar.MONDAY
 
                             // Calculate target month and year
                             val targetMonth = startDate.get(Calendar.MONTH) + value
@@ -384,7 +384,7 @@ class CalculateCustomNextDate {
                                 "sunday" to Calendar.SUNDAY,
                                 "sun" to Calendar.SUNDAY
                             )
-                            val targetWeekday = dayMap[dayOfWeekForYear.toLowerCase(Locale.ROOT)] ?: Calendar.MONDAY
+                            val targetWeekday = dayMap[dayOfWeekForYear.lowercase()] ?: Calendar.MONDAY
 
                             // Find the first occurrence of the weekday in the month
                             val firstDayOfMonth = Calendar.getInstance()
