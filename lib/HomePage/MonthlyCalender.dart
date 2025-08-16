@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-
 import '../SchedulePage/LegendItem.dart';
 import '../SchedulePage/ProportionalRingPainter.dart';
+import '../Utils/lecture_colors.dart';
 
 class StudyCalendar extends StatefulWidget {
   final List<Map<String, dynamic>> records;
@@ -64,6 +64,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
           'record_title': record['record_title'],
           'description': details['description'],
           'status': details['status'] ?? 'Enabled',
+          'entry_type': details['entry_type'],
         });
       }
 
@@ -84,6 +85,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             'record_title': record['record_title'],
             'description': details['description'],
             'status': details['status'] ?? 'Enabled',
+            'entry_type': details['entry_type'],
           });
         }
       }
@@ -105,6 +107,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
             'record_title': record['record_title'],
             'description': details['description'],
             'status': details['status'] ?? 'Enabled',
+            'entry_type': details['entry_type'],
           });
         }
       }
@@ -133,6 +136,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
           'record_title': record['record_title'],
           'description': details['description'],
           'status': status,
+          'entry_type': details['entry_type'],
         });
       }
     }
@@ -410,7 +414,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Visual indicator line with status-based appearance (similar to AnimatedCardDetailP)
-                _buildStatusIndicatorLine(color, event['status']),
+                _buildStatusIndicatorLine(event),
                 const SizedBox(width: 12),
                 // Main content
                 Expanded(
@@ -419,7 +423,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: color,
+                          backgroundColor: LectureColors.generateColorFromString(event['entry_type']?.toString() ?? 'default'),
                           radius: 20,
                           child: Icon(
                             _getEventTypeIcon(event['type']),
@@ -465,8 +469,10 @@ class _StudyCalendarState extends State<StudyCalendar> {
   }
 
   // Build status indicator line - solid if enabled, dashed if disabled (similar to AnimatedCardDetailP)
-  Widget _buildStatusIndicatorLine(Color lineColor, String? status, {int dashCount = 3}) {
-    final bool isEnabled = status == 'Enabled';
+  Widget _buildStatusIndicatorLine(Map<String, dynamic> event, {int dashCount = 3}) {
+    final bool isEnabled = event['status'] == 'Enabled';
+    // Generate color based on the event's category like in AnimatedCardDetailP
+    final Color lineColor = LectureColors.generateColorFromString(event['entry_type']?.toString() ?? 'default');
 
     if (isEnabled) {
       // Solid line for enabled status
