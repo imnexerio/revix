@@ -218,7 +218,7 @@ class _ChatPageState extends State<ChatPage> {
         _messages.add(ChatMessage(
           text: _aiEnabled
               ? "Hi there! I can help you understand your schedule. What would you like to know?"
-              : "Welcome to your reTrAIcker. AI features are currently disabled. You can enable them by setting your Gemini API key.",
+              : "Welcome to your revAIx. AI features are currently disabled. You can enable them by setting your Gemini API key.",
           isUser: false,
         ));
       }
@@ -318,7 +318,7 @@ class _ChatPageState extends State<ChatPage> {
     // Add welcome message but don't save it yet
     String welcomeMessage = _aiEnabled
         ? "Hi there! I can help you understand your schedule. What would you like to know?"
-        : "Welcome to your reTrAIcker. AI features are currently disabled. You can enable them by setting your Gemini API key.";
+        : "Welcome to your revAIx. AI features are currently disabled. You can enable them by setting your Gemini API key.";
 
     _messages.add(ChatMessage(
       text: welcomeMessage,
@@ -387,7 +387,7 @@ class _ChatPageState extends State<ChatPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      'reTrAIcker',
+                      'revAIx',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
