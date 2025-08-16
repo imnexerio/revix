@@ -239,7 +239,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 
 Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
   String revisionFrequency = details['recurrence_frequency'];
-  int noRevision = details['completion_counts'];
+  String completionValue = _getCompletionValue(details);
 
   return Container(
     padding: const EdgeInsets.all(16),
@@ -279,7 +279,7 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
         _buildStatusItem(
           context,
           "Completed",
-          "${noRevision}",
+          completionValue,
           Icons.check_circle_outline,
           Theme.of(context).colorScheme.secondary,
         ),
@@ -390,6 +390,43 @@ String formatDate(String date) {
     // Handle any parsing errors gracefully
     print("Error parsing date: $date, Error: $e");
     return "Invalid Date";
+  }
+}
+
+String _getCompletionValue(Map<String, dynamic> details) {
+  int completionCount = details['completion_counts'] ?? 0;
+  var durationData = details['duration'];
+  
+  if (durationData == null) {
+    return "$completionCount";
+  }
+  
+  // Convert to Map<String, dynamic> safely
+  Map<String, dynamic> duration = Map<String, dynamic>.from(durationData);
+  
+  String durationType = duration['type']?.toString() ?? '';
+  
+  switch (durationType) {
+    case 'specificTimes':
+      int numberOfTimes = int.tryParse(duration['numberOfTimes']?.toString() ?? '0') ?? 0;
+      return "$completionCount/$numberOfTimes";
+      
+    case 'until':
+      String endDate = duration['endDate']?.toString() ?? '';
+      if (endDate.isNotEmpty) {
+        try {
+          return "$completionCount/$endDate";
+        } catch (e) {
+          return "$completionCount/date";
+        }
+      }
+      return "$completionCount/date";
+      
+    case 'forever':
+      return "$completionCount/∞";
+      
+    default:
+      return "$completionCount";
   }
 }
 
