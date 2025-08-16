@@ -255,7 +255,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         
         // Title text with responsive typography
         val timeText = TextView(this).apply {
-            text = "Time -> $reminderTime"
+            text = reminderTime
             textSize = 28f  // Slightly smaller for better fit
             setTextColor(textColor)
             gravity = Gravity.CENTER
@@ -312,8 +312,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         
         // Scheduled date text
         val scheduledDateText = TextView(this).apply {
-            text = "Date -> $scheduledDate"
-            textSize = 18f
+            text = scheduledDate
+            textSize = 28f
             setTextColor(textColor)
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
@@ -384,11 +384,11 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         // Add ignore button to bottom section
         bottomSection.addView(ignoreButton)
           // Add text content to main content layout
+        contentLayout.addView(scheduledDateText)
         contentLayout.addView(timeText)
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
-        contentLayout.addView(scheduledDateText)
         contentLayout.addView(descriptionText)
           // Add swipe button to its container
         swipeButtonContainer.addView(doneButton)
