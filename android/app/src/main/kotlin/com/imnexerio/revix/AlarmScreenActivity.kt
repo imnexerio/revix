@@ -67,6 +67,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     private var recordTitle: String = ""
     private var reminderTime: String = ""
     private var entryType: String = ""
+    private var scheduledDate: String = ""
+    private var description: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
     
     // Sensor properties for device tilt detection
@@ -120,7 +122,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         reminderTime = intent.getStringExtra("reminder_time") ?: ""
         entryType = intent.getStringExtra("entry_type") ?: ""
-          Log.d(TAG, "AlarmScreenActivity created for: $recordTitle")
+        scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
+        description = intent.getStringExtra("description") ?: ""
         
         // Initialize sensor for device tilt detection
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -303,7 +306,35 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(32))  // Reduced margin
+                setMargins(0, 0, 0, dpToPx(16))  // Reduced margin
+            }
+        }
+        
+        // Scheduled date text
+        val scheduledDateText = TextView(this).apply {
+            text = "Date -> $scheduledDate"
+            textSize = 18f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(16))
+            }
+        }
+        
+        // Description text
+        val descriptionText = TextView(this).apply {
+            text = if (description.isNotEmpty()) "Description -> $description" else "Description -> No description available"
+            textSize = 18f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(32))  // Larger margin before button section
             }
         }        // Container for swipe button with flexible layout
         val swipeButtonContainer = LinearLayout(this).apply {
@@ -357,6 +388,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         contentLayout.addView(categoryText)
         contentLayout.addView(subCategoryText)
         contentLayout.addView(recordTitleText)
+        contentLayout.addView(scheduledDateText)
+        contentLayout.addView(descriptionText)
           // Add swipe button to its container
         swipeButtonContainer.addView(doneButton)
         
