@@ -21,6 +21,7 @@ data class ActiveAlarm(
     val recordTitle: String,
     val alarmType: Int,
     val reminderTime: String,
+    val entryType: String,
     val startTime: Long = System.currentTimeMillis()
 )
 
@@ -238,6 +239,7 @@ class AlarmService : Service() {    companion object {
         val subCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
         val recordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
         val reminderTime = intent.getStringExtra("reminder_time") ?: ""
+        val entryType = intent.getStringExtra("entry_type") ?: ""
         val alarmKey = "$category$subCategory$recordTitle"
 
         Log.d(TAG, "Handling alarm: $recordTitle (Type: $alarmType) at $reminderTime")
@@ -249,7 +251,8 @@ class AlarmService : Service() {    companion object {
             subCategory = subCategory,
             recordTitle = recordTitle,
             alarmType = alarmType,
-            reminderTime = reminderTime
+            reminderTime = reminderTime,
+            entryType = entryType
         )
         // Add to active alarms (timer will start only when alarm becomes active)
         activeAlarms[alarmKey] = alarm
@@ -540,7 +543,8 @@ class AlarmService : Service() {    companion object {
                 putExtra(AlarmScreenActivity.EXTRA_CATEGORY, alarm.category)
                 putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
                 putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
-                putExtra("reminder_time", alarm.reminderTime)                // Use FLAG_ACTIVITY_MULTIPLE_TASK to ensure separate task instances
+                putExtra("reminder_time", alarm.reminderTime)
+                putExtra("entry_type", alarm.entryType)                // Use FLAG_ACTIVITY_MULTIPLE_TASK to ensure separate task instances
                 addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_NO_USER_ACTION or
@@ -559,6 +563,7 @@ class AlarmService : Service() {    companion object {
                     putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
                     putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
                     putExtra("reminder_time", alarm.reminderTime)
+                    putExtra("entry_type", alarm.entryType)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 startActivity(fallbackIntent)

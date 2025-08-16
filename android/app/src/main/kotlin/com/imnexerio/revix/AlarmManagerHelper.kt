@@ -21,7 +21,8 @@ data class AlarmMetadata(
     val scheduledDate: String,  // NEW - store the date
     val actualTime: Long,
     val alarmType: Int,
-    val reminderTime: String  // NEW - store the original reminder time
+    val reminderTime: String,  // NEW - store the original reminder time
+    val entryType: String  // NEW - store the entry type for dynamic colors
 )
 
 class AlarmManagerHelper(private val context: Context) {
@@ -75,6 +76,7 @@ class AlarmManagerHelper(private val context: Context) {
                 record["alarm_type"] = jsonObject.optString("alarm_type", "0").toIntOrNull() ?: 0
                 record["scheduled_date"] = jsonObject.optString("scheduled_date", "")
                 record["status"] = jsonObject.optString("status", "")
+                record["entry_type"] = jsonObject.optString("entry_type", "")
 
                 records.add(record)
             }
@@ -150,6 +152,7 @@ class AlarmManagerHelper(private val context: Context) {
                 val reminderTime = record["reminder_time"]?.toString() ?: ""
                 val alarmType = (record["alarm_type"]?.toString()?.toIntOrNull()) ?: 0
                 val scheduledDate = record["scheduled_date"]?.toString() ?: dateString
+                val entryType = record["entry_type"]?.toString() ?: ""
 
                 if (alarmType == 0 || reminderTime.lowercase() == "all day" || reminderTime.isEmpty()) {
                     return@forEach
@@ -166,7 +169,8 @@ class AlarmManagerHelper(private val context: Context) {
                     scheduledDate = scheduledDate,
                     actualTime = actualTime,
                     alarmType = alarmType,
-                    reminderTime = reminderTime
+                    reminderTime = reminderTime,
+                    entryType = entryType
                 )                // Add to processed metadata regardless of time - comparison with old data happens later
                 processedAlarmMetadata[uniqueKey] = newMetadata
                 Log.d(
@@ -332,6 +336,7 @@ class AlarmManagerHelper(private val context: Context) {
             putExtra("scheduled_date", metadata.scheduledDate)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, metadata.alarmType)
             putExtra("reminder_time", metadata.reminderTime)
+            putExtra("entry_type", metadata.entryType)
         }
 
         // Use a consistent request code based on the key
@@ -355,7 +360,8 @@ class AlarmManagerHelper(private val context: Context) {
         recordTitle: String,
         scheduledDate: String,
         reminderTime: String,
-        alarmType: Int
+        alarmType: Int,
+        entryType: String = ""
     ) {
         Log.d(TAG, "Updating alarm for single record: $recordTitle on $scheduledDate")
         
@@ -377,7 +383,8 @@ class AlarmManagerHelper(private val context: Context) {
             scheduledDate = scheduledDate,
             actualTime = actualTime,
             alarmType = alarmType,
-            reminderTime = reminderTime
+            reminderTime = reminderTime,
+            entryType = entryType
         )
         
         // Check if alarm time is in the future before scheduling
@@ -447,6 +454,7 @@ class AlarmManagerHelper(private val context: Context) {
                     putExtra("scheduled_date", alarmMetadata.scheduledDate)
                     putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmMetadata.alarmType)
                     putExtra("reminder_time", alarmMetadata.reminderTime)
+                    putExtra("entry_type", alarmMetadata.entryType)
                 }
                 
                 // Use the same request code calculation as in scheduleAlarm
@@ -511,6 +519,7 @@ class AlarmManagerHelper(private val context: Context) {
                 put("actualTime", alarm.actualTime)
                 put("alarmType", alarm.alarmType)
                 put("reminderTime", alarm.reminderTime)  // NEW
+                put("entryType", alarm.entryType)  // NEW
             }
             jsonArray.put(jsonObject)
         }
@@ -532,7 +541,8 @@ class AlarmManagerHelper(private val context: Context) {
                     scheduledDate = jsonObject.optString("scheduledDate", ""), // Handle old format
                     actualTime = jsonObject.getLong("actualTime"),
                     alarmType = jsonObject.getInt("alarmType"),
-                    reminderTime = jsonObject.optString("reminderTime", "") // Handle old format
+                    reminderTime = jsonObject.optString("reminderTime", ""), // Handle old format
+                    entryType = jsonObject.optString("entryType", "") // Handle old format
                 )
                 alarmMap[alarm.key] = alarm
             }
