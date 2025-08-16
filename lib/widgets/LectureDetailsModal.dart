@@ -230,13 +230,26 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             },
                           );
                         },
-                        child: Text(
-                          entryType,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: LectureColors.generateColorFromString(entryType),
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: LectureColors.generateColorFromString(entryType),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              entryType,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: LectureColors.generateColorFromString(entryType),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
