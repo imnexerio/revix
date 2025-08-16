@@ -307,7 +307,9 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     text = "Category : $category"
                     textSize = 16f
                     setTextColor(textColor)
-                    gravity = Gravity.CENTER
+                    gravity = Gravity.START  // Left aligned
+                    maxLines = 1  // Single line
+                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
                     layoutParams = LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
@@ -321,7 +323,9 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     text = "Sub Category : $subCategory"
                     textSize = 16f
                     setTextColor(textColor)
-                    gravity = Gravity.CENTER
+                    gravity = Gravity.START  // Left aligned
+                    maxLines = 1  // Single line
+                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
                     layoutParams = LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
@@ -333,10 +337,11 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 // Record title text
                 val recordTitleText = TextView(this@AlarmScreenActivity).apply {
                     text = "Title : $recordTitle"
-                    textSize = 16f
+                    textSize = 16f  // Same as category and subcategory
                     setTextColor(textColor)
-                    gravity = Gravity.CENTER
-                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    gravity = Gravity.START  // Left aligned
+                    maxLines = 1  // Single line
+                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
                     layoutParams = LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
@@ -355,7 +360,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     text = "Description : $displayDescription"
                     textSize = 16f  // Increased from 14f
                     setTextColor(textColor)
-                    gravity = Gravity.CENTER
+                    gravity = Gravity.START  // Left aligned
                     // Removed alpha for better visibility
                     maxLines = 4  // Show maximum 4 lines
                     ellipsize = android.text.TextUtils.TruncateAt.END  // Auto truncate with "..."
