@@ -189,12 +189,54 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        entryType,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: LectureColors.generateColorFromString(entryType),
-                          fontWeight: FontWeight.w600,
+                      GestureDetector(
+                        onTap: () {
+                          // Show entry type selection dialog
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Select Entry Type'),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: availableEntryTypes.length,
+                                    itemBuilder: (context, index) {
+                                      String type = availableEntryTypes[index];
+                                      return ListTile(
+                                        leading: Container(
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            color: LectureColors.generateColorFromString(type),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        title: Text(type),
+                                        trailing: entryType == type ? const Icon(Icons.check) : null,
+                                        onTap: () {
+                                          setState(() {
+                                            entryType = type;
+                                            widget.details['entry_type'] = type;
+                                          });
+                                          Navigator.of(context).pop();
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        child: Text(
+                          entryType,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: LectureColors.generateColorFromString(entryType),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -778,69 +820,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
         children: [
           const SizedBox(height: 8),
-          
-          // Entry Type section
-          Text(
-            "Entry Type",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Theme.of(context).cardColor,
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: DropdownButtonFormField<String>(
-              value: availableEntryTypes.contains(entryType) ? entryType : null,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              isExpanded: true,
-              hint: Text(
-                entryType.isEmpty ? 'Select Entry Type' : entryType,
-                style: TextStyle(
-                  color: entryType.isNotEmpty 
-                      ? LectureColors.generateColorFromString(entryType)
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                ),
-              ),
-              items: availableEntryTypes.map((String type) {
-                return DropdownMenuItem<String>(
-                  value: type,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: LectureColors.generateColorFromString(type),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(type),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    entryType = newValue;
-                    widget.details['entry_type'] = newValue; // Update the details
-                  });
-                }
-              },
-            ),
-          ),
-          
-          const SizedBox(height: 20),
           
           // Wrap the RevisionFrequencyDropdown in a Container with styling
           Container(
