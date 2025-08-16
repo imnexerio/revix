@@ -416,6 +416,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   }
 
   Widget _buildStatusCard(BuildContext context) {
+    String completionValue = _getCompletionValue();
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -505,12 +507,62 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             color: Colors.grey.withOpacity(0.2),
           ),
           const SizedBox(width: 8),
-          _buildStatusItem(
+          _buildClickableStatusItem(
             context,
             "Completed",
-            "${noRevision}",
+            completionValue,
             Icons.check_circle_outline,
             Theme.of(context).colorScheme.secondary,
+            () async {
+              // Show duration options dialog
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Duration Settings'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.all_inclusive),
+                          title: const Text('Forever'),
+                          subtitle: const Text('Continue revisions indefinitely'),
+                          onTap: () {
+                            setState(() {
+                              duration = 'Forever';
+                              durationData = {
+                                "type": "forever",
+                                "numberOfTimes": null,
+                                "endDate": null
+                              };
+                            });
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.repeat),
+                          title: const Text('Specific Number of Times'),
+                          subtitle: const Text('Set a target number of revisions'),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _showNumberOfTimesDialog();
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.event),
+                          title: const Text('Until Date'),
+                          subtitle: const Text('Continue until a specific date'),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _showUntilDatePicker();
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
           ),
           const SizedBox(width: 8),
           VerticalDivider(
@@ -823,173 +875,6 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
           const SizedBox(height: 20),
 
-          // Duration section
-          Text(
-            "Duration",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Theme.of(context).cardColor,
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: duration,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  isExpanded: true,
-                  items: const [
-                    DropdownMenuItem<String>(
-                      value: 'Forever',
-                      child: Text('Forever'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Specific Number of Times',
-                      child: Text('Specific Number of Times'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Until',
-                      child: Text('Until'),
-                    ),
-                  ],
-                  onChanged: (String? newValue) {
-                    if(newValue != null) {
-                      setState(() {
-                        duration = newValue;
-                        if (duration == 'Forever') {
-                          durationData = {
-                            "type": "forever",
-                            "numberOfTimes": null,
-                            "endDate": null
-                          };
-                        }
-                        else if (duration == 'Specific Number of Times') {
-                          // Show a dialog or bottom sheet to enter the number of times
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              final controller = TextEditingController(
-                                text: durationData["numberOfTimes"]?.toString() ?? ''
-                              );
-
-                              return AlertDialog(
-                                title: const Text('Enter Number of Times'),
-                                content: TextFormField(
-                                  controller: controller,
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Number of Times',
-                                    hintText: 'Enter a value >= 1',
-                                  ),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter a value';
-                                    }
-                                    final number = int.tryParse(value);
-                                    if (number == null || number < 1) {
-                                      return 'Value must be at least 1';
-                                    }
-                                    return null;
-                                  },
-                                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    child: const Text('CANCEL'),
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                  TextButton(
-                                    child: const Text('OK'),
-                                    onPressed: () {
-                                      int? parsedValue = int.tryParse(controller.text);
-                                      if (parsedValue != null && parsedValue >= 1) {
-                                        setState(() {
-                                          durationData = {
-                                            "type": "specificTimes",
-                                            "numberOfTimes": parsedValue,
-                                            "endDate": null
-                                          };
-                                        });
-                                        Navigator.of(context).pop();
-                                      } else {
-                                        // Show error feedback
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Please enter a valid number (minimum 1)'),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        }
-                        else if (duration == 'Until') {
-                          // Show a date picker to select the end date
-                          final initialDate = durationData["endDate"] != null
-                              ? DateTime.parse(durationData["endDate"])
-                              : DateTime.now();
-
-                          showDatePicker(
-                            context: context,
-                            initialDate: initialDate.isAfter(DateTime.now()) ? initialDate : DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(2101),
-                          ).then((pickedDate) {
-                            if (pickedDate != null) {
-                              setState(() {
-                                durationData = {
-                                  "type": "until",
-                                  "numberOfTimes": null,
-                                  "endDate": pickedDate.toIso8601String().split('T')[0]
-                                };
-                              });
-                            }
-                          });
-                        }
-                      });
-                    }
-                  },
-                ),
-                // Show additional information about the selected duration
-                if (durationData["numberOfTimes"] != null || durationData["endDate"] != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: Text(
-                      durationData["numberOfTimes"] != null
-                          ? "Will repeat ${durationData["numberOfTimes"]} times"
-                          : durationData["endDate"] != null
-                              ? "Will repeat until ${durationData["endDate"]}"
-                              : "",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.secondary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
           // Custom frequency description (if selected)
           if (revisionFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
             Padding(
@@ -1111,6 +996,128 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       print("Error parsing date: $date, Error: $e");
       return "Invalid Date";
     }
+  }
+
+  String _getCompletionValue() {
+    int completionCount = noRevision;
+    
+    String durationType = durationData['type'] ?? '';
+    
+    switch (durationType) {
+      case 'specificTimes':
+        int numberOfTimes = durationData['numberOfTimes'] ?? 0;
+        return "$completionCount/$numberOfTimes";
+        
+      case 'until':
+        String endDate = durationData['endDate'] ?? '';
+        if (endDate.isNotEmpty) {
+          try {
+            return "$completionCount/$endDate";
+          } catch (e) {
+            return "$completionCount/date";
+          }
+        }
+        return "$completionCount/date";
+        
+      case 'forever':
+        return "$completionCount/∞";
+        
+      default:
+        return "$completionCount";
+    }
+  }
+
+  void _showNumberOfTimesDialog() {
+    final controller = TextEditingController(
+      text: durationData["numberOfTimes"]?.toString() ?? ''
+    );
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter Number of Times'),
+          content: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Number of Times',
+              hintText: 'Enter a value >= 1',
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a value';
+              }
+              final number = int.tryParse(value);
+              if (number == null || number < 1) {
+                return 'Value must be at least 1';
+              }
+              return null;
+            },
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('CANCEL'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                int? parsedValue = int.tryParse(controller.text);
+                if (parsedValue != null && parsedValue >= 1) {
+                  setState(() {
+                    duration = 'Specific Number of Times';
+                    durationData = {
+                      "type": "specificTimes",
+                      "numberOfTimes": parsedValue,
+                      "endDate": null
+                    };
+                  });
+                  Navigator.of(context).pop();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid number (minimum 1)'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showUntilDatePicker() {
+    final initialDate = durationData["endDate"] != null
+        ? DateTime.parse(durationData["endDate"])
+        : DateTime.now();
+
+    showDatePicker(
+      context: context,
+      initialDate: initialDate.isAfter(DateTime.now()) ? initialDate : DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    ).then((pickedDate) {
+      if (pickedDate != null) {
+        setState(() {
+          duration = 'Until';
+          durationData = {
+            "type": "until",
+            "numberOfTimes": null,
+            "endDate": pickedDate.toIso8601String().split('T')[0]
+          };
+        });
+      }
+    });
   }
 
   /// Helper method to calculate base date for next review calculation
