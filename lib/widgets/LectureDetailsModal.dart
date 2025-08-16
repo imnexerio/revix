@@ -198,7 +198,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                               return AlertDialog(
                                 title: const Text('Select Entry Type'),
                                 content: SizedBox(
-                                  width: double.maxFinite,
+                                  width: double.minPositive,
                                   child: ListView.builder(
                                     shrinkWrap: true,
                                     itemCount: availableEntryTypes.length,
