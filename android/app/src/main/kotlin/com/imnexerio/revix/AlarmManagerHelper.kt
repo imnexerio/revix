@@ -251,12 +251,14 @@ class AlarmManagerHelper(private val context: Context) {
 
     private fun alarmsAreEqual(alarm1: AlarmMetadata, alarm2: AlarmMetadata): Boolean {
         return alarm1.actualTime == alarm2.actualTime &&
-               alarm1.alarmType == alarm2.alarmType &&
-               alarm1.category == alarm2.category &&
-               alarm1.subCategory == alarm2.subCategory &&
-               alarm1.recordTitle == alarm2.recordTitle &&
-               alarm1.scheduledDate == alarm2.scheduledDate &&
-               alarm1.reminderTime == alarm2.reminderTime
+                alarm1.alarmType == alarm2.alarmType &&
+                alarm1.category == alarm2.category &&
+                alarm1.subCategory == alarm2.subCategory &&
+                alarm1.recordTitle == alarm2.recordTitle &&
+                alarm1.scheduledDate == alarm2.scheduledDate &&
+                alarm1.reminderTime == alarm2.reminderTime &&
+                alarm1.entryType == alarm2.entryType &&      // ADD THIS
+                alarm1.description == alarm2.description     // ADD THIS
     }
 
     private fun logAlarmChanges(oldAlarm: AlarmMetadata, newAlarm: AlarmMetadata) {
