@@ -10,14 +10,14 @@ import 'LocalDatabaseService.dart';
 import 'CustomSnackBar.dart';
 
 
-class CombinedDatabaseService {
-  static final CombinedDatabaseService _instance = CombinedDatabaseService._internal();
+class UnifiedDatabaseService {
+  static final UnifiedDatabaseService _instance = UnifiedDatabaseService._internal();
 
-  factory CombinedDatabaseService() {
+  factory UnifiedDatabaseService() {
     return _instance;
   }
 
-  CombinedDatabaseService._internal() {
+  UnifiedDatabaseService._internal() {
     _auth.authStateChanges().listen((User? user) {
       _cleanupCurrentListener();
       if (user != null) {
@@ -80,7 +80,7 @@ class CombinedDatabaseService {
         _initialize(user.uid);
       }
     } catch (e) {
-      print('Error in CombinedDatabaseService.initialize(): $e');
+      print('Error in UnifiedDatabaseService.initialize(): $e');
       _addErrorToAllControllers('Failed to initialize database service: $e');
     }
   }
@@ -205,37 +205,37 @@ class CombinedDatabaseService {
 
   void _scheduleAlarms(List<Map<String, dynamic>> todayRecords, List<Map<String, dynamic>> tomorrowRecords) {
     try {
-      print('CombinedDatabaseService: Scheduling alarms with data...');
+      print('UnifiedDatabaseService: Scheduling alarms with data...');
       print('Today records: ${todayRecords.length}, Tomorrow records: ${tomorrowRecords.length}');
       
       // Try to call AlarmManager - if it fails due to background context, that's okay
       // because RefreshService will handle alarm scheduling natively
       try {
         AlarmManager.scheduleAlarmsWithData(todayRecords, tomorrowRecords);
-        print('CombinedDatabaseService: Alarms scheduled successfully via Flutter');
+        print('UnifiedDatabaseService: Alarms scheduled successfully via Flutter');
       } catch (e) {
         if (e.toString().contains('MissingPluginException')) {
-          print('CombinedDatabaseService: Background context detected - native Android will handle alarm scheduling');
+          print('UnifiedDatabaseService: Background context detected - native Android will handle alarm scheduling');
         } else {
-          print('CombinedDatabaseService: Error scheduling alarms: $e');
+          print('UnifiedDatabaseService: Error scheduling alarms: $e');
           rethrow;
         }
       }
     } catch (e) {
-      print('CombinedDatabaseService: Error in alarm scheduling: $e');
+      print('UnifiedDatabaseService: Error in alarm scheduling: $e');
     }
   }
 
   void _cancelAllAlarms() {
     try {
-      print('CombinedDatabaseService: Cancelling all alarms...');
+      print('UnifiedDatabaseService: Cancelling all alarms...');
       
       // Call AlarmManager to cancel all alarms
       AlarmManager.cancelAllAlarms();
       
-      print('CombinedDatabaseService: All alarms cancelled successfully');
+      print('UnifiedDatabaseService: All alarms cancelled successfully');
     } catch (e) {
-      print('CombinedDatabaseService: Error cancelling alarms: $e');
+      print('UnifiedDatabaseService: Error cancelling alarms: $e');
     }
   }
 
@@ -862,17 +862,17 @@ class CombinedDatabaseService {
 }
 
 Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
-  return await CombinedDatabaseService().fetchCategoriesAndSubCategories();
+  return await UnifiedDatabaseService().fetchCategoriesAndSubCategories();
 }
 
 Stream<Map<String, dynamic>> getCategoriesStream() {
-  return CombinedDatabaseService().subjectsStream;
+  return UnifiedDatabaseService().subjectsStream;
 }
 
 class categoryDataProvider {
   static final categoryDataProvider _instance = categoryDataProvider._internal();
 
-  final CombinedDatabaseService _service = CombinedDatabaseService();
+  final UnifiedDatabaseService _service = UnifiedDatabaseService();
 
   factory categoryDataProvider() {
     return _instance;
@@ -888,7 +888,7 @@ class categoryDataProvider {
   String getScheduleData() => _service.getScheduleData();
   Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() => _service.fetchCategoriesAndSubCategories();
   Future<dynamic> fetchRawData() => _service.fetchRawData();
-  void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
+  void dispose() {} // No-op, let UnifiedDatabaseService handle real disposal
 
   // Add method to get data from a particular location
   Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String lectureNo) async {

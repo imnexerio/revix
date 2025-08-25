@@ -122,7 +122,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       }
 
       // Get the unified database service instance
-      final CombinedDatabaseService dbService = CombinedDatabaseService();
+      final UnifiedDatabaseService dbService = UnifiedDatabaseService();
       
       // Fetch current lecture data from database
       Map<String, dynamic>? details = await dbService.getDataAtLocation(category, subCategory, lectureNo);

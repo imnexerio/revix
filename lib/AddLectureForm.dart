@@ -90,7 +90,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
   }
   Future<void> UpdateRecords(BuildContext context) async {
     try {
-      final unifiedService = CombinedDatabaseService();
+      final unifiedService = UnifiedDatabaseService();
       
       // Set alarm type to 0 if "All Day" is selected
       int finalAlarmType = _timeController.text == 'All Day' ? 0 : _alarmType;

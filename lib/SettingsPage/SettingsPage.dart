@@ -101,7 +101,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   Future<void> _logout(BuildContext context) async {
     try {
       await _animationController.reverse();
-      final databaseService = CombinedDatabaseService();
+      final databaseService = UnifiedDatabaseService();
       databaseService.stopListening();
 
       // Stop auto-refresh before logout

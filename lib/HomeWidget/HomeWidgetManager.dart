@@ -26,7 +26,7 @@ class HomeWidgetService {
   static const String categoriesDataKey = 'categoriesData';
   static bool _isInitialized = false;
   static bool _isBackgroundInitialized = false;
-  static final CombinedDatabaseService _databaseService = CombinedDatabaseService();  static Future<void> initialize() async {
+  static final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();  static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
@@ -136,10 +136,10 @@ class HomeWidgetService {
     }
   }
 
-  // Update categories using existing CombinedDatabaseService
+  // Update categories using existing UnifiedDatabaseService
   static Future<void> _updateCategoriesFromService() async {
     try {
-      // Use existing CombinedDatabaseService method
+      // Use existing UnifiedDatabaseService method
       final categoriesData = await _databaseService.fetchCategoriesAndSubCategories();
 
       await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode(categoriesData));
@@ -168,8 +168,8 @@ class HomeWidgetService {
         final requestId = uri?.queryParameters['requestId'] ?? '';
         print('Widget refresh requestId: $requestId');
 
-        final service = CombinedDatabaseService();
-        print('CombinedDatabaseService created');
+        final service = UnifiedDatabaseService();
+        print('UnifiedDatabaseService created');
 
         await service.initialize();
         print('Service initialized');
@@ -252,7 +252,7 @@ class HomeWidgetService {
         String updateResult = 'SUCCESS';
 
         try {
-          final service = CombinedDatabaseService();
+          final service = UnifiedDatabaseService();
           await service.initialize();
 
           try {
@@ -346,7 +346,7 @@ class HomeWidgetService {
             try {
               print('Initializing database service for record creation...');
 
-              final service = CombinedDatabaseService();
+              final service = UnifiedDatabaseService();
               await service.initialize();
 
               print('Database service ready, creating record...');

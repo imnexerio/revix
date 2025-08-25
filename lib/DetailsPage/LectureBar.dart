@@ -20,7 +20,7 @@ class LectureBar extends StatefulWidget {
 class _LectureBarState extends State<LectureBar> {
   List<dynamic> _allRecords = [];
   List<MapEntry<String, dynamic>> _filteredLectureData = [];
-  final CombinedDatabaseService _recordService = CombinedDatabaseService();
+  final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
   Stream<Map<String, dynamic>>? _recordsStream;
   StreamSubscription? _subscription;
 
