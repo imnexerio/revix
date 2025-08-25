@@ -684,6 +684,20 @@ class CombinedDatabaseService {
     }
   }
 
+  // Helper method to generate unique title by appending (2), (3), etc.
+  Future<String> _generateUniqueTitle(String category, String subCategory, String originalTitle) async {
+    String baseTitle = originalTitle;
+    int counter = 2;
+    String currentTitle = baseTitle;
+    
+    while (await getDataAtLocation(category, subCategory, currentTitle) != null) {
+      currentTitle = "$baseTitle ($counter)";
+      counter++;
+    }
+    
+    return currentTitle;
+  }
+
   // Add UpdateRecords method for unified record saving
   Future<void> updateRecords(
     BuildContext context,
@@ -701,6 +715,9 @@ class CombinedDatabaseService {
     Map<String, dynamic> customFrequencyParams,
     int alarmType,
   ) async {
+    // Generate unique title to prevent duplicates
+    String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, lectureNo);
+    
     try {
       int completionCounts = 0;
       
@@ -747,13 +764,18 @@ class CombinedDatabaseService {
         'duration': durationData,
       };
 
-      // Save record using unified service
-      bool success = await saveRecord(selectedCategory, selectedCategoryCode, lectureNo, recordData);
+      // Save record using unified service with unique title
+      bool success = await saveRecord(selectedCategory, selectedCategoryCode, uniqueTitle, recordData);
       
       if (success) {
+        // Show appropriate success message
+        final message = uniqueTitle != lectureNo 
+            ? 'Record saved as "$uniqueTitle"'
+            : 'Record added successfully';
+            
         customSnackBar(
           context: context,
-          message: 'Record added successfully',
+          message: message,
         );
       } else {
         throw Exception('Failed to save record');
@@ -778,6 +800,9 @@ class CombinedDatabaseService {
     Map<String, dynamic> customFrequencyParams,
     int alarmType,
   ) async {
+    // Generate unique title to prevent duplicates
+    String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, lectureNo);
+    
     try {
       int completionCounts = 0;
       
@@ -824,8 +849,8 @@ class CombinedDatabaseService {
         'duration': durationData,
       };
 
-      // Save record using unified service
-      bool success = await saveRecord(selectedCategory, selectedCategoryCode, lectureNo, recordData);
+      // Save record using unified service with unique title
+      bool success = await saveRecord(selectedCategory, selectedCategoryCode, uniqueTitle, recordData);
       
       if (!success) {
         throw Exception('Failed to save record');
@@ -1038,11 +1063,12 @@ class UnifiedDatabaseService {
     Map<String, dynamic> customFrequencyParams,
     int alarmType,
   ) async {
+    // Use the CombinedDatabaseService's updateRecords which already has unique title generation
     return await _service.updateRecords(
       context,
       selectedCategory,
       selectedCategoryCode,
-      lectureNo,
+      lectureNo, // Let CombinedDatabaseService handle the unique title generation
       startTimestamp,
       timeController,
       lectureType,
