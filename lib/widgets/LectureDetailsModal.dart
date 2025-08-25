@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../Utils/CustomFrequencySelector.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
-import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/MarkAsDoneService.dart';
 import '../Utils/lecture_colors.dart';
@@ -411,25 +410,38 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           // Set alarm type to 0 if "All Day" is selected
                           int finalAlarmType = formattedTime == 'All Day' ? 0 : alarmType;
 
-                          await UpdateRecords(
-                            widget.selectedCategory,
-                            widget.selectedCategoryCode,
-                            widget.lectureNo,
-                            widget.details['date_updated'],
-                            widget.details['description'],
-                            formattedTime,
-                            noRevision,
-                            finalDateScheduled,
-                            datesRevised,
-                            widget.details['missed_counts'],
-                            datesMissedRevisions,
-                            revisionFrequency,
-                            isEnabled ? 'Enabled' : 'Disabled',
-                            revisionData,
-                            durationData,
-                            finalAlarmType,
-                            entryType
+                          // Use FirebaseDatabaseService directly instead of wrapper
+                          final databaseService = FirebaseDatabaseService();
+                          
+                          // Prepare update data
+                          Map<String, dynamic> updateData = {
+                            'reminder_time': formattedTime,
+                            'date_updated': widget.details['date_updated'],
+                            'completion_counts': noRevision,
+                            'scheduled_date': finalDateScheduled,
+                            'missed_counts': widget.details['missed_counts'],
+                            'dates_missed_revisions': datesMissedRevisions,
+                            'recurrence_frequency': revisionFrequency,
+                            'status': isEnabled ? 'Enabled' : 'Disabled',
+                            'dates_updated': datesRevised,
+                            'description': widget.details['description'],
+                            'recurrence_data': revisionData,
+                            'duration': durationData,
+                            'alarm_type': finalAlarmType,
+                            'entry_type': entryType,
+                          };
+                          
+                          // Update record using centralized service
+                          bool success = await databaseService.updateRecord(
+                            widget.selectedCategory, 
+                            widget.selectedCategoryCode, 
+                            widget.lectureNo, 
+                            updateData
                           );
+                          
+                          if (!success) {
+                            throw Exception('Failed to update record');
+                          }
 
                           Navigator.pop(context);
                           Navigator.pop(context);
