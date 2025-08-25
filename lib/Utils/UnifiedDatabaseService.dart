@@ -698,94 +698,8 @@ class UnifiedDatabaseService {
     return currentTitle;
   }
 
-  // Add UpdateRecords method for unified record saving
-  Future<void> updateRecords(
-    BuildContext context,
-    String selectedCategory,
-    String selectedCategoryCode,
-    String lectureNo,
-    String startTimestamp,
-    String timeController,
-    String lectureType,
-    String todayDate,
-    String dateScheduled,
-    String description,
-    String revisionFrequency,
-    Map<String, dynamic> durationData,
-    Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
-    // Generate unique title to prevent duplicates
-    String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, lectureNo);
-    
-    try {
-      int completionCounts = 0;
-      
-      if (todayDate == 'Unspecified') {
-        completionCounts = -1;
-        revisionFrequency = 'No Repetition';
-        dateScheduled = 'Unspecified';
-        durationData = {
-          "type": "forever",
-          "numberOfTimes": null,
-          "endDate": null
-        };
-      } else {
-        if (DateTime.parse(startTimestamp).isBefore(DateTime.parse(todayDate)) || revisionFrequency == 'No Repetition') {
-          completionCounts = -1;
-        }
-      }
-
-      // Create a map to store all revision parameters including custom ones
-      Map<String, dynamic> revisionData = {
-        'frequency': revisionFrequency,
-      };
-
-      // Add custom frequency parameters if present
-      if (customFrequencyParams.isNotEmpty) {
-        revisionData['custom_params'] = customFrequencyParams;
-      }
-
-      // Prepare record data for storage
-      Map<String, dynamic> recordData = {
-        'start_timestamp': startTimestamp,
-        'reminder_time': timeController,
-        'alarm_type': alarmType,
-        'entry_type': lectureType,
-        'date_initiated': todayDate,
-        'date_updated': todayDate,
-        'scheduled_date': dateScheduled,
-        'description': description,
-        'missed_counts': 0,
-        'completion_counts': completionCounts,
-        'recurrence_frequency': revisionFrequency,
-        'recurrence_data': revisionData,
-        'status': 'Enabled',
-        'duration': durationData,
-      };
-
-      // Save record using unified service with unique title
-      bool success = await saveRecord(selectedCategory, selectedCategoryCode, uniqueTitle, recordData);
-      
-      if (success) {
-        // Show appropriate success message
-        final message = uniqueTitle != lectureNo 
-            ? 'Record saved as "$uniqueTitle"'
-            : 'Record added successfully';
-            
-        customSnackBar(
-          context: context,
-          message: message,
-        );
-      } else {
-        throw Exception('Failed to save record');
-      }
-    } catch (e) {
-      throw Exception('Failed to save lecture: $e');
-    }
-  }
-  // Add UpdateRecords method without context for method channel calls
-  Future<void> updateRecordsWithoutContext(
+  // Private method containing the common logic for updating records
+  Future<String> _updateRecordsInternal(
     String selectedCategory,
     String selectedCategoryCode,
     String lectureNo,
@@ -855,44 +769,93 @@ class UnifiedDatabaseService {
       if (!success) {
         throw Exception('Failed to save record');
       }
+      
+      // Return the unique title that was used
+      return uniqueTitle;
     } catch (e) {
       throw Exception('Failed to save lecture: $e');
     }
   }
-}
 
-Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
-  return await UnifiedDatabaseService().fetchCategoriesAndSubCategories();
-}
-
-Stream<Map<String, dynamic>> getCategoriesStream() {
-  return UnifiedDatabaseService().subjectsStream;
-}
-
-class categoryDataProvider {
-  static final categoryDataProvider _instance = categoryDataProvider._internal();
-
-  final UnifiedDatabaseService _service = UnifiedDatabaseService();
-
-  factory categoryDataProvider() {
-    return _instance;
+  // Public method for updating records with context (shows snackbar)
+  Future<void> updateRecords(
+    BuildContext context,
+    String selectedCategory,
+    String selectedCategoryCode,
+    String lectureNo,
+    String startTimestamp,
+    String timeController,
+    String lectureType,
+    String todayDate,
+    String dateScheduled,
+    String description,
+    String revisionFrequency,
+    Map<String, dynamic> durationData,
+    Map<String, dynamic> customFrequencyParams,
+    int alarmType,
+  ) async {
+    try {
+      String uniqueTitle = await _updateRecordsInternal(
+        selectedCategory,
+        selectedCategoryCode,
+        lectureNo,
+        startTimestamp,
+        timeController,
+        lectureType,
+        todayDate,
+        dateScheduled,
+        description,
+        revisionFrequency,
+        durationData,
+        customFrequencyParams,
+        alarmType,
+      );
+      
+      // Show appropriate success message
+      final message = uniqueTitle != lectureNo 
+          ? 'Record saved as "$uniqueTitle"'
+          : 'Record added successfully';
+          
+      customSnackBar(
+        context: context,
+        message: message,
+      );
+    } catch (e) {
+      throw e; // Re-throw the exception for the caller to handle
+    }
   }
 
-  categoryDataProvider._internal();
-
-  Stream<Map<String, dynamic>> get subjectsStream => _service.subjectsStream;
-  Stream<dynamic> get rawDataStream => _service.rawDataStream;
-  Map<String, dynamic>? get currentData => _service.currentSubjectsData;
-  dynamic get currentRawData => _service.currentRawData;
-
-  String getScheduleData() => _service.getScheduleData();
-  Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() => _service.fetchCategoriesAndSubCategories();
-  Future<dynamic> fetchRawData() => _service.fetchRawData();
-  void dispose() {} // No-op, let UnifiedDatabaseService handle real disposal
-
-  // Add method to get data from a particular location
-  Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String lectureNo) async {
-    return await _service.getDataAtLocation(category, subCategory, lectureNo);
+  // Public method for updating records without context (no snackbar)
+  Future<void> updateRecordsWithoutContext(
+    String selectedCategory,
+    String selectedCategoryCode,
+    String lectureNo,
+    String startTimestamp,
+    String timeController,
+    String lectureType,
+    String todayDate,
+    String dateScheduled,
+    String description,
+    String revisionFrequency,
+    Map<String, dynamic> durationData,
+    Map<String, dynamic> customFrequencyParams,
+    int alarmType,
+  ) async {
+    await _updateRecordsInternal(
+      selectedCategory,
+      selectedCategoryCode,
+      lectureNo,
+      startTimestamp,
+      timeController,
+      lectureType,
+      todayDate,
+      dateScheduled,
+      description,
+      revisionFrequency,
+      durationData,
+      customFrequencyParams,
+      alarmType,
+    );
   }
 
   // Method to load categories and subcategories for forms
@@ -939,7 +902,7 @@ class categoryDataProvider {
       } else {
         // Use Firebase for authenticated users (original code)
         // First check if cached data is available
-        Map<String, dynamic>? data = currentData;
+        Map<String, dynamic>? data = currentSubjectsData;
 
         data ??= await fetchCategoriesAndSubCategories();
 

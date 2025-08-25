@@ -31,7 +31,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
     _initializeSelectedCategory();
 
     // Subscribe to the stream
-    _categoriesStream = getCategoriesStream();
+    _categoriesStream = UnifiedDatabaseService().subjectsStream;
 
     _controller.forward();
   }
@@ -44,7 +44,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
 
   Future<void> _initializeSelectedCategory() async {
     try {
-      final data = await fetchCategoriesAndSubCategories();
+      final data = await UnifiedDatabaseService().fetchCategoriesAndSubCategories();
       if (data['subjects'].isNotEmpty) {
         setState(() {
           _selectedCategory = data['subjects'].first;

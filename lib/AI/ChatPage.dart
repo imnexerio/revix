@@ -47,13 +47,14 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _fetchScheduleData() async {
     try {
-      // Use the new categoryDataProvider instead of ScheduleDataProvider
-      _scheduleData = categoryDataProvider().getScheduleData();
+      // Use the UnifiedDatabaseService instance instead of wrapper
+      final service = UnifiedDatabaseService();
+      _scheduleData = service.getScheduleData();
 
       // If the data isn't already in cache, try to fetch it
       if (_scheduleData == 'No schedule data available') {
-        await categoryDataProvider().fetchRawData();
-        _scheduleData = categoryDataProvider().getScheduleData();
+        await service.fetchRawData();
+        _scheduleData = service.getScheduleData();
       }
 
       // Update the Gemini service with the new schedule data
@@ -62,7 +63,7 @@ class _ChatPageState extends State<ChatPage> {
       }
 
       // Optional: Subscribe to raw data changes to keep the schedule data updated
-      categoryDataProvider().rawDataStream.listen((data) {
+      service.rawDataStream.listen((data) {
         if (data != null) {
           _scheduleData = data.toString();
 

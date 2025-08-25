@@ -57,9 +57,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
   }
   Future<void> _loadCategoriesAndSubCategories() async {
     try {
-      // Get the singleton instance and use the new loadCategoriesAndSubCategories method
-      final provider = categoryDataProvider();
-      final data = await provider.loadCategoriesAndSubCategories();
+      // Get the singleton instance and use the loadCategoriesAndSubCategories method
+      final service = UnifiedDatabaseService();
+      final data = await service.loadCategoriesAndSubCategories();
 
       // Update state with the retrieved data
       setState(() {

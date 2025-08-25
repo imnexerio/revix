@@ -32,7 +32,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
     );
 
     // Subscribe to the stream first
-    _categoriesStream = getCategoriesStream();
+    _categoriesStream = UnifiedDatabaseService().subjectsStream;
 
     // Then initialize data
     _initializeSelectedCategoryCode();
@@ -46,7 +46,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
 
   Future<void> _initializeSelectedCategoryCode() async {
     try {
-      final data = await fetchCategoriesAndSubCategories();
+      final data = await UnifiedDatabaseService().fetchCategoriesAndSubCategories();
 
       setState(() {
         _categoryData = data;
