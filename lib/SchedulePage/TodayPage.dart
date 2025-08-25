@@ -12,14 +12,14 @@ class TodayPage extends StatefulWidget {
 class _TodayPageState extends State<TodayPage> {
   late StreamController<Map<String, List<Map<String, dynamic>>>> _recordsController;
   late Stream<Map<String, List<Map<String, dynamic>>>> _recordsStream;
-  late UnifiedDatabaseService _databaseListener;
+  late CombinedDatabaseService _databaseListener;
 
   @override
   void initState() {
     super.initState();
     _recordsController = StreamController<Map<String, List<Map<String, dynamic>>>>();
     _recordsStream = _recordsController.stream;
-    _databaseListener = UnifiedDatabaseService();
+    _databaseListener = CombinedDatabaseService();
     _databaseListener.initialize();
     _databaseListener.categorizedRecordsStream.listen((data) {
       _recordsController.add(data);

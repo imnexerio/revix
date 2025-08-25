@@ -205,37 +205,37 @@ class CombinedDatabaseService {
 
   void _scheduleAlarms(List<Map<String, dynamic>> todayRecords, List<Map<String, dynamic>> tomorrowRecords) {
     try {
-      print('UnifiedDatabaseService: Scheduling alarms with data...');
+      print('CombinedDatabaseService: Scheduling alarms with data...');
       print('Today records: ${todayRecords.length}, Tomorrow records: ${tomorrowRecords.length}');
       
       // Try to call AlarmManager - if it fails due to background context, that's okay
       // because RefreshService will handle alarm scheduling natively
       try {
         AlarmManager.scheduleAlarmsWithData(todayRecords, tomorrowRecords);
-        print('UnifiedDatabaseService: Alarms scheduled successfully via Flutter');
+        print('CombinedDatabaseService: Alarms scheduled successfully via Flutter');
       } catch (e) {
         if (e.toString().contains('MissingPluginException')) {
-          print('UnifiedDatabaseService: Background context detected - native Android will handle alarm scheduling');
+          print('CombinedDatabaseService: Background context detected - native Android will handle alarm scheduling');
         } else {
-          print('UnifiedDatabaseService: Error scheduling alarms: $e');
+          print('CombinedDatabaseService: Error scheduling alarms: $e');
           rethrow;
         }
       }
     } catch (e) {
-      print('UnifiedDatabaseService: Error in alarm scheduling: $e');
+      print('CombinedDatabaseService: Error in alarm scheduling: $e');
     }
   }
 
   void _cancelAllAlarms() {
     try {
-      print('UnifiedDatabaseService: Cancelling all alarms...');
+      print('CombinedDatabaseService: Cancelling all alarms...');
       
       // Call AlarmManager to cancel all alarms
       AlarmManager.cancelAllAlarms();
       
-      print('UnifiedDatabaseService: All alarms cancelled successfully');
+      print('CombinedDatabaseService: All alarms cancelled successfully');
     } catch (e) {
-      print('UnifiedDatabaseService: Error cancelling alarms: $e');
+      print('CombinedDatabaseService: Error cancelling alarms: $e');
     }
   }
 
@@ -948,137 +948,5 @@ class categoryDataProvider {
     } catch (e) {
       throw Exception('Error loading categories and sub categories: $e');
     }
-  }
-}
-
-class UnifiedDatabaseService {
-  static final UnifiedDatabaseService _instance = UnifiedDatabaseService._internal();
-
-  final CombinedDatabaseService _service = CombinedDatabaseService();
-
-  factory UnifiedDatabaseService() {
-    return _instance;
-  }
-
-  UnifiedDatabaseService._internal();
-
-  Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
-      _service.categorizedRecordsStream;
-
-  Stream<Map<String, dynamic>> get allRecordsStream => _service.allRecordsStream;
-
-  void initialize() => _service.initialize();
-  Future<void> forceDataReprocessing() => _service.forceDataReprocessing();
-  void stopListening() => _service.stopListening();
-  void dispose() {} // No-op, let CombinedDatabaseService handle real disposal
-  DatabaseReference? get databaseRef => _service.databaseRef;
-  
-  Map<String, dynamic>? get currentSubjectsData => _service.currentSubjectsData;
-      
-  dynamic get currentRawData => _service.currentRawData;
-      
-  Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _service.currentCategorizedData;
-  
-  // Add methods for categories data
-  Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() => _service.fetchCategoriesAndSubCategories();
-  
-  Future<Map<String, dynamic>> loadCategoriesAndSubCategories() async {
-    return await _service.fetchCategoriesAndSubCategories();
-  }
-  
-  // Add method to save records, forwarding to the appropriate database based on guest mode
-  Future<bool> saveRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
-    if (_service._isGuestMode) {
-      return await _service._localDatabase.saveRecord(category, subCategory, lectureNo, recordData);
-    } else {
-      try {
-        if (_service.databaseRef == null) {
-          throw Exception('Database reference not initialized');
-        }
-        
-        await _service.databaseRef!.child(category).child(subCategory).child(lectureNo).set(recordData);
-        await _service.forceDataReprocessing();
-        return true;
-      } catch (e) {
-        print('Error saving record to Firebase: $e');
-        return false;
-      }
-    }
-  }
-  
-  // Add method to update existing records
-  Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
-    if (_service._isGuestMode) {
-      return await _service._localDatabase.updateRecord(category, subCategory, lectureNo, updates);
-    } else {
-      try {
-        if (_service.databaseRef == null) {
-          throw Exception('Database reference not initialized');
-        }
-        
-        await _service.databaseRef!.child(category).child(subCategory).child(lectureNo).update(updates);
-        await _service.forceDataReprocessing();
-        return true;
-      } catch (e) {
-        print('Error updating record in Firebase: $e');
-        return false;
-      }
-    }
-  }
-  
-  // Add method to delete records
-  Future<bool> deleteRecord(String category, String subCategory, String lectureNo) async {
-    if (_service._isGuestMode) {
-      return await _service._localDatabase.deleteRecord(category, subCategory, lectureNo);
-    } else {
-      try {
-        if (_service.databaseRef == null) {
-          throw Exception('Database reference not initialized');
-        }
-        
-        await _service.databaseRef!.child(category).child(subCategory).child(lectureNo).remove();
-        await _service.forceDataReprocessing();
-        return true;
-      } catch (e) {
-        print('Error deleting record from Firebase: $e');
-        return false;
-      }
-    }
-  }
-
-  // Add UpdateRecords method wrapper
-  Future<void> updateRecords(
-    BuildContext context,
-    String selectedCategory,
-    String selectedCategoryCode,
-    String lectureNo,
-    String startTimestamp,
-    String timeController,
-    String lectureType,
-    String todayDate,
-    String dateScheduled,
-    String description,
-    String revisionFrequency,
-    Map<String, dynamic> durationData,
-    Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
-    // Use the CombinedDatabaseService's updateRecords which already has unique title generation
-    return await _service.updateRecords(
-      context,
-      selectedCategory,
-      selectedCategoryCode,
-      lectureNo, // Let CombinedDatabaseService handle the unique title generation
-      startTimestamp,
-      timeController,
-      lectureType,
-      todayDate,
-      dateScheduled,
-      description,
-      revisionFrequency,
-      durationData,
-      customFrequencyParams,
-      alarmType,
-    );
   }
 }

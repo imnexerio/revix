@@ -22,7 +22,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
-  final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
+  final CombinedDatabaseService _recordService = CombinedDatabaseService();
   Stream<Map<String, dynamic>>? _recordsStream;
 
   String _lectureViewType = 'Total';

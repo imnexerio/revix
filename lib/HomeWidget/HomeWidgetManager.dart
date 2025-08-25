@@ -136,10 +136,10 @@ class HomeWidgetService {
     }
   }
 
-  // Update categories using existing UnifiedDatabaseService
+  // Update categories using existing CombinedDatabaseService
   static Future<void> _updateCategoriesFromService() async {
     try {
-      // Use existing UnifiedDatabaseService method
+      // Use existing CombinedDatabaseService method
       final categoriesData = await _databaseService.fetchCategoriesAndSubCategories();
 
       await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode(categoriesData));

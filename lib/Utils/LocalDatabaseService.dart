@@ -414,7 +414,7 @@ class LocalDatabaseService {
       return {};
     }
   }
-    // Raw data access for UnifiedDatabaseService compatibility
+    // Raw data access for CombinedDatabaseService compatibility
   Future<dynamic> getRawData() async {
     try {
       final userData = await getCurrentUserData();
