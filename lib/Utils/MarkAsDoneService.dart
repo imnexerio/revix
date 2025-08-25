@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'CalculateCustomNextDate.dart';
 import '../Utils/CustomSnackBar.dart';
-import '../Utils/UpdateRecords.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
 import '../Utils/UnifiedDatabaseService.dart';
@@ -210,17 +209,28 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         )).toIso8601String().split('T')[0];
       }
 
-      // Use the efficient UpdateRecordsRevision for partial update
-      await UpdateRecordsRevision(
+      // Calculate the new status based on duration settings
+      String newStatus = determineEnabledStatus(details) ? 'Enabled' : 'Disabled';
+
+      // Use the dedicated updateRecordRevision for partial update with status
+      bool updateSuccess = await dbService.updateRecordRevision(
         category,
         subCategory,
         lectureNo,
         dateRevised,
+        details['description'] ?? '',
+        details['reminder_time'] ?? '',
         details['completion_counts'] + 1,
         dateScheduled,
         datesRevised,
         missedRevision,
-        datesMissedRevisions,      );
+        datesMissedRevisions,
+        newStatus,
+      );
+
+      if (!updateSuccess) {
+        throw 'Failed to update record';
+      }
 
       // Handle UI operations only if context is available
       if (context != null) {
