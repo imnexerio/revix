@@ -114,6 +114,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
     required String category,
     required String subCategory,
     required String lectureNo,
+    bool isSkip = false,
   }) async {
     try {
       // Show loading dialog only if context is available
@@ -141,13 +142,17 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
 
       // Handle unspecified date_initiated case
       if (details['date_initiated'] == 'Unspecified') {
-        await dbService.moveToDeletedData(category, subCategory, lectureNo);
+        if (!isSkip) {
+          await dbService.moveToDeletedData(category, subCategory, lectureNo);
+        }
         if (context != null) {
           Navigator.pop(context);
           Navigator.pop(context);
           customSnackBar(
             context: context,
-            message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
+            message: isSkip 
+                ? 'Cannot skip lecture with unspecified date'
+                : '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
           );
         }
         return;
@@ -157,26 +162,43 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       int missedRevision = (details['missed_counts'] as num).toInt();
       DateTime scheduledDate = DateTime.parse(details['scheduled_date'].toString());
 
-      // Check if revision was missed
-      if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
+      // Check if revision was missed (only for mark as done, not skip)
+      if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
         missedRevision += 1;
       }
 
       List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
-      if (scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
+      if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
         datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
       }
 
       List<String> datesRevised = List<String>.from(details['dates_updated'] ?? []);
-      datesRevised.add(dateRevised);      // Handle 'No Repetition' case
+      if (!isSkip) {
+        datesRevised.add(dateRevised);
+      }
+
+      // Handle skip-specific data
+      List<String> skippedDates = List<String>.from(details['skipped_dates'] ?? []);
+      int skipCounts = (details['skip_counts'] as num?)?.toInt() ?? 0;
+      
+      if (isSkip) {
+        skippedDates.add(scheduledDate.toIso8601String().split('T')[0]);
+        skipCounts += 1;
+      }
+
+      // Handle 'No Repetition' case
       if (details['recurrence_frequency'] == 'No Repetition') {
-        await dbService.moveToDeletedData(category, subCategory, lectureNo);
+        if (!isSkip) {
+          await dbService.moveToDeletedData(category, subCategory, lectureNo);
+        }
         if (context != null) {
           Navigator.pop(context);
           Navigator.pop(context);
           customSnackBar(
             context: context,
-            message: '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
+            message: isSkip 
+                ? 'Cannot skip lecture with no repetition'
+                : '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
           );
         }
         return;
@@ -192,15 +214,18 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         );
         dateScheduled = nextDateTime.toIso8601String().split('T')[0];
       } else {
+        int completionCountForCalculation = isSkip 
+            ? details['completion_counts'] 
+            : details['completion_counts'] + 1;
         dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
           scheduledDate,
           details['recurrence_frequency'],
-          details['completion_counts'] + 1,
+          completionCountForCalculation,
         )).toIso8601String().split('T')[0];
       }
 
-      // Handle negative revision case
-      if (details['completion_counts'] < 0) {
+      // Handle negative revision case (only for mark as done)
+      if (!isSkip && details['completion_counts'] < 0) {
         datesRevised = [];
         dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
           DateTime.parse(dateRevised),
@@ -209,23 +234,29 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         )).toIso8601String().split('T')[0];
       }
 
-      // Calculate the new status based on duration settings
-      String newStatus = determineEnabledStatus(details) ? 'Enabled' : 'Disabled';
+      // Calculate the new status based on duration settings (only for mark as done)
+      String newStatus = details['status'];
+      if (!isSkip) {
+        newStatus = determineEnabledStatus(details) ? 'Enabled' : 'Disabled';
+      }
 
       // Use the dedicated updateRecordRevision for partial update with status
       bool updateSuccess = await dbService.updateRecordRevision(
         category,
         subCategory,
         lectureNo,
-        dateRevised,
+        isSkip ? details['date_updated'] ?? '' : dateRevised, // Don't update date_updated for skip
         details['description'] ?? '',
         details['reminder_time'] ?? '',
-        details['completion_counts'] + 1,
+        isSkip ? details['completion_counts'] : details['completion_counts'] + 1, // Don't increment for skip
         dateScheduled,
         datesRevised,
         missedRevision,
         datesMissedRevisions,
         newStatus,
+        isSkip: isSkip,
+        skippedDates: skippedDates,
+        skipCounts: skipCounts,
       );
 
       if (!updateSuccess) {
@@ -240,7 +271,9 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         // Show success message
         customSnackBar(
           context: context,
-          message: '$category $subCategory $lectureNo done and scheduled for $dateScheduled',
+          message: isSkip 
+              ? '$category $subCategory $lectureNo skipped and rescheduled for $dateScheduled'
+              : '$category $subCategory $lectureNo done and scheduled for $dateScheduled',
         );
       }
     } catch (e) {
@@ -250,7 +283,9 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         }
         customSnackBar_error(
           context: context,
-          message: 'Failed to mark as done: ${e.toString()}',
+          message: isSkip 
+              ? 'Failed to skip: ${e.toString()}'
+              : 'Failed to mark as done: ${e.toString()}',
         );
       } else {
         // For background processing, just rethrow the error

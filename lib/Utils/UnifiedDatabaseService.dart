@@ -626,21 +626,32 @@ class UnifiedDatabaseService {
     List<String> datesRevised,
     int missedRevision,
     List<String> datesMissedRevisions,
-    String status,
-  ) async {
+    String status, {
+    bool isSkip = false,
+    List<String>? skippedDates,
+    int? skipCounts,
+  }) async {
     try {
       // Prepare update data
       Map<String, dynamic> updateData = {
         'reminder_time': reminderTime,
-        'date_updated': dateRevised,
         'completion_counts': noRevision,
         'scheduled_date': dateScheduled,
         'missed_counts': missedRevision,
         'dates_missed_revisions': datesMissedRevisions,
-        'dates_updated': datesRevised,
         'description': description,
         'status': status,
       };
+
+      // Add skip-specific data if this is a skip operation
+      if (isSkip) {
+        updateData['skipped_dates'] = skippedDates ?? [];
+        updateData['skip_counts'] = skipCounts ?? 0;
+      } else {
+        // Add completion-specific data for mark as done
+        updateData['date_updated'] = dateRevised;
+        updateData['dates_updated'] = datesRevised;
+      }
       
       // Update the record using the existing updateRecord method
       return await updateRecord(category, subCategory, lectureNo, updateData);

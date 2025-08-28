@@ -200,31 +200,59 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                       ],
                     ),
                   ),
-                ),                // Action button
+                ),                // Action buttons
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('MARK AS DONE'),
-                        onPressed: () => MarkAsDoneService.markAsDone(
-                          context: context,
-                          category: details['category'],
-                          subCategory: details['sub_category'],
-                          lectureNo: details['record_title'],
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                    child: Row(
+                      children: [
+                        // Skip button
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.skip_next),
+                            label: const Text('SKIP'),
+                            onPressed: () => MarkAsDoneService.markAsDone(
+                              context: context,
+                              category: details['category'],
+                              subCategory: details['sub_category'],
+                              lectureNo: details['record_title'],
+                              isSkip: true,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              foregroundColor: Theme.of(context).colorScheme.onSurface,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        // Mark as done button
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.check_circle_outline),
+                            label: const Text('MARK AS DONE'),
+                            onPressed: () => MarkAsDoneService.markAsDone(
+                              context: context,
+                              category: details['category'],
+                              subCategory: details['sub_category'],
+                              lectureNo: details['record_title'],
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
