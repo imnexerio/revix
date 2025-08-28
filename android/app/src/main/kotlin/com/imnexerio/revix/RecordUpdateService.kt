@@ -34,6 +34,7 @@ class RecordUpdateService : Service() {
         val category = intent.getStringExtra("category") ?: ""
         val subCategory = intent.getStringExtra("sub_category") ?: ""
         val lectureNo = intent.getStringExtra("record_title") ?: ""
+        val isSkip = intent.getBooleanExtra("is_skip", false) // Get skip flag
         val externalRequestId = intent.getStringExtra("request_id") // Get external request ID if provided
 
         if (category.isEmpty() || subCategory.isEmpty() || lectureNo.isEmpty()) {
@@ -46,7 +47,7 @@ class RecordUpdateService : Service() {
         val extras = HashMap<String, String>()
         intent.extras?.let { bundle ->
             for (key in bundle.keySet()) {
-                if (key != "category" && key != "sub_category" && key != "record_title" && key != "request_id") {
+                if (key != "category" && key != "sub_category" && key != "record_title" && key != "request_id" && key != "is_skip") {
                     val value = bundle.getString(key)
                     if (value != null) {
                         extras[key] = value
@@ -55,7 +56,7 @@ class RecordUpdateService : Service() {
             }
         }
 
-        handleRecordClick(category, subCategory, lectureNo, extras, externalRequestId, startId)
+        handleRecordClick(category, subCategory, lectureNo, extras, externalRequestId, startId, isSkip)
         return START_STICKY
     }
 
@@ -97,10 +98,11 @@ class RecordUpdateService : Service() {
         lectureNo: String,
         extras: Map<String, String>,
         externalRequestId: String?,
-        startId: Int
+        startId: Int,
+        isSkip: Boolean = false
     ) {
         try {
-            updateRecord(emptyMap<String, Any>(), category, subCategory, lectureNo, extras, externalRequestId, startId)
+            updateRecord(emptyMap<String, Any>(), category, subCategory, lectureNo, extras, externalRequestId, startId, isSkip)
         } catch (e: Exception) {
             Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             e.printStackTrace()
@@ -115,14 +117,15 @@ class RecordUpdateService : Service() {
         lectureNo: String,
         extras: Map<String, String>,
         externalRequestId: String?,
-        startId: Int
+        startId: Int,
+        isSkip: Boolean = false
     ) {
         try {
             // Show processing message
             handler.post {
                 Toast.makeText(
                     applicationContext,
-                    "Updating record...",
+                    if (isSkip) "Skipping record..." else "Updating record...",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -134,6 +137,7 @@ class RecordUpdateService : Service() {
                 .appendQueryParameter("sub_category", subCategory)
                 .appendQueryParameter("record_title", lectureNo)
                 .appendQueryParameter("requestId", requestId)
+                .appendQueryParameter("is_skip", isSkip.toString()) // Add skip parameter
                 .build()
 
             val backgroundIntent = es.antonborri.home_widget.HomeWidgetBackgroundIntent.getBroadcast(
@@ -185,10 +189,10 @@ class RecordUpdateService : Service() {
                             // Show both Toast and status notification for consistent feedback
                             Toast.makeText(
                                 applicationContext,
-                                "Record updated successfully!",
+                                if (isSkip) "Record skipped successfully!" else "Record updated successfully!",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showStatusNotification(category,subCategory,lectureNo, "Completed successfully!", true)
+                            showStatusNotification(category,subCategory,lectureNo, if (isSkip) "Skipped successfully!" else "Completed successfully!", true)
                         } else {
                             val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
                             Toast.makeText(

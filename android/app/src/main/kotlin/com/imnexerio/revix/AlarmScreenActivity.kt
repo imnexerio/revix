@@ -395,12 +395,15 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
 
         // Glass swipe button with glassmorphism effect
         val glassSwipeButton = createGlassSwipeButton(
-            text = "SWIPE TO\nMARK DONE",
+            text = "SWIPE LEFT: SKIP\nSWIPE RIGHT: DONE",
             accentColor = accentColor,
             textColor = textColor,
             dpToPx = dpToPx
-        ) {
-            markAsDone()
+        ) { direction ->
+            when (direction) {
+                "LEFT" -> skipAlarm()
+                "RIGHT" -> markAsDone()
+            }
         }
 
         // Glass ignore button
@@ -468,7 +471,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         accentColor: Int,
         textColor: Int,
         dpToPx: (Int) -> Int,
-        onSwipe: () -> Unit
+        onSwipe: (String) -> Unit
     ): View {
         // Container for button and animated glow ring
         val container = FrameLayout(this).apply {
@@ -592,14 +595,21 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     val distance = sqrt(diffX * diffX + diffY * diffY)
                     
                     if (distance >= MIN_SWIPE_DISTANCE) {
-                        Log.d(TAG, "Swipe completed - distance: $distance")
+                        // Determine swipe direction based on horizontal movement
+                        val direction = if (abs(diffX) > abs(diffY)) {
+                            if (diffX > 0) "RIGHT" else "LEFT"
+                        } else {
+                            "RIGHT" // Default to right for vertical swipes
+                        }
+                        
+                        Log.d(TAG, "Swipe completed - distance: $distance, direction: $direction")
                         
                         animate()
                             .scaleX(1.2f)
                             .scaleY(1.2f)
                             .setDuration(150)
                             .withEndAction {
-                                onSwipe()
+                                onSwipe(direction)
                             }
                         return true
                     }
@@ -1022,6 +1032,23 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         // Send broadcast to mark alarm as done
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_MARK_AS_DONE
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        sendBroadcast(intent)
+        
+        finish()
+    }
+
+    private fun skipAlarm() {
+        Log.d(TAG, "Skip clicked for: $recordTitle")
+        
+        userActionTaken = true // User clicked a button
+        
+        // Send broadcast to skip alarm
+        val intent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_SKIP_ALARM
             putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)

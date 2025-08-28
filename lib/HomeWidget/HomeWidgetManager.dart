@@ -246,8 +246,9 @@ class HomeWidgetService {
         final subCategory = uri?.queryParameters['sub_category'] ?? '';
         final recordTitle = uri?.queryParameters['record_title'] ?? '';
         final requestId = uri?.queryParameters['requestId'] ?? '';
+        final isSkip = uri?.queryParameters['is_skip']?.toLowerCase() == 'true';
 
-        print('Updating record: $category - $subCategory - $recordTitle (RequestID: $requestId)');
+        print('Updating record: $category - $subCategory - $recordTitle (RequestID: $requestId, isSkip: $isSkip)');
 
         String updateResult = 'SUCCESS';
 
@@ -263,6 +264,7 @@ class HomeWidgetService {
               category: category,
               subCategory: subCategory,
               lectureNo: recordTitle,
+              isSkip: isSkip,
             );
 
             print('Record update completed successfully using MarkAsDoneService');

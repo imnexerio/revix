@@ -104,6 +104,20 @@ class AlarmService : Service() {    companion object {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Create skip alarm intent
+        val skipIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_SKIP_ALARM
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val skipPendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 2,
+            skipIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         // Create ignore alarm intent
         val ignoreIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_IGNORE_ALARM
@@ -130,6 +144,7 @@ class AlarmService : Service() {    companion object {
                 .setOngoing(true)
                 .setDeleteIntent(ignorePendingIntent) // Handle notification dismissal like ignore
                 .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Skip", skipPendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setShowWhen(true)
@@ -144,6 +159,7 @@ class AlarmService : Service() {    companion object {
                 .setOngoing(true)
                 .setDeleteIntent(ignorePendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Skip", skipPendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
                 .build()
         }
@@ -162,6 +178,20 @@ class AlarmService : Service() {    companion object {
             this,
             System.currentTimeMillis().toInt(),
             markDoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create skip alarm intent (same as foreground notification)
+        val skipIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_SKIP_ALARM
+            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        }
+        val skipPendingIntent = PendingIntent.getBroadcast(
+            this,
+            System.currentTimeMillis().toInt() + 2,
+            skipIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -191,6 +221,7 @@ class AlarmService : Service() {    companion object {
                 .setOngoing(false) // Can be dismissed unlike foreground notification
                 .setDeleteIntent(ignorePendingIntent) // Handle notification dismissal like ignore
                 .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Skip", skipPendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setShowWhen(true)
@@ -205,6 +236,7 @@ class AlarmService : Service() {    companion object {
                 .setOngoing(false)
                 .setDeleteIntent(ignorePendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Mark as Done", markDonePendingIntent)
+                .addAction(R.drawable.ic_launcher_icon, "Skip", skipPendingIntent)
                 .addAction(R.drawable.ic_launcher_icon, "Ignore", ignorePendingIntent)
                 .build()
         }
