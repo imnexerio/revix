@@ -258,7 +258,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 // Time text
                 val timeText = TextView(this@AlarmScreenActivity).apply {
                     text = reminderTime
-                    textSize = 32f
+                    textSize = 48f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
                     setTypeface(null, android.graphics.Typeface.BOLD)
@@ -273,7 +273,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 // Date text
                 val dateText = TextView(this@AlarmScreenActivity).apply {
                     text = scheduledDate
-                    textSize = 18f
+                    textSize = 24f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
                     alpha = 0.8f
@@ -400,13 +400,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             dpToPx = dpToPx
         )
 
-        val ignoreButton = createIgnoreButton(
-            accentColor = accentColor,
-            textColor = textColor,
-            dpToPx = dpToPx
-        ) {
-            ignoreAlarm()
-        }
 
         // Assemble the glassmorphism layout
         contentOverlay.addView(topSpacer)
@@ -693,7 +686,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             // Ignore button (small, centered, on top)
             val ignoreButton = Button(this@AlarmScreenActivity).apply {
                 text = "Ignore"
-                textSize = 14f
+                textSize = 20f
                 setTypeface(null, android.graphics.Typeface.NORMAL)
                 isAllCaps = false
                 setTextColor(Color.argb(180, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
@@ -716,7 +709,23 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 }
                 
                 setOnClickListener { ignoreAlarm() }
-                foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+                
+                // Custom touch feedback instead of Android's yellow highlight
+                setOnTouchListener { view, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            view.alpha = 0.7f
+                            view.scaleX = 0.95f
+                            view.scaleY = 0.95f
+                        }
+                        android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                            view.alpha = 1.0f
+                            view.scaleX = 1.0f
+                            view.scaleY = 1.0f
+                        }
+                    }
+                    false // Let the click event continue
+                }
             }
 
             // Bottom row: Skip and Done buttons side by side
@@ -731,7 +740,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 // Skip button (left)
                 val skipButton = Button(this@AlarmScreenActivity).apply {
                     text = "Skip"
-                    textSize = 16f
+                    textSize = 24f
                     setTypeface(null, android.graphics.Typeface.NORMAL)
                     isAllCaps = false
                     setTextColor(textColor)
@@ -754,13 +763,29 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     }
                     
                     setOnClickListener { skipAlarm() }
-                    foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+                    
+                    // Custom touch feedback instead of Android's yellow highlight
+                    setOnTouchListener { view, event ->
+                        when (event.action) {
+                            android.view.MotionEvent.ACTION_DOWN -> {
+                                view.alpha = 0.7f
+                                view.scaleX = 0.95f
+                                view.scaleY = 0.95f
+                            }
+                            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                                view.alpha = 1.0f
+                                view.scaleX = 1.0f
+                                view.scaleY = 1.0f
+                            }
+                        }
+                        false // Let the click event continue
+                    }
                 }
 
                 // Done button (right)
                 val doneButton = Button(this@AlarmScreenActivity).apply {
                     text = "Done"
-                    textSize = 16f
+                    textSize = 24f
                     setTypeface(null, android.graphics.Typeface.NORMAL)
                     isAllCaps = false
                     setTextColor(textColor)
@@ -783,7 +808,23 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     }
                     
                     setOnClickListener { markAsDone() }
-                    foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+                    
+                    // Custom touch feedback instead of Android's yellow highlight
+                    setOnTouchListener { view, event ->
+                        when (event.action) {
+                            android.view.MotionEvent.ACTION_DOWN -> {
+                                view.alpha = 0.7f
+                                view.scaleX = 0.95f
+                                view.scaleY = 0.95f
+                            }
+                            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                                view.alpha = 1.0f
+                                view.scaleX = 1.0f
+                                view.scaleY = 1.0f
+                            }
+                        }
+                        false // Let the click event continue
+                    }
                 }
 
                 addView(skipButton)
@@ -792,366 +833,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
 
             addView(ignoreButton)
             addView(bottomButtonsRow)
-        }
-    }
-
-    private fun createScheduleStyleButtonsLayout(
-        accentColor: Int,
-        textColor: Int,
-        dpToPx: (Int) -> Int
-    ): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(dpToPx(30), dpToPx(32), dpToPx(30), dpToPx(24))
-            }
-
-            // Simplified curved container with screen-adaptive sizing
-            val slideContainer = FrameLayout(this@AlarmScreenActivity).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    dpToPx(kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.035f).toInt())) // Reduced: min 70dp or 5% of screen height
-                )
-                
-                // Simple curved background with less rounding
-                val containerHeight = dpToPx(kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt()))
-                val background = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    cornerRadius = (containerHeight / 2.0).toFloat() // Less rounded - third instead of half for softer curves
-                    setColor(Color.argb(50, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
-                    setStroke(dpToPx(2), Color.argb(100, 255, 255, 255))
-                }
-                setBackground(background)
-                elevation = dpToPx(12).toFloat()
-                
-                // Left hint (Skip)
-                val leftHint = TextView(this@AlarmScreenActivity).apply {
-                    text = "Skip"
-                    textSize = 14f
-                    setTextColor(textColor) // Use textColor instead of custom color
-                    gravity = Gravity.CENTER
-                    layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(80),
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                    ).apply {
-                        gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                        setMargins(dpToPx(20), 0, 0, 0)
-                    }
-                }
-                
-                // Right hint (Done)
-                val rightHint = TextView(this@AlarmScreenActivity).apply {
-                    text = "Done"
-                    textSize = 14f
-                    setTextColor(textColor) // Use textColor instead of custom color
-                    gravity = Gravity.CENTER
-                    layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(80),
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                    ).apply {
-                        gravity = Gravity.CENTER_VERTICAL or Gravity.END
-                        setMargins(0, 0, dpToPx(20), 0)
-                    }
-                }
-                
-                // Simple oval button with adaptive sizing
-                val slideButton = View(this@AlarmScreenActivity).apply {
-                    // Calculate adaptive button size based on container (increased height)
-                    val containerHeight = kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt())
-                    val buttonHeight = (containerHeight * 0.65f).toInt() // Increased to 75% of container height
-                    val buttonWidth = (buttonHeight * 1.2f).toInt() // Reduced width ratio from 2.0x to 1.5x
-                    
-                    layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(buttonWidth),
-                        dpToPx(buttonHeight)
-                    ).apply {
-                        gravity = Gravity.CENTER
-                    }
-                    
-                    // Pre-create reusable backgrounds with better rounding (dynamic)
-                    val buttonCornerRadius = (dpToPx(buttonHeight) / 2.0f).toFloat() // Better rounding - between quarter and half
-                    
-                    val originalBackground = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = buttonCornerRadius
-                        setColor(accentColor)
-                        setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
-                    }
-                    
-                    val redBackground = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = buttonCornerRadius
-                        setColor(Color.argb(255, 244, 67, 54))
-                        setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
-                    }
-                    
-                    val greenBackground = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = buttonCornerRadius
-                        setColor(Color.argb(255, 76, 175, 80))
-                        setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
-                    }
-                    
-                    setBackground(originalBackground)
-                    elevation = dpToPx(8).toFloat()
-                    
-                    // Simple sliding logic
-                    var startX = 0f
-                    var isSliding = false
-                    var currentBackground = originalBackground
-                    val slideThreshold = dpToPx(80).toFloat()
-                    val maxSlide = dpToPx(100).toFloat()
-                    
-                    setOnTouchListener { view, event ->
-                        when (event.action) {
-                            MotionEvent.ACTION_DOWN -> {
-                                startX = event.rawX
-                                isSliding = true
-                                animate().scaleX(0.95f).scaleY(0.95f).setDuration(150).start()
-                                true
-                            }
-                            
-                            MotionEvent.ACTION_MOVE -> {
-                                if (isSliding) {
-                                    val deltaX = event.rawX - startX
-                                    val constrainedDelta = deltaX.coerceIn(-maxSlide, maxSlide)
-                                    translationX = constrainedDelta
-                                    
-                                    // Calculate intensity and update existing background color
-                                    val slideProgress = kotlin.math.abs(constrainedDelta) / maxSlide
-                                    val intensity = (50 + slideProgress * 205).toInt().coerceIn(50, 255)
-                                    
-                                    // Efficiently update color without creating new objects
-                                    when {
-                                        constrainedDelta < -slideThreshold * 0.3f -> {
-                                            if (currentBackground != redBackground) {
-                                                currentBackground = redBackground
-                                                setBackground(redBackground)
-                                            }
-                                            // Update alpha for intensity
-                                            redBackground.alpha = intensity
-                                            leftHint.animate().alpha(1.0f).setDuration(100).start()
-                                            rightHint.animate().alpha(0.3f).setDuration(100).start()
-                                        }
-                                        constrainedDelta > slideThreshold * 0.3f -> {
-                                            if (currentBackground != greenBackground) {
-                                                currentBackground = greenBackground
-                                                setBackground(greenBackground)
-                                            }
-                                            // Update alpha for intensity
-                                            greenBackground.alpha = intensity
-                                            rightHint.animate().alpha(1.0f).setDuration(100).start()
-                                            leftHint.animate().alpha(0.3f).setDuration(100).start()
-                                        }
-                                        else -> {
-                                            if (currentBackground != originalBackground) {
-                                                currentBackground = originalBackground
-                                                setBackground(originalBackground)
-                                            }
-                                            leftHint.animate().alpha(0.6f).setDuration(100).start()
-                                            rightHint.animate().alpha(0.6f).setDuration(100).start()
-                                        }
-                                    }
-                                }
-                                true
-                            }
-                            
-                            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                                if (isSliding) {
-                                    val deltaX = event.rawX - startX
-                                    
-                                    if (kotlin.math.abs(deltaX) >= slideThreshold) {
-                                        // Action triggered - keep the intense color
-                                        if (deltaX < 0) {
-                                            skipAlarm()
-                                        } else {
-                                            markAsDone()
-                                        }
-                                    } else {
-                                        // Return to center - restore original color
-                                        animate()
-                                            .translationX(0f)
-                                            .scaleX(1.0f)
-                                            .scaleY(1.0f)
-                                            .setDuration(300)
-                                            .start()
-                                        
-                                        // Reset to original background efficiently
-                                        if (currentBackground != originalBackground) {
-                                            currentBackground = originalBackground
-                                            setBackground(originalBackground)
-                                        }
-                                        
-                                        leftHint.animate().alpha(0.6f).setDuration(200).start()
-                                        rightHint.animate().alpha(0.6f).setDuration(200).start()
-                                    }
-                                    isSliding = false
-                                }
-                                true
-                            }
-                            
-                            else -> false
-                        }
-                    }
-                }
-                
-                addView(leftHint)
-                addView(rightHint)
-                addView(slideButton)
-            }
-
-            addView(slideContainer)
-        }
-    }
-
-    // Create individual schedule-style button
-    private fun createScheduleButton(
-        text: String,
-        backgroundColor: Int,
-        textColor: Int,
-        iconType: String,
-        dpToPx: (Int) -> Int,
-        onClick: () -> Unit
-    ): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                dpToPx(120),
-                dpToPx(120)
-            )
-
-            // Button icon
-            val iconButton = TextView(this@AlarmScreenActivity).apply {
-                setText(when (iconType) {
-                    "skip" -> "" // Removed skip emoji
-                    "done" -> "" // Removed done emoji  
-                    else -> "●"
-                })
-                textSize = 28f
-                gravity = Gravity.CENTER
-                setTextColor(textColor)
-                
-                // Circular glass background
-                val buttonBackground = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(backgroundColor)
-                    setStroke(dpToPx(2), Color.argb(100, 255, 255, 255))
-                }
-                background = buttonBackground
-                
-                val buttonSize = dpToPx(80)
-                layoutParams = LinearLayout.LayoutParams(buttonSize, buttonSize).apply {
-                    setMargins(0, 0, 0, dpToPx(8))
-                }
-                
-                elevation = dpToPx(6).toFloat()
-                
-                // Touch feedback
-                setOnClickListener {
-                    // Scale animation on click
-                    animate()
-                        .scaleX(1.2f)
-                        .scaleY(1.2f)
-                        .setDuration(150)
-                        .withEndAction {
-                            animate()
-                                .scaleX(1.0f)
-                                .scaleY(1.0f)
-                                .setDuration(150)
-                                .withEndAction {
-                                    onClick()
-                                }
-                                .start()
-                        }
-                        .start()
-                }
-                
-                // Touch state feedback
-                setOnTouchListener { _, event ->
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            animate()
-                                .scaleX(0.95f)
-                                .scaleY(0.95f)
-                                .alpha(0.8f)
-                                .setDuration(100)
-                                .start()
-                        }
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                            animate()
-                                .scaleX(1.0f)
-                                .scaleY(1.0f)
-                                .alpha(1.0f)
-                                .setDuration(100)
-                                .start()
-                        }
-                    }
-                    false // Let click listener handle the actual click
-                }
-            }
-
-            // Button label
-            val labelText = TextView(this@AlarmScreenActivity).apply {
-                setText(text)
-                textSize = 14f
-                setTextColor(textColor)
-                gravity = Gravity.CENTER
-                setTypeface(null, android.graphics.Typeface.BOLD)
-                alpha = 0.9f
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-
-            addView(iconButton)
-            addView(labelText)
-        }
-    }
-
-    private fun createIgnoreButton(
-        accentColor: Int,
-        textColor: Int,
-        dpToPx: (Int) -> Int,
-        onClick: () -> Unit
-    ): Button {
-        return Button(this).apply {
-            text = "✖ Ignore"
-            textSize = 12f // Smaller text
-            setTypeface(null, android.graphics.Typeface.NORMAL)
-            isAllCaps = false
-            setTextColor(Color.argb(180, Color.red(textColor), Color.green(textColor), Color.blue(textColor))) // Slightly faded
-
-            val cuteBackground = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(20).toFloat()
-                
-                // Soft translucent background
-                setColor(Color.argb(30, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
-                setStroke(dpToPx(1), Color.argb(80, 255, 255, 255))
-            }
-            
-            background = cuteBackground
-            
-            // Small padding for compact size
-            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, // Wrap content for small size
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.CENTER_HORIZONTAL
-                setMargins(0, dpToPx(8), 0, dpToPx(12)) // Small margins
-            }
-            
-            setOnClickListener { onClick() }
-            
-            // Subtle touch feedback
-            foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
         }
     }
 
