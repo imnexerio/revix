@@ -591,7 +591,10 @@ class AlarmScreenActivity : Activity() {
     ): View {
         return object : View(this) {
             private var animationTime = 0f
-            private val animationSpeed = 0.02f // Slow, gentle movement
+            private val maxAnimationSpeed = 0.05f // Maximum speed after ramp-up
+            private var currentAnimationSpeed = 0f // Start at 0 speed
+            private val rampUpDurationMs = 10000L // 10 seconds to reach full speed
+            private val startTime = System.currentTimeMillis()
             private var lastUpdateTime = System.currentTimeMillis()
             
             private val gradientPaint = Paint().apply {
@@ -604,48 +607,75 @@ class AlarmScreenActivity : Activity() {
             override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
                 super.onSizeChanged(w, h, oldw, oldh)
                 updateGradient()
+                // Start animation immediately when view is sized
+                postInvalidate()
+            }
+
+            private fun updateAnimationSpeed() {
+                val elapsedTime = System.currentTimeMillis() - startTime
+                val progress = (elapsedTime.toFloat() / rampUpDurationMs).coerceIn(0f, 1f)
+                
+                // Smooth easing function for gradual acceleration
+                val easedProgress = 1f - (1f - progress) * (1f - progress) // Ease-out curve
+                currentAnimationSpeed = maxAnimationSpeed * easedProgress
             }
 
             private fun updateGradient() {
                 if (width <= 0 || height <= 0) return
                 
-                // Create gentle wave-like motion using sin/cos for smooth flow
-                val waveOffset1 = kotlin.math.sin(animationTime.toDouble()).toFloat() * 0.1f
-                val waveOffset2 = kotlin.math.cos(animationTime * 1.3).toFloat() * 0.08f
-                val waveOffset3 = kotlin.math.sin(animationTime * 0.7).toFloat() * 0.12f
+                // Update animation speed based on elapsed time
+                updateAnimationSpeed()
                 
-                // Create flowing gradient positions (0.0 = top, 1.0 = bottom)
+                // Create wave-like motion (starts static, gradually becomes more dynamic)
+                val wave1 = kotlin.math.sin(animationTime.toDouble()).toFloat() * 0.2f
+                val wave2 = kotlin.math.cos(animationTime * 1.5).toFloat() * 0.15f
+                val wave3 = kotlin.math.sin(animationTime * 0.8).toFloat() * 0.18f
+                
+                // Create flowing gradient positions with movement
                 val positions = floatArrayOf(
-                    0.0f + waveOffset1,                    // Top - dynamic white zone
-                    0.3f + waveOffset2,                    // Upper mid - blend zone
-                    0.6f + waveOffset3,                    // Lower mid - blend zone  
-                    1.0f + waveOffset1                     // Bottom - accent color zone
+                    0.0f,                                  // Fixed top
+                    0.25f + wave1,                         // Moving upper zone
+                    0.5f + wave2,                          // Moving middle zone
+                    0.75f + wave3,                         // Moving lower zone
+                    1.0f                                   // Fixed bottom
                 )
                 
-                // Ensure positions stay within bounds
-                for (i in positions.indices) {
-                    positions[i] = positions[i].coerceIn(0.0f, 1.0f)
+                // Ensure positions stay within bounds and maintain order
+                for (i in 1 until positions.size - 1) {
+                    positions[i] = positions[i].coerceIn(0.1f, 0.9f)
+                }
+                // Sort to maintain gradient order
+                for (i in 1 until positions.size) {
+                    if (positions[i] < positions[i-1]) {
+                        positions[i] = positions[i-1] + 0.01f
+                    }
                 }
                 
-                // Create color array with smooth blending
+                // Create color array with dynamic blending (also starts static)
                 val colors = intArrayOf(
-                    whiteColor,                                                           // Top: Dynamic white
-                    Color.argb(                                                          // Upper blend
+                    whiteColor,                            // Top: Dynamic white
+                    Color.argb(                           // Upper blend - varies with animation
                         255,
-                        (Color.red(whiteColor) * 0.7f + Color.red(accentColor) * 0.3f).toInt(),
-                        (Color.green(whiteColor) * 0.7f + Color.green(accentColor) * 0.3f).toInt(),
-                        (Color.blue(whiteColor) * 0.7f + Color.blue(accentColor) * 0.3f).toInt()
+                        (Color.red(whiteColor) * (0.8f + wave1 * 0.2f) + Color.red(accentColor) * (0.2f - wave1 * 0.2f)).toInt(),
+                        (Color.green(whiteColor) * (0.8f + wave1 * 0.2f) + Color.green(accentColor) * (0.2f - wave1 * 0.2f)).toInt(),
+                        (Color.blue(whiteColor) * (0.8f + wave1 * 0.2f) + Color.blue(accentColor) * (0.2f - wave1 * 0.2f)).toInt()
                     ),
-                    Color.argb(                                                          // Lower blend
+                    Color.argb(                           // Middle blend - varies with animation
                         255,
-                        (Color.red(whiteColor) * 0.3f + Color.red(accentColor) * 0.7f).toInt(),
-                        (Color.green(whiteColor) * 0.3f + Color.green(accentColor) * 0.7f).toInt(),
-                        (Color.blue(whiteColor) * 0.3f + Color.blue(accentColor) * 0.7f).toInt()
+                        (Color.red(whiteColor) * (0.5f + wave2 * 0.3f) + Color.red(accentColor) * (0.5f - wave2 * 0.3f)).toInt(),
+                        (Color.green(whiteColor) * (0.5f + wave2 * 0.3f) + Color.green(accentColor) * (0.5f - wave2 * 0.3f)).toInt(),
+                        (Color.blue(whiteColor) * (0.5f + wave2 * 0.3f) + Color.blue(accentColor) * (0.5f - wave2 * 0.3f)).toInt()
                     ),
-                    accentColor                                                          // Bottom: Accent color
+                    Color.argb(                           // Lower blend - varies with animation
+                        255,
+                        (Color.red(whiteColor) * (0.2f + wave3 * 0.2f) + Color.red(accentColor) * (0.8f - wave3 * 0.2f)).toInt(),
+                        (Color.green(whiteColor) * (0.2f + wave3 * 0.2f) + Color.green(accentColor) * (0.8f - wave3 * 0.2f)).toInt(),
+                        (Color.blue(whiteColor) * (0.2f + wave3 * 0.2f) + Color.blue(accentColor) * (0.8f - wave3 * 0.2f)).toInt()
+                    ),
+                    accentColor                           // Bottom: Accent color
                 )
                 
-                // Create linear gradient from top to bottom with gentle animation
+                // Create linear gradient from top to bottom
                 gradientPaint.shader = android.graphics.LinearGradient(
                     0f, 0f,                    // Start point (top)
                     0f, height.toFloat(),      // End point (bottom)
@@ -658,10 +688,10 @@ class AlarmScreenActivity : Activity() {
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 
-                // Resource-efficient: Only update every 150ms
+                // Update animation with current speed
                 val currentTime = System.currentTimeMillis()
-                if (currentTime - lastUpdateTime > 150) {
-                    animationTime += animationSpeed
+                if (currentTime - lastUpdateTime > 50) {
+                    animationTime += currentAnimationSpeed // Use dynamic speed
                     lastUpdateTime = currentTime
                     updateGradient()
                 }
@@ -669,8 +699,14 @@ class AlarmScreenActivity : Activity() {
                 // Draw the animated gradient
                 canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), gradientPaint)
                 
-                // Continue animation
-                postInvalidateDelayed(150) // Update every 150ms for smooth but efficient animation
+                // Continue animation - keep updating even during ramp-up
+                postInvalidateDelayed(50)
+            }
+
+            override fun onAttachedToWindow() {
+                super.onAttachedToWindow()
+                // Ensure animation starts when attached
+                postInvalidate()
             }
         }.apply {
             layoutParams = FrameLayout.LayoutParams(
