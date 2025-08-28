@@ -885,23 +885,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 addView(rightHint)
                 addView(slideButton)
             }
-            
-            // Simple instruction text
-            val instructionText = TextView(this@AlarmScreenActivity).apply {
-                text = "Slide to skip or mark as done"
-                textSize = 14f
-                setTextColor(Color.argb(160, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
-                gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(0, dpToPx(16), 0, 0)
-                }
-            }
 
             addView(slideContainer)
-            addView(instructionText)
         }
     }
 
