@@ -36,19 +36,7 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-class AlarmScreenActivity : Activity() {    // Data class for shooting stars
-    data class Star(
-        var x: Float,
-        var y: Float,
-        var velocityX: Float,
-        var velocityY: Float,
-        var size: Float,
-        var alpha: Float,
-        var twinklePhase: Float,
-        var trailLength: Int,
-        var trailThickness: Float,
-        var trail: MutableList<Pair<Float, Float>> = mutableListOf()
-    )
+class AlarmScreenActivity : Activity() {
     
     companion object {
         private const val TAG = "AlarmScreenActivity"
