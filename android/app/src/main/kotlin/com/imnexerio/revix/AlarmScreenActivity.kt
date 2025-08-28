@@ -37,7 +37,7 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 class AlarmScreenActivity : Activity() {
-    
+
     companion object {
         private const val TAG = "AlarmScreenActivity"
         const val EXTRA_CATEGORY = "category"
@@ -54,7 +54,7 @@ class AlarmScreenActivity : Activity() {
     private var scheduledDate: String = ""
     private var description: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
-    
+
     // Brjoadcast receiver to listen for alarm service events
     private val alarmServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -64,9 +64,9 @@ class AlarmScreenActivity : Activity() {
                     val receivedCategory = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
                     val receivedSubCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
                     val receivedRecordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
-                    
+
                     Log.d(TAG, "Close alarm screen broadcast received for: $receivedRecordTitle, current alarm: $recordTitle")
-                    
+
                     // Check if this broadcast is for this specific alarm
                     if (receivedCategory == category && receivedSubCategory == subCategory && receivedRecordTitle == recordTitle) {
                         Log.d(TAG, "Broadcast matches current alarm - closing activity for: $recordTitle")
@@ -82,18 +82,18 @@ class AlarmScreenActivity : Activity() {
             }
         }
     }
-      override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         Log.d(TAG, "AlarmScreenActivity onCreate() called")
-        
+
         // Check if this is a close activity intent
         if (intent?.action == "CLOSE_ALARM_ACTIVITY") {
             Log.d(TAG, "Received close activity intent - finishing immediately")
             finish()
             return
         }
-          // Extract alarm details from intent
+        // Extract alarm details from intent
         category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
@@ -101,18 +101,18 @@ class AlarmScreenActivity : Activity() {
         entryType = intent.getStringExtra("entry_type") ?: ""
         scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
         description = intent.getStringExtra("description") ?: ""
-        
+
         // Set up full screen over lock screen
         setupFullScreenOverLockScreen()
-        
+
         // Create and set content view
         createAlarmUI()
-        
+
         Log.d(TAG, "AlarmScreenActivity setup complete for: $recordTitle")
     }
     private fun setupFullScreenOverLockScreen() {
         Log.d(TAG, "Setting up full screen over lock screen")
-        
+
         // Critical flags for showing over lock screen regardless of notification settings
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             Log.d(TAG, "Using modern Android (O_MR1+) lock screen flags")
@@ -125,16 +125,16 @@ class AlarmScreenActivity : Activity() {
             Log.d(TAG, "Using legacy Android lock screen flags")
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
             )
         }
-        
+
         // Essential flags for alarm apps to show over everything
         window.addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-            WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON or
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                    WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
         )        // Set window type for system alert (shows over lock screen)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -155,24 +155,24 @@ class AlarmScreenActivity : Activity() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set window type", e)
         }
-        
+
         // Full screen and immersive flags
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        
+
         // Make sure it appears on top of everything
         window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
         window.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
-        
+
         // Hide system UI for immersive full screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
         } else {
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            )
+                    View.SYSTEM_UI_FLAG_FULLSCREEN or
+                            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    )
         }    }    private fun createAlarmUI() {
         val dpToPx = { dp: Int ->
             TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), resources.displayMetrics).toInt()
@@ -181,7 +181,7 @@ class AlarmScreenActivity : Activity() {
         // Get colors from resources
         val backgroundColor = ContextCompat.getColor(this, R.color.WidgetBackground)
         val textColor = ContextCompat.getColor(this, R.color.text)
-        
+
         // Get dynamic accent color based on entry_type, fallback to default if empty
         val accentColor = if (entryType.isNotEmpty()) {
             LectureColors.getLectureTypeColorSync(this, entryType)
@@ -197,7 +197,7 @@ class AlarmScreenActivity : Activity() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         }
-        
+
         // Second layer: Gradient background starting from button position
         val gradientLayer = createGradientBackground(accentColor, dpToPx)
 
@@ -210,7 +210,7 @@ class AlarmScreenActivity : Activity() {
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
-        
+
         // Top spacer for better positioning
         val topSpacer = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -220,45 +220,43 @@ class AlarmScreenActivity : Activity() {
             )
         }
 
-        // Time and Date Glass Card
-        val timeCard = createGlassCard(dpToPx, accentColor).apply {
-            val cardContent = LinearLayout(this@AlarmScreenActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
-                
-                // Time text
-                val timeText = TextView(this@AlarmScreenActivity).apply {
-                    text = reminderTime
-                    textSize = 64f
-                    setTextColor(textColor)
-                    gravity = Gravity.CENTER
-                    setTypeface(null, android.graphics.Typeface.BOLD)
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        setMargins(0, 0, 0, dpToPx(8))
-                    }
+        // Time and Date (no card background)
+        val timeDisplay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
+
+            // Time text
+            val timeText = TextView(this@AlarmScreenActivity).apply {
+                text = reminderTime
+                textSize = 64f
+                setTextColor(textColor)
+                gravity = Gravity.CENTER
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 0, 0, dpToPx(8))
                 }
-                
-                // Date text
-                val dateText = TextView(this@AlarmScreenActivity).apply {
-                    text = scheduledDate
-                    textSize = 24f
-                    setTextColor(textColor)
-                    gravity = Gravity.CENTER
-                    alpha = 0.8f
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    )
-                }
-                
-                addView(timeText)
-                addView(dateText)
             }
-            
-            addView(cardContent)
+
+            // Date text
+            val dateText = TextView(this@AlarmScreenActivity).apply {
+                text = scheduledDate
+                textSize = 24f
+                setTextColor(textColor)
+                gravity = Gravity.CENTER
+                alpha = 0.8f
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            addView(timeText)
+            addView(dateText)
+
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -266,13 +264,13 @@ class AlarmScreenActivity : Activity() {
                 setMargins(0, 0, 0, dpToPx(24))
             }
         }
-        
+
         // Information Glass Card
         val infoCard = createGlassCard(dpToPx, accentColor).apply {
             val cardContent = LinearLayout(this@AlarmScreenActivity).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
-                
+
                 // Category text
                 val categoryText = TextView(this@AlarmScreenActivity).apply {
                     text = "Category : $category"
@@ -288,7 +286,7 @@ class AlarmScreenActivity : Activity() {
                         setMargins(0, 0, 0, dpToPx(8))
                     }
                 }
-                
+
                 // Sub-category text
                 val subCategoryText = TextView(this@AlarmScreenActivity).apply {
                     text = "Sub Category : $subCategory"
@@ -304,7 +302,7 @@ class AlarmScreenActivity : Activity() {
                         setMargins(0, 0, 0, dpToPx(8))
                     }
                 }
-                
+
                 // Record title text
                 val recordTitleText = TextView(this@AlarmScreenActivity).apply {
                     text = "Title : $recordTitle"
@@ -320,7 +318,7 @@ class AlarmScreenActivity : Activity() {
                         setMargins(0, 0, 0, dpToPx(12))
                     }
                 }
-                
+
                 // Description text with proper 4-line truncation
                 val descriptionText = TextView(this@AlarmScreenActivity).apply {
                     val displayDescription = if (description.isNotEmpty()) {
@@ -340,13 +338,13 @@ class AlarmScreenActivity : Activity() {
                         ViewGroup.LayoutParams.WRAP_CONTENT
                     )
                 }
-                
+
                 addView(categoryText)
                 addView(subCategoryText)
                 addView(recordTitleText)
                 addView(descriptionText)
             }
-            
+
             addView(cardContent)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -354,7 +352,7 @@ class AlarmScreenActivity : Activity() {
             ).apply {
                 setMargins(0, 0, 0, dpToPx(32))
             }
-        }        
+        }
         // Flexible spacer
         val flexSpacer = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -374,14 +372,14 @@ class AlarmScreenActivity : Activity() {
 
         // Assemble the glassmorphism layout
         contentOverlay.addView(topSpacer)
-        contentOverlay.addView(timeCard)
+        contentOverlay.addView(timeDisplay)
         contentOverlay.addView(infoCard)
         contentOverlay.addView(flexSpacer)
         contentOverlay.addView(separateButtonsLayout) // Contains ignore, skip, and done buttons
 
         mainLayout.addView(gradientLayer)
         mainLayout.addView(contentOverlay)
-        
+
         setContentView(mainLayout)
     }
 
@@ -392,10 +390,10 @@ class AlarmScreenActivity : Activity() {
             val glassBackground = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = dpToPx(16).toFloat()
-                
+
                 // Semi-transparent white with slight accent tint for glassmorphism
                 val glassAlpha = 35 // Slightly more opaque for better readability
-                
+
                 // Blend white with slight accent color
                 val glassColor = Color.argb(
                     glassAlpha,
@@ -404,16 +402,16 @@ class AlarmScreenActivity : Activity() {
                     (Color.blue(accentColor) * 0.1f + 255 * 0.9f).toInt()
                 )
                 setColor(glassColor)
-                
+
                 // Subtle border for glass effect
                 setStroke(dpToPx(1), Color.argb(60, 255, 255, 255))
             }
-            
+
             background = glassBackground
-            
+
             // Add subtle shadow effect
             elevation = dpToPx(8).toFloat()
-            
+
             // NO blur effect on cards - content stays perfectly readable
         }
     }
@@ -440,7 +438,7 @@ class AlarmScreenActivity : Activity() {
                 setTypeface(null, android.graphics.Typeface.NORMAL)
                 isAllCaps = false
                 setTextColor(Color.argb(180, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
-                
+
                 val ignoreBackground = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
                     cornerRadius = dpToPx(25).toFloat()
@@ -448,7 +446,7 @@ class AlarmScreenActivity : Activity() {
                     setStroke(dpToPx(1), Color.argb(80, 255, 255, 255))
                 }
                 background = ignoreBackground
-                
+
                 setPadding(dpToPx(24), dpToPx(12), dpToPx(24), dpToPx(12))
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -457,9 +455,9 @@ class AlarmScreenActivity : Activity() {
                     gravity = Gravity.CENTER_HORIZONTAL
                     setMargins(0, 0, 0, dpToPx(20))
                 }
-                
+
                 setOnClickListener { ignoreAlarm() }
-                
+
                 // Custom touch feedback instead of Android's yellow highlight
                 setOnTouchListener { view, event ->
                     when (event.action) {
@@ -494,7 +492,7 @@ class AlarmScreenActivity : Activity() {
                     setTypeface(null, android.graphics.Typeface.NORMAL)
                     isAllCaps = false
                     setTextColor(textColor)
-                    
+
                     val skipBackground = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         cornerRadius = dpToPx(25).toFloat()
@@ -502,7 +500,7 @@ class AlarmScreenActivity : Activity() {
                         setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
                     }
                     background = skipBackground
-                    
+
                     setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
                     layoutParams = LinearLayout.LayoutParams(
                         0, // Use weight for equal width
@@ -511,9 +509,9 @@ class AlarmScreenActivity : Activity() {
                     ).apply {
                         setMargins(0, 0, dpToPx(8), 0) // Small gap between buttons
                     }
-                    
+
                     setOnClickListener { skipAlarm() }
-                    
+
                     // Custom touch feedback instead of Android's yellow highlight
                     setOnTouchListener { view, event ->
                         when (event.action) {
@@ -539,7 +537,7 @@ class AlarmScreenActivity : Activity() {
                     setTypeface(null, android.graphics.Typeface.NORMAL)
                     isAllCaps = false
                     setTextColor(textColor)
-                    
+
                     val doneBackground = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         cornerRadius = dpToPx(25).toFloat()
@@ -547,7 +545,7 @@ class AlarmScreenActivity : Activity() {
                         setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
                     }
                     background = doneBackground
-                    
+
                     setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
                     layoutParams = LinearLayout.LayoutParams(
                         0, // Use weight for equal width
@@ -556,9 +554,9 @@ class AlarmScreenActivity : Activity() {
                     ).apply {
                         setMargins(dpToPx(8), 0, 0, 0) // Small gap between buttons
                     }
-                    
+
                     setOnClickListener { markAsDone() }
-                    
+
                     // Custom touch feedback instead of Android's yellow highlight
                     setOnTouchListener { view, event ->
                         when (event.action) {
@@ -593,31 +591,31 @@ class AlarmScreenActivity : Activity() {
     ): View {
         return object : View(this) {
             private var glowIntensity = 0.6f
-            
+
             private val gradientPaint = Paint().apply {
                 isAntiAlias = true
             }
-            
+
             override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
                 super.onSizeChanged(w, h, oldw, oldh)
                 updateGradient()
             }
-            
+
             private fun updateGradient() {
                 // Button will be positioned in the center-bottom area
                 val centerX = width / 2f
                 val centerY = height * 0.7f // Position where button will be
-                
+
                 // Create gradient radiating from button position
                 val maxRadius = kotlin.math.max(
                     kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
                     kotlin.math.sqrt(((width - centerX) * (width - centerX) + (height - centerY) * (height - centerY)).toDouble())
                 ).toFloat()
-                
+
                 val centerAlpha = (glowIntensity * 100).toInt().coerceIn(0, 255)
                 val midAlpha = (glowIntensity * 60).toInt().coerceIn(0, 255)
                 val edgeAlpha = (glowIntensity * 20).toInt().coerceIn(0, 255)
-                
+
                 gradientPaint.shader = RadialGradient(
                     centerX, centerY, maxRadius,
                     intArrayOf(
@@ -630,24 +628,24 @@ class AlarmScreenActivity : Activity() {
                     Shader.TileMode.CLAMP
                 )
             }
-            
+
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 updateGradient()
-                
+
                 // Button position
                 val centerX = width / 2f
                 val centerY = height * 0.7f
-                
+
                 val maxRadius = kotlin.math.max(
                     kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
                     kotlin.math.sqrt(((width - centerX) * (width - centerX) + (height - centerY) * (height - centerY)).toDouble())
                 ).toFloat()
-                
+
                 // Draw gradient starting from button position
                 canvas.drawCircle(centerX, centerY, maxRadius, gradientPaint)
             }
-            
+
             fun updateIntensity(intensity: Float) {
                 glowIntensity = intensity
                 invalidate()
@@ -662,9 +660,9 @@ class AlarmScreenActivity : Activity() {
 
     private fun markAsDone() {
         Log.d(TAG, "Mark as done clicked for: $recordTitle")
-        
+
         userActionTaken = true // User clicked a button
-        
+
         // Send broadcast to mark alarm as done
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_MARK_AS_DONE
@@ -673,15 +671,15 @@ class AlarmScreenActivity : Activity() {
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
         }
         sendBroadcast(intent)
-        
+
         finish()
     }
 
     private fun skipAlarm() {
         Log.d(TAG, "Skip clicked for: $recordTitle")
-        
+
         userActionTaken = true // User clicked a button
-        
+
         // Send broadcast to skip alarm
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_SKIP_ALARM
@@ -690,15 +688,15 @@ class AlarmScreenActivity : Activity() {
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
         }
         sendBroadcast(intent)
-        
+
         finish()
     }
 
     private fun ignoreAlarm() {
         Log.d(TAG, "Ignore clicked for: $recordTitle")
-        
+
         userActionTaken = true // User clicked a button
-        
+
         // Send broadcast to ignore alarm
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_IGNORE_ALARM
@@ -707,7 +705,7 @@ class AlarmScreenActivity : Activity() {
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
         }
         sendBroadcast(intent)
-        
+
         finish()
     }
 
@@ -715,7 +713,7 @@ class AlarmScreenActivity : Activity() {
         // Prevent back button from closing the alarm
         // User must explicitly choose an action
     }
-        override fun onStart() {
+    override fun onStart() {
         super.onStart()
         Log.d(TAG, "AlarmScreenActivity onStart() called")
     }
@@ -723,7 +721,7 @@ class AlarmScreenActivity : Activity() {
     override fun onResume() {
         super.onResume()
         Log.d(TAG, "AlarmScreenActivity onResume() called - should be visible now")
-        
+
         // Register broadcast receiver to listen for alarm service events
         val filter = IntentFilter(ACTION_CLOSE_ALARM_SCREEN)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -737,7 +735,7 @@ class AlarmScreenActivity : Activity() {
     override fun onPause() {
         super.onPause()
         Log.d(TAG, "AlarmScreenActivity onPause() called")
-        
+
         // Unregister broadcast receiver
         try {
             unregisterReceiver(alarmServiceReceiver)
@@ -750,7 +748,7 @@ class AlarmScreenActivity : Activity() {
     override fun onStop() {
         super.onStop()
         Log.d(TAG, "AlarmScreenActivity onStop() called")
-        
+
         // If user didn't take any action and activity is being stopped, treat as ignore
         if (!userActionTaken) {
             Log.d(TAG, "Activity stopped without user action - treating as ignore for: $recordTitle")
@@ -774,9 +772,9 @@ class AlarmScreenActivity : Activity() {
             Log.d(TAG, "User action already taken, skipping ignore handling for: $recordTitle")
             return
         }
-        
+
         userActionTaken = true // Mark as handled
-        
+
         // Send the same broadcast as the ignore button
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_IGNORE_ALARM
@@ -785,7 +783,7 @@ class AlarmScreenActivity : Activity() {
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
         }
         sendBroadcast(intent)
-        
+
         Log.d(TAG, "Sent ignore broadcast for: $recordTitle")
     }
 
