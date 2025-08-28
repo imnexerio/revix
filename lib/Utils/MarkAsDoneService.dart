@@ -115,6 +115,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
     required String subCategory,
     required String lectureNo,
     bool isSkip = false,
+    bool isWidget = false, // New parameter to indicate if request is from widget
   }) async {
     try {
       // Show loading dialog only if context is available
@@ -138,6 +139,17 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       if (!isCurrentlyEnabled) {
         if (context != null) Navigator.pop(context);
         throw 'Cannot mark as done when the status is disabled';
+      }
+
+      // Check if already marked as done today (only for widget requests)
+      if (isWidget) {
+        String todayDate = DateTime.now().toIso8601String().split('T')[0];
+        String? lastMarkDone = details['last_mark_done']?.toString();
+        
+        if (lastMarkDone != null && lastMarkDone == todayDate) {
+          if (context != null) Navigator.pop(context);
+          throw 'Already marked as done today';
+        }
       }
 
       // Handle unspecified date_initiated case

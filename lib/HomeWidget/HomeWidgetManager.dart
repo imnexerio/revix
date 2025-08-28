@@ -265,6 +265,7 @@ class HomeWidgetService {
               subCategory: subCategory,
               lectureNo: recordTitle,
               isSkip: isSkip,
+              isWidget: true, // Indicate this is a widget request
             );
 
             print('Record update completed successfully using MarkAsDoneService');
