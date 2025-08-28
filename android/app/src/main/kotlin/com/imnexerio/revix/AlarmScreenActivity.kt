@@ -393,8 +393,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             )
         }
 
-        // Call-style button layout similar to the UI image (adapted for schedule tracker)
-        val scheduleButtonsLayout = createScheduleStyleButtonsLayout(
+        // Three separate buttons layout like in the image
+        val separateButtonsLayout = createSeparateButtonsLayout(
             accentColor = accentColor,
             textColor = textColor,
             dpToPx = dpToPx
@@ -413,8 +413,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         contentOverlay.addView(timeCard)
         contentOverlay.addView(infoCard)
         contentOverlay.addView(flexSpacer)
-        contentOverlay.addView(ignoreButton)
-        contentOverlay.addView(scheduleButtonsLayout)
+        contentOverlay.addView(separateButtonsLayout) // Contains ignore, skip, and done buttons
 
         // Layer the components: stars background, gradient, content overlay
         mainLayout.addView(starsBackground)
@@ -675,6 +674,127 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     }
 
     // Create schedule-style button layout similar to the UI image (adapted for schedule tracker)
+    // Create separate buttons layout like in the image
+    private fun createSeparateButtonsLayout(
+        accentColor: Int,
+        textColor: Int,
+        dpToPx: (Int) -> Int
+    ): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(dpToPx(30), dpToPx(16), dpToPx(30), dpToPx(24))
+            }
+
+            // Ignore button (small, centered, on top)
+            val ignoreButton = Button(this@AlarmScreenActivity).apply {
+                text = "Ignore"
+                textSize = 14f
+                setTypeface(null, android.graphics.Typeface.NORMAL)
+                isAllCaps = false
+                setTextColor(Color.argb(180, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
+                
+                val ignoreBackground = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = dpToPx(25).toFloat()
+                    setColor(Color.argb(30, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                    setStroke(dpToPx(1), Color.argb(80, 255, 255, 255))
+                }
+                background = ignoreBackground
+                
+                setPadding(dpToPx(24), dpToPx(12), dpToPx(24), dpToPx(12))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    setMargins(0, 0, 0, dpToPx(20))
+                }
+                
+                setOnClickListener { ignoreAlarm() }
+                foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+            }
+
+            // Bottom row: Skip and Done buttons side by side
+            val bottomButtonsRow = LinearLayout(this@AlarmScreenActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+
+                // Skip button (left)
+                val skipButton = Button(this@AlarmScreenActivity).apply {
+                    text = "Skip"
+                    textSize = 16f
+                    setTypeface(null, android.graphics.Typeface.NORMAL)
+                    isAllCaps = false
+                    setTextColor(textColor)
+                    
+                    val skipBackground = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = dpToPx(25).toFloat()
+                        setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                        setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
+                    }
+                    background = skipBackground
+                    
+                    setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
+                    layoutParams = LinearLayout.LayoutParams(
+                        0, // Use weight for equal width
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        1f // Equal weight
+                    ).apply {
+                        setMargins(0, 0, dpToPx(8), 0) // Small gap between buttons
+                    }
+                    
+                    setOnClickListener { skipAlarm() }
+                    foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+                }
+
+                // Done button (right)
+                val doneButton = Button(this@AlarmScreenActivity).apply {
+                    text = "Done"
+                    textSize = 16f
+                    setTypeface(null, android.graphics.Typeface.NORMAL)
+                    isAllCaps = false
+                    setTextColor(textColor)
+                    
+                    val doneBackground = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = dpToPx(25).toFloat()
+                        setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                        setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
+                    }
+                    background = doneBackground
+                    
+                    setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
+                    layoutParams = LinearLayout.LayoutParams(
+                        0, // Use weight for equal width
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        1f // Equal weight
+                    ).apply {
+                        setMargins(dpToPx(8), 0, 0, 0) // Small gap between buttons
+                    }
+                    
+                    setOnClickListener { markAsDone() }
+                    foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+                }
+
+                addView(skipButton)
+                addView(doneButton)
+            }
+
+            addView(ignoreButton)
+            addView(bottomButtonsRow)
+        }
+    }
+
     private fun createScheduleStyleButtonsLayout(
         accentColor: Int,
         textColor: Int,
