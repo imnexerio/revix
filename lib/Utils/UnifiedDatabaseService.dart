@@ -641,6 +641,7 @@ class UnifiedDatabaseService {
         'dates_missed_revisions': datesMissedRevisions,
         'description': description,
         'status': status,
+        'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
       };
 
       // Add skip-specific data if this is a skip operation
