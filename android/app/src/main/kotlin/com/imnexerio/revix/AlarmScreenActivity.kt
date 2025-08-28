@@ -699,11 +699,11 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     dpToPx(kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt())) // Reduced: min 70dp or 5% of screen height
                 )
                 
-                // Simple curved background
+                // Simple curved background with less rounding
                 val containerHeight = dpToPx(kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt()))
                 val background = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
-                    cornerRadius = (containerHeight / 2).toFloat() // Always half of container height for perfect rounded ends
+                    cornerRadius = (containerHeight / 2.5).toFloat() // Less rounded - third instead of half for softer curves
                     setColor(Color.argb(50, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
                     setStroke(dpToPx(2), Color.argb(100, 255, 255, 255))
                 }
@@ -742,10 +742,10 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 
                 // Simple oval button with adaptive sizing
                 val slideButton = View(this@AlarmScreenActivity).apply {
-                    // Calculate adaptive button size based on container (reduced sizing)
+                    // Calculate adaptive button size based on container (increased height)
                     val containerHeight = kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt())
-                    val buttonHeight = (containerHeight * 0.6f).toInt() // Reduced to 50% of container height
-                    val buttonWidth = (buttonHeight * 2.0f).toInt() // Reduced oval ratio to 2.0x
+                    val buttonHeight = (containerHeight * 0.65f).toInt() // Increased to 75% of container height
+                    val buttonWidth = (buttonHeight * 1.5f).toInt() // Reduced width ratio from 2.0x to 1.5x
                     
                     layoutParams = FrameLayout.LayoutParams(
                         dpToPx(buttonWidth),
@@ -754,8 +754,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                         gravity = Gravity.CENTER
                     }
                     
-                    // Pre-create reusable backgrounds with adaptive corner radius
-                    val buttonCornerRadius = (dpToPx(buttonHeight) / 2).toFloat()
+                    // Pre-create reusable backgrounds with better rounding (dynamic)
+                    val buttonCornerRadius = (dpToPx(buttonHeight) / 2.5f).toFloat() // Better rounding - between quarter and half
                     
                     val originalBackground = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
