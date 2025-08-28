@@ -400,9 +400,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             dpToPx = dpToPx
         )
 
-        // Glass ignore button (keeping existing ignore functionality)
-        val glassIgnoreButton = createGlassButton(
-            text = "IGNORE",
+        val ignoreButton = createIgnoreButton(
             accentColor = accentColor,
             textColor = textColor,
             dpToPx = dpToPx
@@ -415,8 +413,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         contentOverlay.addView(timeCard)
         contentOverlay.addView(infoCard)
         contentOverlay.addView(flexSpacer)
+        contentOverlay.addView(ignoreButton)
         contentOverlay.addView(scheduleButtonsLayout)
-        contentOverlay.addView(glassIgnoreButton)
 
         // Layer the components: stars background, gradient, content overlay
         mainLayout.addView(starsBackground)
@@ -996,52 +994,43 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         }
     }
 
-    // Create glassmorphism ignore button
-    private fun createGlassButton(
-        text: String,
+    private fun createIgnoreButton(
         accentColor: Int,
         textColor: Int,
         dpToPx: (Int) -> Int,
         onClick: () -> Unit
     ): Button {
         return Button(this).apply {
-            this.text = text
-            textSize = 16f
-            setTypeface(null, android.graphics.Typeface.BOLD)
+            text = "✖ Ignore"
+            textSize = 12f // Smaller text
+            setTypeface(null, android.graphics.Typeface.NORMAL)
             isAllCaps = false
-            setTextColor(textColor)
-            
-            // Glass background
-            val glassBackground = GradientDrawable().apply {
+            setTextColor(Color.argb(180, Color.red(textColor), Color.green(textColor), Color.blue(textColor))) // Slightly faded
+
+            val cuteBackground = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(12).toFloat()
+                cornerRadius = dpToPx(20).toFloat()
                 
-                // Transparent glass with accent tint
-                val glassColor = Color.argb(
-                    25,
-                    (Color.red(accentColor) * 0.3f + 255 * 0.7f).toInt(),
-                    (Color.green(accentColor) * 0.3f + 255 * 0.7f).toInt(),
-                    (Color.blue(accentColor) * 0.3f + 255 * 0.7f).toInt()
-                )
-                setColor(glassColor)
-                setStroke(dpToPx(1), Color.argb(50, 255, 255, 255))
+                // Soft translucent background
+                setColor(Color.argb(30, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                setStroke(dpToPx(1), Color.argb(80, 255, 255, 255))
             }
             
-            background = glassBackground
+            background = cuteBackground
             
-            // NO blur effect on button text - keep text readable
-            
-            setPadding(dpToPx(32), dpToPx(16), dpToPx(32), dpToPx(16))
+            // Small padding for compact size
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
             layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, // Wrap content for small size
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(dpToPx(40), dpToPx(16), dpToPx(40), dpToPx(20))
+                gravity = Gravity.CENTER_HORIZONTAL
+                setMargins(0, dpToPx(8), 0, dpToPx(12)) // Small margins
             }
             
             setOnClickListener { onClick() }
             
-            // Add touch feedback
+            // Subtle touch feedback
             foreground = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
         }
     }
