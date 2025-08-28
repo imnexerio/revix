@@ -626,59 +626,69 @@ class AlarmScreenActivity : Activity() {
                 // Update animation speed based on elapsed time
                 updateAnimationSpeed()
                 
-                // Create wave-like motion (starts static, gradually becomes more dynamic)
-                val wave1 = kotlin.math.sin(animationTime.toDouble()).toFloat() * 0.2f
-                val wave2 = kotlin.math.cos(animationTime * 1.5).toFloat() * 0.15f
-                val wave3 = kotlin.math.sin(animationTime * 0.8).toFloat() * 0.18f
+                // Create multiple wave patterns for natural movement
+                val time = animationTime.toDouble()
+                val wave1 = kotlin.math.sin(time * 0.7).toFloat()
+                val wave2 = kotlin.math.cos(time * 1.1).toFloat()
+                val wave3 = kotlin.math.sin(time * 0.9).toFloat()
                 
-                // Create flowing gradient positions with movement
-                val positions = floatArrayOf(
-                    0.0f,                                  // Fixed top
-                    0.25f + wave1,                         // Moving upper zone
-                    0.5f + wave2,                          // Moving middle zone
-                    0.75f + wave3,                         // Moving lower zone
-                    1.0f                                   // Fixed bottom
-                )
+                // Dynamic center point that moves organically around the screen
+                val centerX = width * (0.5f + wave1 * 0.15f)  // Move center horizontally
+                val centerY = height * (0.4f + wave2 * 0.2f)  // Move center vertically
                 
-                // Ensure positions stay within bounds and maintain order
-                for (i in 1 until positions.size - 1) {
-                    positions[i] = positions[i].coerceIn(0.1f, 0.9f)
-                }
-                // Sort to maintain gradient order
-                for (i in 1 until positions.size) {
-                    if (positions[i] < positions[i-1]) {
-                        positions[i] = positions[i-1] + 0.01f
-                    }
-                }
+                // Dynamic radius that breathes/pulses
+                val baseRadius = kotlin.math.max(width, height).toFloat() * 0.8f
+                val radius = baseRadius * (1f + wave3 * 0.2f)
                 
-                // Create color array with dynamic blending (also starts static)
+                // Create more natural color blending - subtle variations
+                val blendFactor1 = 0.85f + wave1 * 0.1f   // Mostly white with slight variation
+                val blendFactor2 = 0.6f + wave2 * 0.15f   // Balanced blend zone
+                val blendFactor3 = 0.35f + wave3 * 0.1f   // More accent color
+                val blendFactor4 = 0.15f + wave1 * 0.05f  // Almost pure accent
+                
+                // Organic color transitions - more colors for smoother blending
                 val colors = intArrayOf(
-                    whiteColor,                            // Top: Dynamic white
-                    Color.argb(                           // Upper blend - varies with animation
-                        255,
-                        (Color.red(whiteColor) * (0.8f + wave1 * 0.2f) + Color.red(accentColor) * (0.2f - wave1 * 0.2f)).toInt(),
-                        (Color.green(whiteColor) * (0.8f + wave1 * 0.2f) + Color.green(accentColor) * (0.2f - wave1 * 0.2f)).toInt(),
-                        (Color.blue(whiteColor) * (0.8f + wave1 * 0.2f) + Color.blue(accentColor) * (0.2f - wave1 * 0.2f)).toInt()
+                    // Center: Mostly white with tiny hint of accent
+                    Color.argb(255,
+                        (Color.red(whiteColor) * 0.98f + Color.red(accentColor) * 0.02f).toInt(),
+                        (Color.green(whiteColor) * 0.98f + Color.green(accentColor) * 0.02f).toInt(),
+                        (Color.blue(whiteColor) * 0.98f + Color.blue(accentColor) * 0.02f).toInt()
                     ),
-                    Color.argb(                           // Middle blend - varies with animation
-                        255,
-                        (Color.red(whiteColor) * (0.5f + wave2 * 0.3f) + Color.red(accentColor) * (0.5f - wave2 * 0.3f)).toInt(),
-                        (Color.green(whiteColor) * (0.5f + wave2 * 0.3f) + Color.green(accentColor) * (0.5f - wave2 * 0.3f)).toInt(),
-                        (Color.blue(whiteColor) * (0.5f + wave2 * 0.3f) + Color.blue(accentColor) * (0.5f - wave2 * 0.3f)).toInt()
+                    // First ring: Gentle blend
+                    Color.argb(255,
+                        (Color.red(whiteColor) * blendFactor1 + Color.red(accentColor) * (1f - blendFactor1)).toInt(),
+                        (Color.green(whiteColor) * blendFactor1 + Color.green(accentColor) * (1f - blendFactor1)).toInt(),
+                        (Color.blue(whiteColor) * blendFactor1 + Color.blue(accentColor) * (1f - blendFactor1)).toInt()
                     ),
-                    Color.argb(                           // Lower blend - varies with animation
-                        255,
-                        (Color.red(whiteColor) * (0.2f + wave3 * 0.2f) + Color.red(accentColor) * (0.8f - wave3 * 0.2f)).toInt(),
-                        (Color.green(whiteColor) * (0.2f + wave3 * 0.2f) + Color.green(accentColor) * (0.8f - wave3 * 0.2f)).toInt(),
-                        (Color.blue(whiteColor) * (0.2f + wave3 * 0.2f) + Color.blue(accentColor) * (0.8f - wave3 * 0.2f)).toInt()
+                    // Second ring: More pronounced blend
+                    Color.argb(255,
+                        (Color.red(whiteColor) * blendFactor2 + Color.red(accentColor) * (1f - blendFactor2)).toInt(),
+                        (Color.green(whiteColor) * blendFactor2 + Color.green(accentColor) * (1f - blendFactor2)).toInt(),
+                        (Color.blue(whiteColor) * blendFactor2 + Color.blue(accentColor) * (1f - blendFactor2)).toInt()
                     ),
-                    accentColor                           // Bottom: Accent color
+                    // Third ring: Accent dominant
+                    Color.argb(255,
+                        (Color.red(whiteColor) * blendFactor3 + Color.red(accentColor) * (1f - blendFactor3)).toInt(),
+                        (Color.green(whiteColor) * blendFactor3 + Color.green(accentColor) * (1f - blendFactor3)).toInt(),
+                        (Color.blue(whiteColor) * blendFactor3 + Color.blue(accentColor) * (1f - blendFactor3)).toInt()
+                    ),
+                    // Fourth ring: Almost pure accent
+                    Color.argb(255,
+                        (Color.red(whiteColor) * blendFactor4 + Color.red(accentColor) * (1f - blendFactor4)).toInt(),
+                        (Color.green(whiteColor) * blendFactor4 + Color.green(accentColor) * (1f - blendFactor4)).toInt(),
+                        (Color.blue(whiteColor) * blendFactor4 + Color.blue(accentColor) * (1f - blendFactor4)).toInt()
+                    ),
+                    // Outer edge: Pure accent color
+                    accentColor
                 )
                 
-                // Create linear gradient from top to bottom
-                gradientPaint.shader = android.graphics.LinearGradient(
-                    0f, 0f,                    // Start point (top)
-                    0f, height.toFloat(),      // End point (bottom)
+                // Smooth radial distribution
+                val positions = floatArrayOf(0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f)
+                
+                // Create organic radial gradient with moving center and breathing radius
+                gradientPaint.shader = android.graphics.RadialGradient(
+                    centerX, centerY,         // Dynamic center point
+                    radius,                   // Breathing radius
                     colors,
                     positions,
                     Shader.TileMode.CLAMP
