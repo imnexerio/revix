@@ -683,102 +683,183 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         dpToPx: (Int) -> Int
     ): LinearLayout {
         return LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(dpToPx(20), dpToPx(32), dpToPx(20), dpToPx(24))
+                setMargins(dpToPx(30), dpToPx(32), dpToPx(30), dpToPx(24))
             }
 
-            // Center spacer with alarm/schedule icon
-            val centerContainer = FrameLayout(this@AlarmScreenActivity).apply {
+            // Modern curved container for the slide interface
+            val modernSlideContainer = FrameLayout(this@AlarmScreenActivity).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    dpToPx(120)
+                    dpToPx(160)
                 )
                 
-                // Create slide track background
-                val slideTrack = View(this@AlarmScreenActivity).apply {
-                    layoutParams = FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        dpToPx(6)
-                    ).apply {
-                        gravity = Gravity.CENTER_VERTICAL
-                        setMargins(dpToPx(20), 0, dpToPx(20), 0)
-                    }
+                // Beautiful curved background with gradient
+                val curvedBackground = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = dpToPx(80).toFloat() // Very rounded for modern look
                     
-                    val trackBackground = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dpToPx(3).toFloat()
-                        setColor(Color.argb(60, 255, 255, 255))
-                    }
-                    background = trackBackground
+                    // Beautiful gradient background
+                    val gradientColors = intArrayOf(
+                        Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb(60, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                        Color.argb(30, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+                    )
+                    colors = gradientColors
+                    orientation = GradientDrawable.Orientation.LEFT_RIGHT
+                    
+                    // Elegant border
+                    setStroke(dpToPx(2), Color.argb(100, 255, 255, 255))
                 }
+                background = curvedBackground
+                elevation = dpToPx(12).toFloat()
                 
-                // Center alarm/schedule icon (slideable)
-                val scheduleIcon = TextView(this@AlarmScreenActivity).apply {
-                    text = "⏰" // Alarm clock emoji - more appropriate for schedule tracker
-                    textSize = 48f
+                // Left action hint (Skip)
+                val leftHint = LinearLayout(this@AlarmScreenActivity).apply {
+                    orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
                     layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(80),
-                        dpToPx(80)
+                        dpToPx(100),
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    ).apply {
+                        gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                        setMargins(dpToPx(20), 0, 0, 0)
+                    }
+                    alpha = 0.4f // Start faded
+                    
+                    val skipIcon = TextView(this@AlarmScreenActivity).apply {
+                        text = "✕"
+                        textSize = 24f
+                        setTextColor(Color.argb(255, 255, 152, 0)) // Orange
+                        gravity = Gravity.CENTER
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                    }
+                    
+                    val skipText = TextView(this@AlarmScreenActivity).apply {
+                        text = "Skip"
+                        textSize = 12f
+                        setTextColor(Color.argb(200, 255, 152, 0))
+                        gravity = Gravity.CENTER
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                    }
+                    
+                    addView(skipIcon)
+                    addView(skipText)
+                }
+                
+                // Right action hint (Done)
+                val rightHint = LinearLayout(this@AlarmScreenActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    layoutParams = FrameLayout.LayoutParams(
+                        dpToPx(100),
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    ).apply {
+                        gravity = Gravity.CENTER_VERTICAL or Gravity.END
+                        setMargins(0, 0, dpToPx(20), 0)
+                    }
+                    alpha = 0.4f // Start faded
+                    
+                    val doneIcon = TextView(this@AlarmScreenActivity).apply {
+                        text = "✓"
+                        textSize = 24f
+                        setTextColor(Color.argb(255, 76, 175, 80)) // Green
+                        gravity = Gravity.CENTER
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                    }
+                    
+                    val doneText = TextView(this@AlarmScreenActivity).apply {
+                        text = "Done"
+                        textSize = 12f
+                        setTextColor(Color.argb(200, 76, 175, 80))
+                        gravity = Gravity.CENTER
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                    }
+                    
+                    addView(doneIcon)
+                    addView(doneText)
+                }
+                
+                // Center slideable alarm icon with modern design
+                val modernAlarmIcon = TextView(this@AlarmScreenActivity).apply {
+                    text = "⏰"
+                    textSize = 56f
+                    gravity = Gravity.CENTER
+                    layoutParams = FrameLayout.LayoutParams(
+                        dpToPx(100),
+                        dpToPx(100)
                     ).apply {
                         gravity = Gravity.CENTER
                     }
                     
-                    // Glass background for schedule icon
-                    val iconBackground = GradientDrawable().apply {
+                    // Beautiful modern circular background
+                    val modernIconBackground = GradientDrawable().apply {
                         shape = GradientDrawable.OVAL
-                        val iconColor = Color.argb(
-                            60,
-                            (Color.red(accentColor) * 0.8f + 255 * 0.2f).toInt(),
-                            (Color.green(accentColor) * 0.8f + 255 * 0.2f).toInt(),
-                            (Color.blue(accentColor) * 0.8f + 255 * 0.2f).toInt()
+                        
+                        // Elegant gradient for the icon
+                        val iconGradientColors = intArrayOf(
+                            Color.argb(200, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                            Color.argb(255, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
+                            Color.argb(180, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
                         )
-                        setColor(iconColor)
-                        setStroke(dpToPx(2), Color.argb(80, 255, 255, 255))
+                        colors = iconGradientColors
+                        orientation = GradientDrawable.Orientation.TOP_BOTTOM
+                        
+                        // Glowing border
+                        setStroke(dpToPx(3), Color.argb(150, 255, 255, 255))
                     }
-                    background = iconBackground
-                    elevation = dpToPx(6).toFloat()
+                    background = modernIconBackground
+                    elevation = dpToPx(16).toFloat()
                     
-                    // Variables for slide functionality
+                    // Modern slide functionality
                     var initialX = 0f
                     var isSliding = false
-                    val slideThreshold = dpToPx(100).toFloat()
-                    val containerWidth = dpToPx(300).toFloat() // Approximate container width
+                    val slideThreshold = dpToPx(120).toFloat()
+                    val maxSlideDistance = dpToPx(150).toFloat()
                     
-                    // Add gentle pulsing animation for alarm
-                    val pulseAnimator = ValueAnimator.ofFloat(1.0f, 1.08f, 1.0f).apply {
-                        duration = 2000
+                    // Beautiful pulsing animation
+                    val modernPulseAnimator = ValueAnimator.ofFloat(1.0f, 1.12f, 1.0f).apply {
+                        duration = 2500
                         repeatCount = ValueAnimator.INFINITE
                         addUpdateListener { animator ->
-                            if (!isSliding) { // Only pulse when not sliding
+                            if (!isSliding) {
                                 val scale = animator.animatedValue as Float
                                 scaleX = scale
                                 scaleY = scale
+                                
+                                // Subtle glow effect during pulse
+                                val glowAlpha = ((scale - 1.0f) * 50 + 150).toInt()
+                                val currentBg = background as GradientDrawable
+                                currentBg.setStroke(dpToPx(3), Color.argb(glowAlpha, 255, 255, 255))
                             }
                         }
                     }
                     
-                    post { pulseAnimator.start() }
+                    post { modernPulseAnimator.start() }
                     
-                    // Touch listener for sliding
+                    // Modern touch handling with smooth animations
                     setOnTouchListener { view, event ->
                         when (event.action) {
                             MotionEvent.ACTION_DOWN -> {
                                 initialX = event.rawX
                                 isSliding = true
-                                pulseAnimator.pause()
+                                modernPulseAnimator.pause()
                                 
-                                // Scale down slightly to indicate touch
+                                // Modern touch feedback
                                 animate()
-                                    .scaleX(0.9f)
-                                    .scaleY(0.9f)
-                                    .setDuration(100)
+                                    .scaleX(0.95f)
+                                    .scaleY(0.95f)
+                                    .setDuration(150)
                                     .start()
+                                
+                                // Brighten hints
+                                leftHint.animate().alpha(0.7f).setDuration(200).start()
+                                rightHint.animate().alpha(0.7f).setDuration(200).start()
                                 
                                 true
                             }
@@ -786,31 +867,36 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                             MotionEvent.ACTION_MOVE -> {
                                 if (isSliding) {
                                     val deltaX = event.rawX - initialX
-                                    val maxSlide = slideThreshold
+                                    val constrainedDelta = deltaX.coerceIn(-maxSlideDistance, maxSlideDistance)
                                     
-                                    // Constrain the movement
-                                    val constrainedDelta = deltaX.coerceIn(-maxSlide, maxSlide)
-                                    
-                                    // Move the icon
+                                    // Smooth movement
                                     translationX = constrainedDelta
                                     
-                                    // Visual feedback based on slide distance
-                                    val slideProgress = kotlin.math.abs(constrainedDelta) / maxSlide
-                                    val feedbackScale = 0.9f + (slideProgress * 0.3f) // Scale up as sliding
-                                    scaleX = feedbackScale
-                                    scaleY = feedbackScale
+                                    // Modern visual feedback
+                                    val slideProgress = kotlin.math.abs(constrainedDelta) / maxSlideDistance
+                                    val modernScale = 0.95f + (slideProgress * 0.25f)
+                                    scaleX = modernScale
+                                    scaleY = modernScale
                                     
-                                    // Change color tint based on direction
-                                    alpha = 0.7f + (slideProgress * 0.3f)
-                                    
-                                    // Show direction hints
-                                    if (deltaX < -slideThreshold * 0.7f) {
-                                        // Sliding left - hint skip
-                                        setTextColor(Color.argb(255, 255, 152, 0)) // Orange
-                                    } else if (deltaX > slideThreshold * 0.7f) {
-                                        // Sliding right - hint done
-                                        setTextColor(Color.argb(255, 76, 175, 80)) // Green
+                                    // Beautiful direction hints
+                                    if (deltaX < -slideThreshold * 0.5f) {
+                                        // Sliding left - emphasize skip
+                                        leftHint.animate().alpha(1.0f).scaleX(1.1f).scaleY(1.1f).setDuration(100).start()
+                                        rightHint.animate().alpha(0.3f).scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+                                        
+                                        // Change icon color hint
+                                        setTextColor(Color.argb(255, 255, 152, 0))
+                                    } else if (deltaX > slideThreshold * 0.5f) {
+                                        // Sliding right - emphasize done
+                                        rightHint.animate().alpha(1.0f).scaleX(1.1f).scaleY(1.1f).setDuration(100).start()
+                                        leftHint.animate().alpha(0.3f).scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+                                        
+                                        // Change icon color hint
+                                        setTextColor(Color.argb(255, 76, 175, 80))
                                     } else {
+                                        // Neutral position
+                                        leftHint.animate().alpha(0.7f).scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+                                        rightHint.animate().alpha(0.7f).scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
                                         setTextColor(textColor)
                                     }
                                 }
@@ -822,42 +908,54 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                                     val deltaX = event.rawX - initialX
                                     
                                     if (kotlin.math.abs(deltaX) >= slideThreshold) {
-                                        // Successful slide - trigger action
+                                        // Successful slide - beautiful exit animation
                                         if (deltaX < 0) {
-                                            // Slid left - Skip
+                                            // Skip - slide left and fade
                                             animate()
-                                                .translationX(-containerWidth)
+                                                .translationX(-dpToPx(400).toFloat())
                                                 .alpha(0f)
-                                                .setDuration(300)
+                                                .scaleX(0.5f)
+                                                .scaleY(0.5f)
+                                                .setDuration(400)
                                                 .withEndAction {
                                                     skipAlarm()
                                                 }
                                                 .start()
+                                            
+                                            leftHint.animate().alpha(1.0f).scaleX(1.3f).scaleY(1.3f).setDuration(300).start()
                                         } else {
-                                            // Slid right - Done
+                                            // Done - slide right and fade
                                             animate()
-                                                .translationX(containerWidth)
+                                                .translationX(dpToPx(400).toFloat())
                                                 .alpha(0f)
-                                                .setDuration(300)
+                                                .scaleX(0.5f)
+                                                .scaleY(0.5f)
+                                                .setDuration(400)
                                                 .withEndAction {
                                                     markAsDone()
                                                 }
                                                 .start()
+                                            
+                                            rightHint.animate().alpha(1.0f).scaleX(1.3f).scaleY(1.3f).setDuration(300).start()
                                         }
                                     } else {
-                                        // Insufficient slide - return to center
+                                        // Return to center with elegant animation
                                         animate()
                                             .translationX(0f)
                                             .scaleX(1.0f)
                                             .scaleY(1.0f)
                                             .alpha(1.0f)
-                                            .setDuration(200)
+                                            .setDuration(300)
                                             .withEndAction {
                                                 setTextColor(textColor)
                                                 isSliding = false
-                                                pulseAnimator.resume()
+                                                modernPulseAnimator.resume()
                                             }
                                             .start()
+                                        
+                                        // Reset hints
+                                        leftHint.animate().alpha(0.4f).scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+                                        rightHint.animate().alpha(0.4f).scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
                                     }
                                 }
                                 true
@@ -868,28 +966,28 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     }
                 }
                 
-                // Add slide instruction text
-                val instructionText = TextView(this@AlarmScreenActivity).apply {
-                    text = "⟵ Slide to Skip    •    Slide to Done ⟶"
-                    textSize = 12f
-                    setTextColor(Color.argb(180, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
-                    gravity = Gravity.CENTER
-                    layoutParams = FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.WRAP_CONTENT,
-                        FrameLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
-                        setMargins(0, 0, 0, dpToPx(10))
-                    }
+                addView(leftHint)
+                addView(rightHint)
+                addView(modernAlarmIcon)
+            }
+            
+            // Modern instruction text
+            val modernInstructionText = TextView(this@AlarmScreenActivity).apply {
+                text = "Slide alarm to skip or mark as done"
+                textSize = 14f
+                setTextColor(Color.argb(160, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
+                gravity = Gravity.CENTER
+                setTypeface(null, android.graphics.Typeface.NORMAL)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, dpToPx(16), 0, 0)
                 }
-                
-                addView(slideTrack)
-                addView(scheduleIcon)
-                addView(instructionText)
             }
 
-            // Add only the center container to layout
-            addView(centerContainer)
+            addView(modernSlideContainer)
+            addView(modernInstructionText)
         }
     }
 
