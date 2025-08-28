@@ -506,7 +506,6 @@ class AlarmScreenActivity : Activity() {
             }
 
             // Create glass swipe button with glow animation
-            val glassButtonSize = dpToPx(120)
             val glowViewSize = dpToPx(220) // Large enough for 100dp radius glow (200dp diameter + 20dp padding)
             
             // Single glass button with glow animation that can draw beyond bounds
@@ -706,7 +705,7 @@ class AlarmScreenActivity : Activity() {
             ).apply {
                 bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
                 startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                setMargins(dpToPx(30), 0, dpToPx(4), dpToPx(48)) // Left margin 30dp, right margin 4dp, bottom margin 48dp (increased)
+                setMargins(dpToPx(30), 0, dpToPx(4), dpToPx(24)) // Left margin 30dp, right margin 4dp, bottom margin 24dp
             }
             skipButton.layoutParams = skipConstraints
 
