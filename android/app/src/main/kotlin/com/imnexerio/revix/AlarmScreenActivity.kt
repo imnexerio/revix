@@ -640,50 +640,64 @@ class AlarmScreenActivity : Activity() {
                 val baseRadius = kotlin.math.max(width, height).toFloat() * 0.8f
                 val radius = baseRadius * (1f + wave3 * 0.2f)
                 
-                // Create more natural color blending - subtle variations
-                val blendFactor1 = 0.85f + wave1 * 0.1f   // Mostly white with slight variation
-                val blendFactor2 = 0.6f + wave2 * 0.15f   // Balanced blend zone
-                val blendFactor3 = 0.35f + wave3 * 0.1f   // More accent color
-                val blendFactor4 = 0.15f + wave1 * 0.05f  // Almost pure accent
+                // Create more natural color blending - smoother variations
+                val blendFactor1 = 0.92f + wave1 * 0.05f   // Very subtle variation from white
+                val blendFactor2 = 0.78f + wave2 * 0.08f   // Gentle first blend
+                val blendFactor3 = 0.62f + wave3 * 0.12f   // Moderate blend
+                val blendFactor4 = 0.45f + wave1 * 0.1f    // More pronounced blend
+                val blendFactor5 = 0.28f + wave2 * 0.08f   // Strong accent blend
+                val blendFactor6 = 0.12f + wave3 * 0.05f   // Almost pure accent
                 
-                // Organic color transitions - more colors for smoother blending
+                // Ultra-smooth color transitions with more intermediate colors
                 val colors = intArrayOf(
-                    // Center: Mostly white with tiny hint of accent
+                    // Center: Almost pure white
                     Color.argb(255,
-                        (Color.red(whiteColor) * 0.98f + Color.red(accentColor) * 0.02f).toInt(),
-                        (Color.green(whiteColor) * 0.98f + Color.green(accentColor) * 0.02f).toInt(),
-                        (Color.blue(whiteColor) * 0.98f + Color.blue(accentColor) * 0.02f).toInt()
+                        (Color.red(whiteColor) * 0.99f + Color.red(accentColor) * 0.01f).toInt(),
+                        (Color.green(whiteColor) * 0.99f + Color.green(accentColor) * 0.01f).toInt(),
+                        (Color.blue(whiteColor) * 0.99f + Color.blue(accentColor) * 0.01f).toInt()
                     ),
-                    // First ring: Gentle blend
+                    // First ring: Barely noticeable blend
                     Color.argb(255,
                         (Color.red(whiteColor) * blendFactor1 + Color.red(accentColor) * (1f - blendFactor1)).toInt(),
                         (Color.green(whiteColor) * blendFactor1 + Color.green(accentColor) * (1f - blendFactor1)).toInt(),
                         (Color.blue(whiteColor) * blendFactor1 + Color.blue(accentColor) * (1f - blendFactor1)).toInt()
                     ),
-                    // Second ring: More pronounced blend
+                    // Second ring: Gentle transition
                     Color.argb(255,
                         (Color.red(whiteColor) * blendFactor2 + Color.red(accentColor) * (1f - blendFactor2)).toInt(),
                         (Color.green(whiteColor) * blendFactor2 + Color.green(accentColor) * (1f - blendFactor2)).toInt(),
                         (Color.blue(whiteColor) * blendFactor2 + Color.blue(accentColor) * (1f - blendFactor2)).toInt()
                     ),
-                    // Third ring: Accent dominant
+                    // Third ring: Moderate blend
                     Color.argb(255,
                         (Color.red(whiteColor) * blendFactor3 + Color.red(accentColor) * (1f - blendFactor3)).toInt(),
                         (Color.green(whiteColor) * blendFactor3 + Color.green(accentColor) * (1f - blendFactor3)).toInt(),
                         (Color.blue(whiteColor) * blendFactor3 + Color.blue(accentColor) * (1f - blendFactor3)).toInt()
                     ),
-                    // Fourth ring: Almost pure accent
+                    // Fourth ring: More accent visible
                     Color.argb(255,
                         (Color.red(whiteColor) * blendFactor4 + Color.red(accentColor) * (1f - blendFactor4)).toInt(),
                         (Color.green(whiteColor) * blendFactor4 + Color.green(accentColor) * (1f - blendFactor4)).toInt(),
                         (Color.blue(whiteColor) * blendFactor4 + Color.blue(accentColor) * (1f - blendFactor4)).toInt()
                     ),
+                    // Fifth ring: Strong accent blend
+                    Color.argb(255,
+                        (Color.red(whiteColor) * blendFactor5 + Color.red(accentColor) * (1f - blendFactor5)).toInt(),
+                        (Color.green(whiteColor) * blendFactor5 + Color.green(accentColor) * (1f - blendFactor5)).toInt(),
+                        (Color.blue(whiteColor) * blendFactor5 + Color.blue(accentColor) * (1f - blendFactor5)).toInt()
+                    ),
+                    // Sixth ring: Almost pure accent
+                    Color.argb(255,
+                        (Color.red(whiteColor) * blendFactor6 + Color.red(accentColor) * (1f - blendFactor6)).toInt(),
+                        (Color.green(whiteColor) * blendFactor6 + Color.green(accentColor) * (1f - blendFactor6)).toInt(),
+                        (Color.blue(whiteColor) * blendFactor6 + Color.blue(accentColor) * (1f - blendFactor6)).toInt()
+                    ),
                     // Outer edge: Pure accent color
                     accentColor
                 )
                 
-                // Smooth radial distribution
-                val positions = floatArrayOf(0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f)
+                // Ultra-smooth radial distribution - more gradual steps
+                val positions = floatArrayOf(0.0f, 0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 0.9f, 1.0f)
                 
                 // Create organic radial gradient with moving center and breathing radius
                 gradientPaint.shader = android.graphics.RadialGradient(
