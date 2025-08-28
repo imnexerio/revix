@@ -590,11 +590,16 @@ class AlarmScreenActivity : Activity() {
         dpToPx: (Int) -> Int
     ): View {
         return object : View(this) {
-            private var glowIntensity = 0.6f
-
+            private var animationTime = 0f
+            private val animationSpeed = 0.02f // Slow, gentle movement
+            private var lastUpdateTime = System.currentTimeMillis()
+            
             private val gradientPaint = Paint().apply {
                 isAntiAlias = true
             }
+
+            // Get dynamic white color from theme
+            private val whiteColor = ContextCompat.getColor(this@AlarmScreenActivity, R.color.white)
 
             override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
                 super.onSizeChanged(w, h, oldw, oldh)
@@ -602,59 +607,77 @@ class AlarmScreenActivity : Activity() {
             }
 
             private fun updateGradient() {
-                // Button will be positioned in the center-bottom area
-                val centerX = width / 2f
-                val centerY = height * 0.7f // Position where button will be
-
-                // Create gradient radiating from button position
-                val maxRadius = kotlin.math.max(
-                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
-                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + (height - centerY) * (height - centerY)).toDouble())
-                ).toFloat()
-
-                val centerAlpha = (glowIntensity * 100).toInt().coerceIn(0, 255)
-                val midAlpha = (glowIntensity * 60).toInt().coerceIn(0, 255)
-                val edgeAlpha = (glowIntensity * 20).toInt().coerceIn(0, 255)
-
-                gradientPaint.shader = RadialGradient(
-                    centerX, centerY, maxRadius,
-                    intArrayOf(
-                        Color.argb(centerAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb(midAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.argb(edgeAlpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)),
-                        Color.TRANSPARENT
+                if (width <= 0 || height <= 0) return
+                
+                // Create gentle wave-like motion using sin/cos for smooth flow
+                val waveOffset1 = kotlin.math.sin(animationTime.toDouble()).toFloat() * 0.1f
+                val waveOffset2 = kotlin.math.cos(animationTime * 1.3).toFloat() * 0.08f
+                val waveOffset3 = kotlin.math.sin(animationTime * 0.7).toFloat() * 0.12f
+                
+                // Create flowing gradient positions (0.0 = top, 1.0 = bottom)
+                val positions = floatArrayOf(
+                    0.0f + waveOffset1,                    // Top - dynamic white zone
+                    0.3f + waveOffset2,                    // Upper mid - blend zone
+                    0.6f + waveOffset3,                    // Lower mid - blend zone  
+                    1.0f + waveOffset1                     // Bottom - accent color zone
+                )
+                
+                // Ensure positions stay within bounds
+                for (i in positions.indices) {
+                    positions[i] = positions[i].coerceIn(0.0f, 1.0f)
+                }
+                
+                // Create color array with smooth blending
+                val colors = intArrayOf(
+                    whiteColor,                                                           // Top: Dynamic white
+                    Color.argb(                                                          // Upper blend
+                        255,
+                        (Color.red(whiteColor) * 0.7f + Color.red(accentColor) * 0.3f).toInt(),
+                        (Color.green(whiteColor) * 0.7f + Color.green(accentColor) * 0.3f).toInt(),
+                        (Color.blue(whiteColor) * 0.7f + Color.blue(accentColor) * 0.3f).toInt()
                     ),
-                    floatArrayOf(0f, 0.4f, 0.8f, 1f),
+                    Color.argb(                                                          // Lower blend
+                        255,
+                        (Color.red(whiteColor) * 0.3f + Color.red(accentColor) * 0.7f).toInt(),
+                        (Color.green(whiteColor) * 0.3f + Color.green(accentColor) * 0.7f).toInt(),
+                        (Color.blue(whiteColor) * 0.3f + Color.blue(accentColor) * 0.7f).toInt()
+                    ),
+                    accentColor                                                          // Bottom: Accent color
+                )
+                
+                // Create linear gradient from top to bottom with gentle animation
+                gradientPaint.shader = android.graphics.LinearGradient(
+                    0f, 0f,                    // Start point (top)
+                    0f, height.toFloat(),      // End point (bottom)
+                    colors,
+                    positions,
                     Shader.TileMode.CLAMP
                 )
             }
 
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
-                updateGradient()
-
-                // Button position
-                val centerX = width / 2f
-                val centerY = height * 0.7f
-
-                val maxRadius = kotlin.math.max(
-                    kotlin.math.sqrt((centerX * centerX + centerY * centerY).toDouble()),
-                    kotlin.math.sqrt(((width - centerX) * (width - centerX) + (height - centerY) * (height - centerY)).toDouble())
-                ).toFloat()
-
-                // Draw gradient starting from button position
-                canvas.drawCircle(centerX, centerY, maxRadius, gradientPaint)
-            }
-
-            fun updateIntensity(intensity: Float) {
-                glowIntensity = intensity
-                invalidate()
+                
+                // Resource-efficient: Only update every 150ms
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastUpdateTime > 150) {
+                    animationTime += animationSpeed
+                    lastUpdateTime = currentTime
+                    updateGradient()
+                }
+                
+                // Draw the animated gradient
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), gradientPaint)
+                
+                // Continue animation
+                postInvalidateDelayed(150) // Update every 150ms for smooth but efficient animation
             }
         }.apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
-            )        }
+            )
+        }
     }
 
 
