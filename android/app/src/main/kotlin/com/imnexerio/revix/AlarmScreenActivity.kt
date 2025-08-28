@@ -692,17 +692,18 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 setMargins(dpToPx(30), dpToPx(32), dpToPx(30), dpToPx(24))
             }
 
-            // Simplified curved container
+            // Simplified curved container with screen-adaptive sizing
             val slideContainer = FrameLayout(this@AlarmScreenActivity).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    dpToPx(100)
+                    dpToPx(kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt())) // Reduced: min 70dp or 5% of screen height
                 )
                 
                 // Simple curved background
+                val containerHeight = dpToPx(kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt()))
                 val background = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
-                    cornerRadius = dpToPx(50).toFloat()
+                    cornerRadius = (containerHeight / 2).toFloat() // Always half of container height for perfect rounded ends
                     setColor(Color.argb(50, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
                     setStroke(dpToPx(2), Color.argb(100, 255, 255, 255))
                 }
@@ -739,33 +740,40 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     }
                 }
                 
-                // Simple oval button
+                // Simple oval button with adaptive sizing
                 val slideButton = View(this@AlarmScreenActivity).apply {
+                    // Calculate adaptive button size based on container (reduced sizing)
+                    val containerHeight = kotlin.math.max(70, (resources.displayMetrics.heightPixels * 0.04f).toInt())
+                    val buttonHeight = (containerHeight * 0.6f).toInt() // Reduced to 50% of container height
+                    val buttonWidth = (buttonHeight * 2.0f).toInt() // Reduced oval ratio to 2.0x
+                    
                     layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(90), // Wider for oval shape
-                        dpToPx(60)  // Shorter height for oval
+                        dpToPx(buttonWidth),
+                        dpToPx(buttonHeight)
                     ).apply {
                         gravity = Gravity.CENTER
                     }
                     
-                    // Pre-create reusable backgrounds for efficiency
+                    // Pre-create reusable backgrounds with adaptive corner radius
+                    val buttonCornerRadius = (dpToPx(buttonHeight) / 2).toFloat()
+                    
                     val originalBackground = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dpToPx(30).toFloat()
+                        cornerRadius = buttonCornerRadius
                         setColor(accentColor)
                         setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
                     }
                     
                     val redBackground = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dpToPx(30).toFloat()
+                        cornerRadius = buttonCornerRadius
                         setColor(Color.argb(255, 244, 67, 54))
                         setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
                     }
                     
                     val greenBackground = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dpToPx(30).toFloat()
+                        cornerRadius = buttonCornerRadius
                         setColor(Color.argb(255, 76, 175, 80))
                         setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
                     }
