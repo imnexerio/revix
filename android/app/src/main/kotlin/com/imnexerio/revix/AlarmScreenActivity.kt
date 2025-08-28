@@ -7,15 +7,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
-import java.util.Random
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -31,9 +28,8 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
-import kotlin.math.abs
-import kotlin.math.min
 import kotlin.math.sqrt
 
 class AlarmScreenActivity : Activity() {
@@ -362,23 +358,24 @@ class AlarmScreenActivity : Activity() {
             )
         }
 
-        // Three separate buttons layout like in the image
-        val separateButtonsLayout = createSeparateButtonsLayout(
+        // Create button layer with ConstraintLayout for precise positioning
+        val buttonLayer = createButtonLayer(
             accentColor = accentColor,
             textColor = textColor,
             dpToPx = dpToPx
         )
 
 
-        // Assemble the glassmorphism layout
+        // Assemble the layout
         contentOverlay.addView(topSpacer)
         contentOverlay.addView(timeDisplay)
         contentOverlay.addView(infoCard)
         contentOverlay.addView(flexSpacer)
-        contentOverlay.addView(separateButtonsLayout) // Contains ignore, skip, and done buttons
 
+        // Layer the components: gradient, content overlay, button layer
         mainLayout.addView(gradientLayer)
         mainLayout.addView(contentOverlay)
+        mainLayout.addView(buttonLayer) // New ConstraintLayout button layer
 
         setContentView(mainLayout)
     }
@@ -416,49 +413,42 @@ class AlarmScreenActivity : Activity() {
         }
     }
 
-    private fun createSeparateButtonsLayout(
+    // Create button layer with ConstraintLayout for precise positioning
+    private fun createButtonLayer(
         accentColor: Int,
         textColor: Int,
         dpToPx: (Int) -> Int
-    ): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(dpToPx(30), dpToPx(16), dpToPx(30), dpToPx(24))
-            }
-
-            // Ignore button (small, centered, on top)
-            val ignoreButton = Button(this@AlarmScreenActivity).apply {
-                text = "DONE"
-                textSize = 20f
+    ): ConstraintLayout {
+        return ConstraintLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            // Add padding to ensure buttons don't touch screen edges
+            setPadding(0, 0, 0, dpToPx(16)) // 16dp bottom padding for extra safety
+            
+            // Skip button (bottom-left)
+            val skipButton = Button(this@AlarmScreenActivity).apply {
+                id = android.view.View.generateViewId()
+                text = "SKIP"
+                textSize = 24f
                 setTypeface(null, android.graphics.Typeface.NORMAL)
                 isAllCaps = false
-                setTextColor(Color.argb(180, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
+                setTextColor(textColor)
 
-                val ignoreBackground = GradientDrawable().apply {
+                val skipBackground = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
-                    cornerRadius = dpToPx(20).toFloat() // Less rounded than Skip/Done buttons
-                    setColor(Color.argb(30, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
-                    setStroke(dpToPx(1), Color.argb(80, 255, 255, 255))
+                    cornerRadius = dpToPx(25).toFloat()
+                    setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                    setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
                 }
-                background = ignoreBackground
+                background = skipBackground
 
-                setPadding(dpToPx(24), dpToPx(12), dpToPx(24), dpToPx(12))
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    setMargins(0, 0, 0, dpToPx(20))
-                }
+                setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
 
-                setOnClickListener { markAsDone() }
+                setOnClickListener { skipAlarm() }
 
-                // Custom touch feedback instead of Android's yellow highlight
+                // Custom touch feedback
                 setOnTouchListener { view, event ->
                     when (event.action) {
                         android.view.MotionEvent.ACTION_DOWN -> {
@@ -472,115 +462,276 @@ class AlarmScreenActivity : Activity() {
                             view.scaleY = 1.0f
                         }
                     }
-                    false // Let the click event continue
+                    false
                 }
             }
 
-            // Bottom row: Skip and Done buttons side by side
-            val bottomButtonsRow = LinearLayout(this@AlarmScreenActivity).apply {
-                orientation = LinearLayout.HORIZONTAL
+            // Ignore button (bottom-right)
+            val ignoreButton = Button(this@AlarmScreenActivity).apply {
+                id = android.view.View.generateViewId()
+                text = "IGNORE"
+                textSize = 24f
+                setTypeface(null, android.graphics.Typeface.NORMAL)
+                isAllCaps = false
+                setTextColor(textColor)
+
+                val ignoreBackground = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = dpToPx(25).toFloat()
+                    setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                    setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
+                }
+                background = ignoreBackground
+
+                setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
+
+                setOnClickListener { ignoreAlarm() }
+
+                // Custom touch feedback
+                setOnTouchListener { view, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            view.alpha = 0.7f
+                            view.scaleX = 0.95f
+                            view.scaleY = 0.95f
+                        }
+                        android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                            view.alpha = 1.0f
+                            view.scaleX = 1.0f
+                            view.scaleY = 1.0f
+                        }
+                    }
+                    false
+                }
+            }
+
+            // Create glass swipe button with glow animation
+            val glassButtonSize = dpToPx(120)
+            val glowViewSize = dpToPx(220) // Large enough for 100dp radius glow (200dp diameter + 20dp padding)
+            
+            // Single glass button with glow animation that can draw beyond bounds
+            val glassButton = object : TextView(this@AlarmScreenActivity) {
+                private var rippleProgress = 0f
+                private val glowPaint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = dpToPx(3).toFloat()
+                }
+                private val buttonPaint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.FILL
+                }
+                private val buttonStrokePaint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = dpToPx(2).toFloat()
+                }
+                
+                override fun onDraw(canvas: Canvas) {
+                    val centerX = width / 2f
+                    val centerY = height / 2f
+                    val buttonRadius = dpToPx(60).toFloat() // 120dp diameter
+                    
+                    // Draw glow ring animation first
+                    val maxRippleRadius = dpToPx(100).toFloat()
+                    val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
+                    val alpha = ((1f - rippleProgress) * 120).toInt().coerceIn(0, 120)
+                    
+                    glowPaint.color = Color.argb(alpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+                    
+                    if (rippleProgress > 0f) {
+                        canvas.drawCircle(centerX, centerY, currentRadius, glowPaint)
+                    }
+                    
+                    // Draw the glass button background
+                    val glassColor = Color.argb(
+                        40,
+                        (Color.red(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                        (Color.green(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                        (Color.blue(accentColor) * 0.3f + 255 * 0.7f).toInt()
+                    )
+                    buttonPaint.color = glassColor
+                    canvas.drawCircle(centerX, centerY, buttonRadius, buttonPaint)
+                    
+                    // Draw button border
+                    buttonStrokePaint.color = Color.argb(60, 255, 255, 255)
+                    canvas.drawCircle(centerX, centerY, buttonRadius, buttonStrokePaint)
+                    
+                    // Draw the button text on top
+                    super.onDraw(canvas)
+                }
+                
+                fun setRippleProgress(progress: Float) {
+                    rippleProgress = progress
+                    invalidate()
+                }
+            }.apply {
+                id = android.view.View.generateViewId()
+                text = "SWIPE TO\nMARK DONE"
+                textSize = 14f
+                setTextColor(textColor)
                 gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-
-                // Skip button (left)
-                val skipButton = Button(this@AlarmScreenActivity).apply {
-                    text = "SKIP"
-                    textSize = 24f
-                    setTypeface(null, android.graphics.Typeface.NORMAL)
-                    isAllCaps = false
-                    setTextColor(textColor)
-
-                    val skipBackground = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dpToPx(25).toFloat()
-                        setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
-                        setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
-                    }
-                    background = skipBackground
-
-                    setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
-                    layoutParams = LinearLayout.LayoutParams(
-                        0, // Use weight for equal width
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        1f // Equal weight
-                    ).apply {
-                        setMargins(0, 0, dpToPx(8), 0) // Small gap between buttons
-                    }
-
-                    setOnClickListener { skipAlarm() }
-
-                    // Custom touch feedback instead of Android's yellow highlight
-                    setOnTouchListener { view, event ->
-                        when (event.action) {
-                            android.view.MotionEvent.ACTION_DOWN -> {
-                                view.alpha = 0.7f
-                                view.scaleX = 0.95f
-                                view.scaleY = 0.95f
-                            }
-                            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                                view.alpha = 1.0f
-                                view.scaleX = 1.0f
-                                view.scaleY = 1.0f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                
+                // Remove background drawable since we're drawing manually
+                background = null
+                
+                // Animation and interaction logic
+                var isPressed = false
+                var glowAnimator: ValueAnimator? = null
+                
+                fun startGlowAnimation() {
+                    glowAnimator?.cancel()
+                    glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                        duration = 1500
+                        repeatCount = ValueAnimator.INFINITE
+                        repeatMode = ValueAnimator.RESTART
+                        
+                        addUpdateListener { animator ->
+                            if (!isPressed) {
+                                val progress = animator.animatedValue as Float
+                                setRippleProgress(progress)
                             }
                         }
-                        false // Let the click event continue
+                        start()
                     }
                 }
-
-                // Done button (right)
-                val doneButton = Button(this@AlarmScreenActivity).apply {
-                    text = "IGNORE"
-                    textSize = 24f
-                    setTypeface(null, android.graphics.Typeface.NORMAL)
-                    isAllCaps = false
-                    setTextColor(textColor)
-
-                    val doneBackground = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dpToPx(25).toFloat()
-                        setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
-                        setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
+                
+                fun stopGlowAnimation() {
+                    glowAnimator?.cancel()
+                    setRippleProgress(0f)
+                }
+                
+                post { startGlowAnimation() }
+                
+                val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                    private val MIN_SWIPE_DISTANCE = dpToPx(100)
+                    
+                    override fun onFling(
+                        e1: MotionEvent?,
+                        e2: MotionEvent,
+                        velocityX: Float,
+                        velocityY: Float
+                    ): Boolean {
+                        if (e1 == null) return false
+                        
+                        val diffX = e2.x - e1.x
+                        val diffY = e2.y - e1.y
+                        val distance = sqrt(diffX * diffX + diffY * diffY)
+                        
+                        if (distance >= MIN_SWIPE_DISTANCE) {
+                            Log.d(TAG, "Swipe completed - distance: $distance")
+                            
+                            animate()
+                                .scaleX(1.2f)
+                                .scaleY(1.2f)
+                                .setDuration(150)
+                                .withEndAction {
+                                    markAsDone()
+                                }
+                            return true
+                        }
+                        return false
                     }
-                    background = doneBackground
-
-                    setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
-                    layoutParams = LinearLayout.LayoutParams(
-                        0, // Use weight for equal width
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        1f // Equal weight
-                    ).apply {
-                        setMargins(dpToPx(8), 0, 0, 0) // Small gap between buttons
+                    
+                    override fun onDown(e: MotionEvent): Boolean {
+                        return true
                     }
-
-                    setOnClickListener { ignoreAlarm() }
-
-                    // Custom touch feedback instead of Android's yellow highlight
-                    setOnTouchListener { view, event ->
-                        when (event.action) {
-                            android.view.MotionEvent.ACTION_DOWN -> {
-                                view.alpha = 0.7f
-                                view.scaleX = 0.95f
-                                view.scaleY = 0.95f
-                            }
-                            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                                view.alpha = 1.0f
-                                view.scaleX = 1.0f
-                                view.scaleY = 1.0f
+                })
+                
+                setOnTouchListener { _, event ->
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            isPressed = true
+                            stopGlowAnimation()
+                            animate()
+                                .scaleX(1.1f)
+                                .scaleY(1.1f)
+                                .alpha(0.9f)
+                                .setDuration(200)
+                                .start()
+                        }
+                        
+                        MotionEvent.ACTION_MOVE -> {
+                            if (isPressed) {
+                                val diffX = event.x - (width / 2f)
+                                val diffY = event.y - (height / 2f)
+                                val distance = sqrt(diffX * diffX + diffY * diffY)
+                                val progress = (distance / dpToPx(100)).coerceIn(0f, 1f)
+                                
+                                val progressAlpha = 0.9f + (progress * 0.1f)
+                                val progressScale = 1.1f + (progress * 0.2f)
+                                
+                                alpha = progressAlpha
+                                scaleX = progressScale
+                                scaleY = progressScale
+                                
+                                if (progress > 0.7f) {
+                                    setTextColor(Color.WHITE)
+                                } else {
+                                    setTextColor(textColor)
+                                }
                             }
                         }
-                        false // Let the click event continue
+                        
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            isPressed = false
+                            
+                            animate()
+                                .alpha(1.0f)
+                                .scaleX(1.0f)
+                                .scaleY(1.0f)
+                                .setDuration(300)
+                                .withEndAction {
+                                    startGlowAnimation()
+                                }
+                                .start()
+                            
+                            setTextColor(textColor)
+                        }
                     }
+                    gestureDetector.onTouchEvent(event)
                 }
-
-                addView(skipButton)
-                addView(doneButton)
             }
 
+            // Add buttons to layout
+            addView(skipButton)
             addView(ignoreButton)
-            addView(bottomButtonsRow)
+            addView(glassButton)
+
+            // Skip button constraints (bottom-left with margins)
+            val skipConstraints = ConstraintLayout.LayoutParams(
+                ConstraintLayout.LayoutParams.WRAP_CONTENT,
+                ConstraintLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                setMargins(dpToPx(30), 0, dpToPx(4), dpToPx(48)) // Left margin 30dp, right margin 4dp, bottom margin 48dp (increased)
+            }
+            skipButton.layoutParams = skipConstraints
+
+            // Ignore button constraints (bottom-right with margins)
+            val ignoreConstraints = ConstraintLayout.LayoutParams(
+                ConstraintLayout.LayoutParams.WRAP_CONTENT,
+                ConstraintLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                setMargins(dpToPx(4), 0, dpToPx(30), dpToPx(48)) // Left margin 4dp, right margin 30dp, bottom margin 48dp (increased)
+            }
+            ignoreButton.layoutParams = ignoreConstraints
+
+            // Glass button constraints (centered, large enough for glow animation)
+            val glassButtonConstraints = ConstraintLayout.LayoutParams(
+                glowViewSize, // 220dp for the view (accommodates 100dp glow radius)
+                glowViewSize
+            ).apply {
+                bottomToTop = skipButton.id
+                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                setMargins(0, 0, 0, dpToPx(0))
+            }
+            glassButton.layoutParams = glassButtonConstraints
         }
     }
 
