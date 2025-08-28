@@ -54,18 +54,14 @@ class AlarmScreenActivity : Activity() {
     // Brjoadcast receiver to listen for alarm service events
     private val alarmServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.d(TAG, "Broadcast received with action: ${intent?.action}")
             when (intent?.action) {
                 ACTION_CLOSE_ALARM_SCREEN -> {
                     val receivedCategory = intent.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: ""
                     val receivedSubCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
                     val receivedRecordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
 
-                    Log.d(TAG, "Close alarm screen broadcast received for: $receivedRecordTitle, current alarm: $recordTitle")
-
                     // Check if this broadcast is for this specific alarm
                     if (receivedCategory == category && receivedSubCategory == subCategory && receivedRecordTitle == recordTitle) {
-                        Log.d(TAG, "Broadcast matches current alarm - closing activity for: $recordTitle")
                         userActionTaken = true // Mark as handled to prevent duplicate dismissal
                         finish()
                     } else {
@@ -207,14 +203,6 @@ class AlarmScreenActivity : Activity() {
             )
         }
 
-        // Top spacer for better positioning
-        val topSpacer = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                0.1f
-            )
-        }
 
         // Time and Date (no card background)
         val timeDisplay = LinearLayout(this).apply {
@@ -366,8 +354,6 @@ class AlarmScreenActivity : Activity() {
         )
 
 
-        // Assemble the layout
-        contentOverlay.addView(topSpacer)
         contentOverlay.addView(timeDisplay)
         contentOverlay.addView(infoCard)
         contentOverlay.addView(flexSpacer)
@@ -716,7 +702,7 @@ class AlarmScreenActivity : Activity() {
             ).apply {
                 bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
                 endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                setMargins(dpToPx(4), 0, dpToPx(30), dpToPx(48)) // Left margin 4dp, right margin 30dp, bottom margin 48dp (increased)
+                setMargins(dpToPx(4), 0, dpToPx(30), dpToPx(24)) // Left margin 4dp, right margin 30dp, bottom margin 24dp
             }
             ignoreButton.layoutParams = ignoreConstraints
 
