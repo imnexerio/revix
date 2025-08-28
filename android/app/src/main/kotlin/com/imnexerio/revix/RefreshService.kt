@@ -344,8 +344,8 @@ class RefreshService : Service() {
                 else R.drawable.ic_launcher_icon_error
             )
             .setContentTitle(
-                if (isSuccess) "Widget Refresh Completed ✓" 
-                else "Widget Refresh Failed ✗"
+                if (isSuccess) "Data Refresh Completed ✓"
+                else "Data Refresh Failed ✗"
             )
             .setContentText(message)
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW) // Silent
