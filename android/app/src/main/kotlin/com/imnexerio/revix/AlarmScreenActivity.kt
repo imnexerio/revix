@@ -14,10 +14,6 @@ import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.net.Uri
 import java.util.Random
 import android.os.Build
@@ -40,7 +36,7 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class for shooting stars
+class AlarmScreenActivity : Activity() {    // Data class for shooting stars
     data class Star(
         var x: Float,
         var y: Float,
@@ -70,13 +66,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     private var scheduledDate: String = ""
     private var description: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
-    
-    // Sensor properties for device tilt detection
-    private lateinit var sensorManager: SensorManager
-    private var accelerometer: Sensor? = null
-    private var deviceTiltX: Float = 0f // Device tilt in X direction (left/right)
-    private var deviceTiltY: Float = 0f // Device tilt in Y direction (forward/back)
-    private val tiltThreshold = 15f // Minimum tilt in degrees to trigger directional change
     
     // Brjoadcast receiver to listen for alarm service events
     private val alarmServiceReceiver = object : BroadcastReceiver() {
@@ -125,10 +114,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
         description = intent.getStringExtra("description") ?: ""
         
-        // Initialize sensor for device tilt detection
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        
         // Set up full screen over lock screen
         setupFullScreenOverLockScreen()
         
@@ -136,7 +121,8 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         createAlarmUI()
         
         Log.d(TAG, "AlarmScreenActivity setup complete for: $recordTitle")
-    }private fun setupFullScreenOverLockScreen() {
+    }
+    private fun setupFullScreenOverLockScreen() {
         Log.d(TAG, "Setting up full screen over lock screen")
         
         // Critical flags for showing over lock screen regardless of notification settings
@@ -224,9 +210,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             )
         }
         
-        // First layer: Animated falling stars background
-        val starsBackground = createFallingStarsBackground(textColor, dpToPx)
-        
         // Second layer: Gradient background starting from button position
         val gradientLayer = createGradientBackground(accentColor, dpToPx)
 
@@ -258,7 +241,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 // Time text
                 val timeText = TextView(this@AlarmScreenActivity).apply {
                     text = reminderTime
-                    textSize = 48f
+                    textSize = 64f
                     setTextColor(textColor)
                     gravity = Gravity.CENTER
                     setTypeface(null, android.graphics.Typeface.BOLD)
@@ -408,8 +391,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         contentOverlay.addView(flexSpacer)
         contentOverlay.addView(separateButtonsLayout) // Contains ignore, skip, and done buttons
 
-        // Layer the components: stars background, gradient, content overlay
-        mainLayout.addView(starsBackground)
         mainLayout.addView(gradientLayer)
         mainLayout.addView(contentOverlay)
         
@@ -449,225 +430,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         }
     }
 
-    // Create glassmorphism swipe button
-    private fun createGlassSwipeButton(
-        text: String,
-        accentColor: Int,
-        textColor: Int,
-        dpToPx: (Int) -> Int,
-        onSwipe: (String) -> Unit
-    ): View {
-        // Container for button and animated glow ring
-        val container = FrameLayout(this).apply {
-            val containerSize = dpToPx(200)
-            layoutParams = LinearLayout.LayoutParams(containerSize, containerSize).apply {
-                gravity = Gravity.CENTER
-                setMargins(0, 0, 0, dpToPx(16))
-            }
-        }
-
-        // Animated ripple ring view (same as before but with glass effect)
-        val glowRing = object : View(this) {
-            private var rippleProgress = 0f
-            private val glowPaint = Paint().apply {
-                isAntiAlias = true
-                style = Paint.Style.STROKE
-                strokeWidth = dpToPx(3).toFloat()
-            }
-            
-            override fun onDraw(canvas: Canvas) {
-                super.onDraw(canvas)
-                
-                val centerX = width / 2f
-                val centerY = height / 2f
-                val buttonRadius = dpToPx(60).toFloat()
-                val maxRippleRadius = dpToPx(100).toFloat()
-                val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
-                val alpha = ((1f - rippleProgress) * 120).toInt().coerceIn(0, 120) // More subtle
-                
-                // Glass-like ripple with accent color
-                glowPaint.color = Color.argb(alpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
-                
-                if (rippleProgress > 0f) {
-                    canvas.drawCircle(centerX, centerY, currentRadius, glowPaint)
-                }
-            }
-            
-            fun setRippleProgress(progress: Float) {
-                rippleProgress = progress
-                invalidate()
-            }
-        }.apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        // Glass button
-        val button = TextView(this).apply {
-            this.text = text
-            textSize = 14f
-            setTextColor(textColor)
-            gravity = Gravity.CENTER
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            
-            // Create glass circular background
-            val glassBackground = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                
-                // Glass effect with accent color tint
-                val glassColor = Color.argb(
-                    40, // More opacity for button
-                    (Color.red(accentColor) * 0.3f + 255 * 0.7f).toInt(),
-                    (Color.green(accentColor) * 0.3f + 255 * 0.7f).toInt(),
-                    (Color.blue(accentColor) * 0.3f + 255 * 0.7f).toInt()
-                )
-                setColor(glassColor)
-                setStroke(dpToPx(2), Color.argb(60, 255, 255, 255))
-            }
-            background = glassBackground
-            
-            val buttonSize = dpToPx(120)
-            layoutParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
-                gravity = Gravity.CENTER
-            }
-            
-            // NO blur effect on button text - keep "SWIPE TO MARK DONE" readable
-            
-            // Keep all the existing touch and swipe functionality
-            var isPressed = false
-            var glowAnimator: ValueAnimator? = null
-            
-            fun startGlowAnimation() {
-                glowAnimator?.cancel()
-                glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-                    duration = 1500
-                    repeatCount = ValueAnimator.INFINITE
-                    repeatMode = ValueAnimator.RESTART
-                    
-                    addUpdateListener { animator ->
-                        if (!isPressed) {
-                            val progress = animator.animatedValue as Float
-                            glowRing.setRippleProgress(progress)
-                        }
-                    }
-                    start()
-                }
-            }
-            
-            fun stopGlowAnimation() {
-                glowAnimator?.cancel()
-                glowRing.setRippleProgress(0f)
-            }
-            
-            post { startGlowAnimation() }
-            
-            val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                private val MIN_SWIPE_DISTANCE = dpToPx(100)
-                
-                override fun onFling(
-                    e1: MotionEvent?,
-                    e2: MotionEvent,
-                    velocityX: Float,
-                    velocityY: Float
-                ): Boolean {
-                    if (e1 == null) return false
-                    
-                    val diffX = e2.x - e1.x
-                    val diffY = e2.y - e1.y
-                    val distance = sqrt(diffX * diffX + diffY * diffY)
-                    
-                    if (distance >= MIN_SWIPE_DISTANCE) {
-                        // Determine swipe direction based on horizontal movement
-                        val direction = if (abs(diffX) > abs(diffY)) {
-                            if (diffX > 0) "RIGHT" else "LEFT"
-                        } else {
-                            "RIGHT" // Default to right for vertical swipes
-                        }
-                        
-                        Log.d(TAG, "Swipe completed - distance: $distance, direction: $direction")
-                        
-                        animate()
-                            .scaleX(1.2f)
-                            .scaleY(1.2f)
-                            .setDuration(150)
-                            .withEndAction {
-                                onSwipe(direction)
-                            }
-                        return true
-                    }
-                    return false
-                }
-                
-                override fun onDown(e: MotionEvent): Boolean {
-                    return true
-                }
-            })
-            
-            setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        isPressed = true
-                        stopGlowAnimation()
-                        animate()
-                            .scaleX(1.1f)
-                            .scaleY(1.1f)
-                            .alpha(0.9f)
-                            .setDuration(200)
-                            .start()
-                    }
-                    
-                    MotionEvent.ACTION_MOVE -> {
-                        if (isPressed) {
-                            val diffX = event.x - (width / 2f)
-                            val diffY = event.y - (height / 2f)
-                            val distance = sqrt(diffX * diffX + diffY * diffY)
-                            val progress = (distance / dpToPx(100)).coerceIn(0f, 1f)
-                            
-                            val progressAlpha = 0.9f + (progress * 0.1f)
-                            val progressScale = 1.1f + (progress * 0.2f)
-                            
-                            alpha = progressAlpha
-                            scaleX = progressScale
-                            scaleY = progressScale
-                            
-                            if (progress > 0.7f) {
-                                setTextColor(Color.WHITE)
-                            } else {
-                                setTextColor(textColor)
-                            }
-                        }
-                    }
-                    
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        isPressed = false
-                        
-                        animate()
-                            .alpha(1.0f)
-                            .scaleX(1.0f)
-                            .scaleY(1.0f)
-                            .setDuration(300)
-                            .withEndAction {
-                                startGlowAnimation()
-                            }
-                            .start()
-                        
-                        setTextColor(textColor)
-                    }
-                }
-                gestureDetector.onTouchEvent(event)
-            }
-        }
-        
-        container.addView(glowRing)
-        container.addView(button)
-        
-        return container
-    }
-
-    // Create schedule-style button layout similar to the UI image (adapted for schedule tracker)
-    // Create separate buttons layout like in the image
     private fun createSeparateButtonsLayout(
         accentColor: Int,
         textColor: Int,
@@ -909,224 +671,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
             )        }
     }
 
-    private fun createFallingStarsBackground(
-        textColor: Int,
-        dpToPx: (Int) -> Int
-    ): View {
-        return object : View(this) {
-            private val stars = mutableListOf<Star>()
-            private val random = Random()            // Pre-calculate warm color once for better performance
-            private val warmStarColor = blendWithWarmColor(textColor)
-            
-            private val starPaint = Paint().apply {
-                isAntiAlias = true
-                color = warmStarColor
-            }
-            private val trailPaint = Paint().apply {
-                isAntiAlias = true
-                color = warmStarColor
-                strokeCap = Paint.Cap.ROUND
-                // strokeWidth will be set dynamically per star
-                 }
-            
-            // Helper function to blend textColor with warm orange/yellow tint
-            private fun blendWithWarmColor(baseColor: Int): Int {
-                val baseRed = Color.red(baseColor)
-                val baseGreen = Color.green(baseColor)
-                val baseBlue = Color.blue(baseColor)
-                val baseAlpha = Color.alpha(baseColor)
-                
-                // Add warm orange/yellow tint (increase red and green, reduce blue slightly)
-                val warmRed = minOf(255, (baseRed * 1.1f + 40).toInt())      // Boost red
-                val warmGreen = minOf(255, (baseGreen * 1.05f + 25).toInt()) // Slight green boost
-                val warmBlue = maxOf(0, (baseBlue * 0.8f).toInt())           // Reduce blue for warmth
-                
-                return Color.argb(baseAlpha, warmRed, warmGreen, warmBlue)
-            }
-            
-            private val minStars = 1 // Minimum stars on screen
-            private val maxStars = 6 // Maximum stars on screen
-            private var lastTime = System.currentTimeMillis()
-            
-            private fun initializeStars() {
-                stars.clear()
-                // Create random number of stars between 1-6 at initialization
-                val initialStarCount = minStars + random.nextInt(maxStars - minStars + 1)
-                repeat(initialStarCount) {
-                    createNewStar()
-                }
-            }
-            private fun createNewStar(): Star {
-                // Get dynamic angle range based on device tilt
-                val angleRange = getStarAngleRange()
-                val minAngle = angleRange.first
-                val maxAngle = angleRange.second
-                val angleDifference = maxAngle - minAngle
-                val randomAngle = minAngle + random.nextFloat() * angleDifference
-                val angle = Math.toRadians(randomAngle.toDouble())
-                
-                // Random speed properties
-                val minSpeed = dpToPx(30).toFloat()  // Minimum speed
-                val maxSpeed = dpToPx(100).toFloat()  // Maximum speed
-                val randomSpeed = minSpeed + random.nextFloat() * (maxSpeed - minSpeed)
-                
-                // Random trail properties
-                val minTrailLength = 8
-                val maxTrailLength = 18
-                val randomTrailLength = minTrailLength + (random.nextFloat() * (maxTrailLength - minTrailLength)).toInt()
-                
-                val minTrailThickness = dpToPx(1).toFloat()
-                val maxTrailThickness = dpToPx(4).toFloat()
-                val randomTrailThickness = minTrailThickness + random.nextFloat() * (maxTrailThickness - minTrailThickness)
-                  val star = Star(
-                    x = random.nextFloat() * width, // Start anywhere across the top
-                    y = -dpToPx(50).toFloat(), // Start above screen
-                    velocityX = (Math.sin(angle) * randomSpeed).toFloat(), // Horizontal component (left/right)
-                    velocityY = (Math.cos(angle) * randomSpeed).toFloat(), // Vertical component (down)
-                    size = dpToPx(2).toFloat() + random.nextFloat() * dpToPx(4), // Star size: min 2dp + random 0-4dp = 2-6dp total
-                    alpha = 0.6f + random.nextFloat() * 0.4f, // More visible
-                    twinklePhase = random.nextFloat() * 2f * Math.PI.toFloat(),
-                    trailLength = randomTrailLength, // Random trail length: 6-18 points
-                    trailThickness = randomTrailThickness // Random trail thickness: 1-4dp
-                )
-                stars.add(star)
-                return star
-            }
-            
-            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-                super.onSizeChanged(w, h, oldw, oldh)
-                if (w > 0 && h > 0) {
-                    initializeStars()
-                }
-            }
-            
-            override fun onDraw(canvas: Canvas) {
-                super.onDraw(canvas)
-                
-                val currentTime = System.currentTimeMillis()
-                val deltaTime = (currentTime - lastTime) / 1000f // Convert to seconds
-                lastTime = currentTime
-                
-                updateStars(deltaTime)
-                drawStars(canvas)
-                
-                // Continue animation
-                invalidate()
-            }
-            
-            private fun updateStars(deltaTime: Float) {
-                val starsToRemove = mutableListOf<Star>()
-                
-                stars.forEach { star ->
-                    // Update position with velocity
-                    star.x += star.velocityX * deltaTime
-                    star.y += star.velocityY * deltaTime
-                    
-                    // Update twinkle phase
-                    star.twinklePhase += deltaTime * 3f                    // Add to trail with more frequent updates
-                    star.trail.add(Pair(star.x, star.y))
-                    if (star.trail.size > star.trailLength) { // Use individual star's trail length
-                        star.trail.removeAt(0)
-                    }
-                    
-                    // Remove star when it goes off screen
-                    if (star.y > height + dpToPx(100) || star.x < -dpToPx(100) || star.x > width + dpToPx(100)) {
-                        starsToRemove.add(star)
-                    }
-                }
-                  // Remove off-screen stars and create new ones
-                starsToRemove.forEach { stars.remove(it) }
-                
-                // Smart star replacement logic
-                if (starsToRemove.isNotEmpty()) {
-                    // Calculate how many new stars to create (1-6 random, but don't exceed maxStars)
-                    val randomNewStars = minStars + random.nextInt(maxStars - minStars + 1)
-                    val availableSlots = maxStars - stars.size
-                    val starsToCreate = minOf(randomNewStars, availableSlots)
-                    
-                    repeat(starsToCreate) {
-                        createNewStar()
-                    }
-                }
-                
-                // Ensure minimum star count (safety check)
-                if (stars.size < minStars) {
-                    repeat(minStars - stars.size) {
-                        createNewStar()
-                    }
-                }
-            }
-            
-            private fun drawStars(canvas: Canvas) {
-                stars.forEach { star ->
-                    // Calculate twinkling alpha
-                    val twinkleAlpha = star.alpha + (Math.sin(star.twinklePhase.toDouble()) * 0.3f).toFloat()
-                    val clampedAlpha = twinkleAlpha.coerceIn(0.2f, 1.0f)                    // Draw bright trail (brightest at head, fading towards tail)
-                    if (star.trail.size > 1) {
-                        // Set the trail thickness for this specific star
-                        trailPaint.strokeWidth = star.trailThickness
-                        
-                        for (i in 0 until star.trail.size - 1) {
-                            // Trail alpha: brightest at newest position (end of trail array), fading towards oldest (start of array)
-                            val trailProgress = i.toFloat() / (star.trail.size - 1)
-                            val trailAlpha = clampedAlpha * trailProgress * 0.7f // Start dim (old positions), get brighter towards current position
-                            trailPaint.alpha = (trailAlpha * 255).toInt()
-                            
-                            val currentPos = star.trail[i]
-                            val nextPos = star.trail[i + 1]
-                            
-                            // Draw trail lines with individual star's thickness
-                            canvas.drawLine(
-                                currentPos.first, currentPos.second,
-                                nextPos.first, nextPos.second,
-                                trailPaint
-                            )
-                        }
-                    }
-                    
-                    // Draw main star (brighter and larger)
-                    starPaint.alpha = (clampedAlpha * 255).toInt()
-                    canvas.drawCircle(star.x, star.y, star.size, starPaint)
-                    
-                    // Draw bright cross sparkle for all stars
-                    val sparkleAlpha = clampedAlpha * 0.8f
-                    starPaint.alpha = (sparkleAlpha * 255).toInt()
-                    
-                    // Horizontal line
-                    canvas.drawLine(
-                        star.x - star.size * 2f, star.y,
-                        star.x + star.size * 2f, star.y,
-                        starPaint
-                    )
-                    
-                    // Vertical line
-                    canvas.drawLine(
-                        star.x, star.y - star.size * 2f,
-                        star.x, star.y + star.size * 2f,
-                        starPaint
-                    )
-                    
-                    // Diagonal lines for extra sparkle
-                    canvas.drawLine(
-                        star.x - star.size * 1.4f, star.y - star.size * 1.4f,
-                        star.x + star.size * 1.4f, star.y + star.size * 1.4f,
-                        starPaint
-                    )
-                    
-                    canvas.drawLine(
-                        star.x - star.size * 1.4f, star.y + star.size * 1.4f,
-                        star.x + star.size * 1.4f, star.y - star.size * 1.4f,
-                        starPaint
-                    )
-                }
-            }
-        }.apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-    }
 
     private fun markAsDone() {
         Log.d(TAG, "Mark as done clicked for: $recordTitle")
@@ -1192,11 +736,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         super.onResume()
         Log.d(TAG, "AlarmScreenActivity onResume() called - should be visible now")
         
-        // Register sensor listener for device tilt
-        accelerometer?.let { 
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-        }
-        
         // Register broadcast receiver to listen for alarm service events
         val filter = IntentFilter(ACTION_CLOSE_ALARM_SCREEN)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -1210,9 +749,6 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     override fun onPause() {
         super.onPause()
         Log.d(TAG, "AlarmScreenActivity onPause() called")
-        
-        // Unregister sensor listener
-        sensorManager.unregisterListener(this)
         
         // Unregister broadcast receiver
         try {
@@ -1237,11 +773,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "AlarmScreenActivity destroyed")
-        
-        // Unregister sensor listener
-        sensorManager.unregisterListener(this)
-        
-        // Backup check - if user didn't take any action, treat it as ignore
+
         if (!userActionTaken) {
             Log.d(TAG, "Activity destroyed without user action - treating as ignore for: $recordTitle")
             handleAlarmIgnore()
@@ -1273,41 +805,5 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
         super.onNewIntent(intent)
         Log.d(TAG, "AlarmScreenActivity onNewIntent() called with action: ${intent?.action}")
         // Simplified - just log for debugging, actual close is handled by broadcast receiver
-    }
-
-
-    // Sensor event handling for device tilt detection
-    override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            val x = event.values[0]
-            val y = event.values[1]
-            val z = event.values[2]
-            
-            // Calculate tilt angles in degrees
-            deviceTiltX = Math.toDegrees(kotlin.math.atan2(x.toDouble(), kotlin.math.sqrt((y * y + z * z).toDouble()))).toFloat()
-            deviceTiltY = Math.toDegrees(kotlin.math.atan2(y.toDouble(), kotlin.math.sqrt((x * x + z * z).toDouble()))).toFloat()
-        }
-    }
-    
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        // Not needed for this implementation
-    }
-      // Calculate shooting star angle range based on device tilt
-    private fun getStarAngleRange(): Pair<Float, Float> {
-        val absX = kotlin.math.abs(deviceTiltX)
-        val absY = kotlin.math.abs(deviceTiltY)
-          return when {
-            // Device is upside down (extreme Y tilt) - use left, bottom, right directions
-            absY > 120f -> Pair(-90f, 90f)
-            
-            // Device tilted right (positive X beyond threshold) - stars should go right
-            deviceTiltX > tiltThreshold -> Pair(-90f, 30f)
-            
-            // Device tilted left (negative X beyond threshold) - stars should go left
-            deviceTiltX < -tiltThreshold -> Pair(-30f, 90f)
-            
-            // Default - minimal tilt or within threshold
-            else -> Pair(-30f, 30f)
-        }
     }
 }
