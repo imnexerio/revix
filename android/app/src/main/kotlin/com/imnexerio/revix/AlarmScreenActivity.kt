@@ -441,7 +441,7 @@ class AlarmScreenActivity : Activity() {
 
                 val ignoreBackground = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
-                    cornerRadius = dpToPx(25).toFloat()
+                    cornerRadius = dpToPx(20).toFloat() // Less rounded than Skip/Done buttons
                     setColor(Color.argb(30, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
                     setStroke(dpToPx(1), Color.argb(80, 255, 255, 255))
                 }
