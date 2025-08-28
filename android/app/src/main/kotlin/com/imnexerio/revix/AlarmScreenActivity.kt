@@ -274,7 +274,7 @@ class AlarmScreenActivity : Activity() {
                 // Category text
                 val categoryText = TextView(this@AlarmScreenActivity).apply {
                     text = "Category : $category"
-                    textSize = 16f
+                    textSize = 22f
                     setTextColor(textColor)
                     gravity = Gravity.START  // Left aligned
                     maxLines = 1  // Single line
@@ -290,7 +290,7 @@ class AlarmScreenActivity : Activity() {
                 // Sub-category text
                 val subCategoryText = TextView(this@AlarmScreenActivity).apply {
                     text = "Sub Category : $subCategory"
-                    textSize = 16f
+                    textSize = 22f
                     setTextColor(textColor)
                     gravity = Gravity.START  // Left aligned
                     maxLines = 1  // Single line
@@ -306,7 +306,7 @@ class AlarmScreenActivity : Activity() {
                 // Record title text
                 val recordTitleText = TextView(this@AlarmScreenActivity).apply {
                     text = "Title : $recordTitle"
-                    textSize = 16f  // Same as category and subcategory
+                    textSize = 22f  // Same as category and subcategory
                     setTextColor(textColor)
                     gravity = Gravity.START  // Left aligned
                     maxLines = 1  // Single line
@@ -327,7 +327,7 @@ class AlarmScreenActivity : Activity() {
                         "No description available"
                     }
                     text = "Description : $displayDescription"
-                    textSize = 16f  // Increased from 14f
+                    textSize = 22f  // Increased from 14f
                     setTextColor(textColor)
                     gravity = Gravity.START  // Left aligned
                     // Removed alpha for better visibility
