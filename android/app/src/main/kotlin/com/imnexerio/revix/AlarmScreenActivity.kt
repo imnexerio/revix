@@ -713,7 +713,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 val leftHint = TextView(this@AlarmScreenActivity).apply {
                     text = "Skip"
                     textSize = 14f
-                    setTextColor(Color.argb(150, 255, 152, 0))
+                    setTextColor(textColor) // Use textColor instead of custom color
                     gravity = Gravity.CENTER
                     layoutParams = FrameLayout.LayoutParams(
                         dpToPx(80),
@@ -728,7 +728,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 val rightHint = TextView(this@AlarmScreenActivity).apply {
                     text = "Done"
                     textSize = 14f
-                    setTextColor(Color.argb(150, 76, 175, 80))
+                    setTextColor(textColor) // Use textColor instead of custom color
                     gravity = Gravity.CENTER
                     layoutParams = FrameLayout.LayoutParams(
                         dpToPx(80),
@@ -739,27 +739,44 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                     }
                 }
                 
-                // Simple slideable circle
-                val slideCircle = View(this@AlarmScreenActivity).apply {
+                // Simple oval button
+                val slideButton = View(this@AlarmScreenActivity).apply {
                     layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(70),
-                        dpToPx(70)
+                        dpToPx(90), // Wider for oval shape
+                        dpToPx(60)  // Shorter height for oval
                     ).apply {
                         gravity = Gravity.CENTER
                     }
                     
-                    // Simple circle background
-                    val circleBackground = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
+                    // Pre-create reusable backgrounds for efficiency
+                    val originalBackground = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = dpToPx(30).toFloat()
                         setColor(accentColor)
-                        setStroke(dpToPx(3), Color.argb(150, 255, 255, 255))
+                        setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
                     }
-                    setBackground(circleBackground)
-                    elevation = dpToPx(16).toFloat()
+                    
+                    val redBackground = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = dpToPx(30).toFloat()
+                        setColor(Color.argb(255, 244, 67, 54))
+                        setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
+                    }
+                    
+                    val greenBackground = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = dpToPx(30).toFloat()
+                        setColor(Color.argb(255, 76, 175, 80))
+                        setStroke(dpToPx(2), Color.argb(150, 255, 255, 255))
+                    }
+                    
+                    setBackground(originalBackground)
+                    elevation = dpToPx(8).toFloat()
                     
                     // Simple sliding logic
                     var startX = 0f
                     var isSliding = false
+                    var currentBackground = originalBackground
                     val slideThreshold = dpToPx(80).toFloat()
                     val maxSlide = dpToPx(100).toFloat()
                     
@@ -778,30 +795,41 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                                     val constrainedDelta = deltaX.coerceIn(-maxSlide, maxSlide)
                                     translationX = constrainedDelta
                                     
-                                    // Change color based on direction
-                                    val newBackground = GradientDrawable().apply {
-                                        shape = GradientDrawable.OVAL
-                                        setStroke(dpToPx(3), Color.argb(150, 255, 255, 255))
-                                        
-                                        when {
-                                            constrainedDelta < -slideThreshold * 0.5f -> {
-                                                setColor(Color.argb(255, 244, 67, 54)) // Red for skip
-                                                leftHint.animate().alpha(1.0f).setDuration(100).start()
-                                                rightHint.animate().alpha(0.3f).setDuration(100).start()
+                                    // Calculate intensity and update existing background color
+                                    val slideProgress = kotlin.math.abs(constrainedDelta) / maxSlide
+                                    val intensity = (50 + slideProgress * 205).toInt().coerceIn(50, 255)
+                                    
+                                    // Efficiently update color without creating new objects
+                                    when {
+                                        constrainedDelta < -slideThreshold * 0.3f -> {
+                                            if (currentBackground != redBackground) {
+                                                currentBackground = redBackground
+                                                setBackground(redBackground)
                                             }
-                                            constrainedDelta > slideThreshold * 0.5f -> {
-                                                setColor(Color.argb(255, 76, 175, 80)) // Green for done
-                                                rightHint.animate().alpha(1.0f).setDuration(100).start()
-                                                leftHint.animate().alpha(0.3f).setDuration(100).start()
+                                            // Update alpha for intensity
+                                            redBackground.alpha = intensity
+                                            leftHint.animate().alpha(1.0f).setDuration(100).start()
+                                            rightHint.animate().alpha(0.3f).setDuration(100).start()
+                                        }
+                                        constrainedDelta > slideThreshold * 0.3f -> {
+                                            if (currentBackground != greenBackground) {
+                                                currentBackground = greenBackground
+                                                setBackground(greenBackground)
                                             }
-                                            else -> {
-                                                setColor(accentColor) // Original color
-                                                leftHint.animate().alpha(0.6f).setDuration(100).start()
-                                                rightHint.animate().alpha(0.6f).setDuration(100).start()
+                                            // Update alpha for intensity
+                                            greenBackground.alpha = intensity
+                                            rightHint.animate().alpha(1.0f).setDuration(100).start()
+                                            leftHint.animate().alpha(0.3f).setDuration(100).start()
+                                        }
+                                        else -> {
+                                            if (currentBackground != originalBackground) {
+                                                currentBackground = originalBackground
+                                                setBackground(originalBackground)
                                             }
+                                            leftHint.animate().alpha(0.6f).setDuration(100).start()
+                                            rightHint.animate().alpha(0.6f).setDuration(100).start()
                                         }
                                     }
-                                    setBackground(newBackground)
                                 }
                                 true
                             }
@@ -811,14 +839,14 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                                     val deltaX = event.rawX - startX
                                     
                                     if (kotlin.math.abs(deltaX) >= slideThreshold) {
-                                        // Action triggered
+                                        // Action triggered - keep the intense color
                                         if (deltaX < 0) {
                                             skipAlarm()
                                         } else {
                                             markAsDone()
                                         }
                                     } else {
-                                        // Return to center
+                                        // Return to center - restore original color
                                         animate()
                                             .translationX(0f)
                                             .scaleX(1.0f)
@@ -826,13 +854,11 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                                             .setDuration(300)
                                             .start()
                                         
-                                        // Reset background
-                                        val originalBackground = GradientDrawable().apply {
-                                            shape = GradientDrawable.OVAL
-                                            setColor(accentColor)
-                                            setStroke(dpToPx(3), Color.argb(150, 255, 255, 255))
+                                        // Reset to original background efficiently
+                                        if (currentBackground != originalBackground) {
+                                            currentBackground = originalBackground
+                                            setBackground(originalBackground)
                                         }
-                                        setBackground(originalBackground)
                                         
                                         leftHint.animate().alpha(0.6f).setDuration(200).start()
                                         rightHint.animate().alpha(0.6f).setDuration(200).start()
@@ -849,7 +875,7 @@ class AlarmScreenActivity : Activity(), SensorEventListener {    // Data class f
                 
                 addView(leftHint)
                 addView(rightHint)
-                addView(slideCircle)
+                addView(slideButton)
             }
             
             // Simple instruction text
