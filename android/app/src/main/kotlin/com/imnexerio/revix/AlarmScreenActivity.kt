@@ -433,7 +433,7 @@ class AlarmScreenActivity : Activity() {
 
             // Ignore button (small, centered, on top)
             val ignoreButton = Button(this@AlarmScreenActivity).apply {
-                text = "Ignore"
+                text = "DONE"
                 textSize = 20f
                 setTypeface(null, android.graphics.Typeface.NORMAL)
                 isAllCaps = false
@@ -456,7 +456,7 @@ class AlarmScreenActivity : Activity() {
                     setMargins(0, 0, 0, dpToPx(20))
                 }
 
-                setOnClickListener { ignoreAlarm() }
+                setOnClickListener { markAsDone() }
 
                 // Custom touch feedback instead of Android's yellow highlight
                 setOnTouchListener { view, event ->
@@ -487,7 +487,7 @@ class AlarmScreenActivity : Activity() {
 
                 // Skip button (left)
                 val skipButton = Button(this@AlarmScreenActivity).apply {
-                    text = "Skip"
+                    text = "SKIP"
                     textSize = 24f
                     setTypeface(null, android.graphics.Typeface.NORMAL)
                     isAllCaps = false
@@ -532,7 +532,7 @@ class AlarmScreenActivity : Activity() {
 
                 // Done button (right)
                 val doneButton = Button(this@AlarmScreenActivity).apply {
-                    text = "Done"
+                    text = "IGNORE"
                     textSize = 24f
                     setTypeface(null, android.graphics.Typeface.NORMAL)
                     isAllCaps = false
@@ -555,7 +555,7 @@ class AlarmScreenActivity : Activity() {
                         setMargins(dpToPx(8), 0, 0, 0) // Small gap between buttons
                     }
 
-                    setOnClickListener { markAsDone() }
+                    setOnClickListener { ignoreAlarm() }
 
                     // Custom touch feedback instead of Android's yellow highlight
                     setOnTouchListener { view, event ->
