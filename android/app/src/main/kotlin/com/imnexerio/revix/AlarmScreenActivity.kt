@@ -591,14 +591,22 @@ class AlarmScreenActivity : Activity() {
     ): View {
         return object : View(this) {
             private var animationTime = 0f
-            private val maxAnimationSpeed = 0.05f // Maximum speed after ramp-up
+            private val maxAnimationSpeed = 0.03f // Optimized speed for smoother animation
             private var currentAnimationSpeed = 0f // Start at 0 speed
             private val rampUpDurationMs = 10000L // 10 seconds to reach full speed
             private val startTime = System.currentTimeMillis()
-            private var lastUpdateTime = System.currentTimeMillis()
+            private var lastFrameTime = System.currentTimeMillis()
+            
+            // Pre-calculate values to reduce computation
+            private var cachedCenterX = 0f
+            private var cachedCenterY = 0f
+            private var cachedRadius = 0f
+            private var frameCount = 0
+            private val updateInterval = 33L // ~30 FPS for smooth animation
             
             private val gradientPaint = Paint().apply {
                 isAntiAlias = true
+                isDither = true // Smooth color transitions
             }
 
             // Get dynamic white color from theme
@@ -606,9 +614,13 @@ class AlarmScreenActivity : Activity() {
 
             override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
                 super.onSizeChanged(w, h, oldw, oldh)
+                // Pre-calculate base values
+                cachedCenterX = w / 2f
+                cachedCenterY = h / 2f
+                cachedRadius = kotlin.math.max(w, h).toFloat() * 0.8f
                 updateGradient()
                 // Start animation immediately when view is sized
-                postInvalidate()
+                post { invalidate() }
             }
 
             private fun updateAnimationSpeed() {
@@ -626,80 +638,46 @@ class AlarmScreenActivity : Activity() {
                 // Update animation speed based on elapsed time
                 updateAnimationSpeed()
                 
-                // Create multiple wave patterns for natural movement
+                // Optimized wave calculations - use time-based instead of frame-based
                 val time = animationTime.toDouble()
+                
+                // Pre-calculate wave values
                 val wave1 = kotlin.math.sin(time * 0.7).toFloat()
                 val wave2 = kotlin.math.cos(time * 1.1).toFloat()
                 val wave3 = kotlin.math.sin(time * 0.9).toFloat()
                 
-                // Dynamic center point that moves organically around the screen
-                val centerX = width * (0.5f + wave1 * 0.15f)  // Move center horizontally
-                val centerY = height * (0.4f + wave2 * 0.2f)  // Move center vertically
+                // Dynamic center point with smoother movement
+                val centerX = cachedCenterX + wave1 * cachedCenterX * 0.1f  // Reduced movement for smoothness
+                val centerY = cachedCenterY + wave2 * cachedCenterY * 0.15f
                 
-                // Dynamic radius that breathes/pulses
-                val baseRadius = kotlin.math.max(width, height).toFloat() * 0.8f
-                val radius = baseRadius * (1f + wave3 * 0.2f)
+                // Dynamic radius with gentler breathing
+                val radius = cachedRadius * (1f + wave3 * 0.1f)
                 
-                // Create more natural color blending - smoother variations
-                val blendFactor1 = 0.92f + wave1 * 0.05f   // Very subtle variation from white
-                val blendFactor2 = 0.78f + wave2 * 0.08f   // Gentle first blend
-                val blendFactor3 = 0.62f + wave3 * 0.12f   // Moderate blend
-                val blendFactor4 = 0.45f + wave1 * 0.1f    // More pronounced blend
-                val blendFactor5 = 0.28f + wave2 * 0.08f   // Strong accent blend
-                val blendFactor6 = 0.12f + wave3 * 0.05f   // Almost pure accent
+                // Optimized color blending - reduce calculations
+                val blendStep = 0.125f // 1/8 for 8 colors
+                val colors = IntArray(8)
+                val positions = FloatArray(8)
                 
-                // Ultra-smooth color transitions with more intermediate colors
-                val colors = intArrayOf(
-                    // Center: Almost pure white
-                    Color.argb(255,
-                        (Color.red(whiteColor) * 0.99f + Color.red(accentColor) * 0.01f).toInt(),
-                        (Color.green(whiteColor) * 0.99f + Color.green(accentColor) * 0.01f).toInt(),
-                        (Color.blue(whiteColor) * 0.99f + Color.blue(accentColor) * 0.01f).toInt()
-                    ),
-                    // First ring: Barely noticeable blend
-                    Color.argb(255,
-                        (Color.red(whiteColor) * blendFactor1 + Color.red(accentColor) * (1f - blendFactor1)).toInt(),
-                        (Color.green(whiteColor) * blendFactor1 + Color.green(accentColor) * (1f - blendFactor1)).toInt(),
-                        (Color.blue(whiteColor) * blendFactor1 + Color.blue(accentColor) * (1f - blendFactor1)).toInt()
-                    ),
-                    // Second ring: Gentle transition
-                    Color.argb(255,
-                        (Color.red(whiteColor) * blendFactor2 + Color.red(accentColor) * (1f - blendFactor2)).toInt(),
-                        (Color.green(whiteColor) * blendFactor2 + Color.green(accentColor) * (1f - blendFactor2)).toInt(),
-                        (Color.blue(whiteColor) * blendFactor2 + Color.blue(accentColor) * (1f - blendFactor2)).toInt()
-                    ),
-                    // Third ring: Moderate blend
-                    Color.argb(255,
-                        (Color.red(whiteColor) * blendFactor3 + Color.red(accentColor) * (1f - blendFactor3)).toInt(),
-                        (Color.green(whiteColor) * blendFactor3 + Color.green(accentColor) * (1f - blendFactor3)).toInt(),
-                        (Color.blue(whiteColor) * blendFactor3 + Color.blue(accentColor) * (1f - blendFactor3)).toInt()
-                    ),
-                    // Fourth ring: More accent visible
-                    Color.argb(255,
-                        (Color.red(whiteColor) * blendFactor4 + Color.red(accentColor) * (1f - blendFactor4)).toInt(),
-                        (Color.green(whiteColor) * blendFactor4 + Color.green(accentColor) * (1f - blendFactor4)).toInt(),
-                        (Color.blue(whiteColor) * blendFactor4 + Color.blue(accentColor) * (1f - blendFactor4)).toInt()
-                    ),
-                    // Fifth ring: Strong accent blend
-                    Color.argb(255,
-                        (Color.red(whiteColor) * blendFactor5 + Color.red(accentColor) * (1f - blendFactor5)).toInt(),
-                        (Color.green(whiteColor) * blendFactor5 + Color.green(accentColor) * (1f - blendFactor5)).toInt(),
-                        (Color.blue(whiteColor) * blendFactor5 + Color.blue(accentColor) * (1f - blendFactor5)).toInt()
-                    ),
-                    // Sixth ring: Almost pure accent
-                    Color.argb(255,
-                        (Color.red(whiteColor) * blendFactor6 + Color.red(accentColor) * (1f - blendFactor6)).toInt(),
-                        (Color.green(whiteColor) * blendFactor6 + Color.green(accentColor) * (1f - blendFactor6)).toInt(),
-                        (Color.blue(whiteColor) * blendFactor6 + Color.blue(accentColor) * (1f - blendFactor6)).toInt()
-                    ),
-                    // Outer edge: Pure accent color
-                    accentColor
-                )
+                // Generate colors more efficiently
+                for (i in 0 until 8) {
+                    val baseBlend = 1f - (i * blendStep) // From 1.0 to 0.0
+                    val waveInfluence = when(i % 3) {
+                        0 -> wave1 * 0.03f
+                        1 -> wave2 * 0.03f
+                        else -> wave3 * 0.03f
+                    }
+                    val blendFactor = (baseBlend + waveInfluence).coerceIn(0f, 1f)
+                    
+                    colors[i] = Color.argb(255,
+                        (Color.red(whiteColor) * blendFactor + Color.red(accentColor) * (1f - blendFactor)).toInt(),
+                        (Color.green(whiteColor) * blendFactor + Color.green(accentColor) * (1f - blendFactor)).toInt(),
+                        (Color.blue(whiteColor) * blendFactor + Color.blue(accentColor) * (1f - blendFactor)).toInt()
+                    )
+                    
+                    positions[i] = i * 0.142857f // 1/7 spacing for even distribution
+                }
                 
-                // Ultra-smooth radial distribution - more gradual steps
-                val positions = floatArrayOf(0.0f, 0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 0.9f, 1.0f)
-                
-                // Create organic radial gradient with moving center and breathing radius
+                // Create optimized radial gradient
                 gradientPaint.shader = android.graphics.RadialGradient(
                     centerX, centerY,         // Dynamic center point
                     radius,                   // Breathing radius
@@ -712,25 +690,43 @@ class AlarmScreenActivity : Activity() {
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 
-                // Update animation with current speed
+                // Optimized frame timing
                 val currentTime = System.currentTimeMillis()
-                if (currentTime - lastUpdateTime > 50) {
-                    animationTime += currentAnimationSpeed // Use dynamic speed
-                    lastUpdateTime = currentTime
+                val deltaTime = currentTime - lastFrameTime
+                
+                if (deltaTime >= updateInterval) {
+                    // Calculate smooth time progression
+                    val smoothDelta = deltaTime / 1000f // Convert to seconds
+                    animationTime += currentAnimationSpeed * smoothDelta * 60f // Normalize for 60fps
+                    
+                    lastFrameTime = currentTime
                     updateGradient()
+                    frameCount++
                 }
                 
                 // Draw the animated gradient
                 canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), gradientPaint)
                 
-                // Continue animation - keep updating even during ramp-up
-                postInvalidateDelayed(50)
+                // Smooth animation continuation
+                if (currentAnimationSpeed > 0f || frameCount < 300) { // Keep animating for first 10 seconds
+                    postInvalidateDelayed(updateInterval)
+                } else {
+                    // Reduce update frequency when animation is subtle
+                    postInvalidateDelayed(updateInterval * 2)
+                }
             }
 
             override fun onAttachedToWindow() {
                 super.onAttachedToWindow()
-                // Ensure animation starts when attached
-                postInvalidate()
+                // Reset timing when attached
+                lastFrameTime = System.currentTimeMillis()
+                post { invalidate() }
+            }
+            
+            override fun onDetachedFromWindow() {
+                super.onDetachedFromWindow()
+                // Clean up when detached
+                gradientPaint.shader = null
             }
         }.apply {
             layoutParams = FrameLayout.LayoutParams(
