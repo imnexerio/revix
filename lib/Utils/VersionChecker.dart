@@ -18,7 +18,6 @@ class VersionInfo {
   final String description;
   final String downloadUrl;
   final UpdateType type;
-  final DateTime publishedAt;
 
   VersionInfo({
     required this.version,
@@ -26,7 +25,6 @@ class VersionInfo {
     required this.description,
     required this.downloadUrl,
     required this.type,
-    required this.publishedAt,
   });
 
   factory VersionInfo.fromJson(Map<String, dynamic> json) {
@@ -46,7 +44,6 @@ class VersionInfo {
       description: description,
       downloadUrl: json['html_url'] ?? '',
       type: type,
-      publishedAt: DateTime.parse(json['published_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 }
@@ -56,7 +53,7 @@ class VersionChecker {
   static const String _dismissedVersionKey = 'dismissed_version';
   
   /// Check for app updates and show dialog if newer version is available
-  static Future<void> checkForUpdates(BuildContext context, {bool forceCheck = false}) async {
+  static Future<void> checkForUpdates(BuildContext context) async {
     try {
       // Get current app version
       final packageInfo = await PackageInfo.fromPlatform();
@@ -367,34 +364,44 @@ class VersionChecker {
     );
 
     try {
-      // Get current app version to check if update was found
+      // Get current app version
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
       
       // Fetch latest version info
       final latestVersionInfo = await _fetchLatestVersion();
-      
-      // Force check for updates
-      await checkForUpdates(context, forceCheck: true);
       Navigator.of(context).pop(); // Close loading indicator
       
-      // Check if we actually found a newer version
+      // Check if update is available
       if (latestVersionInfo != null && _isNewerVersion(latestVersionInfo.version, currentVersion)) {
-        // Update dialog was shown, don't show additional message
-        return;
+        // Check if dismissed (for non-critical updates)
+        if (latestVersionInfo.type != UpdateType.critical && 
+            await _isVersionDismissed(latestVersionInfo.version)) {
+          customSnackBar(
+            context: context,
+            message: 'You are using the latest version!',
+            duration: const Duration(seconds: 3),
+          );
+          return;
+        }
+        
+        // Show update dialog
+        if (context.mounted) {
+          await _showUpdateDialog(context, currentVersion, latestVersionInfo);
+        }
+      } else {
+        // No update available
+        customSnackBar(
+          context: context,
+          message: 'You are using the latest version!',
+          duration: const Duration(seconds: 3),
+        );
       }
-      
-      // If no update was shown, show "up to date" message
-      customSnackBar(
-        context: context,
-        message: '✅ You are using the latest version!',
-        duration: const Duration(seconds: 3),
-      );
     } catch (e) {
       Navigator.of(context).pop(); // Close loading indicator
       customSnackBar_error(
         context: context,
-        message: '❌ Failed to check for updates',
+        message: 'Failed to check for updates',
         duration: const Duration(seconds: 3),
       );
     }
