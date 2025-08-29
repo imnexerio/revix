@@ -18,6 +18,7 @@ import 'Utils/ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/lecture_colors.dart';
 import 'Utils/platform_utils.dart';
+import 'Utils/VersionChecker.dart';
 
 import 'firebase_options.dart';
 
@@ -205,6 +206,15 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
+    
+    // Check for app updates after a short delay to ensure UI is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          VersionChecker.checkForUpdates(context);
+        }
+      });
+    });
   }
 
   void _openSettings() {

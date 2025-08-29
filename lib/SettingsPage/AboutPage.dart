@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../LoginSignupPage/UrlLauncher.dart';
 import '../Utils/CustomSnackBar.dart';
+import '../Utils/VersionChecker.dart';
 import '../widgets/AnimatedSquareText.dart';
 
 class AboutPage extends StatefulWidget {
@@ -157,31 +158,70 @@ class _AboutPageState extends State<AboutPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    width: 200, // Set the desired width
-                    child: FilledButton(
-                      onPressed: () {
-                          customSnackBar(
-                            context: context,
-                            message: 'Thank you for using revix!',
-                        );
-
-                      },
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            VersionChecker.checkForUpdatesManually(context);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 55),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.system_update,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Check Updates',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
-                      child: const Text(
-                        'I Understand',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            customSnackBar(
+                              context: context,
+                              message: 'Thank you for using revix!',
+                            );
+                          },
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 55),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                          ),
+                          child: const Text(
+                            'I Understand',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
