@@ -249,7 +249,10 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Calculate the new status based on duration settings (only for mark as done)
       String newStatus = details['status'];
       if (!isSkip) {
-        newStatus = determineEnabledStatus(details) ? 'Enabled' : 'Disabled';
+        // Create a copy of details with updated completion_counts for status calculation
+        Map<String, dynamic> updatedDetails = Map<String, dynamic>.from(details);
+        updatedDetails['completion_counts'] = details['completion_counts'] + 1;
+        newStatus = determineEnabledStatus(updatedDetails) ? 'Enabled' : 'Disabled';
       }
 
       // Use the dedicated updateRecordRevision for partial update with status
