@@ -53,17 +53,11 @@ class VersionInfo {
 
 class VersionChecker {
   static const String _githubApiUrl = 'https://api.github.com/repos/imnexerio/revix/releases/latest';
-  static const String _lastCheckKey = 'last_version_check';
   static const String _dismissedVersionKey = 'dismissed_version';
   
   /// Check for app updates and show dialog if newer version is available
   static Future<void> checkForUpdates(BuildContext context, {bool forceCheck = false}) async {
     try {
-      // Skip check if user recently checked (unless forced)
-      if (!forceCheck && !await _shouldCheckForUpdates()) {
-        return;
-      }
-
       // Get current app version
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
@@ -85,9 +79,6 @@ class VersionChecker {
           await _showUpdateDialog(context, currentVersion, latestVersionInfo);
         }
       }
-
-      // Update last check time
-      await _updateLastCheckTime();
     } catch (e) {
       print('Error checking for updates: $e');
     }
@@ -109,23 +100,6 @@ class VersionChecker {
       print('Error fetching latest version: $e');
     }
     return null;
-  }
-
-  /// Check if we should check for updates (avoid checking too frequently)
-  static Future<bool> _shouldCheckForUpdates() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastCheck = prefs.getInt(_lastCheckKey) ?? 0;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final dayInMs = 24 * 60 * 60 * 1000;
-    
-    // Check once per day
-    return (now - lastCheck) > dayInMs;
-  }
-
-  /// Update the last check timestamp
-  static Future<void> _updateLastCheckTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_lastCheckKey, DateTime.now().millisecondsSinceEpoch);
   }
 
   /// Check if a specific version was dismissed by the user
