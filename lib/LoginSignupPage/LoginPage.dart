@@ -13,7 +13,7 @@ import '../Utils/FirebaseAuthService.dart';
 import '../widgets/AnimatedSquareText.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import 'SignupPage.dart';
-import 'UrlLauncher.dart';
+import '../Utils/UrlLauncher.dart';
 
 class LoginPage extends StatefulWidget {
   @override

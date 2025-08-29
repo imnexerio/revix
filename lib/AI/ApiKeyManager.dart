@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../LoginSignupPage/UrlLauncher.dart';
+import '../Utils/UrlLauncher.dart';
 
 class ApiKeyManager {
   static const String apiKeyPrefKey = 'gemini_api_key';

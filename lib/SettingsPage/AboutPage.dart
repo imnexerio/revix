@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../LoginSignupPage/UrlLauncher.dart';
+import '../Utils/UrlLauncher.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/VersionChecker.dart';
 import '../widgets/AnimatedSquareText.dart';

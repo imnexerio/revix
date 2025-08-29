@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import '../Utils/customSnackBar_error.dart';
+import 'customSnackBar_error.dart';
 
 class UrlLauncher {
   static void launchURL(BuildContext context, String url) async {

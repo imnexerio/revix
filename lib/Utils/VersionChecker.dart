@@ -7,8 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'CustomSnackBar.dart';
 import 'customSnackBar_error.dart';
-// Web functionality imports
-import 'dart:js' as js if (dart.library.js) 'dart:js';
+// Conditional import: web_refresh.dart for web, web_refresh_stub.dart for mobile
+import 'web_refresh.dart' if (dart.library.io) 'web_refresh_stub.dart';
 
 enum UpdateType { optional, important, critical }
 
@@ -347,12 +347,7 @@ class VersionChecker {
     if (kIsWeb) {
       // Use a slight delay to ensure dialog closes properly
       Future.delayed(const Duration(milliseconds: 500), () {
-        try {
-          // Use JavaScript interop to reload the page
-          js.context.callMethod('eval', ['window.location.reload()']);
-        } catch (e) {
-          print('Error refreshing web app: $e');
-        }
+        refreshWebPage(); // Uses conditional import - real refresh on web, no-op on mobile
       });
     }
   }

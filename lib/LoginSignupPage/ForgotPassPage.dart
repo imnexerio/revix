@@ -4,7 +4,7 @@ import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseAuthService.dart';
 import '../widgets/AnimatedSquareText.dart';
-import 'UrlLauncher.dart';
+import '../Utils/UrlLauncher.dart';
 
 class ForgotPassPage extends StatefulWidget {
   @override

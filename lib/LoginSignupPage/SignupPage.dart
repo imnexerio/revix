@@ -10,7 +10,7 @@ import '../Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/FirebaseAuthService.dart';
 import '../widgets/AnimatedSquareText.dart';
-import 'UrlLauncher.dart';
+import '../Utils/UrlLauncher.dart';
 
 class SignupPage extends StatefulWidget {
   @override
