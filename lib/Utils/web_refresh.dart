@@ -1,7 +1,11 @@
 // Web-specific implementation for page refresh functionality
-import 'dart:html' as html;
+import 'dart:js_interop';
 
 /// Refresh the web page - WEB ONLY implementation
 void refreshWebPage() {
-  html.window.location.reload();
+  // Use js_interop for WASM compatibility
+  _reloadPage();
 }
+
+@JS('location.reload')
+external void _reloadPage();
