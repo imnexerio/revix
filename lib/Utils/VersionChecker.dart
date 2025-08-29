@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'CustomSnackBar.dart';
 import 'customSnackBar_error.dart';
+import 'UrlLauncher.dart';
 // Conditional import: web_refresh.dart for web, web_refresh_stub.dart for mobile
 import 'web_refresh.dart' if (dart.library.io) 'web_refresh_stub.dart';
 
@@ -298,7 +298,7 @@ class VersionChecker {
                   if (kIsWeb) {
                     await _handleWebUpdate(context, versionInfo);
                   } else {
-                    await _launchUpdateUrl(versionInfo.downloadUrl);
+                    await _launchUpdateUrl(context, versionInfo.downloadUrl);
                   }
                 },
                 child: Text(kIsWeb 
@@ -325,15 +325,8 @@ class VersionChecker {
   }
 
   /// Launch the update URL
-  static Future<void> _launchUpdateUrl(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      print('Error launching update URL: $e');
-    }
+  static Future<void> _launchUpdateUrl(BuildContext context, String url) async {
+    UrlLauncher.launchURL(context, url);
   }
 
   /// Handle web app update with direct refresh
