@@ -318,6 +318,24 @@ class AlarmScreenActivity : Activity() {
                         setMargins(0, 0, 0, dpToPx(12))
                     }
                 }
+                
+                val completionText = TextView(this@AlarmScreenActivity).apply {
+                    val completionValue = calculateCompletionFromIntentData()
+                    val missedCounts = intent.getStringExtra("missed_counts") ?: "0"
+                    val skippedCounts = intent.getStringExtra("skip_counts") ?: "0"
+                    text = "Completed: $completionValue\nMissed: $missedCounts | Skipped: $skippedCounts"
+                    textSize = 22f
+                    setTextColor(textColor)
+                    gravity = Gravity.START  // Left aligned
+                    maxLines = 2  // Two lines for completed and missed
+                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, 0, dpToPx(12))
+                    }
+                }
 
                 // Description text with proper 4-line truncation
                 val descriptionText = TextView(this@AlarmScreenActivity).apply {
@@ -342,6 +360,7 @@ class AlarmScreenActivity : Activity() {
                 addView(categoryText)
                 addView(subCategoryText)
                 addView(recordTitleText)
+                addView(completionText)
                 addView(descriptionText)
             }
 
@@ -1034,6 +1053,107 @@ class AlarmScreenActivity : Activity() {
         }
 
         Log.d(TAG, "Handled activity dismissal for: $recordTitle")
+    }
+
+    private fun calculateCompletionFromIntentData(): String {
+        return try {
+            // First try to get pre-calculated value (from normal alarm mode)
+            val preCalculated = intent.getStringExtra("completion_value")
+            if (!preCalculated.isNullOrEmpty() && preCalculated != "0") {
+                Log.d(TAG, "Using pre-calculated completion value: $preCalculated")
+                return preCalculated
+            }
+
+            // If not available, calculate from intent extras (DETAILS_MODE) - exactly like Dart version
+            val completionCountsStr = intent.getStringExtra("completion_counts") ?: "0"
+            val durationStr = intent.getStringExtra("duration") ?: ""
+            
+            val completionCount = completionCountsStr.toIntOrNull() ?: 0
+            
+            if (durationStr.isEmpty()) {
+                Log.d(TAG, "No duration data available, using basic count: $completionCount")
+                return completionCount.toString()
+            }
+
+            // Parse duration JSON - same logic as Dart Map<String, dynamic>
+            val duration = try {
+                org.json.JSONObject(durationStr)
+            } catch (e: Exception) {
+                Log.d(TAG, "Failed to parse as JSON, trying to extract from simple format: $durationStr")
+                // Try to handle simple format like {type=forever, numberOfTimes=4}
+                parseSimpleDurationFormat(durationStr)
+            }
+
+            if (duration == null) {
+                Log.d(TAG, "Could not parse duration, returning count: $completionCount")
+                return completionCount.toString()
+            }
+
+            val durationType = duration.optString("type", "")
+            
+            val result = when (durationType) {
+                "specificTimes" -> {
+                    val numberOfTimes = duration.optInt("numberOfTimes", 0)
+                    "$completionCount/$numberOfTimes"
+                }
+                "until" -> {
+                    val endDate = duration.optString("endDate", "")
+                    if (endDate.isNotEmpty()) {
+                        "$completionCount/$endDate"
+                    } else {
+                        "$completionCount/date"
+                    }
+                }
+                "forever" -> {
+                    "$completionCount/∞"
+                }
+                else -> {
+                    completionCount.toString()
+                }
+            }
+            
+            Log.d(TAG, "Calculated completion value: $result (count=$completionCount, type=$durationType)")
+            result
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calculating completion value", e)
+            val completionCountsStr = intent.getStringExtra("completion_counts") ?: "0"
+            val completionCount = completionCountsStr.toIntOrNull() ?: 0
+            completionCount.toString() // Fallback to just count
+        }
+    }
+
+    private fun parseSimpleDurationFormat(durationStr: String): org.json.JSONObject? {
+        return try {
+            val json = org.json.JSONObject()
+            
+            // Extract type
+            val typeRegex = "type\\s*[=:]\\s*([^,}]+)".toRegex()
+            val typeMatch = typeRegex.find(durationStr)
+            if (typeMatch != null) {
+                json.put("type", typeMatch.groupValues[1].trim())
+            }
+            
+            // Extract numberOfTimes
+            val timesRegex = "numberOfTimes\\s*[=:]\\s*(\\d+)".toRegex()
+            val timesMatch = timesRegex.find(durationStr)
+            if (timesMatch != null) {
+                json.put("numberOfTimes", timesMatch.groupValues[1].toInt())
+            }
+            
+            // Extract endDate
+            val dateRegex = "endDate\\s*[=:]\\s*([^,}]+)".toRegex()
+            val dateMatch = dateRegex.find(durationStr)
+            if (dateMatch != null) {
+                json.put("endDate", dateMatch.groupValues[1].trim())
+            }
+            
+            Log.d(TAG, "Parsed simple format to JSON: $json")
+            json
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse simple duration format: $durationStr", e)
+            null
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
