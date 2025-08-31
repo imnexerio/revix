@@ -94,8 +94,15 @@ class AlarmScreenActivity : Activity() {
         scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
         description = intent.getStringExtra("description") ?: ""
 
-        // Set up full screen over lock screen
-        setupFullScreenOverLockScreen()
+        // Check if this is details mode or alarm mode
+        val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
+
+        // Set up screen behavior based on mode
+        if (isDetailsMode) {
+            setupNormalActivity()
+        } else {
+            setupFullScreenOverLockScreen()
+        }
 
         // Create and set content view
         createAlarmUI()
@@ -165,7 +172,16 @@ class AlarmScreenActivity : Activity() {
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     )
-        }    }    private fun createAlarmUI() {
+        }    }
+
+    private fun setupNormalActivity() {
+        Log.d(TAG, "Setting up normal activity mode")
+        
+        // Simple activity setup - just keep screen on
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    private fun createAlarmUI() {
         val dpToPx = { dp: Int ->
             TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), resources.displayMetrics).toInt()
         }

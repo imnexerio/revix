@@ -85,53 +85,77 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                 val category = intent.getStringExtra("category") ?: ""
                 val subCategory = intent.getStringExtra("sub_category") ?: ""
                 val lectureNo = intent.getStringExtra("record_title") ?: ""
+                val actionType = intent.getStringExtra("ACTION_TYPE") ?: "MARK_AS_DONE"
 
-                // NEW CODE: Mark this item as being processed
-                val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                val processingItems = prefs.getStringSet(PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
-                val itemKey = "${category}_${subCategory}_${lectureNo}"
-                val newProcessingItems = processingItems.toMutableSet()
-                newProcessingItems.add(itemKey)
-                prefs.edit().putStringSet(PREF_PROCESSING_ITEMS, newProcessingItems).apply()
+                if (actionType == "VIEW_DETAILS") {
+                    // Handle details view
+                    val alarmIntent = Intent(context, AlarmScreenActivity::class.java)
+                    alarmIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    
+                    // Copy all record data to alarm intent
+                    intent.extras?.let { extras ->
+                        for (key in extras.keySet()) {
+                            if (key != "ACTION_TYPE") {
+                                val value = extras.getString(key)
+                                if (value != null) {
+                                    alarmIntent.putExtra(key, value)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Add flag to indicate this is details-only mode
+                    alarmIntent.putExtra("DETAILS_MODE", true)
+                    context.startActivity(alarmIntent)
+                } else {
+                    // Existing mark as done logic
+                    // NEW CODE: Mark this item as being processed
+                    val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                    val processingItems = prefs.getStringSet(PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
+                    val itemKey = "${category}_${subCategory}_${lectureNo}"
+                    val newProcessingItems = processingItems.toMutableSet()
+                    newProcessingItems.add(itemKey)
+                    prefs.edit().putStringSet(PREF_PROCESSING_ITEMS, newProcessingItems).apply()
 
-                // Force update widget to show strikethrough
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                    ComponentName(context, TodayWidget::class.java)
-                )
-                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
+                    // Force update widget to show strikethrough
+                    val appWidgetManager = AppWidgetManager.getInstance(context)
+                    val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                        ComponentName(context, TodayWidget::class.java)
+                    )
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
 
-                // Start the service to handle the item click
-                val clickIntent = Intent(context, RecordUpdateService::class.java)
-                clickIntent.putExtra("category", category)
-                clickIntent.putExtra("sub_category", subCategory)
-                clickIntent.putExtra("record_title", lectureNo)
+                    // Start the service to handle the item click
+                    val clickIntent = Intent(context, RecordUpdateService::class.java)
+                    clickIntent.putExtra("category", category)
+                    clickIntent.putExtra("sub_category", subCategory)
+                    clickIntent.putExtra("record_title", lectureNo)
 
-                // Pass all additional data from the intent
-                intent.extras?.let { extras ->
-                    val keys = extras.keySet()
-                    for (key in keys) {
-                        if (key != "category" && key != "sub_category" && key != "record_title") {
-                            // Handle different value types properly
-                            when (val value = extras.get(key)) {
-                                is String -> clickIntent.putExtra(key, value)
-                                is Int -> clickIntent.putExtra(key, value.toString())
-                                is Long -> clickIntent.putExtra(key, value.toString())
-                                is Float -> clickIntent.putExtra(key, value.toString())
-                                is Double -> clickIntent.putExtra(key, value.toString())
-                                is Boolean -> clickIntent.putExtra(key, value.toString())
-                                // Skip appWidgetId and other non-string types we don't need
-                                else -> {
-                                    if (key != "appWidgetId") {
-                                        Log.d("TodayWidget", "Skipping non-string extra: $key with type ${value?.javaClass?.simpleName}")
+                    // Pass all additional data from the intent
+                    intent.extras?.let { extras ->
+                        val keys = extras.keySet()
+                        for (key in keys) {
+                            if (key != "category" && key != "sub_category" && key != "record_title") {
+                                // Handle different value types properly
+                                when (val value = extras.get(key)) {
+                                    is String -> clickIntent.putExtra(key, value)
+                                    is Int -> clickIntent.putExtra(key, value.toString())
+                                    is Long -> clickIntent.putExtra(key, value.toString())
+                                    is Float -> clickIntent.putExtra(key, value.toString())
+                                    is Double -> clickIntent.putExtra(key, value.toString())
+                                    is Boolean -> clickIntent.putExtra(key, value.toString())
+                                    // Skip appWidgetId and other non-string types we don't need
+                                    else -> {
+                                        if (key != "appWidgetId") {
+                                            Log.d("TodayWidget", "Skipping non-string extra: $key with type ${value?.javaClass?.simpleName}")
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                context.startService(clickIntent)
+                    context.startService(clickIntent)
+                }
             }
             ACTION_ADD_RECORD -> {
                 // Launch the AddLectureActivity
