@@ -288,6 +288,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           dateLearnt: widget.details['date_initiated'],
                           datesMissedRevisions: List.from(widget.details['dates_missed_revisions'] ?? []),
                           datesRevised: List.from(widget.details['dates_updated'] ?? []),
+                          datesSkipped: List.from(widget.details['skipped_dates'] ?? []),
                         ),
                       ),
                     ),

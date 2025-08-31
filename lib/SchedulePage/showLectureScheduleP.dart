@@ -150,6 +150,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                                 dateLearnt: details['date_initiated'],
                                 datesMissedRevisions: List.from(details['dates_missed_revisions'] ?? []),
                                 datesRevised: List.from(details['dates_updated'] ?? []),
+                                datesSkipped: List.from(details['skipped_dates'] ?? []),
                               ),
                             ),
                           ),

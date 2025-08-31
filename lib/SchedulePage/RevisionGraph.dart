@@ -5,10 +5,12 @@ class RevisionRadarChart extends StatefulWidget {
   final String dateLearnt;
   final List<String> datesMissedRevisions;
   final List<String> datesRevised;
+  final List<String> datesSkipped;
   final Duration animationDuration;
   final Color missedColor;
   final Color revisedColor;
   final Color learntColor;
+  final Color skippedColor;
   final bool showLabels;
   final int maxPoints; // New parameter to control the number of points
 
@@ -17,10 +19,12 @@ class RevisionRadarChart extends StatefulWidget {
     required this.dateLearnt,
     required this.datesMissedRevisions,
     required this.datesRevised,
+    this.datesSkipped = const [],
     this.animationDuration = const Duration(milliseconds: 1800),
     this.missedColor = Colors.redAccent,
     this.revisedColor = Colors.greenAccent,
     this.learntColor = Colors.blueAccent,
+    this.skippedColor = Colors.orangeAccent,
     this.showLabels = true,
     this.maxPoints = 18, // Default to showing 15 points
   }) : super(key: key);
@@ -39,6 +43,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
   late int totalRevisions;
   late int completedRevisions;
   late int missedRevisions;
+  late int skippedRevisions;
   late Duration totalSpan;
   late double revisionRatio;
 
@@ -72,7 +77,8 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
             date: learnedDate,
             dateString: widget.dateLearnt,
             isMissed: false,
-            isLearned: true
+            isLearned: true,
+            isSkipped: false
         );
         allRevisions.add(learnedEvent);
       }
@@ -89,7 +95,8 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
               date: date,
               dateString: dateStr,
               isMissed: true,
-              isLearned: false
+              isLearned: false,
+              isSkipped: false
           ));
         } catch (e) {
           // print('Error parsing missed revision date: $e');
@@ -106,10 +113,29 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
               date: date,
               dateString: dateStr,
               isMissed: false,
-              isLearned: false
+              isLearned: false,
+              isSkipped: false
           ));
         } catch (e) {
           print('Error parsing completed revision date: $e');
+        }
+      }
+    }
+
+    // Add skipped revisions
+    for (final dateStr in widget.datesSkipped) {
+      if (dateStr.isNotEmpty) {
+        try {
+          final date = DateTime.parse(dateStr);
+          allRevisions.add(RevisionEvent(
+              date: date,
+              dateString: dateStr,
+              isMissed: false,
+              isLearned: false,
+              isSkipped: true
+          ));
+        } catch (e) {
+          print('Error parsing skipped revision date: $e');
         }
       }
     }
@@ -141,8 +167,9 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
 
   void _calculateStatistics() {
     totalRevisions = allRevisions.where((e) => !e.isLearned).length;
-    completedRevisions = allRevisions.where((e) => !e.isLearned && !e.isMissed).length;
+    completedRevisions = allRevisions.where((e) => !e.isLearned && !e.isMissed && !e.isSkipped).length;
     missedRevisions = allRevisions.where((e) => e.isMissed).length;
+    skippedRevisions = allRevisions.where((e) => e.isSkipped).length;
 
     // Calculate time span from first to last date
     if (allRevisions.isNotEmpty) {
@@ -236,6 +263,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                           learntColor: widget.learntColor,
                           revisedColor: widget.revisedColor,
                           missedColor: widget.missedColor,
+                          skippedColor: widget.skippedColor,
                         ),
                       ),
 
@@ -287,7 +315,9 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                                             ? widget.learntColor
                                             : (revision.isMissed
                                             ? widget.missedColor
-                                            : widget.revisedColor),
+                                            : (revision.isSkipped
+                                            ? widget.skippedColor
+                                            : widget.revisedColor)),
                                         width: 1,
                                       ),
                                     ),
@@ -342,12 +372,14 @@ class RevisionEvent {
   final String dateString;
   final bool isMissed;
   final bool isLearned;
+  final bool isSkipped;
 
   RevisionEvent({
     required this.date,
     required this.dateString,
     required this.isMissed,
     this.isLearned = false,
+    this.isSkipped = false,
   });
 }
 
@@ -404,6 +436,7 @@ class RadarChartPainter extends CustomPainter {
   final Color learntColor;
   final Color revisedColor;
   final Color missedColor;
+  final Color skippedColor;
 
   RadarChartPainter({
     required this.animationValue,
@@ -411,6 +444,7 @@ class RadarChartPainter extends CustomPainter {
     required this.learntColor,
     required this.revisedColor,
     required this.missedColor,
+    required this.skippedColor,
   });
 
   @override
@@ -424,11 +458,13 @@ class RadarChartPainter extends CustomPainter {
     final learnedPath = Path();
     final revisedPath = Path();
     final missedPath = Path();
+    final skippedPath = Path();
 
     // Variables to track if we've moved to first points
     bool learnedMoved = false;
     bool revisedMoved = false;
     bool missedMoved = false;
+    bool skippedMoved = false;
 
     // Calculate point size based on the widget size
     final pointSize = max(3.0, size.width / 60);
@@ -475,6 +511,20 @@ class RadarChartPainter extends CustomPainter {
           point,
           pointSize,
           Paint()..color = missedColor,
+        );
+      } else if (revision.isSkipped) {
+        if (!skippedMoved) {
+          skippedPath.moveTo(point.dx, point.dy);
+          skippedMoved = true;
+        } else {
+          skippedPath.lineTo(point.dx, point.dy);
+        }
+
+        // Draw the skipped point
+        canvas.drawCircle(
+          point,
+          pointSize,
+          Paint()..color = skippedColor,
         );
       } else {
         if (!revisedMoved) {
@@ -546,6 +596,24 @@ class RadarChartPainter extends CustomPainter {
         missedPath,
         Paint()
           ..color = missedColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth,
+      );
+    }
+
+    if (skippedMoved) {
+      canvas.drawPath(
+        skippedPath,
+        Paint()
+          ..color = skippedColor.withOpacity(0.2)
+          ..style = PaintingStyle.fill,
+      );
+
+      // Also draw the stroke
+      canvas.drawPath(
+        skippedPath,
+        Paint()
+          ..color = skippedColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth,
       );

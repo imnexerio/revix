@@ -134,11 +134,12 @@ class AnimatedCardDetailP extends StatelessWidget {
                               // Add a key to force rebuild of RevisionRadarChart when data changes
                               child: RevisionRadarChart(
                                 key: ValueKey(
-                                    'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_revisions'] as List?)?.length ?? 0}'
+                                    'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_revisions'] as List?)?.length ?? 0}_${(record['skipped_dates'] as List?)?.length ?? 0}'
                                 ),
                                 dateLearnt: record['date_initiated'],
                                 datesMissedRevisions: _safeListConversion(record['dates_missed_revisions']),
                                 datesRevised: _safeListConversion(record['dates_updated']),
+                                datesSkipped: _safeListConversion(record['skipped_dates']),
                                 showLabels: false,
                               ),
                             ),
