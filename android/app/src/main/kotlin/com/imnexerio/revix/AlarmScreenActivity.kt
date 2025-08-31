@@ -928,16 +928,25 @@ class AlarmScreenActivity : Activity() {
 
         userActionTaken = true // User clicked a button
 
-        // Send broadcast to ignore alarm
-        val intent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_IGNORE_ALARM
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        // Check if this is details mode or alarm mode
+        val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
+        
+        if (isDetailsMode) {
+            // In details mode, ignore just closes the activity (no alarm to stop)
+            Log.d(TAG, "Details mode - simply closing activity for: $recordTitle")
+            finish()
+        } else {
+            // In alarm mode, ignore converts alarm to reminder notification
+            Log.d(TAG, "Alarm mode - sending ignore broadcast for: $recordTitle")
+            val intent = Intent(this, AlarmReceiver::class.java).apply {
+                action = AlarmReceiver.ACTION_IGNORE_ALARM
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            }
+            sendBroadcast(intent)
+            finish()
         }
-        sendBroadcast(intent)
-
-        finish()
     }
 
     override fun onBackPressed() {
@@ -1006,16 +1015,25 @@ class AlarmScreenActivity : Activity() {
 
         userActionTaken = true // Mark as handled
 
-        // Send the same broadcast as the ignore button
-        val intent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_IGNORE_ALARM
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+        // Check if this is details mode or alarm mode
+        val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
+        
+        if (isDetailsMode) {
+            // In details mode, just closing activity (no alarm to ignore)
+            Log.d(TAG, "Details mode - activity closed without action for: $recordTitle")
+        } else {
+            // In alarm mode, treat as ignore (convert to reminder)
+            Log.d(TAG, "Alarm mode - treating as ignore for: $recordTitle")
+            val intent = Intent(this, AlarmReceiver::class.java).apply {
+                action = AlarmReceiver.ACTION_IGNORE_ALARM
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            }
+            sendBroadcast(intent)
         }
-        sendBroadcast(intent)
 
-        Log.d(TAG, "Sent ignore broadcast for: $recordTitle")
+        Log.d(TAG, "Handled activity dismissal for: $recordTitle")
     }
 
     override fun onNewIntent(intent: Intent?) {
