@@ -321,8 +321,9 @@ class AlarmScreenActivity : Activity() {
                 
                 val completionText = TextView(this@AlarmScreenActivity).apply {
                     val completionValue = calculateCompletionFromIntentData()
-                    val missedCounts = intent.getStringExtra("missed_counts") ?: "0"
-                    val skippedCounts = intent.getStringExtra("skip_counts") ?: "0"
+                    val recordData = getRecordDataFromWidgetCache()
+                    val missedCounts = recordData?.get("missed_counts") ?: "0"
+                    val skippedCounts = recordData?.get("skip_counts") ?: "0"
                     text = "Completed: $completionValue\nMissed: $missedCounts | Skipped: $skippedCounts"
                     textSize = 22f
                     setTextColor(textColor)
@@ -1057,17 +1058,19 @@ class AlarmScreenActivity : Activity() {
 
     private fun calculateCompletionFromIntentData(): String {
         return try {
-            // First try to get pre-calculated value (from normal alarm mode)
-            val preCalculated = intent.getStringExtra("completion_value")
-            if (!preCalculated.isNullOrEmpty() && preCalculated != "0") {
-                Log.d(TAG, "Using pre-calculated completion value: $preCalculated")
-                return preCalculated
+            val recordData = getRecordDataFromWidgetCache()
+            var completionCountsStr = recordData?.get("completion_counts") ?: "0"
+            var durationStr = recordData?.get("duration") ?: ""
+            
+            // Only fallback to Intent data if widget cache doesn't have the data
+            if (completionCountsStr == "0" && durationStr.isEmpty()) {
+                completionCountsStr = intent.getStringExtra("completion_counts") ?: "0"
+                durationStr = intent.getStringExtra("duration") ?: ""
+                Log.d(TAG, "Fallback to intent data: completion=$completionCountsStr, duration=$durationStr")
+            } else {
+                Log.d(TAG, "Using completion data from widget cache: completion=$completionCountsStr, duration=$durationStr")
             }
 
-            // If not available, calculate from intent extras (DETAILS_MODE) - exactly like Dart version
-            val completionCountsStr = intent.getStringExtra("completion_counts") ?: "0"
-            val durationStr = intent.getStringExtra("duration") ?: ""
-            
             val completionCount = completionCountsStr.toIntOrNull() ?: 0
             
             if (durationStr.isEmpty()) {
@@ -1152,6 +1155,50 @@ class AlarmScreenActivity : Activity() {
             json
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse simple duration format: $durationStr", e)
+            null
+        }
+    }
+
+    private fun getRecordDataFromWidgetCache(): Map<String, String>? {
+        return try {
+            val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            
+            val recordSources = listOf("todayRecords", "tomorrowRecords")
+            
+            for (source in recordSources) {
+                val recordsJson = sharedPrefs.getString(source, "[]") ?: "[]"
+                if (recordsJson != "[]") {
+                    val jsonArray = org.json.JSONArray(recordsJson)
+                    
+                    for (i in 0 until jsonArray.length()) {
+                        val record = jsonArray.getJSONObject(i)
+                        val recordCategory = record.optString("category", "")
+                        val recordSubCategory = record.optString("sub_category", "")
+                        val recordTitleMatch = record.optString("record_title", "")
+                        
+                        if (recordCategory == category && 
+                            recordSubCategory == subCategory && 
+                            recordTitleMatch == recordTitle) {
+                            
+                            // Found matching record, extract all data
+                            val recordData = mutableMapOf<String, String>()
+                            val keys = record.keys()
+                            while (keys.hasNext()) {
+                                val key = keys.next()
+                                recordData[key] = record.optString(key, "")
+                            }
+                            
+                            Log.d(TAG, "Found matching record in $source: $recordData")
+                            return recordData
+                        }
+                    }
+                }
+            }
+            
+            Log.d(TAG, "No matching record found in HomeWidget cache for: $category/$subCategory/$recordTitle")
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error accessing HomeWidget cache: ${e.message}", e)
             null
         }
     }
