@@ -320,7 +320,7 @@ class AlarmScreenActivity : Activity() {
                 }
                 
                 val completionText = TextView(this@AlarmScreenActivity).apply {
-                    val completionValue = calculateCompletionFromIntentData()
+                    val completionValue = calculateCompletionFromCache()
                     val recordData = getRecordDataFromWidgetCache()
                     val missedCounts = recordData?.get("missed_counts") ?: "0"
                     val skippedCounts = recordData?.get("skip_counts") ?: "0"
@@ -1056,20 +1056,11 @@ class AlarmScreenActivity : Activity() {
         Log.d(TAG, "Handled activity dismissal for: $recordTitle")
     }
 
-    private fun calculateCompletionFromIntentData(): String {
+    private fun calculateCompletionFromCache(): String {
         return try {
             val recordData = getRecordDataFromWidgetCache()
-            var completionCountsStr = recordData?.get("completion_counts") ?: "0"
-            var durationStr = recordData?.get("duration") ?: ""
-            
-            // Only fallback to Intent data if widget cache doesn't have the data
-            if (completionCountsStr == "0" && durationStr.isEmpty()) {
-                completionCountsStr = intent.getStringExtra("completion_counts") ?: "0"
-                durationStr = intent.getStringExtra("duration") ?: ""
-                Log.d(TAG, "Fallback to intent data: completion=$completionCountsStr, duration=$durationStr")
-            } else {
-                Log.d(TAG, "Using completion data from widget cache: completion=$completionCountsStr, duration=$durationStr")
-            }
+            val completionCountsStr = recordData?.get("completion_counts") ?: "0"
+            val durationStr = recordData?.get("duration") ?: ""
 
             val completionCount = completionCountsStr.toIntOrNull() ?: 0
             
@@ -1120,9 +1111,7 @@ class AlarmScreenActivity : Activity() {
             
         } catch (e: Exception) {
             Log.e(TAG, "Error calculating completion value", e)
-            val completionCountsStr = intent.getStringExtra("completion_counts") ?: "0"
-            val completionCount = completionCountsStr.toIntOrNull() ?: 0
-            completionCount.toString() // Fallback to just count
+            "0" // Fallback to "0" if all else fails
         }
     }
 
