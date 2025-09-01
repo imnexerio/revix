@@ -60,8 +60,17 @@ class AlarmScreenActivity : Activity() {
                     val receivedSubCategory = intent.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
                     val receivedRecordTitle = intent.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: ""
 
-                    // Check if this broadcast is for this specific alarm
-                    if (receivedCategory == category && receivedSubCategory == subCategory && receivedRecordTitle == recordTitle) {
+                    // Check if this broadcast is for this specific alarm OR if it's an auto-dismiss broadcast (no specific alarm details)
+                    val isSpecificAlarmDismiss = receivedCategory.isNotEmpty() && receivedSubCategory.isNotEmpty() && receivedRecordTitle.isNotEmpty()
+                    val isAutoDismissBroadcast = receivedCategory.isEmpty() && receivedSubCategory.isEmpty() && receivedRecordTitle.isEmpty()
+                    
+                    if (isAutoDismissBroadcast) {
+                        // Auto-dismiss: simulate ignore click to properly handle alarm state
+                        Log.d(TAG, "Received auto-dismiss broadcast - simulating ignore click for: $recordTitle")
+                        ignoreAlarm() // This will handle all the proper ignore logic and state updates
+                    } else if (isSpecificAlarmDismiss && receivedCategory == category && receivedSubCategory == subCategory && receivedRecordTitle == recordTitle) {
+                        // Specific alarm dismiss: only close if it matches this alarm
+                        Log.d(TAG, "Received specific alarm dismiss broadcast - closing: $recordTitle")
                         userActionTaken = true // Mark as handled to prevent duplicate dismissal
                         finish()
                     } else {
@@ -85,10 +94,22 @@ class AlarmScreenActivity : Activity() {
             finish()
             return
         }
+        
         // Extract alarm details from intent
         category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
+        
+        // Auto-dismiss any previous AlarmScreenActivity when a new one launches
+        // This prevents multiple alarm screens from stacking up
+        val autoDismissIntent = Intent().apply {
+            action = ACTION_CLOSE_ALARM_SCREEN
+            // Note: We don't set specific alarm details here because we want to dismiss 
+            // ANY previous alarm screen, regardless of which alarm it was showing
+        }
+        sendBroadcast(autoDismissIntent)
+        Log.d(TAG, "Sent auto-dismiss broadcast for previous alarm screens")
+
         reminderTime = intent.getStringExtra("reminder_time") ?: ""
         entryType = intent.getStringExtra("entry_type") ?: ""
         scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
