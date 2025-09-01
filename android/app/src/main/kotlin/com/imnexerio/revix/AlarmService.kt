@@ -539,8 +539,8 @@ class AlarmService : Service() {    companion object {
             stopVibration() // Stop any existing vibration
 
             val vibrationPattern = when (pattern) {
-                VibrationPattern.NORMAL -> longArrayOf(0, 500, 200, 500, 200, 500)
-                VibrationPattern.INTENSE -> longArrayOf(0, 800, 200, 800, 200, 800, 200, 800)
+                VibrationPattern.NORMAL -> longArrayOf(0, 300, 300, 300, 300, 300)
+                VibrationPattern.INTENSE -> longArrayOf(0, 500, 200, 500, 200, 500, 200, 500)
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
