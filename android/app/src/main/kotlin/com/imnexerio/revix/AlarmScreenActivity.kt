@@ -1216,6 +1216,24 @@ class AlarmScreenActivity : Activity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         Log.d(TAG, "AlarmScreenActivity onNewIntent() called with action: ${intent?.action}")
-        // Simplified - just log for debugging, actual close is handled by broadcast receiver
+        
+        // Update activity intent for future reference
+        setIntent(intent)
+        
+        // Extract new alarm details from the new intent
+        category = intent?.getStringExtra(EXTRA_CATEGORY) ?: ""
+        subCategory = intent?.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
+        recordTitle = intent?.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
+        reminderTime = intent?.getStringExtra("reminder_time") ?: ""
+        entryType = intent?.getStringExtra("entry_type") ?: ""
+        scheduledDate = intent?.getStringExtra("scheduled_date") ?: ""
+        description = intent?.getStringExtra("description") ?: ""
+        
+        Log.d(TAG, "Updated alarm data for new intent: $recordTitle")
+        
+        // Refresh the UI with new alarm data
+        createAlarmUI()
+        
+        Log.d(TAG, "UI refreshed with new alarm data: $recordTitle")
     }
 }
