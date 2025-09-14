@@ -288,6 +288,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           dateLearnt: widget.details['date_initiated'],
                           datesMissedRevisions: List.from(widget.details['dates_missed_revisions'] ?? []),
                           datesRevised: List.from(widget.details['dates_updated'] ?? []),
+                          datesSkipped: List.from(widget.details['skipped_dates'] ?? []),
                         ),
                       ),
                     ),
@@ -644,6 +645,21 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             Icons.cancel_outlined,
             int.parse(widget.details['missed_counts'].toString()) > 0
                 ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.onSurface,
+          ),
+          const SizedBox(width: 8),
+          VerticalDivider(
+            thickness: 1,
+            color: Colors.grey.withOpacity(0.2),
+          ),
+          const SizedBox(width: 8),
+          _buildStatusItem(
+            context,
+            "Skipped",
+            "${widget.details['skip_counts'] ?? 0}",
+            Icons.skip_next_outlined,
+            int.parse((widget.details['skip_counts'] ?? 0).toString()) > 0
+                ? Theme.of(context).colorScheme.tertiary
                 : Theme.of(context).colorScheme.onSurface,
           ),
         ],

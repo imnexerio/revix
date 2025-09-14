@@ -177,8 +177,8 @@ class UnifiedDatabaseService {
       return;
     }
 
-    Map<Object?, Object?> processedRawData = rawData is Map<Object?, Object?> 
-        ? rawData 
+    Map<Object?, Object?> processedRawData = rawData is Map<Object?, Object?>
+        ? rawData
         : Map<Object?, Object?>.from(rawData as Map);
 
     _cachedRawData = processedRawData;
@@ -195,7 +195,7 @@ class UnifiedDatabaseService {
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? []);
 
-      _scheduleAlarms(categorizedData['today'] ?? [], 
+      _scheduleAlarms(categorizedData['today'] ?? [],
           categorizedData['nextDay'] ?? []);
     }
   }
@@ -309,7 +309,8 @@ class UnifiedDatabaseService {
             'status': recordValue['status'],
             'recurrence_data': recordValue['recurrence_data'] ?? [],
             'duration': recordValue['duration'] ?? 0,
-
+            'skip_counts': recordValue['skip_counts'] ?? 0,
+            'skipped_dates': recordValue['skipped_dates'] ?? [],
           };
 
           if (recordValue['date_initiated'] == 'Unspecified') {
@@ -397,7 +398,7 @@ class UnifiedDatabaseService {
               categorizedData['noreminderdate'] ?? []);
           
           // Schedule alarms with the same data
-          _scheduleAlarms(categorizedData['today'] ?? [], 
+          _scheduleAlarms(categorizedData['today'] ?? [],
               categorizedData['nextDay'] ?? []);
         }
       }
