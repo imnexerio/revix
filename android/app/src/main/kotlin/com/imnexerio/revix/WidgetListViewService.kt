@@ -173,6 +173,14 @@ class WidgetListViewFactory(
         // Set the click intent on mark_as_done button
         rv.setOnClickFillInIntent(R.id.mark_as_done, fillInIntent)
 
+        // NEW: Set the click intent on info container for details view
+        val detailsIntent = Intent()
+        for ((key, value) in record) {
+            detailsIntent.putExtra(key, value)
+        }
+        detailsIntent.putExtra("ACTION_TYPE", "VIEW_DETAILS") // Add flag to distinguish
+        rv.setOnClickFillInIntent(R.id.widget_info_container, detailsIntent)
+
         return rv
     }
 

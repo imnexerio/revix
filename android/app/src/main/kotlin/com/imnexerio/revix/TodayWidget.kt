@@ -85,7 +85,30 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                 val category = intent.getStringExtra("category") ?: ""
                 val subCategory = intent.getStringExtra("sub_category") ?: ""
                 val lectureNo = intent.getStringExtra("record_title") ?: ""
+                val actionType = intent.getStringExtra("ACTION_TYPE") ?: "MARK_AS_DONE"
 
+                if (actionType == "VIEW_DETAILS") {
+                    // Handle details view
+                    val alarmIntent = Intent(context, AlarmScreenActivity::class.java)
+                    alarmIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+                    // Copy all record data to alarm intent
+                    intent.extras?.let { extras ->
+                        for (key in extras.keySet()) {
+                            if (key != "ACTION_TYPE") {
+                                val value = extras.getString(key)
+                                if (value != null) {
+                                    alarmIntent.putExtra(key, value)
+                                }
+                            }
+                        }
+                    }
+
+                    // Add flag to indicate this is details-only mode
+                    alarmIntent.putExtra("DETAILS_MODE", true)
+                    context.startActivity(alarmIntent)
+                } else {
+                    // Existing mark as done logic
                 // NEW CODE: Mark this item as being processed
                 val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
                 val processingItems = prefs.getStringSet(PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
@@ -131,7 +154,8 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                     }
                 }
 
-                context.startService(clickIntent)
+                    context.startService(clickIntent)
+                }
             }
             ACTION_ADD_RECORD -> {
                 // Launch the AddLectureActivity
@@ -146,7 +170,7 @@ class TodayWidget : AppWidgetProvider() {    companion object {
                 // Cycle through view types (updated order with tomorrow)
                 val nextView = when (currentView) {
                     VIEW_TODAY -> VIEW_TOMORROW      // NEW
-                    VIEW_TOMORROW -> VIEW_MISSED     // MODIFIED  
+                    VIEW_TOMORROW -> VIEW_MISSED     // MODIFIED
                     VIEW_MISSED -> VIEW_NO_REMINDER
                     else -> VIEW_TODAY
                 }

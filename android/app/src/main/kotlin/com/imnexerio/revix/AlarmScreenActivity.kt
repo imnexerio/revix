@@ -94,8 +94,15 @@ class AlarmScreenActivity : Activity() {
         scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
         description = intent.getStringExtra("description") ?: ""
 
-        // Set up full screen over lock screen
-        setupFullScreenOverLockScreen()
+        // Check if this is details mode or alarm mode
+        val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
+
+        // Set up screen behavior based on mode
+        if (isDetailsMode) {
+            setupNormalActivity()
+        } else {
+            setupFullScreenOverLockScreen()
+        }
 
         // Create and set content view
         createAlarmUI()
@@ -165,7 +172,16 @@ class AlarmScreenActivity : Activity() {
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     )
-        }    }    private fun createAlarmUI() {
+        }    }
+
+    private fun setupNormalActivity() {
+        Log.d(TAG, "Setting up normal activity mode")
+
+        // Simple activity setup - just keep screen on
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    private fun createAlarmUI() {
         val dpToPx = { dp: Int ->
             TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), resources.displayMetrics).toInt()
         }
@@ -303,6 +319,25 @@ class AlarmScreenActivity : Activity() {
                     }
                 }
 
+                val completionText = TextView(this@AlarmScreenActivity).apply {
+                    val completionValue = calculateCompletionFromCache()
+                    val recordData = getRecordDataFromWidgetCache()
+                    val missedCounts = recordData?.get("missed_counts") ?: "0"
+                    val skippedCounts = recordData?.get("skip_counts") ?: "0"
+                    text = "Completed: $completionValue\nMissed: $missedCounts | Skipped: $skippedCounts"
+                    textSize = 22f
+                    setTextColor(textColor)
+                    gravity = Gravity.START  // Left aligned
+                    maxLines = 2  // Two lines for completed and missed
+                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, 0, dpToPx(12))
+                    }
+                }
+
                 // Description text with proper 4-line truncation
                 val descriptionText = TextView(this@AlarmScreenActivity).apply {
                     val displayDescription = if (description.isNotEmpty()) {
@@ -326,6 +361,7 @@ class AlarmScreenActivity : Activity() {
                 addView(categoryText)
                 addView(subCategoryText)
                 addView(recordTitleText)
+                addView(completionText)
                 addView(descriptionText)
             }
 
@@ -618,7 +654,7 @@ class AlarmScreenActivity : Activity() {
                         }
                         return false
                     }
-                    
+
                     override fun onDown(e: MotionEvent): Boolean {
                         return true
                     }
@@ -912,16 +948,25 @@ class AlarmScreenActivity : Activity() {
 
         userActionTaken = true // User clicked a button
 
-        // Send broadcast to ignore alarm
-        val intent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_IGNORE_ALARM
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-        }
-        sendBroadcast(intent)
+        // Check if this is details mode or alarm mode
+        val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
 
-        finish()
+        if (isDetailsMode) {
+            // In details mode, ignore just closes the activity (no alarm to stop)
+            Log.d(TAG, "Details mode - simply closing activity for: $recordTitle")
+            finish()
+        } else {
+            // In alarm mode, ignore converts alarm to reminder notification
+            Log.d(TAG, "Alarm mode - sending ignore broadcast for: $recordTitle")
+            val intent = Intent(this, AlarmReceiver::class.java).apply {
+                action = AlarmReceiver.ACTION_IGNORE_ALARM
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            }
+            sendBroadcast(intent)
+            finish()
+        }
     }
 
     override fun onBackPressed() {
@@ -990,16 +1035,161 @@ class AlarmScreenActivity : Activity() {
 
         userActionTaken = true // Mark as handled
 
-        // Send the same broadcast as the ignore button
-        val intent = Intent(this, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_IGNORE_ALARM
-            putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
-            putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
-            putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
-        }
-        sendBroadcast(intent)
+        // Check if this is details mode or alarm mode
+        val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
 
-        Log.d(TAG, "Sent ignore broadcast for: $recordTitle")
+        if (isDetailsMode) {
+            // In details mode, just closing activity (no alarm to ignore)
+            Log.d(TAG, "Details mode - activity closed without action for: $recordTitle")
+        } else {
+            // In alarm mode, treat as ignore (convert to reminder)
+            Log.d(TAG, "Alarm mode - treating as ignore for: $recordTitle")
+            val intent = Intent(this, AlarmReceiver::class.java).apply {
+                action = AlarmReceiver.ACTION_IGNORE_ALARM
+                putExtra(AlarmReceiver.EXTRA_CATEGORY, category)
+                putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, subCategory)
+                putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, recordTitle)
+            }
+            sendBroadcast(intent)
+        }
+
+        Log.d(TAG, "Handled activity dismissal for: $recordTitle")
+    }
+
+    private fun calculateCompletionFromCache(): String {
+        return try {
+            val recordData = getRecordDataFromWidgetCache()
+            val completionCountsStr = recordData?.get("completion_counts") ?: "0"
+            val durationStr = recordData?.get("duration") ?: ""
+
+            val completionCount = completionCountsStr.toIntOrNull() ?: 0
+
+            if (durationStr.isEmpty()) {
+                Log.d(TAG, "No duration data available, using basic count: $completionCount")
+                return completionCount.toString()
+            }
+
+            // Parse duration JSON - same logic as Dart Map<String, dynamic>
+            val duration = try {
+                org.json.JSONObject(durationStr)
+            } catch (e: Exception) {
+                Log.d(TAG, "Failed to parse as JSON, trying to extract from simple format: $durationStr")
+                // Try to handle simple format like {type=forever, numberOfTimes=4}
+                parseSimpleDurationFormat(durationStr)
+            }
+
+            if (duration == null) {
+                Log.d(TAG, "Could not parse duration, returning count: $completionCount")
+                return completionCount.toString()
+            }
+
+            val durationType = duration.optString("type", "")
+
+            val result = when (durationType) {
+                "specificTimes" -> {
+                    val numberOfTimes = duration.optInt("numberOfTimes", 0)
+                    "$completionCount/$numberOfTimes"
+                }
+                "until" -> {
+                    val endDate = duration.optString("endDate", "")
+                    if (endDate.isNotEmpty()) {
+                        "$completionCount/$endDate"
+                    } else {
+                        "$completionCount/date"
+                    }
+                }
+                "forever" -> {
+                    "$completionCount/∞"
+                }
+                else -> {
+                    completionCount.toString()
+                }
+            }
+
+            Log.d(TAG, "Calculated completion value: $result (count=$completionCount, type=$durationType)")
+            result
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calculating completion value", e)
+            "0" // Fallback to "0" if all else fails
+        }
+    }
+
+    private fun parseSimpleDurationFormat(durationStr: String): org.json.JSONObject? {
+        return try {
+            val json = org.json.JSONObject()
+
+            // Extract type
+            val typeRegex = "type\\s*[=:]\\s*([^,}]+)".toRegex()
+            val typeMatch = typeRegex.find(durationStr)
+            if (typeMatch != null) {
+                json.put("type", typeMatch.groupValues[1].trim())
+            }
+
+            // Extract numberOfTimes
+            val timesRegex = "numberOfTimes\\s*[=:]\\s*(\\d+)".toRegex()
+            val timesMatch = timesRegex.find(durationStr)
+            if (timesMatch != null) {
+                json.put("numberOfTimes", timesMatch.groupValues[1].toInt())
+            }
+
+            // Extract endDate
+            val dateRegex = "endDate\\s*[=:]\\s*([^,}]+)".toRegex()
+            val dateMatch = dateRegex.find(durationStr)
+            if (dateMatch != null) {
+                json.put("endDate", dateMatch.groupValues[1].trim())
+            }
+
+            Log.d(TAG, "Parsed simple format to JSON: $json")
+            json
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse simple duration format: $durationStr", e)
+            null
+        }
+    }
+
+    private fun getRecordDataFromWidgetCache(): Map<String, String>? {
+        return try {
+            val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+
+            val recordSources = listOf("todayRecords", "tomorrowRecords")
+
+            for (source in recordSources) {
+                val recordsJson = sharedPrefs.getString(source, "[]") ?: "[]"
+                if (recordsJson != "[]") {
+                    val jsonArray = org.json.JSONArray(recordsJson)
+
+                    for (i in 0 until jsonArray.length()) {
+                        val record = jsonArray.getJSONObject(i)
+                        val recordCategory = record.optString("category", "")
+                        val recordSubCategory = record.optString("sub_category", "")
+                        val recordTitleMatch = record.optString("record_title", "")
+
+                        if (recordCategory == category &&
+                            recordSubCategory == subCategory &&
+                            recordTitleMatch == recordTitle) {
+
+                            // Found matching record, extract all data
+                            val recordData = mutableMapOf<String, String>()
+                            val keys = record.keys()
+                            while (keys.hasNext()) {
+                                val key = keys.next()
+                                recordData[key] = record.optString(key, "")
+                            }
+
+                            Log.d(TAG, "Found matching record in $source: $recordData")
+                            return recordData
+                        }
+                    }
+                }
+            }
+
+            Log.d(TAG, "No matching record found in HomeWidget cache for: $category/$subCategory/$recordTitle")
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error accessing HomeWidget cache: ${e.message}", e)
+            null
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
