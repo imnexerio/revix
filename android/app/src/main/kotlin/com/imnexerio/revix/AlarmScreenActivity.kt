@@ -1152,7 +1152,7 @@ class AlarmScreenActivity : Activity() {
         return try {
             val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
 
-            val recordSources = listOf("todayRecords", "tomorrowRecords")
+            val recordSources = listOf("todayRecords", "tomorrowRecords", "missedRecords", "noreminderdate")
 
             for (source in recordSources) {
                 val recordsJson = sharedPrefs.getString(source, "[]") ?: "[]"
