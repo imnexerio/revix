@@ -91,7 +91,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       return 'Password must be at least 6 characters';
     }
     return null;
-  }  Future<void> _login() async {
+  }
+
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:revix/Utils/UnifiedDatabaseService.dart';
 import '../Utils/CustomFrequencySelector.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/CustomSnackBar.dart';
@@ -412,7 +413,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           int finalAlarmType = formattedTime == 'All Day' ? 0 : alarmType;
 
                           // Use FirebaseDatabaseService directly instead of wrapper
-                          final databaseService = FirebaseDatabaseService();
+                          final databaseService = UnifiedDatabaseService();
                           
                           // Prepare update data
                           Map<String, dynamic> updateData = {

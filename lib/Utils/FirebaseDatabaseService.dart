@@ -600,120 +600,35 @@ class FirebaseDatabaseService {
   // ====================================================================================
   // USER DATA (RECORDS) OPERATIONS
   // ====================================================================================
-  
-  /// Save a record to user data
-  Future<bool> saveRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
-    try {
-      if (await isGuestMode) {
-        return await _localDatabase.saveRecord(category, subCategory, lectureNo, recordData);
-      } else {
-        if (currentUserId == null) return false;
-        
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
-        await ref.set(recordData);
-        return true;
-      }
-    } catch (e) {
-      print('Error saving record: $e');
-      return false;
-    }
-  }
+
     /// Update a record in user data
-  Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
-    try {
-      if (await isGuestMode) {
-        return await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
-      } else {
-        // Additional validation for Firebase operations
-        final currentUserId = this.currentUserId;
-        if (currentUserId == null || currentUserId.isEmpty) {
-          print('Error: No valid authenticated user for Firebase update operation');
-          return false;
-        }
-        
-        print('Attempting Firebase record update for user: $currentUserId');
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
-        await ref.update(updates);
-        print('Firebase record update completed successfully');
-        return true;
-      }
-    } catch (e) {
-      print('Error updating record: $e');
-      if (e.toString().contains('Invalid token in path')) {
-        print('Authentication token invalid - user may need to re-authenticate');
-      }
-      return false;
-    }
-  }
-  
-  /// Delete a record from user data
-  Future<bool> deleteRecord(String category, String subCategory, String lectureNo) async {
-    try {
-      if (await isGuestMode) {
-        return await _localDatabase.deleteRecord(category, subCategory, lectureNo);
-      } else {
-        if (currentUserId == null) return false;
-        
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
-        await ref.remove();
-        return true;
-      }
-    } catch (e) {
-      print('Error deleting record: $e');
-      return false;
-    }
-  }
-  
-  /// Fetch a specific record
-  Future<Map<String, dynamic>?> fetchRecord(String category, String subCategory, String lectureNo) async {
-    try {
-      if (await isGuestMode) {
-        final userData = await _localDatabase.getCurrentUserData();
-        final userRecords = userData['user_data'] as Map<String, dynamic>? ?? {};
-        
-        if (userRecords[category]?[subCategory]?[lectureNo] != null) {
-          return Map<String, dynamic>.from(userRecords[category][subCategory][lectureNo]);
-        }
-        return null;
-      } else {
-        if (currentUserId == null) return null;
-        
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
-        DataSnapshot snapshot = await ref.get();
-        
-        if (snapshot.exists) {
-          return Map<String, dynamic>.from(snapshot.value as Map);
-        }
-        return null;
-      }
-    } catch (e) {
-      print('Error fetching record: $e');
-      return null;
-    }
-  }
-  
-  /// Fetch all user data
-  Future<Map<String, dynamic>> fetchAllUserData() async {
-    try {
-      if (await isGuestMode) {
-        final userData = await _localDatabase.getCurrentUserData();
-        return userData['user_data'] as Map<String, dynamic>? ?? {};
-      } else {
-        if (currentUserId == null) return {};
-        
-        DatabaseReference ref = _database.ref('users/$currentUserId/user_data');
-        DataSnapshot snapshot = await ref.get();
-        
-        if (snapshot.exists) {
-          return Map<String, dynamic>.from(snapshot.value as Map);
-        }
-        return {};
-      }
-    } catch (e) {
-      print('Error fetching all user data: $e');
-      return {};
-    }
-  }
+  // Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
+  //   try {
+  //     if (await isGuestMode) {
+  //       return await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
+  //     } else {
+  //       // Additional validation for Firebase operations
+  //       final currentUserId = this.currentUserId;
+  //       if (currentUserId == null || currentUserId.isEmpty) {
+  //         print('Error: No valid authenticated user for Firebase update operation');
+  //         return false;
+  //       }
+  //
+  //       print('Attempting Firebase record update for user: $currentUserId');
+  //       DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
+  //       await ref.update(updates);
+  //       print('Firebase record update completed successfully');
+  //       return true;
+  //     }
+  //   } catch (e) {
+  //     print('Error updating record: $e');
+  //     if (e.toString().contains('Invalid token in path')) {
+  //       print('Authentication token invalid - user may need to re-authenticate');
+  //     }
+  //     return false;
+  //   }
+  // }
+
   
   /// Checks if user data exists in the database
   Future<bool> checkUserDataExists() async {
@@ -725,10 +640,7 @@ class FirebaseDatabaseService {
     final snapshot = await ref.get();
     return snapshot.exists;
   }
-  
-  // ====================================================================================
-  // DELETED DATA OPERATIONS
-  // ====================================================================================
+
 
   
   // ====================================================================================
@@ -760,60 +672,7 @@ class FirebaseDatabaseService {
       await LocalDatabaseService.initialize();
     }
   }
-  
-  /// Get database reference for Firebase operations (use only when necessary)
-  DatabaseReference? getDatabaseReference(String path) {
-    if (currentUserId == null) return null;
-    return _database.ref('users/$currentUserId/$path');
-  }
-  
-  /// Listen to user data changes (returns a stream subscription)
-  StreamSubscription<DatabaseEvent>? listenToUserData({
-    required Function(Map<String, dynamic>) onData,
-    required Function(Object) onError,
-  }) {
-    if (currentUserId == null) {
-      onError('No authenticated user');
-      return null;
-    }
-    
-    DatabaseReference ref = _database.ref('users/$currentUserId/user_data');
-    return ref.onValue.listen(
-      (event) {
-        if (event.snapshot.exists) {
-          Map<String, dynamic> data = Map<String, dynamic>.from(event.snapshot.value as Map);
-          onData(data);
-        } else {
-          onData({});
-        }
-      },
-      onError: onError,
-    );
-  }
-  
-  /// Listen to profile data changes (returns a stream subscription)
-  StreamSubscription<DatabaseEvent>? listenToProfileData({
-    required Function(Map<String, dynamic>) onData,
-    required Function(Object) onError,
-  }) {
-    if (currentUserId == null) {
-      onError('No authenticated user');
-      return null;
-    }
-    
-    DatabaseReference ref = _database.ref('users/$currentUserId/profile_data');
-    return ref.onValue.listen(
-      (event) {
-        if (event.snapshot.exists) {
-          Map<String, dynamic> data = Map<String, dynamic>.from(event.snapshot.value as Map);
-          onData(data);
-        } else {
-          onData({});
-        }
-      },
-      onError: onError,
-    );
-  }
+
 
   // ====================================================================================
   // DATA EXPORT/IMPORT OPERATIONS (For Data Management)
