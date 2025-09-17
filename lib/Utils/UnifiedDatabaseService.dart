@@ -585,34 +585,6 @@ class UnifiedDatabaseService {
       }
     }
   }
-
-  // Add public method for moving records to deleted data
-  Future<bool> moveToDeletedData(String category, String subCategory, String lectureNo) async {
-    if (_isGuestMode) {
-      // For guest mode, we simply delete the record since there's no separate deleted data storage
-      bool success = await _localDatabase.deleteRecord(category, subCategory, lectureNo);
-      if (success) {
-        await forceDataReprocessing();
-      }
-      return success;
-    } else {
-      try {
-        if (_databaseRef == null) {
-          throw Exception('Database reference not initialized');
-        }
-        // Remove from original location
-        await _databaseRef!.child(category).child(subCategory).child(lectureNo).remove();
-
-        await forceDataReprocessing();
-        return true;
-        
-        return false;
-      } catch (e) {
-        _addErrorToAllControllers('Failed to move record to deleted data: $e');
-        return false;
-      }
-    }
-  }
   
   // Add public method for updating record revision data
   Future<bool> updateRecordRevision(

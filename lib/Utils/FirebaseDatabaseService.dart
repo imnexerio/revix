@@ -664,26 +664,6 @@ class FirebaseDatabaseService {
     }
   }
   
-  /// Move a record to deleted data
-  Future<bool> moveToDeletedData(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
-    try {
-      
-      if (await isGuestMode) {
-        return await _localDatabase.deleteRecord(category, subCategory, lectureNo);
-      } else {
-        if (currentUserId == null) return false;
-
-        DatabaseReference originalRef = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
-        await originalRef.remove();
-        
-        return true;
-      }
-    } catch (e) {
-      print('Error moving record to deleted data: $e');
-      return false;
-    }
-  }
-  
   /// Fetch a specific record
   Future<Map<String, dynamic>?> fetchRecord(String category, String subCategory, String lectureNo) async {
     try {

@@ -155,7 +155,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Handle unspecified date_initiated case
       if (details['date_initiated'] == 'Unspecified') {
         if (!isSkip) {
-          await dbService.moveToDeletedData(category, subCategory, lectureNo);
+          await dbService.deleteRecord(category, subCategory, lectureNo);
         }
         if (context != null) {
           Navigator.pop(context);
@@ -201,7 +201,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Handle 'No Repetition' case
       if (details['recurrence_frequency'] == 'No Repetition') {
         if (!isSkip) {
-          await dbService.moveToDeletedData(category, subCategory, lectureNo);
+          await dbService.deleteRecord(category, subCategory, lectureNo);
         }
         if (context != null) {
           Navigator.pop(context);
