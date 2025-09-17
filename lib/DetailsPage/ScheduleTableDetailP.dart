@@ -10,12 +10,16 @@ class ScheduleTableDetailP extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;
   final String title;
   final Function(BuildContext, Map<String, dynamic>) onSelect;
+  final String? category;
+  final String? subCategory;
 
   const ScheduleTableDetailP({
     Key? key,
     required this.initialRecords,
     required this.title,
     required this.onSelect,
+    this.category,
+    this.subCategory,
   }) : super(key: key);
 
   @override
@@ -252,6 +256,8 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
                         record: record,
                         isCompleted: isCompleted,
                         onSelect: widget.onSelect,
+                        category: widget.category,
+                        subCategory: widget.subCategory,
                       );
                     },
                   );

@@ -116,6 +116,8 @@ class _LectureBarState extends State<LectureBar> {
           return ScheduleTableDetailP(
             initialRecords: formattedRecords,
             title: '${widget.selectedCategory} - ${widget.selectedCategoryCode}',
+            category: widget.selectedCategory,
+            subCategory: widget.selectedCategoryCode,
             onSelect: (context, record) {
               String lectureNo = record['record_title'];
               _showLectureDetails(context, lectureNo, record);

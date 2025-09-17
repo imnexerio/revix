@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/DeleteConfirmationDialog.dart';
 import 'LectureBar.dart';
 
 class CodeBar extends StatefulWidget {
@@ -234,6 +235,11 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
                                 _controller.reset();
                                 _controller.forward();
                               },
+                              onLongPress: () => DeleteConfirmationDialog.showDeleteSubCategory(
+                                context: context,
+                                category: widget.selectedCategory,
+                                subCategory: code,
+                              ),
                               borderRadius: BorderRadius.circular(15.0),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(

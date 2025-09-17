@@ -312,6 +312,59 @@ class LocalDatabaseService {
     }
   }
 
+  // Delete subcategory and all its records
+  Future<bool> deleteSubCategory(String category, String subCategory) async {
+    try {
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
+      
+      if (currentData[category] != null && currentData[category][subCategory] != null) {
+        currentData[category].remove(subCategory);
+        
+        // Clean up empty category
+        if (currentData[category].isEmpty) {
+          currentData.remove(category);
+        }
+        
+        userData['user_data'] = currentData;
+        usersData[_currentUserId] = userData;
+        
+        await _usersBox!.put('users', usersData);
+        _notifyDataChange();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _logError('Error deleting subcategory: $e');
+      return false;
+    }
+  }
+
+  // Delete category and all its subcategories/records
+  Future<bool> deleteCategory(String category) async {
+    try {
+      final usersData = await getUsersData();
+      final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
+      final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
+      
+      if (currentData[category] != null) {
+        currentData.remove(category);
+        
+        userData['user_data'] = currentData;
+        usersData[_currentUserId] = userData;
+        
+        await _usersBox!.put('users', usersData);
+        _notifyDataChange();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _logError('Error deleting category: $e');
+      return false;
+    }
+  }
+
     // Profile data operations - Firebase-compatible structure
   Future<bool> saveProfileData(String key, dynamic value) async {
     try {

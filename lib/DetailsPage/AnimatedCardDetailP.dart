@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../SchedulePage/RevisionGraph.dart';
 import '../Utils/lecture_colors.dart';
+import '../Utils/DeleteConfirmationDialog.dart';
 
 class AnimatedCardDetailP extends StatelessWidget {
   final Animation<double> animation;
   final Map<String, dynamic> record;
   final bool isCompleted;
   final Function(BuildContext, Map<String, dynamic>) onSelect;
+  final String? category;
+  final String? subCategory;
 
   const AnimatedCardDetailP({
     Key? key,
@@ -15,6 +18,8 @@ class AnimatedCardDetailP extends StatelessWidget {
     required this.record,
     required this.isCompleted,
     required this.onSelect,
+    this.category,
+    this.subCategory,
   }) : super(key: key);
 
   @override
@@ -54,6 +59,17 @@ class AnimatedCardDetailP extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => onSelect(context, record),
+                  onLongPress: () {
+                    // Check if category and subCategory are available, otherwise skip delete
+                    if (category != null && subCategory != null) {
+                      DeleteConfirmationDialog.showDeleteRecord(
+                        context: context,
+                        category: category!,
+                        subCategory: subCategory!,
+                        recordTitle: record['record_title'] ?? 'Unknown',
+                      );
+                    }
+                  },
                   child: IntrinsicHeight(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,

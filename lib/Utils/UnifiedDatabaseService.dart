@@ -518,20 +518,13 @@ class UnifiedDatabaseService {
   // Add public method for saving records that works in both guest mode and Firebase mode
   Future<bool> saveRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
     if (_isGuestMode) {
-      bool success = await _localDatabase.saveRecord(category, subCategory, lectureNo, recordData);
-      if (success) {
-        // Force refresh data to ensure UI updates
-        await forceDataReprocessing();
-      }
-      return success;
+      return await _localDatabase.saveRecord(category, subCategory, lectureNo, recordData);
     } else {
       try {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
         await _databaseRef!.child(category).child(subCategory).child(lectureNo).set(recordData);
-        // Force a data refresh immediately instead of waiting for Firebase event
-        await forceDataReprocessing();
         return true;
       } catch (e) {
         _addErrorToAllControllers('Failed to save record: $e');
@@ -543,18 +536,13 @@ class UnifiedDatabaseService {
   // Add public method for updating records
   Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
     if (_isGuestMode) {
-      bool success = await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
-      if (success) {
-        await forceDataReprocessing();
-      }
-      return success;
+      return await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
     } else {
       try {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
         await _databaseRef!.child(category).child(subCategory).child(lectureNo).update(updates);
-        await forceDataReprocessing();
         return true;
       } catch (e) {
         _addErrorToAllControllers('Failed to update record: $e');
@@ -566,21 +554,52 @@ class UnifiedDatabaseService {
   // Add public method for deleting records
   Future<bool> deleteRecord(String category, String subCategory, String lectureNo) async {
     if (_isGuestMode) {
-      bool success = await _localDatabase.deleteRecord(category, subCategory, lectureNo);
-      if (success) {
-        await forceDataReprocessing();
-      }
-      return success;
+      return await _localDatabase.deleteRecord(category, subCategory, lectureNo);
     } else {
       try {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
         await _databaseRef!.child(category).child(subCategory).child(lectureNo).remove();
-        await forceDataReprocessing();
         return true;
       } catch (e) {
         _addErrorToAllControllers('Failed to delete record: $e');
+        return false;
+      }
+    }
+  }
+  
+  // Delete entire subcategory and all its records
+  Future<bool> deleteSubCategory(String category, String subCategory) async {
+    if (_isGuestMode) {
+      return await _localDatabase.deleteSubCategory(category, subCategory);
+    } else {
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        await _databaseRef!.child(category).child(subCategory).remove();
+        return true;
+      } catch (e) {
+        _addErrorToAllControllers('Failed to delete subcategory: $e');
+        return false;
+      }
+    }
+  }
+
+  // Delete entire category and all its subcategories/records  
+  Future<bool> deleteCategory(String category) async {
+    if (_isGuestMode) {
+      return await _localDatabase.deleteCategory(category);
+    } else {
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        await _databaseRef!.child(category).remove();
+        return true;
+      } catch (e) {
+        _addErrorToAllControllers('Failed to delete category: $e');
         return false;
       }
     }
