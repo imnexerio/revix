@@ -4,31 +4,43 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:padding="8dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="8dp"
+    android:paddingBottom="8dp"
+    android:paddingStart="0dp"
     android:gravity="center_vertical"
     android:background="@color/white">
 
-    <!-- Left side: Circular counter (30% width) -->
+    <!-- Left: Colored stick indicator -->
+    <ImageView
+        android:id="@+id/lecture_type_indicator"
+        android:layout_width="10dp"
+        android:layout_height="match_parent"
+        android:src="@drawable/rounded_line_indicator"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="Counter type indicator" />
+
+    <!-- Center: Counter area (35% width) -->
     <TextView
         android:id="@+id/counter_text"
         android:layout_width="0dp"
         android:layout_height="60dp"
-        android:layout_weight="0.3"
+        android:layout_weight="0.35"
         android:layout_marginEnd="8dp"
         android:text="3\ndays"
         android:textSize="12sp"
         android:textStyle="bold"
-        android:textColor="@color/white"
+        android:textColor="@color/text"
         android:gravity="center"
         android:maxLines="2"
         android:lineSpacingMultiplier="0.8"
-        android:background="@drawable/circle_background" />
+        android:background="@color/cardBackground" />
 
-    <!-- Right side: 3 rows of text (70% width) -->
+    <!-- Right: 3 rows of text (65% width) -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="0.7"
+        android:layout_weight="0.65"
         android:orientation="vertical">
         
         <!-- Row 1: Category -->

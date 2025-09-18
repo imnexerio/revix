@@ -48,17 +48,27 @@ class CounterWidget : AppWidgetProvider() {
                     val daysRemaining = calculateDaysRemaining(scheduledDate)
                     val counterText = formatCounterText(daysRemaining)
                     
-                    // Apply LectureColors for circle background based on category
-                    val circleColor = LectureColors.getLectureTypeColor(context, category)
-                    views.setInt(R.id.counter_text, "setBackgroundColor", circleColor)
+                    // Apply LectureColors to the colored stick indicator
+                    val stickColor = LectureColors.getLectureTypeColorSync(context, category)
+                    views.setInt(R.id.lecture_type_indicator, "setColorFilter", stickColor)
                     
-                    // Set text color for counter based on overdue status
-                    val textColor = if (daysRemaining < 0) {
+                    // Counter text color based on overdue status
+                    val counterTextColor = if (daysRemaining < 0) {
                         0xFFFF0000.toInt() // Red for overdue
                     } else {
-                        0xFFFFFFFF.toInt() // White for normal
+                        0xFF000000.toInt() // Black for normal
                     }
-                    views.setTextColor(R.id.counter_text, textColor)
+                    views.setTextColor(R.id.counter_text, counterTextColor)
+                    
+                    // Set text color for right side texts based on overdue status
+                    val rightTextColor = if (daysRemaining < 0) {
+                        0xFFFF0000.toInt() // Red for overdue
+                    } else {
+                        0xFF000000.toInt() // Black for normal (@color/text)
+                    }
+                    views.setTextColor(R.id.category_text, rightTextColor)
+                    views.setTextColor(R.id.subcategory_text, rightTextColor)
+                    views.setTextColor(R.id.record_title, rightTextColor)
 
                     // Populate all text fields
                     views.setTextViewText(R.id.counter_text, counterText)
@@ -74,9 +84,12 @@ class CounterWidget : AppWidgetProvider() {
                     views.setTextViewText(R.id.subcategory_text, "Subcategory") 
                     views.setTextViewText(R.id.record_title, "Record Title")
                     
-                    // Default circle color and text
-                    views.setInt(R.id.counter_text, "setBackgroundColor", 0xFF666666.toInt())
-                    views.setTextColor(R.id.counter_text, 0xFFFFFFFF.toInt())
+                    // Default gray stick and black text colors
+                    views.setInt(R.id.lecture_type_indicator, "setColorFilter", 0xFF666666.toInt())
+                    views.setTextColor(R.id.counter_text, 0xFF000000.toInt())
+                    views.setTextColor(R.id.category_text, 0xFF000000.toInt())
+                    views.setTextColor(R.id.subcategory_text, 0xFF000000.toInt())
+                    views.setTextColor(R.id.record_title, 0xFF000000.toInt())
                 }
 
                 // Set up click listener
