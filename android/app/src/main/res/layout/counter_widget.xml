@@ -3,33 +3,70 @@
     android:id="@+id/counter_widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:gravity="center_vertical"
     android:background="@color/white">
 
+    <!-- Left side: Circular counter (30% width) -->
     <TextView
         android:id="@+id/counter_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tap to select record"
-        android:textSize="16sp"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_weight="0.3"
+        android:layout_marginEnd="8dp"
+        android:text="3\ndays"
+        android:textSize="12sp"
         android:textStyle="bold"
-        android:textColor="@color/text"
+        android:textColor="@color/white"
         android:gravity="center"
         android:maxLines="2"
-        android:ellipsize="end" />
+        android:lineSpacingMultiplier="0.8"
+        android:background="@drawable/circle_background" />
 
-    <TextView
-        android:id="@+id/record_title"
-        android:layout_width="wrap_content"
+    <!-- Right side: 3 rows of text (70% width) -->
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Counter Widget"
-        android:textSize="12sp"
-        android:textColor="@color/text"
-        android:gravity="center"
-        android:layout_marginTop="4dp"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:layout_weight="0.7"
+        android:orientation="vertical">
+        
+        <!-- Row 1: Category -->
+        <TextView
+            android:id="@+id/category_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Category"
+            android:textSize="12sp"
+            android:textColor="@color/text"
+            android:maxLines="1"
+            android:ellipsize="end" />
+        
+        <!-- Row 2: Subcategory -->
+        <TextView
+            android:id="@+id/subcategory_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Subcategory"
+            android:textSize="12sp"
+            android:textColor="@color/text"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+        
+        <!-- Row 3: Record Title -->
+        <TextView
+            android:id="@+id/record_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Record Title"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/text"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+            
+    </LinearLayout>
 
 </LinearLayout>

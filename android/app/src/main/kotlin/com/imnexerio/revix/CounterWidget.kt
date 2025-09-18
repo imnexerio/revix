@@ -23,6 +23,8 @@ class CounterWidget : AppWidgetProvider() {
         fun getSelectedRecordKey(appWidgetId: Int) = "counter_widget_${appWidgetId}_record"
         fun getTargetDateKey(appWidgetId: Int) = "counter_widget_${appWidgetId}_target_date"
         fun getRecordTitleKey(appWidgetId: Int) = "counter_widget_${appWidgetId}_title"
+        fun getCategoryKey(appWidgetId: Int) = "counter_widget_${appWidgetId}_category"
+        fun getSubCategoryKey(appWidgetId: Int) = "counter_widget_${appWidgetId}_subcategory"
 
         fun updateCounterWidget(
             context: Context,
@@ -39,19 +41,42 @@ class CounterWidget : AppWidgetProvider() {
                     // Get record data
                     val scheduledDate = prefs.getString(getTargetDateKey(appWidgetId), "") ?: ""
                     val recordTitle = prefs.getString(getRecordTitleKey(appWidgetId), "") ?: ""
+                    val category = prefs.getString(getCategoryKey(appWidgetId), "") ?: ""
+                    val subCategory = prefs.getString(getSubCategoryKey(appWidgetId), "") ?: ""
 
                     // Calculate days remaining: scheduled_date - current_date
                     val daysRemaining = calculateDaysRemaining(scheduledDate)
                     val counterText = formatCounterText(daysRemaining)
+                    
+                    // Apply LectureColors for circle background based on category
+                    val circleColor = LectureColors.getLectureTypeColor(context, category)
+                    views.setInt(R.id.counter_text, "setBackgroundColor", circleColor)
+                    
+                    // Set text color for counter based on overdue status
+                    val textColor = if (daysRemaining < 0) {
+                        0xFFFF0000.toInt() // Red for overdue
+                    } else {
+                        0xFFFFFFFF.toInt() // White for normal
+                    }
+                    views.setTextColor(R.id.counter_text, textColor)
 
+                    // Populate all text fields
                     views.setTextViewText(R.id.counter_text, counterText)
+                    views.setTextViewText(R.id.category_text, category)
+                    views.setTextViewText(R.id.subcategory_text, subCategory)
                     views.setTextViewText(R.id.record_title, recordTitle)
 
-                    Log.d("CounterWidget", "Updated widget $appWidgetId: $recordTitle → $counterText")
+                    Log.d("CounterWidget", "Updated widget $appWidgetId: $category-$subCategory-$recordTitle → $counterText")
                 } else {
                     // Show selection prompt
-                    views.setTextViewText(R.id.counter_text, "Tap to select record")
-                    views.setTextViewText(R.id.record_title, "Counter Widget")
+                    views.setTextViewText(R.id.counter_text, "Tap\nselect")
+                    views.setTextViewText(R.id.category_text, "Category")
+                    views.setTextViewText(R.id.subcategory_text, "Subcategory") 
+                    views.setTextViewText(R.id.record_title, "Record Title")
+                    
+                    // Default circle color and text
+                    views.setInt(R.id.counter_text, "setBackgroundColor", 0xFF666666.toInt())
+                    views.setTextColor(R.id.counter_text, 0xFFFFFFFF.toInt())
                 }
 
                 // Set up click listener
@@ -113,10 +138,10 @@ class CounterWidget : AppWidgetProvider() {
 
         private fun formatCounterText(days: Int): String {
             return when {
-                days < 0 -> "${Math.abs(days)} days overdue"
+                days < 0 -> "${Math.abs(days)}\ndays"  // Overdue 
                 days == 0 -> "Today!"
-                days == 1 -> "1 day remaining"
-                else -> "$days days remaining"
+                days == 1 -> "1\nday"
+                else -> "$days\ndays"
             }
         }
     }
@@ -194,6 +219,8 @@ class CounterWidget : AppWidgetProvider() {
                 editor.remove(getSelectedRecordKey(appWidgetId))
                 editor.remove(getTargetDateKey(appWidgetId))
                 editor.remove(getRecordTitleKey(appWidgetId))
+                editor.remove(getCategoryKey(appWidgetId))
+                editor.remove(getSubCategoryKey(appWidgetId))
                 // Clean up old counterType key if it exists
                 editor.remove("counter_widget_${appWidgetId}_type")
             }

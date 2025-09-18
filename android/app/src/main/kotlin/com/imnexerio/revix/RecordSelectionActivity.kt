@@ -213,6 +213,8 @@ class RecordSelectionActivity : AppCompatActivity() {
                 .putString(CounterWidget.getSelectedRecordKey(appWidgetId), "${category}_${subCategory}_${recordTitle}")
                 .putString(CounterWidget.getTargetDateKey(appWidgetId), scheduledDate)
                 .putString(CounterWidget.getRecordTitleKey(appWidgetId), recordTitle)
+                .putString(CounterWidget.getCategoryKey(appWidgetId), category)
+                .putString(CounterWidget.getSubCategoryKey(appWidgetId), subCategory)
                 .apply()
 
             Log.d("RecordSelection", "Selected record: $recordTitle, scheduled date: $scheduledDate")
