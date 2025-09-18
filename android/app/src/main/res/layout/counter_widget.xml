@@ -28,13 +28,12 @@
         android:layout_weight="0.35"
         android:layout_marginEnd="8dp"
         android:text="3\ndays"
-        android:textSize="12sp"
+        android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="@color/text"
         android:gravity="center"
         android:maxLines="2"
-        android:lineSpacingMultiplier="0.8"
-        android:background="@color/cardBackground" />
+        android:lineSpacingMultiplier="0.8" />
 
     <!-- Right: 3 rows of text (65% width) -->
     <LinearLayout

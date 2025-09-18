@@ -52,23 +52,20 @@ class CounterWidget : AppWidgetProvider() {
                     val stickColor = LectureColors.getLectureTypeColorSync(context, category)
                     views.setInt(R.id.lecture_type_indicator, "setColorFilter", stickColor)
                     
-                    // Counter text color based on overdue status
-                    val counterTextColor = if (daysRemaining < 0) {
-                        0xFFFF0000.toInt() // Red for overdue
-                    } else {
-                        0xFF000000.toInt() // Black for normal
+                    // Only override color if overdue (red), otherwise let @color/text from layout handle theme
+                    if (daysRemaining < 0) {
+                        views.setTextColor(R.id.counter_text, 0xFFFF0000.toInt()) // Red for overdue
                     }
-                    views.setTextColor(R.id.counter_text, counterTextColor)
+                    // Note: Normal state uses @color/text from layout (theme-aware)
                     
-                    // Set text color for right side texts based on overdue status
-                    val rightTextColor = if (daysRemaining < 0) {
-                        0xFFFF0000.toInt() // Red for overdue
-                    } else {
-                        0xFF000000.toInt() // Black for normal (@color/text)
+                    // Only override color if overdue (red), otherwise let @color/text from layout handle theme
+                    if (daysRemaining < 0) {
+                        val redColor = 0xFFFF0000.toInt()
+                        views.setTextColor(R.id.category_text, redColor)
+                        views.setTextColor(R.id.subcategory_text, redColor)
+                        views.setTextColor(R.id.record_title, redColor)
                     }
-                    views.setTextColor(R.id.category_text, rightTextColor)
-                    views.setTextColor(R.id.subcategory_text, rightTextColor)
-                    views.setTextColor(R.id.record_title, rightTextColor)
+                    // Note: Normal state uses @color/text from layout (theme-aware)
 
                     // Populate all text fields
                     views.setTextViewText(R.id.counter_text, counterText)
@@ -84,12 +81,9 @@ class CounterWidget : AppWidgetProvider() {
                     views.setTextViewText(R.id.subcategory_text, "Subcategory") 
                     views.setTextViewText(R.id.record_title, "Record Title")
                     
-                    // Default gray stick and black text colors
+                    // Default gray stick color (text colors use @color/text from layout)
                     views.setInt(R.id.lecture_type_indicator, "setColorFilter", 0xFF666666.toInt())
-                    views.setTextColor(R.id.counter_text, 0xFF000000.toInt())
-                    views.setTextColor(R.id.category_text, 0xFF000000.toInt())
-                    views.setTextColor(R.id.subcategory_text, 0xFF000000.toInt())
-                    views.setTextColor(R.id.record_title, 0xFF000000.toInt())
+                    // Note: Text colors use @color/text from layout (theme-aware)
                 }
 
                 // Set up click listener
