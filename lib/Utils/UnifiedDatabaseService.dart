@@ -169,7 +169,7 @@ class UnifiedDatabaseService {
       _rawDataController.add(null);
 
       if (PlatformUtils.instance.isAndroid ) {
-        _updateHomeWidget([], [], [],[]);
+        _updateHomeWidget([], [], [],[],[]);
         
         // Cancel all alarms when there's no data
         _cancelAllAlarms();
@@ -193,14 +193,15 @@ class UnifiedDatabaseService {
       _updateHomeWidget(categorizedData['today'] ?? [],
           categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
           categorizedData['missed'] ?? [],
-          categorizedData['noreminderdate'] ?? []);
+          categorizedData['noreminderdate'] ?? [],
+          allRecords);
 
       _scheduleAlarms(categorizedData['today'] ?? [],
           categorizedData['nextDay'] ?? []);
     }
   }
-  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
-      HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords, List<Map<String, dynamic>> allRecords) {
+      HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecords);
   }
 
   void _scheduleAlarms(List<Map<String, dynamic>> todayRecords, List<Map<String, dynamic>> tomorrowRecords) {
@@ -395,7 +396,8 @@ class UnifiedDatabaseService {
           _updateHomeWidget(categorizedData['today'] ?? [],
               categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
               categorizedData['missed'] ?? [],
-              categorizedData['noreminderdate'] ?? []);
+              categorizedData['noreminderdate'] ?? [],
+              allRecords);
           
           // Schedule alarms with the same data
           _scheduleAlarms(categorizedData['today'] ?? [],

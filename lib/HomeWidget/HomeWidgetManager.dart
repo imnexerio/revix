@@ -187,10 +187,13 @@ class HomeWidgetService {
           final missedRecords = categorizedData['missed'] ?? [];
           final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');
+          // Get all records from the service raw data
+          final allRecords = _processAllRecordsFromRawData(service.currentRawData);
+
+          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}, All: ${allRecords.length}');
 
           // Update widget with the new data
-          await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+          await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecords);
 
           // Set success result for RefreshService
           if (requestId.isNotEmpty) {
@@ -278,7 +281,10 @@ class HomeWidgetService {
               final missedRecords = categorizedData['missed'] ?? [];
               final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-              await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+              // Get all records from the service raw data
+              final allRecords = _processAllRecordsFromRawData(service.currentRawData);
+
+              await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecords);
 
               print('Widget refreshed after record update');
             }
@@ -385,7 +391,10 @@ class HomeWidgetService {
                 final missedRecords = categorizedData['missed'] ?? [];
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
 
-                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+                // Get all records from the service raw data
+                final allRecords = _processAllRecordsFromRawData(service.currentRawData);
+
+                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecords);
 
                 print('Widget refreshed after record creation');
               }
@@ -431,6 +440,7 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
     await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
+    await HomeWidget.saveWidgetData('allRecords', jsonEncode([]));  // NEW
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
     await _updateWidgetSilently();
   }
@@ -439,6 +449,7 @@ class HomeWidgetService {
       List<Map<String, dynamic>> tomorrowRecords,  // NEW
       List<Map<String, dynamic>> missedRecords,
       List<Map<String, dynamic>> noReminderDateRecords,
+      List<Map<String, dynamic>> allRecords,  // NEW
       ) async {
     try {
       // Format and save all data categories
@@ -460,6 +471,12 @@ class HomeWidgetService {
       await HomeWidget.saveWidgetData(
         noReminderDateRecordsKey,
         jsonEncode(_formatRecords(noReminderDateRecords)),
+      );
+
+      // ADD: Save all records for counter widget selection
+      await HomeWidget.saveWidgetData(
+        'allRecords',
+        jsonEncode(_formatRecords(allRecords)),
       );
 
       // Add timestamp to update the "last updated" time in widget
@@ -529,5 +546,57 @@ class HomeWidgetService {
     } catch (e) {
       print('Error updating widget login status: $e');
     }
+  }
+
+  // Helper method to process all records from raw data (similar to UnifiedDatabaseService._processAllRecords)
+  static List<Map<String, dynamic>> _processAllRecordsFromRawData(dynamic rawData) {
+    List<Map<String, dynamic>> allRecords = [];
+
+    if (rawData == null) {
+      print('_processAllRecordsFromRawData: rawData is null');
+      return allRecords;
+    }
+
+    try {
+      print('_processAllRecordsFromRawData: Processing rawData type: ${rawData.runtimeType}');
+      
+      if (rawData is Map) {
+        print('_processAllRecordsFromRawData: Found ${rawData.keys.length} top-level categories: ${rawData.keys.toList()}');
+        
+        rawData.forEach((subjectKey, subjectValue) {
+          if (subjectValue is Map) {
+            print('_processAllRecordsFromRawData: Processing category $subjectKey with ${subjectValue.keys.length} subcategories');
+            
+            subjectValue.forEach((codeKey, codeValue) {
+              if (codeValue is Map) {
+                print('_processAllRecordsFromRawData: Processing subcategory $subjectKey/$codeKey with ${codeValue.keys.length} records');
+                
+                codeValue.forEach((recordKey, recordValue) {
+                  if (recordValue is Map) {
+                    // Check if scheduled_date exists
+                    var scheduledDate = recordValue['scheduled_date'];
+                    print('_processAllRecordsFromRawData: Record $subjectKey/$codeKey/$recordKey - scheduled_date: $scheduledDate');
+                    
+                    var record = {
+                      'category': subjectKey.toString(),
+                      'sub_category': codeKey.toString(),
+                      'record_title': recordKey.toString(),
+                      'details': Map<String, dynamic>.from(recordValue),
+                    };
+                    allRecords.add(record);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+      
+      print('_processAllRecordsFromRawData: Processed ${allRecords.length} total records');
+    } catch (e) {
+      print('Error processing all records from raw data: $e');
+    }
+
+    return allRecords;
   }
 }

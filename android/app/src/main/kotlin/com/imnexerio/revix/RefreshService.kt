@@ -226,6 +226,15 @@ class RefreshService : Service() {
             Log.e("RefreshService", "Error scheduling alarms: ${e.message}", e)
         }
 
+        // Update counter widgets with fresh data
+        try {
+            Log.d("RefreshService", "Updating counter widgets with fresh data...")
+            updateCounterWidgets(applicationContext)
+            Log.d("RefreshService", "Counter widgets updated successfully")
+        } catch (e: Exception) {
+            Log.e("RefreshService", "Error updating counter widgets: ${e.message}", e)
+        }
+
         // Schedule next auto-refresh if enabled (with fresh lastUpdated timestamp)
         scheduleNextAutoRefreshIfEnabled()
 
@@ -319,6 +328,31 @@ class RefreshService : Service() {
             TodayWidget.updateWidgets(applicationContext)
         } catch (e: Exception) {
             Log.e("RefreshService", "Error updating widgets: ${e.message}")
+        }
+    }
+
+    private fun updateCounterWidgets(context: Context) {
+        try {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val counterWidgetIds = appWidgetManager.getAppWidgetIds(
+                ComponentName(context, CounterWidget::class.java)
+            )
+            
+            if (counterWidgetIds.isNotEmpty()) {
+                Log.d("RefreshService", "Found ${counterWidgetIds.size} counter widgets to update")
+                
+                // Force update each counter widget
+                for (appWidgetId in counterWidgetIds) {
+                    CounterWidget.updateCounterWidget(context, appWidgetManager, appWidgetId)
+                }
+                
+                Log.d("RefreshService", "All counter widgets updated successfully")
+            } else {
+                Log.d("RefreshService", "No counter widgets found to update")
+            }
+            
+        } catch (e: Exception) {
+            Log.e("RefreshService", "Error updating counter widgets: ${e.message}", e)
         }
     }
 
