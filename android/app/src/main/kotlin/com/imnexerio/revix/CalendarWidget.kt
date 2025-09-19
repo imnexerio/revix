@@ -114,7 +114,26 @@ class CalendarWidget : AppWidgetProvider() {
                     }
                 }
 
-                Log.d("CalendarWidget", "Calendar grid setup completed for month with $daysInMonth days, today is $today, first day position: $firstDayOfWeek")
+                // Dynamic row hiding: Calculate how many rows are needed
+                val cellsNeeded = firstDayOfWeek + daysInMonth
+                val rowsNeeded = kotlin.math.ceil(cellsNeeded / 7.0).toInt()
+                
+                // Hide/show rows dynamically
+                val rowIds = arrayOf(
+                    R.id.calendar_row_1, R.id.calendar_row_2, R.id.calendar_row_3,
+                    R.id.calendar_row_4, R.id.calendar_row_5, R.id.calendar_row_6
+                )
+                
+                for (i in rowIds.indices) {
+                    val rowIndex = i + 1 // Row numbers are 1-based
+                    if (rowIndex <= rowsNeeded) {
+                        views.setViewVisibility(rowIds[i], android.view.View.VISIBLE)
+                    } else {
+                        views.setViewVisibility(rowIds[i], android.view.View.GONE)
+                    }
+                }
+
+                Log.d("CalendarWidget", "Calendar grid setup completed for month with $daysInMonth days, today is $today, first day position: $firstDayOfWeek, rows needed: $rowsNeeded")
             } catch (e: Exception) {
                 Log.e("CalendarWidget", "Error setting up calendar grid: ${e.message}", e)
             }

@@ -19,14 +19,13 @@
             android:id="@+id/calendar_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="bottom">
+            android:orientation="vertical">
 
             <!-- Calendar Header: M T W T F S S -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="0"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:orientation="horizontal">
 
                 <TextView
@@ -104,6 +103,7 @@
             <!-- Calendar Grid: 6 rows x 7 columns = 42 day slots -->
             <!-- Row 1 -->
             <LinearLayout
+                android:id="@+id/calendar_row_1"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
@@ -121,6 +121,7 @@
 
             <!-- Row 2 -->
             <LinearLayout
+                android:id="@+id/calendar_row_2"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
@@ -138,6 +139,7 @@
 
             <!-- Row 3 -->
             <LinearLayout
+                android:id="@+id/calendar_row_3"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
@@ -155,6 +157,7 @@
 
             <!-- Row 4 -->
             <LinearLayout
+                android:id="@+id/calendar_row_4"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
@@ -172,6 +175,7 @@
 
             <!-- Row 5 -->
             <LinearLayout
+                android:id="@+id/calendar_row_5"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
@@ -189,6 +193,7 @@
 
             <!-- Row 6 -->
             <LinearLayout
+                android:id="@+id/calendar_row_6"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
