@@ -107,9 +107,9 @@ class CalendarWidget : AppWidgetProvider() {
                     if (position < dayIds.size) {
                         views.setTextViewText(dayIds[position], day.toString())
                         
-                        // Highlight today's date with colorOnPrimary background
+                        // Highlight today's date with custom drawable background
                         if (day == today) {
-                            views.setInt(dayIds[position], "setBackgroundResource", R.color.colorOnPrimary)
+                            views.setInt(dayIds[position], "setBackgroundResource", R.drawable.selected_day_background)
                         }
                     }
                 }
