@@ -58,6 +58,9 @@ class CalendarWidget : AppWidgetProvider() {
                 // Setup add record button (calls TodayWidget)
                 setupAddButton(context, views, appWidgetId)
 
+                // Setup refresh functionality on date header click (calls TodayWidget refresh)
+                setupRefreshOnDateClick(context, views, appWidgetId)
+
                 // Update the widget
                 appWidgetManager.updateAppWidget(appWidgetId, views)
 
@@ -150,6 +153,26 @@ class CalendarWidget : AppWidgetProvider() {
                 Log.d("CalendarWidget", "Add button setup completed for widget $appWidgetId")
             } catch (e: Exception) {
                 Log.e("CalendarWidget", "Error setting up add button: ${e.message}", e)
+            }
+        }
+
+        private fun setupRefreshOnDateClick(context: Context, views: RemoteViews, appWidgetId: Int) {
+            try {
+                // Set up date header click to call TodayWidget's ACTION_REFRESH
+                val refreshIntent = Intent(context, TodayWidget::class.java)
+                refreshIntent.action = TodayWidget.ACTION_REFRESH
+                val refreshRequestCode = appWidgetId + 500 + System.currentTimeMillis().toInt()
+                val refreshPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    refreshRequestCode,
+                    refreshIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.calendar_date_header, refreshPendingIntent)
+
+                Log.d("CalendarWidget", "Date header refresh setup completed for widget $appWidgetId")
+            } catch (e: Exception) {
+                Log.e("CalendarWidget", "Error setting up date header refresh: ${e.message}", e)
             }
         }
     }
