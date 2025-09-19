@@ -55,6 +55,9 @@ class CalendarWidget : AppWidgetProvider() {
                 // Setup records ListView
                 setupRecordsList(context, views, appWidgetId)
 
+                // Setup add record button (calls TodayWidget)
+                setupAddButton(context, views, appWidgetId)
+
                 // Update the widget
                 appWidgetManager.updateAppWidget(appWidgetId, views)
 
@@ -127,6 +130,26 @@ class CalendarWidget : AppWidgetProvider() {
                 Log.d("CalendarWidget", "Records list setup completed for widget $appWidgetId")
             } catch (e: Exception) {
                 Log.e("CalendarWidget", "Error setting up records list: ${e.message}", e)
+            }
+        }
+
+        private fun setupAddButton(context: Context, views: RemoteViews, appWidgetId: Int) {
+            try {
+                // Set up add button to call TodayWidget's ACTION_ADD_RECORD
+                val addIntent = Intent(context, TodayWidget::class.java)
+                addIntent.action = TodayWidget.ACTION_ADD_RECORD
+                val addRequestCode = appWidgetId + 400 + System.currentTimeMillis().toInt()
+                val addPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    addRequestCode,
+                    addIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.calendar_add_record_button, addPendingIntent)
+
+                Log.d("CalendarWidget", "Add button setup completed for widget $appWidgetId")
+            } catch (e: Exception) {
+                Log.e("CalendarWidget", "Error setting up add button: ${e.message}", e)
             }
         }
     }

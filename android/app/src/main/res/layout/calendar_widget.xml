@@ -212,17 +212,39 @@
         android:layout_weight="0.5"
         android:orientation="vertical">
 
-        <!-- Date Header: DD MM YYYY -->
-        <TextView
-            android:id="@+id/calendar_date_header"
+        <!-- Date Header with Add Button -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="19 09 2025"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/text"
-            android:gravity="center"
-            android:background="@color/WidgetBackground" />
+            android:orientation="horizontal"
+            android:background="@color/white">
+
+            <!-- Date Header: DD MM YYYY (Left aligned) -->
+            <TextView
+                android:id="@+id/calendar_date_header"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="19 09 2025"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text"
+                android:gravity="center_vertical|start"
+                android:padding="8dp" />
+
+            <!-- Add Record Button (Right aligned) -->
+            <ImageButton
+                android:id="@+id/calendar_add_record_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:src="@drawable/baseline_add_24"
+                android:background="@android:color/transparent"
+                android:contentDescription="Add Record"
+                android:padding="8dp"
+                android:layout_marginEnd="4dp" />
+
+        </LinearLayout>
 
         <!-- Records ListView -->
         <ListView
