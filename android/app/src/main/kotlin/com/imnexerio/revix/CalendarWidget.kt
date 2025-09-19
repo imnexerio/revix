@@ -71,7 +71,11 @@ class CalendarWidget : AppWidgetProvider() {
                 
                 // Set current month and year for calendar display
                 calendar.set(Calendar.DAY_OF_MONTH, 1)
-                val firstDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1 // 0=Sunday, 1=Monday...
+                // Get first day of week and convert to Monday-first calendar (0=Monday, 1=Tuesday...)
+                // Java Calendar: 1=Sunday, 2=Monday, 3=Tuesday, 4=Wednesday, 5=Thursday, 6=Friday, 7=Saturday
+                // Our Layout: M T W T F S S (Monday=0, Tuesday=1, Wednesday=2, Thursday=3, Friday=4, Saturday=5, Sunday=6)
+                val javaFirstDay = calendar.get(Calendar.DAY_OF_WEEK) // 1=Sunday, 2=Monday...
+                val firstDayOfWeek = if (javaFirstDay == Calendar.SUNDAY) 6 else javaFirstDay - 2
                 val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
                 // Reset all day TextViews first
@@ -103,7 +107,7 @@ class CalendarWidget : AppWidgetProvider() {
                     }
                 }
 
-                Log.d("CalendarWidget", "Calendar grid setup completed for month with $daysInMonth days, today is $today")
+                Log.d("CalendarWidget", "Calendar grid setup completed for month with $daysInMonth days, today is $today, first day position: $firstDayOfWeek")
             } catch (e: Exception) {
                 Log.e("CalendarWidget", "Error setting up calendar grid: ${e.message}", e)
             }
