@@ -31,7 +31,7 @@ class CalendarListViewFactory(
             val recordData: Map<String, String> // Store all record data for AlarmScreenActivity
         ) : CalendarItem()
 
-        object Separator : CalendarItem()
+        data class Separator(val text: String) : CalendarItem()
     }
 
     override fun onCreate() {
@@ -60,14 +60,14 @@ class CalendarListViewFactory(
                 createRecordView(item)
             }
             is CalendarItem.Separator -> {
-                RemoteViews(context.packageName, R.layout.calendar_record_item) // Fallback
+                createSeparatorView(item.text)
             }
         }
     }
 
     override fun getLoadingView(): RemoteViews? = null
 
-    override fun getViewTypeCount(): Int = 1 // Only records for now
+    override fun getViewTypeCount(): Int = 2 // Records and Separators
 
     override fun getItemId(position: Int): Long = position.toLong()
 
@@ -78,20 +78,26 @@ class CalendarListViewFactory(
             allItems.clear()
             val sharedPrefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
 
-            // Load today records
+            // Load today records (no divider needed - they go at the top)
             val todayRecords = loadRecordsFromJson(sharedPrefs.getString("todayRecords", "[]") ?: "[]")
             allItems.addAll(todayRecords)
             Log.d("CalendarListViewFactory", "Added ${todayRecords.size} today records")
 
-            // Load missed records
+            // Load missed records with divider
             val missedRecords = loadRecordsFromJson(sharedPrefs.getString("missedRecords", "[]") ?: "[]")
-            allItems.addAll(missedRecords)
-            Log.d("CalendarListViewFactory", "Added ${missedRecords.size} missed records")
+            if (missedRecords.isNotEmpty()) {
+                allItems.add(CalendarItem.Separator("— MISSED —"))
+                allItems.addAll(missedRecords)
+                Log.d("CalendarListViewFactory", "Added divider and ${missedRecords.size} missed records")
+            }
 
-            // Load no reminder records
+            // Load no reminder records with divider
             val noReminderRecords = loadRecordsFromJson(sharedPrefs.getString("noreminderdate", "[]") ?: "[]")
-            allItems.addAll(noReminderRecords)
-            Log.d("CalendarListViewFactory", "Added ${noReminderRecords.size} no reminder records")
+            if (noReminderRecords.isNotEmpty()) {
+                allItems.add(CalendarItem.Separator("— NO REMINDER —"))
+                allItems.addAll(noReminderRecords)
+                Log.d("CalendarListViewFactory", "Added divider and ${noReminderRecords.size} no reminder records")
+            }
 
             Log.d("CalendarListViewFactory", "Loaded ${allItems.size} total items")
         } catch (e: Exception) {
@@ -181,9 +187,10 @@ class CalendarListViewFactory(
         return views
     }
 
-    private fun createSeparatorView(): RemoteViews {
+    private fun createSeparatorView(text: String): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.calendar_separator_item)
-        Log.d("CalendarListViewFactory", "Created separator view")
+        views.setTextViewText(R.id.separator_text, text)
+        Log.d("CalendarListViewFactory", "Created separator view: $text")
         return views
     }
 }
