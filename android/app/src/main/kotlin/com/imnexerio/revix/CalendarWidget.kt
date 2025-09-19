@@ -16,6 +16,7 @@ class CalendarWidget : AppWidgetProvider() {
 
     companion object {
         const val ACTION_CALENDAR_REFRESH = "revix.ACTION_CALENDAR_REFRESH"
+        const val ACTION_ITEM_CLICK = "revix.ACTION_ITEM_CLICK"
         
         fun updateCalendarWidgets(context: Context) {
             try {
@@ -130,6 +131,22 @@ class CalendarWidget : AppWidgetProvider() {
                 // Set empty view
                 views.setEmptyView(R.id.calendar_records_listview, R.id.calendar_empty_view)
 
+                // Set up PendingIntent template for calendar record clicks
+                val clickIntent = Intent(context, CalendarWidget::class.java)
+                clickIntent.action = ACTION_ITEM_CLICK
+                clickIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                clickIntent.data = Uri.parse(clickIntent.toUri(Intent.URI_INTENT_SCHEME))
+
+                val clickPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    0,
+                    clickIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                )
+
+                views.setPendingIntentTemplate(R.id.calendar_records_listview, clickPendingIntent)
+                Log.d("CalendarWidget", "PendingIntent template set for calendar record clicks with action: $ACTION_ITEM_CLICK")
+
                 Log.d("CalendarWidget", "Records list setup completed for widget $appWidgetId")
             } catch (e: Exception) {
                 Log.e("CalendarWidget", "Error setting up records list: ${e.message}", e)
@@ -189,11 +206,48 @@ class CalendarWidget : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        
+
         when (intent.action) {
             ACTION_CALENDAR_REFRESH -> {
                 Log.d("CalendarWidget", "Calendar refresh requested")
                 updateCalendarWidgets(context)
+            }
+            ACTION_ITEM_CLICK -> {
+                // Calendar records always go to details view (no ACTION_TYPE check needed)
+                
+                val category = intent.getStringExtra("category") ?: ""
+                val subCategory = intent.getStringExtra("sub_category") ?: ""
+                val recordTitle = intent.getStringExtra("record_title") ?: ""
+                
+                // Log all available extras
+                intent.extras?.let { extras ->
+                    for (key in extras.keySet()) {
+                        val value = extras.getString(key)
+                    }
+                } ?: Log.w("CalendarWidget", "No extras found in intent!")
+                
+                // Always launch AlarmScreenActivity in details mode
+                val alarmIntent = Intent(context, AlarmScreenActivity::class.java)
+                alarmIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                
+                // Copy all record data to alarm intent
+                intent.extras?.let { extras ->
+                    for (key in extras.keySet()) {
+                        val value = extras.getString(key)
+                        if (value != null) {
+                            alarmIntent.putExtra(key, value)
+                        }
+                    }
+                }
+                
+                // Always set details mode for calendar widget
+                alarmIntent.putExtra("DETAILS_MODE", true)
+                
+                try {
+                    context.startActivity(alarmIntent)
+                } catch (e: Exception) {
+                    Log.e("CalendarWidget", "Error launching AlarmScreenActivity: ${e.message}", e)
+                }
             }
         }
     }

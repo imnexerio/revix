@@ -27,7 +27,8 @@ class CalendarListViewFactory(
             val category: String,
             val subCategory: String,
             val title: String,
-            val color: Int
+            val color: Int,
+            val recordData: Map<String, String> // Store all record data for AlarmScreenActivity
         ) : CalendarItem()
 
         object Separator : CalendarItem()
@@ -49,11 +50,18 @@ class CalendarListViewFactory(
     override fun getCount(): Int = allItems.size
 
     override fun getViewAt(position: Int): RemoteViews? {
-        if (position >= allItems.size) return null
+        
+        if (position >= allItems.size) {
+            return null
+        }
 
         return when (val item = allItems[position]) {
-            is CalendarItem.Record -> createRecordView(item)
-            is CalendarItem.Separator -> RemoteViews(context.packageName, R.layout.calendar_record_item) // Fallback
+            is CalendarItem.Record -> {
+                createRecordView(item)
+            }
+            is CalendarItem.Separator -> {
+                RemoteViews(context.packageName, R.layout.calendar_record_item) // Fallback
+            }
         }
     }
 
@@ -107,7 +115,17 @@ class CalendarListViewFactory(
                 
                 if (category.isNotEmpty() && subCategory.isNotEmpty() && title.isNotEmpty()) {
                     val color = LectureColors.getLectureTypeColorSync(context, category)
-                    tempRecords.add(CalendarItem.Record(reminderTime, category, subCategory, title, color))
+                    
+                    // Create recordData map with all JSON fields for AlarmScreenActivity
+                    val recordData = mutableMapOf<String, String>()
+                    val keys = record.keys()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        recordData[key] = record.optString(key, "")
+                    }
+                    
+                    Log.d("CalendarListViewFactory", "Created record: $title with ${recordData.size} data fields")
+                    tempRecords.add(CalendarItem.Record(reminderTime, category, subCategory, title, color, recordData))
                 }
             }
             
@@ -145,6 +163,15 @@ class CalendarListViewFactory(
                 "${record.category} · ${record.subCategory} · ${record.title}"
             }
             views.setTextViewText(R.id.calendar_record_text, recordText)
+            
+            // Set up click intent for details view (calendar always shows details)
+            val detailsIntent = Intent()
+            
+            for ((key, value) in record.recordData) {
+                detailsIntent.putExtra(key, value)
+            }
+            // Note: No ACTION_TYPE needed - calendar always goes to details mode
+            views.setOnClickFillInIntent(R.id.calendar_record_container, detailsIntent)
             
         } catch (e: Exception) {
             Log.e("CalendarListViewFactory", "Error creating record view: ${e.message}", e)
