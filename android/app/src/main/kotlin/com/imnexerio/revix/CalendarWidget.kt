@@ -46,8 +46,8 @@ class CalendarWidget : AppWidgetProvider() {
             try {
                 val views = RemoteViews(context.packageName, R.layout.calendar_widget)
 
-                // Set current date in DD MM YYYY format
-                val currentDate = SimpleDateFormat("dd MM yyyy", Locale.getDefault()).format(Date())
+                // Set current date in DD MMM YYYY format (4-letter month abbreviation)
+                val currentDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
                 views.setTextViewText(R.id.calendar_date_header, currentDate)
 
                 // Setup calendar grid with current month
