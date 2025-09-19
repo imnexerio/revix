@@ -23,6 +23,7 @@ class CalendarListViewFactory(
 
     sealed class CalendarItem {
         data class Record(
+            val time: String,
             val category: String,
             val subCategory: String,
             val title: String,
@@ -52,13 +53,13 @@ class CalendarListViewFactory(
 
         return when (val item = allItems[position]) {
             is CalendarItem.Record -> createRecordView(item)
-            is CalendarItem.Separator -> createSeparatorView()
+            is CalendarItem.Separator -> RemoteViews(context.packageName, R.layout.calendar_record_item) // Fallback
         }
     }
 
     override fun getLoadingView(): RemoteViews? = null
 
-    override fun getViewTypeCount(): Int = 2 // Record and Separator
+    override fun getViewTypeCount(): Int = 1 // Only records for now
 
     override fun getItemId(position: Int): Long = position.toLong()
 
@@ -71,28 +72,18 @@ class CalendarListViewFactory(
 
             // Load today records
             val todayRecords = loadRecordsFromJson(sharedPrefs.getString("todayRecords", "[]") ?: "[]")
-            if (todayRecords.isNotEmpty()) {
-                allItems.addAll(todayRecords)
-                allItems.add(CalendarItem.Separator)
-            }
+            allItems.addAll(todayRecords)
+            Log.d("CalendarListViewFactory", "Added ${todayRecords.size} today records")
 
             // Load missed records
             val missedRecords = loadRecordsFromJson(sharedPrefs.getString("missedRecords", "[]") ?: "[]")
-            if (missedRecords.isNotEmpty()) {
-                allItems.addAll(missedRecords)
-                allItems.add(CalendarItem.Separator)
-            }
+            allItems.addAll(missedRecords)
+            Log.d("CalendarListViewFactory", "Added ${missedRecords.size} missed records")
 
             // Load no reminder records
             val noReminderRecords = loadRecordsFromJson(sharedPrefs.getString("noreminderdate", "[]") ?: "[]")
-            if (noReminderRecords.isNotEmpty()) {
-                allItems.addAll(noReminderRecords)
-            }
-
-            // Remove trailing separator if exists
-            if (allItems.isNotEmpty() && allItems.last() is CalendarItem.Separator) {
-                allItems.removeAt(allItems.size - 1)
-            }
+            allItems.addAll(noReminderRecords)
+            Log.d("CalendarListViewFactory", "Added ${noReminderRecords.size} no reminder records")
 
             Log.d("CalendarListViewFactory", "Loaded ${allItems.size} total items")
         } catch (e: Exception) {
@@ -105,20 +96,34 @@ class CalendarListViewFactory(
         
         try {
             val jsonArray = JSONArray(jsonString)
+            val tempRecords = mutableListOf<CalendarItem.Record>()
             
             for (i in 0 until jsonArray.length()) {
                 val record = jsonArray.getJSONObject(i)
                 val category = record.optString("category", "")
                 val subCategory = record.optString("sub_category", "")
                 val title = record.optString("record_title", "")
+                val reminderTime = record.optString("reminder_time", "")
                 
                 if (category.isNotEmpty() && subCategory.isNotEmpty() && title.isNotEmpty()) {
                     val color = LectureColors.getLectureTypeColorSync(context, category)
-                    records.add(CalendarItem.Record(category, subCategory, title, color))
+                    tempRecords.add(CalendarItem.Record(reminderTime, category, subCategory, title, color))
                 }
             }
             
-            Log.d("CalendarListViewFactory", "Parsed ${records.size} records from JSON")
+            // Sort records by time (same logic as WidgetListViewService)
+            tempRecords.sortWith(compareBy<CalendarItem.Record> { record ->
+                when {
+                    record.time.isEmpty() -> "99:99" // Empty times go last
+                    record.time == "All Day" -> "99:98" // "All Day" goes last (but before empty times)
+                    else -> record.time // Regular times are compared normally
+                }
+            }.thenBy { it.category }
+                .thenBy { it.subCategory }
+                .thenBy { it.title })
+            
+            records.addAll(tempRecords)
+            Log.d("CalendarListViewFactory", "Parsed and sorted ${records.size} records from JSON")
         } catch (e: Exception) {
             Log.e("CalendarListViewFactory", "Error parsing JSON: ${e.message}", e)
         }
@@ -133,8 +138,12 @@ class CalendarListViewFactory(
             // Set the colored stick
             views.setInt(R.id.calendar_record_stick, "setColorFilter", record.color)
             
-            // Set the record text in format: Category · Subcategory · Title
-            val recordText = "${record.category} · ${record.subCategory} · ${record.title}"
+            // Set the record text in format: Time · Category · Subcategory · Title
+            val recordText = if (record.time.isNotEmpty()) {
+                "${record.time} · ${record.category} · ${record.subCategory} · ${record.title}"
+            } else {
+                "${record.category} · ${record.subCategory} · ${record.title}"
+            }
             views.setTextViewText(R.id.calendar_record_text, recordText)
             
         } catch (e: Exception) {
@@ -145,6 +154,8 @@ class CalendarListViewFactory(
     }
 
     private fun createSeparatorView(): RemoteViews {
-        return RemoteViews(context.packageName, R.layout.calendar_separator_item)
+        val views = RemoteViews(context.packageName, R.layout.calendar_separator_item)
+        Log.d("CalendarListViewFactory", "Created separator view")
+        return views
     }
 }
