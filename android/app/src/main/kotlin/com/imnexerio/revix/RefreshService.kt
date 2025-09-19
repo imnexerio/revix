@@ -235,6 +235,15 @@ class RefreshService : Service() {
             Log.e("RefreshService", "Error updating counter widgets: ${e.message}", e)
         }
 
+        // Update calendar widgets with fresh data
+        try {
+            Log.d("RefreshService", "Updating calendar widgets with fresh data...")
+            CalendarWidget.updateCalendarWidgets(applicationContext)
+            Log.d("RefreshService", "Calendar widgets updated successfully")
+        } catch (e: Exception) {
+            Log.e("RefreshService", "Error updating calendar widgets: ${e.message}", e)
+        }
+
         // Schedule next auto-refresh if enabled (with fresh lastUpdated timestamp)
         scheduleNextAutoRefreshIfEnabled()
 

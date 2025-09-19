@@ -7,5 +7,6 @@
     <string name="appwidget_text">Today\'s Schedule</string>
     <string name="app_widget_description">Shows today\'s study schedule</string>
     <string name="counter_widget_description">Counts days for selected record</string>
+    <string name="calendar_widget_description">Monthly calendar with records</string>
     <string name="no_schedules">No schedules for today</string>
 </resources>
