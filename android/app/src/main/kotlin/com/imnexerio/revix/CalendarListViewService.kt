@@ -114,7 +114,8 @@ class CalendarListViewFactory(
                 val reminderTime = record.optString("reminder_time", "")
                 
                 if (category.isNotEmpty() && subCategory.isNotEmpty() && title.isNotEmpty()) {
-                    val color = LectureColors.getLectureTypeColorSync(context, category)
+                    val entryType = record.optString("entry_type", "")
+                    val color = LectureColors.getLectureTypeColorSync(context, entryType)
                     
                     // Create recordData map with all JSON fields for AlarmScreenActivity
                     val recordData = mutableMapOf<String, String>()
