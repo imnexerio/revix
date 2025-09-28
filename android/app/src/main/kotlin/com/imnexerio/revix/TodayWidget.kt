@@ -94,9 +94,6 @@ class TodayWidget : AppWidgetProvider() {
                     }
                     views.setTextViewText(R.id.empty_view, "No tasks scheduled. Enjoy your free time!")
                 }
-
-                // Hide switch view button since we're showing all records
-                views.setViewVisibility(R.id.switch_view_button, android.view.View.GONE)
             } catch (e: Exception) {
                 Log.e("TodayWidget", "Error setting up widget header: ${e.message}", e)
                 views.setTextViewText(R.id.title_text_n_refresh, "Error")
