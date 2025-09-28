@@ -28,7 +28,8 @@
 
         <receiver
             android:name=".TodayWidget"
-            android:exported="true">
+            android:exported="true"
+            android:label="Revix Tasks">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="revix.ACTION_REFRESH" />
@@ -36,6 +37,31 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/today_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".CalendarWidget"
+            android:exported="true"
+            android:label="Revix Calendar + Tasks">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="revix.ACTION_CALENDAR_REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/calendar_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".CalendarOnlyWidget"
+            android:exported="true"
+            android:label="Revix Calendar">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/calendar_only_widget_info" />
         </receiver>
 
         <!-- HomeWidget background receiver and service for interactive widgets -->
@@ -76,7 +102,7 @@
             android:foregroundServiceType="mediaPlayback" />
 
         <service
-            android:name=".WidgetListViewService"
+            android:name=".UnifiedWidgetListViewService"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <activity

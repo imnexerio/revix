@@ -1,61 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/list_item"
+    android:id="@+id/calendar_record_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:paddingTop="8dp"
-    android:paddingEnd="8dp"
-    android:paddingBottom="8dp"
-    android:paddingStart="0dp"
-    android:background="@drawable/rounded_background"
+    android:padding="4dp"
     android:gravity="center_vertical">
 
-    <!-- Colored line indicator for lecture type -->
+    <!-- Colored stick indicator -->
     <ImageView
-        android:id="@+id/lecture_type_indicator"
-        android:layout_width="5dp"
-        android:layout_height="match_parent"
-        android:src="@drawable/rounded_line_indicator"
-        android:contentDescription="Lecture type indicator" />
-
-    <ImageView
-        android:id="@+id/mark_as_done"
-        android:layout_width="20dp"
+        android:id="@+id/calendar_record_stick"
+        android:layout_width="4dp"
         android:layout_height="20dp"
-        android:src="@drawable/baseline_radio_button_unchecked_24"
-        android:layout_marginEnd="10dp"
-        android:layout_marginStart="10dp"
-        android:contentDescription="Mark as done"
-        android:clickable="true"
-        android:focusable="true"/>
+        android:src="@drawable/rounded_line_indicator"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="Record type indicator" />
 
-    <LinearLayout
+    <!-- Mark as done circle button (only shown in TodayWidget) -->
+    <ImageButton
+        android:id="@+id/mark_as_done_circle"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/baseline_radio_button_unchecked_24"
+        android:contentDescription="Mark as done"
+        android:visibility="gone" />
+
+    <!-- Record text: Time · Category · Subcategory · Title -->
+    <TextView
+        android:id="@+id/calendar_record_text"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:id="@+id/widget_info_container">
-        <!-- First row: Subject info -->
-        <TextView
-            android:id="@+id/item_subject_info"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textColor="@color/text"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:maxLines="1" />
-        <!-- Second row: Reminder info -->
-        <TextView
-            android:id="@+id/item_reminder_info"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@color/text"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:layout_marginTop="2dp" />
-    </LinearLayout>
+        android:text="Time · Category · Subcategory · Title"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/text"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+
 </LinearLayout>

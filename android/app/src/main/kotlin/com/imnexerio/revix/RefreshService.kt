@@ -315,8 +315,8 @@ class RefreshService : Service() {
 
     private fun updateWidgets() {
         try {
-            // Use the same widget update method from TodayWidget
-            TodayWidget.updateWidgets(applicationContext)
+            // Use the unified widget update manager to update all widget types
+            WidgetUpdateManager.updateAllWidgets(applicationContext)
         } catch (e: Exception) {
             Log.e("RefreshService", "Error updating widgets: ${e.message}")
         }
