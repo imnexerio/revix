@@ -229,7 +229,7 @@ class UnifiedWidgetListViewFactory(
             detailsIntent.putExtra(key, value)
         }
         detailsIntent.putExtra("ACTION_TYPE", "VIEW_DETAILS") // Add flag to distinguish
-        rv.setOnClickFillInIntent(R.id.calendar_record_container, detailsIntent)
+        rv.setOnClickFillInIntent(R.id.calendar_record_text, detailsIntent)
 
         return rv
     }
