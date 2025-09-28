@@ -1,122 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="8dp"
     android:gravity="center"
     android:background="@color/white">
 
-    <!-- Calendar Header -->
-    <TextView
-        android:id="@+id/calendar_date_header"
+    <!-- Date Header with Add Button -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="September 2025"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/text"
-        android:gravity="center"
-        android:padding="12dp"
-        android:background="@drawable/rounded_corner_background"
-        android:layout_marginBottom="8dp" />
+        android:orientation="horizontal"
+        android:background="@color/white"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <!-- Date Header: DD MM YYYY (Left aligned) -->
+        <TextView
+            android:id="@+id/calendar_date_header"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="19 Sept 2025"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text"
+            android:gravity="center_vertical|start"
+            android:includeFontPadding="false" />
+
+        <!-- Add Record Button (Right aligned) -->
+        <ImageButton
+            android:id="@+id/calendar_add_record_button_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/baseline_add_24"
+            android:background="@android:color/transparent"
+            android:contentDescription="Add Record"
+            />
+
+    </LinearLayout>
 
     <!-- Calendar Grid Container -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/rounded_corner_background"
-        android:padding="8dp">
+        android:orientation="vertical">
 
         <!-- Day Headers (M T W T F S S) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="4dp">
-            <TextView android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1" android:text="M" android:gravity="center" android:textStyle="bold" android:textSize="14sp" android:textColor="@color/text" />
-            <TextView android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1" android:text="T" android:gravity="center" android:textStyle="bold" android:textSize="14sp" android:textColor="@color/text" />
-            <TextView android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1" android:text="W" android:gravity="center" android:textStyle="bold" android:textSize="14sp" android:textColor="@color/text" />
-            <TextView android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1" android:text="T" android:gravity="center" android:textStyle="bold" android:textSize="14sp" android:textColor="@color/text" />
-            <TextView android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1" android:text="F" android:gravity="center" android:textStyle="bold" android:textSize="14sp" android:textColor="@color/text" />
-            <TextView android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1" android:text="S" android:gravity="center" android:textStyle="bold" android:textSize="14sp" android:textColor="@color/text" />
-            <TextView android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1" android:text="S" android:gravity="center" android:textStyle="bold" android:textSize="14sp" android:textColor="@color/text" />
+            android:orientation="horizontal">
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="M" android:gravity="center" android:textStyle="bold" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="T" android:gravity="center" android:textStyle="bold" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="W" android:gravity="center" android:textStyle="bold" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="T" android:gravity="center" android:textStyle="bold" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="F" android:gravity="center" android:textStyle="bold" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="S" android:gravity="center" android:textStyle="bold" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="S" android:gravity="center" android:textStyle="bold" android:textSize="15sp" android:textColor="#FFFF0000" android:includeFontPadding="false" />
         </LinearLayout>
 
         <!-- Calendar Rows -->
-        <LinearLayout android:id="@+id/calendar_row_1" android:layout_width="match_parent" android:layout_height="32dp" android:orientation="horizontal">
-            <TextView android:id="@+id/day_1" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_2" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_3" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_4" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_5" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_6" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_7" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
+        <LinearLayout android:id="@+id/calendar_row_1" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+            <TextView android:id="@+id/day_1" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_2" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_3" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_4" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_5" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_6" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_7" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="#FFFF0000" />
         </LinearLayout>
 
-        <LinearLayout android:id="@+id/calendar_row_2" android:layout_width="match_parent" android:layout_height="32dp" android:orientation="horizontal">
-            <TextView android:id="@+id/day_8" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_9" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_10" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_11" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_12" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_13" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_14" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
+        <LinearLayout android:id="@+id/calendar_row_2" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+            <TextView android:id="@+id/day_8" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_9" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_10" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_11" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_12" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_13" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_14" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="#FFFF0000" />
         </LinearLayout>
 
-        <LinearLayout android:id="@+id/calendar_row_3" android:layout_width="match_parent" android:layout_height="32dp" android:orientation="horizontal">
-            <TextView android:id="@+id/day_15" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_16" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_17" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_18" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_19" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_20" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_21" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
+        <LinearLayout android:id="@+id/calendar_row_3" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+            <TextView android:id="@+id/day_15" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_16" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_17" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_18" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_19" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_20" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_21" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="#FFFF0000" />
         </LinearLayout>
 
-        <LinearLayout android:id="@+id/calendar_row_4" android:layout_width="match_parent" android:layout_height="32dp" android:orientation="horizontal">
-            <TextView android:id="@+id/day_22" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_23" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_24" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_25" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_26" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_27" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_28" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
+        <LinearLayout android:id="@+id/calendar_row_4" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+            <TextView android:id="@+id/day_22" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_23" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_24" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_25" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_26" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_27" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_28" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="#FFFF0000" />
         </LinearLayout>
 
-        <LinearLayout android:id="@+id/calendar_row_5" android:layout_width="match_parent" android:layout_height="32dp" android:orientation="horizontal">
-            <TextView android:id="@+id/day_29" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_30" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_31" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_32" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_33" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_34" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_35" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
+        <LinearLayout android:id="@+id/calendar_row_5" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+            <TextView android:id="@+id/day_29" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_30" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_31" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_32" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_33" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_34" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_35" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="#FFFF0000" />
         </LinearLayout>
 
-        <LinearLayout android:id="@+id/calendar_row_6" android:layout_width="match_parent" android:layout_height="32dp" android:orientation="horizontal">
-            <TextView android:id="@+id/day_36" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_37" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_38" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_39" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_40" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_41" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
-            <TextView android:id="@+id/day_42" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="13sp" android:textColor="@color/text" />
+        <LinearLayout android:id="@+id/calendar_row_6" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+            <TextView android:id="@+id/day_36" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_37" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_38" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_39" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_40" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_41" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="@color/text" android:includeFontPadding="false" />
+            <TextView android:id="@+id/day_42" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="15sp" android:textColor="#FFFF0000" />
         </LinearLayout>
 
     </LinearLayout>
-
-    <!-- Add Record Button -->
-    <ImageView
-        android:id="@+id/calendar_add_record_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="16dp"
-        android:src="@drawable/baseline_add_24"
-        android:background="@drawable/rounded_corner_background"
-        android:padding="8dp"
-        android:contentDescription="Add Record" />
 
 </LinearLayout>
