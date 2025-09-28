@@ -73,7 +73,7 @@ class CalendarOnlyWidget : AppWidgetProvider() {
                     addIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                views.setOnClickPendingIntent(R.id.calendar_add_record_button, addPendingIntent)
+                views.setOnClickPendingIntent(R.id.calendar_add_record_button_top, addPendingIntent)
 
                 Log.d("CalendarOnlyWidget", "Add button setup completed for widget $appWidgetId")
             } catch (e: Exception) {
