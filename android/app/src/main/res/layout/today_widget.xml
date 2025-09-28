@@ -18,7 +18,7 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="@color/text"
-            android:gravity="center"/>
+            android:gravity="left"/>
         <ImageView
             android:id="@+id/add_record_button"
             android:layout_width="24dp"

@@ -84,13 +84,14 @@ class TodayWidget : AppWidgetProvider() {
                     views.setTextViewText(R.id.title_text_n_refresh, "Login Required")
                     views.setTextViewText(R.id.empty_view, "Please login to view your schedule")
                 } else {
-                    // Show just timestamp if available
+                    // Show current date and timestamp if available
                     if (lastUpdated > 0) {
-                        val dateFormat = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-                        val lastUpdateTime = dateFormat.format(java.util.Date(lastUpdated))
-                        views.setTextViewText(R.id.title_text_n_refresh, lastUpdateTime)
+                        val currentDate = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                        val lastUpdateTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(lastUpdated))
+                        views.setTextViewText(R.id.title_text_n_refresh, "$currentDate @ $lastUpdateTime")
                     } else {
-                        views.setTextViewText(R.id.title_text_n_refresh, "No Data")
+                        val currentDate = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                        views.setTextViewText(R.id.title_text_n_refresh, "$currentDate @ No Data")
                     }
                     views.setTextViewText(R.id.empty_view, "No tasks scheduled. Enjoy your free time!")
                 }
