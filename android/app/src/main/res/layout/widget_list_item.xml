@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="Time · Category · Subcategory · Title"
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="@color/text"
         android:maxLines="1"
