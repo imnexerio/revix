@@ -172,14 +172,12 @@ class TodayWidget : AppWidgetProvider() {
                 Log.e("TodayWidget", "Error setting up header refresh: ${e.message}", e)
             }
         }
-    }    override fun onUpdate(
+    }
+    override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        for (appWidgetId in appWidgetIds) {
-            updateTodayWidget(context, appWidgetManager, appWidgetId)
-        }
+        appWidgetIds: IntArray) {
+        updateWidgets(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
