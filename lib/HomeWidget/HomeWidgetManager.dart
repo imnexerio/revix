@@ -10,7 +10,6 @@ import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/MarkAsDoneService.dart';
 import '../Utils/AlarmManager.dart';
-
 import '../firebase_options.dart';
 
 @pragma('vm:entry-point')
@@ -20,6 +19,7 @@ class HomeWidgetService {
   static const String tomorrowRecordsKey = 'tomorrowRecords';  // NEW
   static const String missedRecordsKey = 'missedRecords';
   static const String noReminderDateRecordsKey = 'noreminderdate';
+  static const String allDataRecordsKey = 'allRecords';
   static const String isLoggedInKey = 'isLoggedIn';
   static const String frequencyDataKey = 'frequencyData';
   static const String trackingTypesKey = 'trackingTypes';
@@ -186,11 +186,12 @@ class HomeWidgetService {
           final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
           final missedRecords = categorizedData['missed'] ?? [];
           final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+          final allRecordsData = service.currentRawData ?? <Object?, Object?>{};
 
-          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}');
+          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}, All: ${allRecordsData.length}');
 
           // Update widget with the new data
-          await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+          await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecordsData);
 
           // Set success result for RefreshService
           if (requestId.isNotEmpty) {
@@ -277,8 +278,9 @@ class HomeWidgetService {
               final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
               final missedRecords = categorizedData['missed'] ?? [];
               final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+              final allRecordsData = service.currentRawData ?? <Object?, Object?>{};
 
-              await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+              await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecordsData);
 
               print('Widget refreshed after record update');
             }
@@ -384,8 +386,9 @@ class HomeWidgetService {
                 final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
                 final missedRecords = categorizedData['missed'] ?? [];
                 final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
+                final allRecordsData = service.currentRawData ?? <Object?, Object?>{};
 
-                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecordsData);
 
                 print('Widget refreshed after record creation');
               }
@@ -431,6 +434,7 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
     await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
+    await HomeWidget.saveWidgetData(allDataRecordsKey, jsonEncode([]));  // NEW
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
     await _updateWidgetSilently();
   }
@@ -439,6 +443,7 @@ class HomeWidgetService {
       List<Map<String, dynamic>> tomorrowRecords,  // NEW
       List<Map<String, dynamic>> missedRecords,
       List<Map<String, dynamic>> noReminderDateRecords,
+      Map<Object?, Object?> allRecords,  // NEW
       ) async {
     try {
       // Format and save all data categories
@@ -460,6 +465,12 @@ class HomeWidgetService {
       await HomeWidget.saveWidgetData(
         noReminderDateRecordsKey,
         jsonEncode(_formatRecords(noReminderDateRecords)),
+      );
+
+      // ADD: Save all records for counter widget selection
+      await HomeWidget.saveWidgetData(
+        'allRecords',
+        jsonEncode(allRecords),
       );
 
       // Add timestamp to update the "last updated" time in widget

@@ -169,8 +169,8 @@ class UnifiedDatabaseService {
       _rawDataController.add(null);
 
       if (PlatformUtils.instance.isAndroid ) {
-        _updateHomeWidget([], [], [],[]);
-        
+        _updateHomeWidget([], [], [], [], <Object?, Object?>{});
+
         // Cancel all alarms when there's no data
         _cancelAllAlarms();
       }
@@ -189,18 +189,21 @@ class UnifiedDatabaseService {
     _categorizedRecordsController.add(categorizedData);
 
     List<Map<String, dynamic>> allRecords = _processAllRecords(processedRawData);
-    _allRecordsController.add({'allRecords': allRecords});    _processCategoriesData(processedRawData);    if (PlatformUtils.instance.isAndroid ) {
+    _allRecordsController.add({'allRecords': allRecords});
+    _processCategoriesData(processedRawData);
+    if (PlatformUtils.instance.isAndroid ) {
       _updateHomeWidget(categorizedData['today'] ?? [],
           categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
           categorizedData['missed'] ?? [],
-          categorizedData['noreminderdate'] ?? []);
+          categorizedData['noreminderdate'] ?? [],
+          processedRawData);
 
       _scheduleAlarms(categorizedData['today'] ?? [],
           categorizedData['nextDay'] ?? []);
     }
   }
-  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords) {
-      HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords);
+  void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords, Map<Object?, Object?> allRecords) {
+    HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecords);
   }
 
   void _scheduleAlarms(List<Map<String, dynamic>> todayRecords, List<Map<String, dynamic>> tomorrowRecords) {
@@ -395,8 +398,9 @@ class UnifiedDatabaseService {
           _updateHomeWidget(categorizedData['today'] ?? [],
               categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
               categorizedData['missed'] ?? [],
-              categorizedData['noreminderdate'] ?? []);
-          
+              categorizedData['noreminderdate'] ?? [],
+              _cachedRawData);
+
           // Schedule alarms with the same data
           _scheduleAlarms(categorizedData['today'] ?? [],
               categorizedData['nextDay'] ?? []);
