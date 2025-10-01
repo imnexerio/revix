@@ -509,6 +509,44 @@ class FirebaseDatabaseService {
       return false;
     }
   }
+  
+  /// Save holiday fetch history to profile_data
+  Future<bool> saveHolidayFetchHistory(Map<String, dynamic> historyData) async {
+    try {
+      if (await isGuestMode) {
+        return await _localDatabase.saveProfileData('holiday_fetch_history', historyData);
+      } else {
+        if (currentUserId == null) return false;
+        DatabaseReference ref = _database.ref('users/$currentUserId/profile_data/holiday_fetch_history');
+        await ref.set(historyData);
+        return true;
+      }
+    } catch (e) {
+      print('Error saving holiday fetch history: $e');
+      return false;
+    }
+  }
+  
+  /// Fetch holiday fetch history from profile_data
+  Future<Map<String, dynamic>> fetchHolidayFetchHistory() async {
+    try {
+      if (await isGuestMode) {
+        final history = await _localDatabase.getProfileData('holiday_fetch_history');
+        return history is Map<String, dynamic> ? history : {};
+      } else {
+        if (currentUserId == null) return {};
+        DatabaseReference ref = _database.ref('users/$currentUserId/profile_data/holiday_fetch_history');
+        DataSnapshot snapshot = await ref.get();
+        if (snapshot.exists) {
+          return Map<String, dynamic>.from(snapshot.value as Map);
+        }
+        return {};
+      }
+    } catch (e) {
+      print('Error fetching holiday fetch history: $e');
+      return {};
+    }
+  }
 
   /// Updates profile data fields
   Future<void> updateProfileData(Map<String, dynamic> updates) async {

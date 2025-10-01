@@ -39,11 +39,13 @@ class _DataManagementPageState extends State<DataManagementPage> {
   String? _selectedCountryName;
   int _selectedYear = DateTime.now().year;
   bool _showHolidayPreview = false;
+  Map<String, dynamic> _holidayFetchHistory = {};
 
   @override
   void initState() {
     super.initState();
     _loadCountries();
+    _loadHolidayFetchHistory();
   }
 
   @override
@@ -75,6 +77,19 @@ class _DataManagementPageState extends State<DataManagementPage> {
         context: context,
         message: 'Error loading countries: $e',
       );
+    }
+  }
+  
+  Future<void> _loadHolidayFetchHistory() async {
+    try {
+      final history = await FirebaseDatabaseService().fetchHolidayFetchHistory();
+      print('DEBUG: Loaded holiday history: $history');
+      setState(() {
+        _holidayFetchHistory = history;
+      });
+      print('DEBUG: History is empty: ${_holidayFetchHistory.isEmpty}');
+    } catch (e) {
+      print('Error loading holiday fetch history: $e');
     }
   }
   
@@ -146,6 +161,16 @@ class _DataManagementPageState extends State<DataManagementPage> {
       final total = result['total'] ?? 0;
       
       if (success > 0) {
+        // Save to history on successful import
+        final updatedHistory = Map<String, dynamic>.from(_holidayFetchHistory);
+        updatedHistory[_selectedCountryCode!] = {
+          'date': DateTime.now().toIso8601String(),
+          'count': success,
+        };
+        
+        await FirebaseDatabaseService().saveHolidayFetchHistory(updatedHistory);
+        await _loadHolidayFetchHistory();
+        
         customSnackBar(
           context: context,
           message: failed > 0
@@ -884,6 +909,37 @@ class _DataManagementPageState extends State<DataManagementPage> {
                   ),
                 ),
               ),
+              
+              // Holiday Import History Section
+              if (_holidayFetchHistory.isNotEmpty)
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.history,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Holiday Import History',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ..._buildHistoryList(),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -1157,5 +1213,109 @@ class _DataManagementPageState extends State<DataManagementPage> {
         ),
       ],
     );
+  }
+  
+  /// Build list of holiday import history items
+  List<Widget> _buildHistoryList() {
+    final List<Widget> historyWidgets = [];
+    
+    // Sort by date (most recent first)
+    final sortedEntries = _holidayFetchHistory.entries.toList()
+      ..sort((a, b) {
+        try {
+          final dateA = DateTime.parse(a.value['date']);
+          final dateB = DateTime.parse(b.value['date']);
+          return dateB.compareTo(dateA); // Descending order
+        } catch (e) {
+          return 0;
+        }
+      });
+    
+    for (var entry in sortedEntries) {
+      final countryCode = entry.key;
+      final historyData = entry.value;
+      final date = historyData['date'] ?? '';
+      final count = historyData['count'] ?? 0;
+      
+      // Get country name from ALL_COUNTRIES
+      final countryName = PublicHolidayFetcher.ALL_COUNTRIES[countryCode]?['name'] ?? countryCode;
+      
+      historyWidgets.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$countryName ($countryCode)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$count holidays imported',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                _formatRelativeTime(date),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return historyWidgets;
+  }
+  
+  /// Format date as relative time (e.g., "2 hours ago")
+  String _formatRelativeTime(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      final now = DateTime.now();
+      final diff = now.difference(date);
+      
+      if (diff.inSeconds < 60) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+      if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
+      
+      // If more than a year, show date
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return isoDate;
+    }
   }
 }
