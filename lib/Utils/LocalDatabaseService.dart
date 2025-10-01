@@ -385,7 +385,16 @@ class LocalDatabaseService {
         }
         current[keys.last] = value;
       } else {
-        currentProfile[key] = value;
+        if (value is Map && value is! Map<String, dynamic>) {
+          currentProfile[key] = Map<String, dynamic>.from(value.map((k, v) {
+            if (v is Map) {
+              return MapEntry(k.toString(), Map<String, dynamic>.from(v));
+            }
+            return MapEntry(k.toString(), v);
+          }));
+        } else {
+          currentProfile[key] = value;
+        }
       }
       
       userData['profile_data'] = currentProfile;
@@ -450,7 +459,20 @@ class LocalDatabaseService {
         }
         return current;
       } else {
-        return profile[key] ?? defaultValue;
+        final value = profile[key];
+        print('DEBUG LocalDB: Retrieved profile data for key "$key": $value');
+        
+        // Ensure proper casting of nested Maps
+        if (value is Map && value is! Map<String, dynamic>) {
+          return Map<String, dynamic>.from(value.map((k, v) {
+            if (v is Map) {
+              return MapEntry(k.toString(), Map<String, dynamic>.from(v));
+            }
+            return MapEntry(k.toString(), v);
+          }));
+        }
+        
+        return value ?? defaultValue;
       }
     } catch (e) {
       _logError('Error getting profile data: $e');
