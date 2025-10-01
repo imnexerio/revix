@@ -1028,7 +1028,7 @@ class _DataManagementPageState extends State<DataManagementPage> {
                       ),
                     ),
                     Text(
-                      'Found ${_fetchedHolidays.length} holidays for $_selectedCountryName $_selectedYear',
+                      'Found ${_fetchedHolidays.length} holidays for $_selectedCountryName for next 365 days',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),

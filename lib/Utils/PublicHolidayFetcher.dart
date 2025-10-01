@@ -155,8 +155,8 @@ class PublicHolidayFetcher {
       
       final calendarId = countryData['calendarId']!;
 
-      final startDate = DateTime(year, 1, 1);
-      final endDate = DateTime(year, 12, 31, 23, 59, 59);
+      final startDate = DateTime.now();
+      final endDate = startDate.add(const Duration(days: 365));
       
       // Build API URL with query parameters
       final url = Uri.parse(
@@ -164,9 +164,8 @@ class PublicHolidayFetcher {
       ).replace(queryParameters: {
         'key': GOOGLE_API_KEY,
         
-        // Time range: fetch all events in the specified year
-        'timeMin': startDate.toUtc().toIso8601String(),  // Start: Jan 1 of year
-        'timeMax': endDate.toUtc().toIso8601String(),    // End: Dec 31 of year
+        'timeMin': startDate.toUtc().toIso8601String(),  // Start: today
+        'timeMax': endDate.toUtc().toIso8601String(),    // End: today + 365 days
         'singleEvents': 'true',
         'orderBy': 'startTime',
         'maxResults': '250',
@@ -245,7 +244,7 @@ class PublicHolidayFetcher {
           'scheduled_date': date,
           'description': localName,
           'missed_counts': 0,
-          'completion_counts': -1,
+          'completion_counts': 0,
           'recurrence_frequency': 'No Repetition',
           'recurrence_data': {
             'frequency': 'No Repetition'
