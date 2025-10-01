@@ -3,87 +3,216 @@ import 'dart:convert';
 import 'FirebaseDatabaseService.dart';
 import 'UnifiedDatabaseService.dart';
 
-/// Service to fetch public holidays from Nager.Date API
-/// and save them to the database in the app's record format
 class PublicHolidayFetcher {
   final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
   final UnifiedDatabaseService _unifiedDatabaseService = UnifiedDatabaseService();
+
+  static const String GOOGLE_API_KEY = 'AIzaSyDuk2CHTqC9SfjvP6DnFgHoH1odomSJZkE';  //'YOUR_API_KEY_HERE';
+  static const String API_BASE_URL = 'https://www.googleapis.com/calendar/v3/calendars';
+
   
-  static const String API_BASE_URL = 'https://date.nager.at/api/v3';
+  /// Popular countries - Always available (no API call needed)
+  /// Popular countries - Always available (no API call needed)
+  static const Map<String, Map<String, String>> POPULAR_COUNTRIES = {
+    'IN': {
+      'name': 'India',
+      'calendarId': 'en.indian#holiday@group.v.calendar.google.com',
+    },
+    'US': {
+      'name': 'United States',
+      'calendarId': 'en.usa#holiday@group.v.calendar.google.com',
+    },
+    'GB': {
+      'name': 'United Kingdom',
+      'calendarId': 'en.uk#holiday@group.v.calendar.google.com',
+    },
+    'CA': {
+      'name': 'Canada',
+      'calendarId': 'en.canadian#holiday@group.v.calendar.google.com',
+    },
+    'AU': {
+      'name': 'Australia',
+      'calendarId': 'en.australian#holiday@group.v.calendar.google.com',
+    },
+  };
   
-  /// Popular countries for quick selection
-  static const List<Map<String, String>> POPULAR_COUNTRIES = [
-    {'code': 'IN', 'name': 'India'},
-    {'code': 'US', 'name': 'United States'},
-    {'code': 'GB', 'name': 'United Kingdom'},
-    {'code': 'CA', 'name': 'Canada'},
-    {'code': 'AU', 'name': 'Australia'},
-    {'code': 'DE', 'name': 'Germany'},
-    {'code': 'FR', 'name': 'France'},
-    {'code': 'JP', 'name': 'Japan'},
-    {'code': 'CN', 'name': 'China'},
-    {'code': 'BR', 'name': 'Brazil'},
-    {'code': 'MX', 'name': 'Mexico'},
-    {'code': 'IT', 'name': 'Italy'},
-    {'code': 'ES', 'name': 'Spain'},
-    {'code': 'KR', 'name': 'South Korea'},
-    {'code': 'NL', 'name': 'Netherlands'},
-  ];
-  
-  /// Fetch available countries from API
-  Future<List<Map<String, String>>> fetchAvailableCountries() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$API_BASE_URL/AvailableCountries'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
-      
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((item) => {
-          'code': item['countryCode'].toString(),
-          'name': item['name'].toString(),
-        }).toList();
-      }
-      
-      // Fallback to popular countries if API fails
-      return POPULAR_COUNTRIES;
-    } catch (e) {
-      print('Error fetching countries: $e');
-      // Return popular countries as fallback
-      return POPULAR_COUNTRIES;
-    }
+  /// Additional countries - Loaded on demand when user clicks "Load More Countries"
+  static const Map<String, Map<String, String>> ADDITIONAL_COUNTRIES = {
+    'DE': {
+      'name': 'Germany',
+      'calendarId': 'en.german#holiday@group.v.calendar.google.com',
+    },
+    'FR': {
+      'name': 'France',
+      'calendarId': 'en.french#holiday@group.v.calendar.google.com',
+    },
+    'JP': {
+      'name': 'Japan',
+      'calendarId': 'en.japanese#holiday@group.v.calendar.google.com',
+    },
+    'CN': {
+      'name': 'China',
+      'calendarId': 'en.china#holiday@group.v.calendar.google.com',
+    },
+    'BR': {
+      'name': 'Brazil',
+      'calendarId': 'en.brazilian#holiday@group.v.calendar.google.com',
+    },
+    'MX': {
+      'name': 'Mexico',
+      'calendarId': 'en.mexican#holiday@group.v.calendar.google.com',
+    },
+    'IT': {
+      'name': 'Italy',
+      'calendarId': 'en.italian#holiday@group.v.calendar.google.com',
+    },
+    'ES': {
+      'name': 'Spain',
+      'calendarId': 'en.spanish#holiday@group.v.calendar.google.com',
+    },
+    'KR': {
+      'name': 'South Korea',
+      'calendarId': 'en.south_korea#holiday@group.v.calendar.google.com',
+    },
+    'NL': {
+      'name': 'Netherlands',
+      'calendarId': 'en.dutch#holiday@group.v.calendar.google.com',
+    },
+    'PK': {
+      'name': 'Pakistan',
+      'calendarId': 'en.pk#holiday@group.v.calendar.google.com',
+    },
+    'BD': {
+      'name': 'Bangladesh',
+      'calendarId': 'en.bd#holiday@group.v.calendar.google.com',
+    },
+    'SG': {
+      'name': 'Singapore',
+      'calendarId': 'en.singapore#holiday@group.v.calendar.google.com',
+    },
+    'MY': {
+      'name': 'Malaysia',
+      'calendarId': 'en.malaysia#holiday@group.v.calendar.google.com',
+    },
+    'ID': {
+      'name': 'Indonesia',
+      'calendarId': 'en.indonesian#holiday@group.v.calendar.google.com',
+    },
+    'TH': {
+      'name': 'Thailand',
+      'calendarId': 'en.th#holiday@group.v.calendar.google.com',
+    },
+    'VN': {
+      'name': 'Vietnam',
+      'calendarId': 'en.vietnamese#holiday@group.v.calendar.google.com',
+    },
+    'PH': {
+      'name': 'Philippines',
+      'calendarId': 'en.philippines#holiday@group.v.calendar.google.com',
+    },
+    'ZA': {
+      'name': 'South Africa',
+      'calendarId': 'en.sa#holiday@group.v.calendar.google.com',
+    },
+    'AE': {
+      'name': 'UAE',
+      'calendarId': 'en.ae#holiday@group.v.calendar.google.com',
+    },
+  };
+
+  static Map<String, Map<String, String>> get ALL_COUNTRIES {
+    return {...POPULAR_COUNTRIES, ...ADDITIONAL_COUNTRIES};
   }
   
-  /// Fetch holidays from API (returns raw list for preview)
+
+  Future<List<Map<String, String>>> fetchAvailableCountries({
+    bool loadAll = false,
+  }) async {
+    final countriesToShow = loadAll ? ALL_COUNTRIES : POPULAR_COUNTRIES;
+    
+    return countriesToShow.entries.map((entry) => {
+      'code': entry.key,
+      'name': entry.value['name']!,
+    }).toList();
+  }
+  
+  /// Fetch holidays from Google Calendar API (returns raw list for preview)
   Future<List<Map<String, dynamic>>> fetchHolidaysFromAPI({
     required String countryCode,
     required int year,
   }) async {
     try {
+      // Check if API key is configured
+      if (GOOGLE_API_KEY == 'YOUR_API_KEY_HERE') {
+        throw Exception('Google Calendar API key not configured. Please add your API key in PublicHolidayFetcher.dart');
+      }
+      
+      // Get calendar ID for country
+      final countryData = ALL_COUNTRIES[countryCode];
+      if (countryData == null) {
+        throw Exception('Country $countryCode not supported');
+      }
+      
+      final calendarId = countryData['calendarId']!;
+
+      final startDate = DateTime(year, 1, 1);
+      final endDate = DateTime(year, 12, 31, 23, 59, 59);
+      
+      // Build API URL with query parameters
+      final url = Uri.parse(
+        '$API_BASE_URL/${Uri.encodeComponent(calendarId)}/events'
+      ).replace(queryParameters: {
+        'key': GOOGLE_API_KEY,
+        
+        // Time range: fetch all events in the specified year
+        'timeMin': startDate.toUtc().toIso8601String(),  // Start: Jan 1 of year
+        'timeMax': endDate.toUtc().toIso8601String(),    // End: Dec 31 of year
+        'singleEvents': 'true',
+        'orderBy': 'startTime',
+        'maxResults': '250',
+      });
+
+      
       final response = await http.get(
-        Uri.parse('$API_BASE_URL/PublicHolidays/$year/$countryCode'),
+        url,
         headers: {'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 15));
+
       
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> items = data['items'] ?? [];
         
-        return data.map((item) => {
-          'name': item['name']?.toString() ?? item['localName']?.toString() ?? 'Unknown',
-          'localName': item['localName']?.toString() ?? item['name']?.toString() ?? 'Unknown',
-          'date': item['date']?.toString() ?? '',
-          'countryCode': item['countryCode']?.toString() ?? countryCode,
-          'global': item['global'] ?? true,
-          'types': item['types'] ?? ['Public'],
+        return items.map((item) {
+          final summary = item['summary']?.toString() ?? 'Unknown';
+          final start = item['start'];
+          final date = start['date']?.toString() ?? start['dateTime']?.toString().split('T')[0] ?? '';
+          
+          return {
+            'name': summary,
+            'localName': summary,
+            'date': date,
+            'countryCode': countryCode,
+            'global': true,
+            'types': ['Public'],
+          };
         }).toList();
+      } else if (response.statusCode == 403) {
+        // Parse error details
+        try {
+          final errorData = json.decode(response.body);
+          final errorMessage = errorData['error']['message'] ?? 'Unknown error';
+          throw Exception('API Error 403: $errorMessage');
+        } catch (e) {
+          throw Exception('API key invalid or quota exceeded. Response: ${response.body}');
+        }
       } else if (response.statusCode == 404) {
         throw Exception('No holidays found for $countryCode in $year');
       } else {
-        throw Exception('API error: ${response.statusCode}');
+        throw Exception('API error ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('Error fetching holidays from API: $e');
+      print('Error fetching holidays from Google Calendar API: $e');
       rethrow;
     }
   }
@@ -101,11 +230,9 @@ class PublicHolidayFetcher {
         final name = holiday['name'] as String;
         final date = holiday['date'] as String; // "2025-01-01"
         final localName = holiday['localName'] as String;
-        
-        // Create unique key: Name_YYYYMMDD
-        final sanitizedName = _sanitizeHolidayName(name);
+
         final dateKey = date.replaceAll('-', ''); // "20250101"
-        final recordKey = '${sanitizedName}_$dateKey';
+        final recordKey = '${name} $dateKey';
         
         // Create record in app's format
         final recordData = {
@@ -197,32 +324,5 @@ class PublicHolidayFetcher {
       // Non-critical error, continue
     }
   }
-  
-  /// Sanitize holiday name for use as database key
-  String _sanitizeHolidayName(String name) {
-    // Replace spaces and special characters with underscores
-    String sanitized = name
-      .replaceAll(' ', '_')
-      .replaceAll("'", '')
-      .replaceAll('"', '')
-      .replaceAll('.', '')
-      .replaceAll(',', '')
-      .replaceAll('(', '')
-      .replaceAll(')', '')
-      .replaceAll('/', '_')
-      .replaceAll('\\', '_')
-      .replaceAll(RegExp(r'[^\w\s-]'), '')
-      .replaceAll(RegExp(r'_{2,}'), '_')
-      .trim();
-    
-    // Remove trailing/leading underscores
-    while (sanitized.startsWith('_')) {
-      sanitized = sanitized.substring(1);
-    }
-    while (sanitized.endsWith('_')) {
-      sanitized = sanitized.substring(0, sanitized.length - 1);
-    }
-    
-    return sanitized;
-  }
+
 }
