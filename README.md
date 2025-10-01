@@ -142,7 +142,45 @@ cd revix
    }
    ```
 
-### Step 3: Set Up AI Features (Optional)
+### Step 3: Set Up Google Calendar API for Public Holidays
+
+To enable public holiday fetching:
+
+1. **Create Google Cloud Project**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project (e.g., "Revix Holidays")
+
+2. **Enable Google Calendar API**:
+   - Navigate to "APIs & Services" → "Library"
+   - Search for "Google Calendar API" and enable it
+
+3. **Create API Key**:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "+ CREATE CREDENTIALS" → "API key"
+   - Copy the generated API key (e.g., `AIzaSyD...`)
+
+4. **Add API Key to Code**:
+   - Open `lib/Utils/PublicHolidayFetcher.dart`
+   - Replace `YOUR_API_KEY_HERE` with your actual API key:
+   ```dart
+   static const String GOOGLE_API_KEY = 'AIzaSyD...your-actual-key...';
+   ```
+
+5. **Restrict API Key (Recommended)**:
+   - In Google Cloud Console, click on your API key
+   - Under "API restrictions", select "Google Calendar API" only
+   - Under "Application restrictions", add your package: `com.imnexerio.revix`
+
+6. **Supported Countries**:
+   - 🇮🇳 India, 🇺🇸 US, 🇬🇧 UK, 🇨🇦 Canada, 🇦🇺 Australia
+   - 🇩🇪 Germany, 🇫🇷 France, 🇯🇵 Japan, 🇨🇳 China, 🇧🇷 Brazil
+   - 🇲🇽 Mexico, 🇮🇹 Italy, 🇪🇸 Spain, 🇰🇷 South Korea
+   - 🇵🇰 Pakistan, 🇧🇩 Bangladesh, 🇸🇬 Singapore, 🇲🇾 Malaysia
+   - 🇮🇩 Indonesia, 🇹🇭 Thailand, and more...
+
+**Free Tier**: 10,000 requests/day (more than enough for personal use)
+
+### Step 4: Set Up AI Features (Optional)
 
 To enable AI chat functionality:
 
@@ -150,13 +188,13 @@ To enable AI chat functionality:
 2. The app will prompt you to enter your API key on first use of the AI chat feature
 3. API keys are stored securely using local storage
 
-### Step 4: Install Dependencies
+### Step 5: Install Dependencies
 
 ```sh
 flutter pub get
 ```
 
-### Step 5: Run the Application
+### Step 6: Run the Application
 
 ```sh
 flutter run
@@ -172,6 +210,7 @@ flutter run
 
 ### Key Features Usage
 - **Task Management**: Tap on any task to view detailed information
+- **Public Holidays**: Navigate to Settings → Data Management to fetch holidays for your country
 - **AI Chat**: Navigate to the chat section for AI-powered assistance
 - **Settings**: Customize themes, manage profile, and configure preferences
 - **Home Widget**: Enable for quick task access from your home screen (Android)
@@ -213,7 +252,13 @@ Ensure your Firebase configuration files are properly placed:
    - Check internet connectivity
    - Ensure API quota hasn't been exceeded
 
-4. **Home Widget Issues (Android)**
+4. **Public Holiday Fetcher Issues**
+   - Verify Google Calendar API is enabled in your Google Cloud project
+   - Check that API key is correctly set in `PublicHolidayFetcher.dart`
+   - Ensure you haven't exceeded the free tier quota (10,000 requests/day)
+   - Try selecting a different country if one doesn't work
+
+5. **Home Widget Issues (Android)**
    - Verify home widget permissions are granted
    - Check that the widget is properly added to the home screen
    - Ensure background processing permissions are enabled
