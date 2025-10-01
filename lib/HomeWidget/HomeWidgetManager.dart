@@ -421,10 +421,28 @@ class HomeWidgetService {
   }
 
   static Future<void> _updateWidgetSilently() async {
+        // Update TodayWidget
     await HomeWidget.updateWidget(
       name: 'TodayWidget',
       androidName: 'TodayWidget',
-      iOSName: 'TodayWidget',
+    );
+
+    // Update CalendarWidget
+    await HomeWidget.updateWidget(
+      name: 'CalendarWidget',
+      androidName: 'CalendarWidget',
+    );
+
+    // Update CalendarOnlyWidget
+    await HomeWidget.updateWidget(
+      name: 'CalendarOnlyWidget',
+      androidName: 'CalendarOnlyWidget',
+    );
+
+    // Update CounterWidget
+    await HomeWidget.updateWidget(
+      name: 'CounterWidget',
+      androidName: 'CounterWidget',
     );
   }
   static Future<void> _updateWidgetWithEmptyData() async {
@@ -503,15 +521,34 @@ class HomeWidgetService {
   }
 
   static Future<void> _updateWidget() async {
+    // Update TodayWidget
     await HomeWidget.updateWidget(
       name: 'TodayWidget',
       androidName: 'TodayWidget',
       iOSName: 'TodayWidget',
     );
 
+    // Update CalendarWidget
+    await HomeWidget.updateWidget(
+      name: 'CalendarWidget',
+      androidName: 'CalendarWidget',
+    );
+
+    // Update CalendarOnlyWidget
+    await HomeWidget.updateWidget(
+      name: 'CalendarOnlyWidget',
+      androidName: 'CalendarOnlyWidget',
+    );
+
+    // Update CounterWidget
+    await HomeWidget.updateWidget(
+      name: 'CounterWidget',
+      androidName: 'CounterWidget',
+    );
+
     // Note: Method channel notifications are not available in background contexts
     // The HomeWidget.updateWidget() call above already handles the native widget update
-    print('Widget updated via HomeWidget package');
+    print('All widgets updated via HomeWidget package');
   }
 
   static Future<void> _ensureInitialized() async {

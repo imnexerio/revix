@@ -177,7 +177,11 @@ class TodayWidget : AppWidgetProvider() {
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray) {
-        updateWidgets(context)
+        for (appWidgetId in appWidgetIds) {
+            updateTodayWidget(context, appWidgetManager, appWidgetId)
+        }
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_listview)
+        Log.e("onUUpdate", "onUpdate called today widget")
     }
 
     override fun onReceive(context: Context, intent: Intent) {

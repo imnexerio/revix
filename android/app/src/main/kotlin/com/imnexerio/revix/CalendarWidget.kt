@@ -238,6 +238,7 @@ class CalendarWidget : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             updateCalendarWidget(context, appWidgetManager, appWidgetId)
         }
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.calendar_records_listview)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
