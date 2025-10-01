@@ -461,7 +461,7 @@ class HomeWidgetService {
 
       // ADD: Save all records for counter widget selection
       await HomeWidget.saveWidgetData(
-        'allRecords',
+        allDataRecordsKey,
         jsonEncode(allRecords),
       );
 
@@ -542,6 +542,7 @@ class HomeWidgetService {
         await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
         await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
+        await HomeWidget.saveWidgetData(allDataRecordsKey, jsonEncode({}));  // Clear allRecords for CounterWidget
 
         // cancel all the alarms when logging out
         AlarmManager.cancelAllAlarms();
