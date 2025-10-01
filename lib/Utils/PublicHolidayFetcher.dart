@@ -181,7 +181,7 @@ class PublicHolidayFetcher {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         final List<dynamic> items = data['items'] ?? [];
-        
+
         return items.map((item) {
           final summary = item['summary']?.toString() ?? 'Unknown';
           final start = item['start'];
@@ -229,11 +229,24 @@ class PublicHolidayFetcher {
         final name = holiday['name'] as String;
         final date = holiday['date'] as String; // "2025-01-01"
         final localName = holiday['localName'] as String;
+        
+        // Validate that date is not empty
+        if (date.isEmpty) {
+          print('Skipping holiday ${name}: empty date');
+          continue;
+        }
 
         final dateKey = date.replaceAll('-', ''); // "20250101"
-        final recordKey = '${name} $dateKey';
         
-        // Create record in app's format
+        // Sanitize the name to remove Firebase path separators and special characters
+        // Replace / with - and remove other problematic characters
+        final sanitizedName = _sanitizeFirebaseKey(name);
+        
+        final recordKey = '$sanitizedName $dateKey';
+        
+        // Create record in app's format with sanitized description
+        final sanitizedDescription = _sanitizeFirebaseKey(localName);
+        
         final recordData = {
           'start_timestamp': '${date}T00:00',
           'reminder_time': 'All Day',
@@ -242,7 +255,7 @@ class PublicHolidayFetcher {
           'date_initiated': date,
           'date_updated': now.toIso8601String().split('.')[0],
           'scheduled_date': date,
-          'description': localName,
+          'description': sanitizedDescription,
           'missed_counts': 0,
           'completion_counts': 0,
           'recurrence_frequency': 'No Repetition',
@@ -280,15 +293,21 @@ class PublicHolidayFetcher {
       );
       
       if (apiHolidays.isEmpty) {
+        print('No holidays fetched from API for $countryCode');
         return {'success': 0, 'failed': 0, 'total': 0};
       }
+      
+      print('Fetched ${apiHolidays.length} holidays from API for $countryCode');
       
       // 2. Convert to records
       final records = convertToRecords(apiHolidays, countryCode);
       
       if (records.isEmpty) {
-        return {'success': 0, 'failed': 0, 'total': 0};
+        print('No records created after conversion (all holidays may have been filtered out)');
+        return {'success': 0, 'failed': 0, 'total': apiHolidays.length};
       }
+      
+      print('Converted ${records.length} holidays to records (${apiHolidays.length - records.length} skipped)');
       
       // 3. Ensure HOLIDAY tracking type exists
       await ensureHolidayTrackingType();
@@ -300,11 +319,39 @@ class PublicHolidayFetcher {
         records: records,
       );
       
+      print('Save result: ${result['success']} succeeded, ${result['failed']} failed out of ${result['total']}');
+      
       return result;
     } catch (e) {
       print('Error in fetchAndSaveHolidays: $e');
       rethrow;
     }
+  }
+
+  
+  /// Sanitize string to be safe for Firebase keys
+  /// Firebase doesn't allow: . $ # [ ] /
+  /// Also removes other potentially problematic characters
+  String _sanitizeFirebaseKey(String input) {
+    return input
+        .replaceAll('/', '-')      // Replace forward slash with dash
+        .replaceAll('\\', '-')     // Replace backslash with dash
+        .replaceAll('.', '')       // Remove periods (Firebase path separator)
+        .replaceAll('#', '')       // Remove hash (Firebase reserved)
+        .replaceAll('\$', '')      // Remove dollar signs (query operator)
+        .replaceAll('[', '')       // Remove square brackets (array notation)
+        .replaceAll(']', '')       // Remove square brackets
+        .replaceAll('*', '')       // Remove asterisks (wildcard)
+        .replaceAll('?', '')       // Remove question marks (query param)
+        .replaceAll('&', 'and')    // Replace ampersand with 'and'
+        .replaceAll('=', '-')      // Replace equals with dash
+        .replaceAll('+', 'plus')   // Replace plus with 'plus'
+        .replaceAll('<', '')       // Remove less than
+        .replaceAll('>', '')       // Remove greater than
+        .replaceAll('|', '-')      // Replace pipe with dash
+        .replaceAll('"', '')       // Remove quotes
+        .replaceAll("'", '')       // Remove single quotes
+        .trim();                   // Remove leading/trailing whitespace
   }
 
 
