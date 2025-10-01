@@ -5,4 +5,5 @@
     <color name="WidgetBackground">#2E2D2D</color>
     <color name="cardBackground">#3E3E3E</color>
     <color name="textSecondary">#CCCCCC</color>
+    <color name="overdue">#FFFF0000</color>
 </resources>

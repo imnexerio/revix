@@ -170,7 +170,7 @@ class CounterWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.category_text, "Category")
             views.setTextViewText(R.id.subcategory_text, "Subcategory")
             views.setTextViewText(R.id.record_title, "Record Title")
-            views.setInt(R.id.lecture_type_indicator, "setColorFilter", 0xFF666666.toInt())
+            views.setInt(R.id.lecture_type_indicator, "setColorFilter", android.graphics.Color.parseColor("#666666"))
         }
 
         private fun displayValidRecord(context: Context, views: RemoteViews, appWidgetId: Int, scheduledDate: String) {
@@ -187,7 +187,7 @@ class CounterWidget : AppWidgetProvider() {
                 "Unspecified", "" -> {
                     // Show infinity symbol with colorOnPrimary
                     views.setTextViewText(R.id.counter_text, "∞")
-                    views.setTextColor(R.id.counter_text, 0xFF00FFFC.toInt()) // colorOnPrimary
+                    views.setTextColor(R.id.counter_text, context.getColor(R.color.colorOnPrimary))
                 }
                 else -> {
                     // Normal countdown calculation
@@ -195,12 +195,20 @@ class CounterWidget : AppWidgetProvider() {
                     val counterText = formatCounterText(daysRemaining)
                     views.setTextViewText(R.id.counter_text, counterText)
                     
-                    // Apply overdue coloring if needed
+                    // Apply overdue coloring if needed, otherwise reset to default
                     if (daysRemaining < 0) {
-                        views.setTextColor(R.id.counter_text, 0xFFFF0000.toInt()) // Red for overdue
-                        views.setTextColor(R.id.category_text, 0xFFFF0000.toInt())
-                        views.setTextColor(R.id.subcategory_text, 0xFFFF0000.toInt())
-                        views.setTextColor(R.id.record_title, 0xFFFF0000.toInt())
+                        val overdueColor = context.getColor(R.color.overdue)
+                        views.setTextColor(R.id.counter_text, overdueColor)
+                        views.setTextColor(R.id.category_text, overdueColor)
+                        views.setTextColor(R.id.subcategory_text, overdueColor)
+                        views.setTextColor(R.id.record_title, overdueColor)
+                    } else {
+                        // Reset to default colors when not overdue
+                        val defaultColor = context.getColor(R.color.text)
+                        views.setTextColor(R.id.counter_text, defaultColor)
+                        views.setTextColor(R.id.category_text, defaultColor)
+                        views.setTextColor(R.id.subcategory_text, defaultColor)
+                        views.setTextColor(R.id.record_title, defaultColor)
                     }
                 }
             }
@@ -345,7 +353,7 @@ class CounterWidget : AppWidgetProvider() {
 
         private fun formatCounterText(days: Int): String {
             return when {
-                days < 0 -> "${Math.abs(days)}\ndays"  // Overdue 
+                days < 0 -> "-${Math.abs(days)}\ndays"  // Overdue with minus sign
                 days == 0 -> "Today!"
                 days == 1 -> "1\nday"
                 else -> "$days\ndays"

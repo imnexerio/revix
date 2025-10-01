@@ -27,7 +27,7 @@
         android:gravity="center_vertical"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
-        android:paddingEnd="48dp">
+        android:paddingEnd="8dp">
 
         <!-- Left: Colored stick indicator (50% hidden on left, 50% visible - coming out of wall) -->
         <ImageView
@@ -57,17 +57,18 @@
             android:clickable="true"
             android:focusable="true" />
 
-        <!-- Right: 3 rows of text (65% width, clickable for record selection) -->
+        <!-- Right: 3 rows of text (65% width, uses full width including space below '+' button) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="0.65"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingEnd="0dp">
             
             <!-- Row 1: Category -->
             <TextView
                 android:id="@+id/category_text"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Category"
                 android:textSize="15sp"
@@ -80,9 +81,9 @@
             <!-- Row 2: Subcategory -->
             <TextView
                 android:id="@+id/subcategory_text"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Subcategory"
+                android:text="Sub Category"
                 android:textSize="15sp"
                 android:textColor="@color/text"
                 android:layout_marginTop="2dp"
@@ -94,7 +95,7 @@
             <!-- Row 3: Record Title -->
             <TextView
                 android:id="@+id/record_title"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Record Title"
                 android:textSize="15sp"
