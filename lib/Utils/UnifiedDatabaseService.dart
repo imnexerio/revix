@@ -608,6 +608,83 @@ class UnifiedDatabaseService {
       }
     }
   }
+
+  /// Bulk save multiple records in a single operation
+  /// Returns: { 'success': count, 'failed': count, 'total': count }
+  Future<Map<String, int>> bulkSaveRecords({
+    required String category,
+    required String subCategory,
+    required Map<String, Map<String, dynamic>> records, // key: recordName, value: recordData
+  }) async {
+    int successCount = 0;
+    int failedCount = 0;
+    final total = records.length;
+    
+    if (_isGuestMode) {
+      // Guest mode: Save to local database one by one
+      for (var entry in records.entries) {
+        try {
+          final success = await _localDatabase.saveRecord(
+            category, 
+            subCategory, 
+            entry.key, 
+            entry.value
+          );
+          if (success) {
+            successCount++;
+          } else {
+            failedCount++;
+          }
+        } catch (e) {
+          failedCount++;
+          print('Error saving ${entry.key}: $e');
+        }
+      }
+    } else {
+      // Firebase mode: Batch save using update
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        
+        // Firebase batch update - all at once
+        final updates = <String, dynamic>{};
+        for (var entry in records.entries) {
+          updates['$category/$subCategory/${entry.key}'] = entry.value;
+        }
+        
+        await _databaseRef!.update(updates);
+        successCount = total;
+      } catch (e) {
+        print('Bulk save error: $e');
+        // Fallback: Save one by one
+        for (var entry in records.entries) {
+          try {
+            final success = await saveRecord(
+              category, 
+              subCategory, 
+              entry.key, 
+              entry.value
+            );
+            if (success) {
+              successCount++;
+            } else {
+              failedCount++;
+            }
+          } catch (e) {
+            failedCount++;
+            print('Error saving ${entry.key}: $e');
+          }
+        }
+      }
+    }
+    
+    return {
+      'success': successCount,
+      'failed': failedCount,
+      'total': total,
+    };
+  }
   
   // Add public method for updating record revision data
   Future<bool> updateRecordRevision(
