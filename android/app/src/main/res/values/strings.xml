@@ -8,5 +8,6 @@
     <string name="app_widget_description">Shows today\'s study schedule</string>
     <string name="calendar_widget_description">Calendar with tasks - View your monthly calendar alongside your scheduled tasks</string>
     <string name="calendar_only_widget_description">Calendar only - Clean monthly calendar view for quick date reference</string>
+    <string name="counter_widget_description">Countdown timer - Track days remaining until a specific record\'s scheduled date</string>
     <string name="no_schedules">No schedules for today</string>
 </resources>

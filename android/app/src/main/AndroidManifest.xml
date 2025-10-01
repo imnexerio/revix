@@ -64,6 +64,18 @@
                 android:resource="@xml/calendar_only_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".CounterWidget"
+            android:exported="true"
+            android:label="Revix Counter">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/counter_widget_info" />
+        </receiver>
+
         <!-- HomeWidget background receiver and service for interactive widgets -->
         <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
             android:exported="true">
@@ -129,6 +141,12 @@
         android:theme="@style/DialogWithCenteredTitle"
         android:windowSoftInputMode="adjustResize">
     </activity>
+        <activity
+            android:name=".RecordSelectionActivity"
+            android:exported="false"
+            android:label="Select Record to Track"
+            android:theme="@style/DialogWithCenteredTitle">
+        </activity>
         <activity
             android:name=".AlarmScreenActivity"
             android:exported="false"

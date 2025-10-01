@@ -18,6 +18,9 @@ object WidgetUpdateManager {
             // Update CalendarOnlyWidget (Calendar Only - no records)
             CalendarOnlyWidget.updateCalendarOnlyWidgets(context)
             
+            // Update CounterWidget (Countdown Timer - all records data)
+            CounterWidget.updateAllCounterWidgets(context)
+            
             Log.d("WidgetUpdateManager", "All widget types updated successfully")
         } catch (e: Exception) {
             Log.e("WidgetUpdateManager", "Error updating widgets: ${e.message}", e)
@@ -36,6 +39,9 @@ object WidgetUpdateManager {
             
             // Clear CalendarOnlyWidget
             CalendarOnlyWidget.updateCalendarOnlyWidgets(context) // Will read empty data after logout
+            
+            // Clear CounterWidget
+            CounterWidget.clearAllCounterWidgets(context)
             
             Log.d("WidgetUpdateManager", "All widget types cleared successfully")
         } catch (e: Exception) {

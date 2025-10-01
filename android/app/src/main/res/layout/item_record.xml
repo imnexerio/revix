@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/list_item"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="8dp"
+    android:paddingEnd="8dp"
+    android:paddingBottom="8dp"
+    android:paddingStart="0dp"
+    android:background="@drawable/rounded_background"
+    android:gravity="center_vertical">
+
+    <!-- Colored line indicator for lecture type -->
+    <ImageView
+        android:id="@+id/lecture_type_indicator"
+        android:layout_width="5dp"
+        android:layout_height="match_parent"
+        android:src="@drawable/rounded_line_indicator"
+        android:contentDescription="Lecture type indicator" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="8dp"
+        android:id="@+id/widget_info_container">
+        
+        <!-- Record Title -->
+        <TextView
+            android:id="@+id/record_title_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="@color/text"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxLines="1" />
+        
+        <!-- Scheduled Date Info -->
+        <TextView
+            android:id="@+id/scheduled_date_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/textSecondary"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+</LinearLayout>
