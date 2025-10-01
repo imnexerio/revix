@@ -185,7 +185,7 @@ class CounterWidget : AppWidgetProvider() {
             // Handle different date types
             when (scheduledDate) {
                 "Unspecified", "" -> {
-                    // Show infinity symbol with colorOnPrimary
+                    // Show infinity symbol with colorOnPrimary (special case)
                     views.setTextViewText(R.id.counter_text, "∞")
                     views.setTextColor(R.id.counter_text, context.getColor(R.color.colorOnPrimary))
                 }
@@ -195,20 +195,12 @@ class CounterWidget : AppWidgetProvider() {
                     val counterText = formatCounterText(daysRemaining)
                     views.setTextViewText(R.id.counter_text, counterText)
                     
-                    // Apply overdue coloring if needed, otherwise reset to default
                     if (daysRemaining < 0) {
                         val overdueColor = context.getColor(R.color.overdue)
                         views.setTextColor(R.id.counter_text, overdueColor)
                         views.setTextColor(R.id.category_text, overdueColor)
                         views.setTextColor(R.id.subcategory_text, overdueColor)
                         views.setTextColor(R.id.record_title, overdueColor)
-                    } else {
-                        // Reset to default colors when not overdue
-                        val defaultColor = context.getColor(R.color.text)
-                        views.setTextColor(R.id.counter_text, defaultColor)
-                        views.setTextColor(R.id.category_text, defaultColor)
-                        views.setTextColor(R.id.subcategory_text, defaultColor)
-                        views.setTextColor(R.id.record_title, defaultColor)
                     }
                 }
             }
