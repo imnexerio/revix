@@ -1,82 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/counter_widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:paddingTop="8dp"
-    android:paddingEnd="8dp"
-    android:paddingBottom="8dp"
-    android:paddingStart="0dp"
-    android:gravity="center_vertical"
     android:background="@color/white">
 
-    <!-- Left: Colored stick indicator -->
-    <ImageView
-        android:id="@+id/lecture_type_indicator"
-        android:layout_width="10dp"
-        android:layout_height="match_parent"
-        android:src="@drawable/rounded_line_indicator"
-        android:layout_marginEnd="8dp"
-        android:contentDescription="Counter type indicator" />
-
-    <!-- Center: Counter area (35% width) -->
-    <TextView
-        android:id="@+id/counter_text"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:layout_weight="0.35"
-        android:layout_marginEnd="8dp"
-        android:text="3\ndays"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@color/text"
-        android:gravity="center"
-        android:maxLines="2"
-        android:lineSpacingMultiplier="0.8" />
-
-    <!-- Right: 3 rows of text (65% width) -->
-    <LinearLayout
-        android:layout_width="0dp"
+    <!-- Add Record Button (Top-Right corner) -->
+    <ImageButton
+        android:id="@+id/counter_add_record_button"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="0.65"
-        android:orientation="vertical">
-        
-        <!-- Row 1: Category -->
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp"
+        android:src="@drawable/baseline_add_24"
+        android:background="@android:color/transparent"
+        android:contentDescription="Add Record"
+        android:padding="2dp" />
+
+    <!-- Main Content: Horizontal layout (original style) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:paddingEnd="48dp">
+
+        <!-- Left: Colored stick indicator (50% hidden on left, 50% visible - coming out of wall) -->
+        <ImageView
+            android:id="@+id/lecture_type_indicator"
+            android:layout_width="14dp"
+            android:layout_height="match_parent"
+            android:src="@drawable/rounded_line_indicator"
+            android:layout_marginStart="-5dp"
+            android:layout_marginEnd="8dp"
+            android:layout_gravity="center_vertical"
+            android:contentDescription="Counter type indicator" />
+
+        <!-- Center: Counter area (35% width, clickable for refresh) -->
         <TextView
-            android:id="@+id/category_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Category"
-            android:textSize="15sp"
+            android:id="@+id/counter_text"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="0.35"
+            android:layout_marginEnd="8dp"
+            android:text="3\ndays"
+            android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="@color/text"
-            android:maxLines="1"
-            android:ellipsize="end" />
-        
-        <!-- Row 2: Subcategory -->
-        <TextView
-            android:id="@+id/subcategory_text"
-            android:layout_width="wrap_content"
+            android:gravity="center"
+            android:maxLines="2"
+            android:lineSpacingMultiplier="0.8"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <!-- Right: 3 rows of text (65% width, clickable for record selection) -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Subcategory"
-            android:textSize="15sp"
-            android:textColor="@color/text"
-            android:layout_marginTop="2dp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-        
-        <!-- Row 3: Record Title -->
-        <TextView
-            android:id="@+id/record_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Record Title"
-            android:textSize="15sp"
-            android:textColor="@color/text"
-            android:layout_marginTop="2dp"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:layout_weight="0.65"
+            android:orientation="vertical">
             
+            <!-- Row 1: Category -->
+            <TextView
+                android:id="@+id/category_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Category"
+                android:textSize="15sp"
+                android:textColor="@color/text"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:clickable="true"
+                android:focusable="true" />
+            
+            <!-- Row 2: Subcategory -->
+            <TextView
+                android:id="@+id/subcategory_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Subcategory"
+                android:textSize="15sp"
+                android:textColor="@color/text"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:clickable="true"
+                android:focusable="true" />
+            
+            <!-- Row 3: Record Title -->
+            <TextView
+                android:id="@+id/record_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Record Title"
+                android:textSize="15sp"
+                android:textColor="@color/text"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:clickable="true"
+                android:focusable="true" />
+                
+        </LinearLayout>
+
     </LinearLayout>
 
-</LinearLayout>
+</RelativeLayout>

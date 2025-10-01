@@ -23,7 +23,6 @@ class CounterWidget : AppWidgetProvider() {
 
     companion object {
         const val ACTION_SELECT_RECORD = "revix.ACTION_SELECT_RECORD"
-        const val ACTION_COUNTER_REFRESH = "revix.ACTION_COUNTER_REFRESH"
 
         // Per-widget storage keys
         fun getSelectedRecordKey(appWidgetId: Int) = "counter_widget_${appWidgetId}_record"
@@ -155,8 +154,10 @@ class CounterWidget : AppWidgetProvider() {
                     }
                 }
 
-                // Set up click listener
-                setupClickListener(context, views, appWidgetId)
+                // Set up click listeners
+                setupSelectRecordListener(context, views, appWidgetId)
+                setupRefreshListener(context, views, appWidgetId)
+                setupAddButtonListener(context, views, appWidgetId)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
 
             } catch (e: Exception) {
@@ -276,7 +277,8 @@ class CounterWidget : AppWidgetProvider() {
             }
         }
 
-        private fun setupClickListener(context: Context, views: RemoteViews, appWidgetId: Int) {
+        private fun setupSelectRecordListener(context: Context, views: RemoteViews, appWidgetId: Int) {
+            // Click on container (category/subcategory/title area) to select different record
             val selectIntent = Intent(context, CounterWidget::class.java)
             selectIntent.action = ACTION_SELECT_RECORD
             selectIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -289,7 +291,42 @@ class CounterWidget : AppWidgetProvider() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            views.setOnClickPendingIntent(R.id.counter_widget_container, selectPendingIntent)
+            // Attach to text area (category, subcategory, title)
+            views.setOnClickPendingIntent(R.id.category_text, selectPendingIntent)
+            views.setOnClickPendingIntent(R.id.subcategory_text, selectPendingIntent)
+            views.setOnClickPendingIntent(R.id.record_title, selectPendingIntent)
+        }
+
+        private fun setupRefreshListener(context: Context, views: RemoteViews, appWidgetId: Int) {
+            // Click on counter text to trigger refresh (like tapping date in other widgets)
+            val refreshIntent = Intent(context, TodayWidget::class.java)
+            refreshIntent.action = TodayWidget.ACTION_REFRESH
+            val refreshRequestCode = appWidgetId + 600 + System.currentTimeMillis().toInt()
+            val refreshPendingIntent = PendingIntent.getBroadcast(
+                context,
+                refreshRequestCode,
+                refreshIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.counter_text, refreshPendingIntent)
+            
+            Log.d("CounterWidget", "Counter refresh listener setup completed for widget $appWidgetId")
+        }
+
+        private fun setupAddButtonListener(context: Context, views: RemoteViews, appWidgetId: Int) {
+            // '+' button to add new record
+            val addIntent = Intent(context, TodayWidget::class.java)
+            addIntent.action = TodayWidget.ACTION_ADD_RECORD
+            val addRequestCode = appWidgetId + 800 + System.currentTimeMillis().toInt()
+            val addPendingIntent = PendingIntent.getBroadcast(
+                context,
+                addRequestCode,
+                addIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.counter_add_record_button, addPendingIntent)
+            
+            Log.d("CounterWidget", "Add button setup completed for widget $appWidgetId")
         }
 
         private fun calculateDaysRemaining(scheduledDateStr: String): Int {
@@ -343,11 +380,6 @@ class CounterWidget : AppWidgetProvider() {
                     selectIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                     context.startActivity(selectIntent)
                 }
-            }
-
-            ACTION_COUNTER_REFRESH -> {
-                // Trigger refresh via WidgetUpdateManager
-                WidgetUpdateManager.updateAllWidgets(context)
             }
         }
     }
