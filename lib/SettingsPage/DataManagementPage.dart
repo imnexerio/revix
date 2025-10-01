@@ -14,14 +14,14 @@ import 'file_helper.dart' as file_helper;
 /// - Import data from JSON (works for both guest and authenticated users)
 /// - For guest users: Create account and migrate data to Firebase
 /// - For authenticated users: Manual backup and restore capabilities
-class DataManagementWidget extends StatefulWidget {
-  const DataManagementWidget({Key? key}) : super(key: key);
+class DataManagementPage extends StatefulWidget {
+  const DataManagementPage({Key? key}) : super(key: key);
 
   @override
-  _DataManagementWidgetState createState() => _DataManagementWidgetState();
+  _DataManagementPageState createState() => _DataManagementPageState();
 }
 
-class _DataManagementWidgetState extends State<DataManagementWidget> {
+class _DataManagementPageState extends State<DataManagementPage> {
   bool _isExporting = false;
   bool _isImporting = false;
   bool _isCreatingAccount = false;

@@ -16,7 +16,7 @@ import 'AboutPage.dart';
 import 'ChangeCredentialsPage.dart';
 import 'FetchReleaseNote.dart';
 import 'FrequencyPage.dart';
-import 'DataManagementWidget.dart';
+import 'DataManagementPage.dart';
 import 'NotificationPage.dart';
 import 'ProfileHeader.dart';
 import 'ProfileOptionCard.dart';
@@ -435,7 +435,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             'title': 'Data Management',
             'subtitle': 'Export or import your data',
             'icon': Icons.import_export,
-            'onTap': () => _navigateToPage(context, DataManagementWidget(), 'Data Management'),
+            'onTap': () => _navigateToPage(context, DataManagementPage(), 'Data Management'),
             'isSelected': _shouldShowSelectionHighlight('Data Management'),
           },
           if (PlatformUtils.instance.isAndroid) {
