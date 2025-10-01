@@ -419,32 +419,6 @@ class HomeWidgetService {
       }
     }
   }
-
-  static Future<void> _updateWidgetSilently() async {
-        // Update TodayWidget
-    await HomeWidget.updateWidget(
-      name: 'TodayWidget',
-      androidName: 'TodayWidget',
-    );
-
-    // Update CalendarWidget
-    await HomeWidget.updateWidget(
-      name: 'CalendarWidget',
-      androidName: 'CalendarWidget',
-    );
-
-    // Update CalendarOnlyWidget
-    await HomeWidget.updateWidget(
-      name: 'CalendarOnlyWidget',
-      androidName: 'CalendarOnlyWidget',
-    );
-
-    // Update CounterWidget
-    await HomeWidget.updateWidget(
-      name: 'CounterWidget',
-      androidName: 'CounterWidget',
-    );
-  }
   static Future<void> _updateWidgetWithEmptyData() async {
     await _ensureInitialized();
 
@@ -454,7 +428,7 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(allDataRecordsKey, jsonEncode([]));  // NEW
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
-    await _updateWidgetSilently();
+    await _updateWidget();
   }
   static Future<void> updateWidgetData(
       List<Map<String, dynamic>> todayRecords,

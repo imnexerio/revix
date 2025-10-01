@@ -228,9 +228,6 @@ class RefreshService : Service() {
 
         // Schedule next auto-refresh if enabled (with fresh lastUpdated timestamp)
         scheduleNextAutoRefreshIfEnabled()
-
-        // Update widgets with new data
-        updateWidgets()
         
         Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
@@ -284,9 +281,6 @@ class RefreshService : Service() {
 
         // Show error notification
         showStatusNotification("Refresh failed: $errorMessage", false)
-
-        // Update widgets to remove refreshing state
-        updateWidgets()
         
         Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
@@ -305,22 +299,11 @@ class RefreshService : Service() {
 
         // Show timeout notification
         showStatusNotification("Refresh operation timed out. Please try again.", false)
-
-        // Update widgets to remove refreshing state
-        updateWidgets()
         
         Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
     }
 
-    private fun updateWidgets() {
-        try {
-            // Use the unified widget update manager to update all widget types
-            WidgetUpdateManager.updateAllWidgets(applicationContext)
-        } catch (e: Exception) {
-            Log.e("RefreshService", "Error updating widgets: ${e.message}")
-        }
-    }
 
     private fun showStatusNotification(message: String, isSuccess: Boolean) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
