@@ -264,8 +264,8 @@ class PublicHolidayFetcher {
           },
           'status': 'Enabled',
           'duration': {
-            'type': 'forever',
-            'numberOfTimes': null,
+            'type': 'specificTimes',
+            'numberOfTimes': 1,
             'endDate': null
           }
         };
