@@ -769,9 +769,22 @@ class UnifiedDatabaseService {
     }
   }
 
+  // Helper method to sanitize title to prevent Firebase array conversion
+  String _sanitizeTitle(String title) {
+    // Check if title is purely numeric (with or without leading zeros)
+    final numericRegex = RegExp(r'^\d+$');
+    if (numericRegex.hasMatch(title)) {
+      // Prefix numeric titles with an underscore to prevent array conversion
+      return '_$title';
+    }
+    return title;
+  }
+
   // Helper method to generate unique title by appending (2), (3), etc.
   Future<String> _generateUniqueTitle(String category, String subCategory, String originalTitle) async {
-    String baseTitle = originalTitle;
+    // Sanitize the title first to prevent array conversion
+    String sanitizedTitle = _sanitizeTitle(originalTitle);
+    String baseTitle = sanitizedTitle;
     int counter = 2;
     String currentTitle = baseTitle;
     
