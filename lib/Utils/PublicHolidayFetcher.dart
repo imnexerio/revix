@@ -249,7 +249,7 @@ class PublicHolidayFetcher {
         
         final recordData = {
           'start_timestamp': '${date}T00:00',
-          'reminder_time': 'All Day',
+          'reminder_time': '00:00',
           'alarm_type': 0,
           'entry_type': 'HOLIDAY',
           'date_initiated': date,
