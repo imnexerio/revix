@@ -25,6 +25,10 @@ class CustomThemeGenerator {
 
       // Customize specific theme properties
       primaryColor: colorScheme.primary,
+      scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+      
+      // Disable surface tint globally for Safari compatibility
+      applyElevationOverlayColor: false,
 
       // App Bar Theme
       appBarTheme: AppBarTheme(
@@ -44,7 +48,30 @@ class CustomThemeGenerator {
         headlineSmall: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w600),
       ),
 
+      // Bottom Navigation Bar Theme
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFFFFFFFF),
+        elevation: 0,
+      ),
 
+      // Navigation Bar Theme (Material 3)
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: Color(0xFFFFFFFF),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+
+      // Dialog Theme
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Color(0xFFFFFFFF),
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      // Bottom Sheet Theme
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Color(0xFFFFFFFF),
+        surfaceTintColor: Colors.transparent,
+      ),
 
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -54,12 +81,15 @@ class CustomThemeGenerator {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
+          surfaceTintColor: Colors.transparent,
         ),
       ),
 
       // Card Theme
       cardTheme: CardThemeData(
         elevation: 3,
+        surfaceTintColor: Colors.transparent,
+        color: const Color(0xFFFFFFFF),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -91,6 +121,10 @@ class CustomThemeGenerator {
 
       // Customize specific theme properties
       primaryColor: colorScheme.primary,
+      scaffoldBackgroundColor: const Color(0xFF000000),
+      
+      // Disable surface tint globally for Safari compatibility
+      applyElevationOverlayColor: false,
 
       // App Bar Theme
       appBarTheme: AppBarTheme(
@@ -110,6 +144,31 @@ class CustomThemeGenerator {
         headlineSmall: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w600),
       ),
 
+      // Bottom Navigation Bar Theme
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF000000),
+        elevation: 0,
+      ),
+
+      // Navigation Bar Theme (Material 3)
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: Color(0xFF000000),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+
+      // Dialog Theme
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Color(0xFF000000),
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      // Bottom Sheet Theme
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Color(0xFF000000),
+        surfaceTintColor: Colors.transparent,
+      ),
+
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -118,12 +177,15 @@ class CustomThemeGenerator {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
+          surfaceTintColor: Colors.transparent,
         ),
       ),
 
       // Card Theme
       cardTheme: CardThemeData(
         elevation: 3,
+        surfaceTintColor: Colors.transparent,
+        color: const Color(0xFF000000),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
