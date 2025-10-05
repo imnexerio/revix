@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -194,7 +195,7 @@ class UnifiedDatabaseService {
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? [],
           processedRawData);
-      HomeWidget.saveWidgetData('categoriesData', _cachedCategoriesData);
+      HomeWidget.saveWidgetData('categoriesData', jsonEncode(_cachedCategoriesData));
     }
   }
 
@@ -360,7 +361,7 @@ class UnifiedDatabaseService {
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? [],
               _cachedRawData);
-          HomeWidget.saveWidgetData('categoriesData', _cachedCategoriesData);
+          HomeWidget.saveWidgetData('categoriesData', jsonEncode(_cachedCategoriesData));
         }
 
       }
