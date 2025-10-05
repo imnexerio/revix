@@ -40,7 +40,6 @@ class HomeWidgetService {
       await _databaseService.initialize();      // Give a small delay for the service to initialize properly
       await Future.delayed(const Duration(milliseconds: 100));
 
-      await _initializeWidgetData();
 
       _isInitialized = true;
     } catch (e) {
@@ -88,65 +87,29 @@ class HomeWidgetService {
     }
   }
 
-  // Initialize all widget data using existing database services
-  static Future<void> _initializeWidgetData() async {
-    try {
-      // Initialize frequency data for AddLectureActivity access
-      await _updateFrequencyDataFromService();
-
-      // Initialize tracking types data for AddLectureActivity access
-      await _updateTrackingTypesFromService();
-
-      // Initialize categories data for AddLectureActivity access
-      await _updateCategoriesFromService();
-    } catch (e) {
-      print('Error initializing widget data: $e');
-    }
-  }
-
   // Update frequency data using existing FirebaseDatabaseService
-  static Future<void> _updateFrequencyDataFromService() async {
+  static Future<void> _updateFrequencyNTrackingDataFromService() async {
     try {
       Map<String, dynamic> frequencyData = {};
 
       // Use existing FirebaseDatabaseService method
       final firebaseService = FirebaseDatabaseService();
       final customFrequencies = await firebaseService.fetchCustomFrequencies();
+      List<String> trackingTypes = await firebaseService.fetchCustomTrackingTypes();
       frequencyData.addAll(customFrequencies);
 
       await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode(frequencyData));
-    } catch (e) {
-      print('Error updating frequency data from service: $e');
-    }
-  }
-
-  // Update tracking types using existing FirebaseDatabaseService
-  static Future<void> _updateTrackingTypesFromService() async {
-    try {
-      // Use existing FirebaseDatabaseService method
-      final firebaseService = FirebaseDatabaseService();
-      List<String> trackingTypes = await firebaseService.fetchCustomTrackingTypes();
 
       // Remove duplicates
       trackingTypes = trackingTypes.toSet().toList();
 
       await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(trackingTypes));
     } catch (e) {
+      print('Error updating frequency data from service: $e');
       print('Error updating tracking types from service: $e');
     }
   }
 
-  // Update categories using existing UnifiedDatabaseService
-  static Future<void> _updateCategoriesFromService() async {
-    try {
-      // Use existing UnifiedDatabaseService method
-      final categoriesData = await _databaseService.fetchCategoriesAndSubCategories();
-
-      await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode(categoriesData));
-    } catch (e) {
-      print('Error updating categories from service: $e');
-    }
-  }
   // This callback will be called when the widget triggers a refresh
   @pragma('vm:entry-point')
   static Future<void> backgroundCallback(Uri? uri) async {
@@ -175,6 +138,8 @@ class HomeWidgetService {
         print('Service initialized');
 
         await service.forceDataReprocessing();
+        _updateFrequencyNTrackingDataFromService();
+        print('Frequency and tracking types updated');
         print('Data reprocessing completed');
 
         // Set success result for RefreshService
@@ -194,16 +159,6 @@ class HomeWidgetService {
           await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'ERROR:${e.toString()}');
           print('Widget refresh result stored for requestId $requestId: ERROR:${e.toString()}');
         }
-      }
-    } else if (uri?.host == 'frequency_refresh') {
-      try {
-        print('Starting frequency data refresh...');
-
-        // Update all widget data using existing database services
-        await _initializeWidgetData();
-        print('All widget data refresh completed');
-      } catch (e) {
-        print('Error in widget data refresh: $e');
       }
     }
     else if (uri?.host == 'record_update') {

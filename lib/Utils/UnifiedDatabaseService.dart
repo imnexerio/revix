@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:revix/Utils/platform_utils.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
 import 'GuestAuthService.dart';
@@ -193,8 +194,10 @@ class UnifiedDatabaseService {
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? [],
           processedRawData);
+      HomeWidget.saveWidgetData('categoriesData', _cachedCategoriesData);
     }
   }
+
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords, Map<Object?, Object?> allRecords) {
     HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecords);
   }
@@ -217,7 +220,6 @@ class UnifiedDatabaseService {
       'subjects': subjects,
       'subCategories': subCategories,
     };
-
     _categoriesController.add(_cachedCategoriesData!);
   }
 
@@ -351,13 +353,6 @@ class UnifiedDatabaseService {
 
         List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
         _allRecordsController.add({'allRecords': allRecords});
-        if (PlatformUtils.instance.isAndroid ) {
-          _updateHomeWidget(categorizedData['today'] ?? [],
-              categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
-              categorizedData['missed'] ?? [],
-              categorizedData['noreminderdate'] ?? [],
-              _cachedRawData);
-        }
       }
       return;
     }
