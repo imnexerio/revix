@@ -87,26 +87,15 @@ class HomeWidgetService {
     }
   }
 
-  // Update frequency data using existing FirebaseDatabaseService
   static Future<void> _updateFrequencyNTrackingDataFromService() async {
     try {
-      Map<String, dynamic> frequencyData = {};
-
-      // Use existing FirebaseDatabaseService method
       final firebaseService = FirebaseDatabaseService();
-      final customFrequencies = await firebaseService.fetchCustomFrequencies();
-      List<String> trackingTypes = await firebaseService.fetchCustomTrackingTypes();
-      frequencyData.addAll(customFrequencies);
-
-      await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode(frequencyData));
-
-      // Remove duplicates
-      trackingTypes = trackingTypes.toSet().toList();
-
-      await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode(trackingTypes));
+      await firebaseService.fetchCustomFrequencies();
+      await firebaseService.fetchCustomTrackingTypes();
+      
+      print('Frequency and tracking types data refreshed and saved');
     } catch (e) {
-      print('Error updating frequency data from service: $e');
-      print('Error updating tracking types from service: $e');
+      print('Error updating frequency and tracking types from service: $e');
     }
   }
 
@@ -423,16 +412,21 @@ class HomeWidgetService {
     try {
       await HomeWidget.saveWidgetData(isLoggedInKey, isLoggedIn);
       if (!isLoggedIn) {
-        // Clear widget data when logging out
+        // Clear ALL widget data when logging out (records + metadata)
         await HomeWidget.saveWidgetData(todayRecordsKey, jsonEncode([]));
-        await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));  // NEW
+        await HomeWidget.saveWidgetData(tomorrowRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(missedRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
-        await HomeWidget.saveWidgetData(allDataRecordsKey, jsonEncode({}));  // Clear allRecords for CounterWidget
+        await HomeWidget.saveWidgetData(allDataRecordsKey, jsonEncode({}));
+        
+        // Clear metadata (frequencies, tracking types, categories)
+        await HomeWidget.saveWidgetData(frequencyDataKey, jsonEncode({}));
+        await HomeWidget.saveWidgetData(trackingTypesKey, jsonEncode([]));
+        await HomeWidget.saveWidgetData(categoriesDataKey, jsonEncode({'subjects': [], 'subCategories': {}}));
 
         try {
           await WidgetDataNAlarmManager.cancelAllAlarmsNWidgetData();
-          print('HomeWidgetManager: Alarms scheduled successfully via Flutter');
+          print('HomeWidgetManager: Alarms cancelled successfully via Flutter');
         } catch (e) {
           if (e.toString().contains('MissingPluginException')) {
             print('HomeWidgetManager: Background context detected - native Android will handle alarm scheduling');
