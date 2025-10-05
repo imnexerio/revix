@@ -177,42 +177,13 @@ class HomeWidgetService {
         await service.forceDataReprocessing();
         print('Data reprocessing completed');
 
-        // Get the processed data from the service
-        final categorizedData = service.currentCategorizedData;
-        print('Categorized data retrieved: ${categorizedData?.keys.toList()}');
-
-        if (categorizedData != null) {
-          final todayRecords = categorizedData['today'] ?? [];
-          final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
-          final missedRecords = categorizedData['missed'] ?? [];
-          final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-          final allRecordsData = service.currentRawData ?? <Object?, Object?>{};
-
-          print('Records found - Today: ${todayRecords.length}, Tomorrow: ${tomorrowRecords.length}, Missed: ${missedRecords.length}, No reminder: ${noReminderDateRecords.length}, All: ${allRecordsData.length}');
-
-          // Update widget with the new data
-          await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecordsData);
-
-          // Set success result for RefreshService
-          if (requestId.isNotEmpty) {
-            await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'SUCCESS');
-            print('Widget refresh result stored for requestId $requestId: SUCCESS');
-          }
-
-          print('Widget background refresh completed with data');
-        } else {
-          print('No categorized data available, using empty data');
-          // Fallback to empty data if no data available
-          await _updateWidgetWithEmptyData();
-
-          // Set success result even with empty data
-          if (requestId.isNotEmpty) {
-            await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'SUCCESS');
-            print('Widget refresh result stored for requestId $requestId: SUCCESS (empty data)');
-          }
-
-          print('Widget background refresh completed with empty data');
+        // Set success result for RefreshService
+        if (requestId.isNotEmpty) {
+          await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'SUCCESS');
+          print('Widget refresh result stored for requestId $requestId: SUCCESS');
         }
+
+        print('Widget background refresh completed with data');
       } catch (e) {
         print('Error in background widget refresh: $e');
         print('Error details: ${e.toString()}');
@@ -223,9 +194,6 @@ class HomeWidgetService {
           await HomeWidget.saveWidgetData('widget_refresh_result_$requestId', 'ERROR:${e.toString()}');
           print('Widget refresh result stored for requestId $requestId: ERROR:${e.toString()}');
         }
-
-        // Fallback to empty data
-        await _updateWidgetWithEmptyData();
       }
     } else if (uri?.host == 'frequency_refresh') {
       try {
@@ -270,20 +238,6 @@ class HomeWidgetService {
             );
 
             print('Record update completed successfully using MarkAsDoneService');
-
-            // Refresh widget data after update              await service.forceDataReprocessing();
-            final categorizedData = service.currentCategorizedData;
-            if (categorizedData != null) {
-              final todayRecords = categorizedData['today'] ?? [];
-              final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
-              final missedRecords = categorizedData['missed'] ?? [];
-              final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-              final allRecordsData = service.currentRawData ?? <Object?, Object?>{};
-
-              await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecordsData);
-
-              print('Widget refreshed after record update');
-            }
           } catch (e) {
             updateResult = 'ERROR:${e.toString()}';
             print('Record update failed: $e');
@@ -378,20 +332,6 @@ class HomeWidgetService {
 
               print('Record creation completed successfully');
 
-              // Refresh widget data after creation
-              await service.forceDataReprocessing();
-              final categorizedData = service.currentCategorizedData;
-              if (categorizedData != null) {
-                final todayRecords = categorizedData['today'] ?? [];
-                final tomorrowRecords = categorizedData['nextDay'] ?? [];  // NEW
-                final missedRecords = categorizedData['missed'] ?? [];
-                final noReminderDateRecords = categorizedData['noreminderdate'] ?? [];
-                final allRecordsData = service.currentRawData ?? <Object?, Object?>{};
-
-                await updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecordsData);
-
-                print('Widget refreshed after record creation');
-              }
             } catch (e) {
               saveResult = 'ERROR:${e.toString()}';
               print('Record creation failed: $e');
