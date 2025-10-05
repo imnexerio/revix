@@ -8,6 +8,16 @@ object WidgetUpdateManager {
     fun updateAllWidgets(context: Context) {
         try {
             Log.d("WidgetUpdateManager", "Updating all widget types...")
+
+            // Schedule alarms from updated data
+            try {
+                Log.d("WidgetUpdateManager", "Scheduling alarms from updated data...")
+                val alarmHelper = AlarmManagerHelper(context)
+                alarmHelper.scheduleAlarmsFromWidgetData(context)
+                Log.d("WidgetUpdateManager", "Alarms scheduled successfully from RefreshService")
+            } catch (e: Exception) {
+                Log.e("WidgetUpdateManager", "Error scheduling alarms: ${e.message}", e)
+            }
             
             // Update TodayWidget (Records Only - combined data)
             TodayWidget.updateWidgets(context)
@@ -30,6 +40,16 @@ object WidgetUpdateManager {
     fun clearAllWidgets(context: Context) {
         try {
             Log.d("WidgetUpdateManager", "Clearing all widget types...")
+
+            // Cancel alarms from updated data
+            try {
+                Log.d("WidgetUpdateManager", "Scheduling alarms from updated data...")
+                val alarmHelper = AlarmManagerHelper(context)
+                alarmHelper.cancelAllStoredAlarms()
+                Log.d("WidgetUpdateManager", "Alarms scheduled successfully from RefreshService")
+            } catch (e: Exception) {
+                Log.e("WidgetUpdateManager", "Error scheduling alarms: ${e.message}", e)
+            }
             
             // Clear TodayWidget
             TodayWidget.updateWidgets(context) // Will read empty data after logout

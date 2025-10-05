@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:revix/Utils/platform_utils.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
-import 'AlarmManager.dart';
 import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import 'CustomSnackBar.dart';
@@ -170,9 +169,6 @@ class UnifiedDatabaseService {
 
       if (PlatformUtils.instance.isAndroid ) {
         _updateHomeWidget([], [], [], [], <Object?, Object?>{});
-
-        // Cancel all alarms when there's no data
-        _cancelAllAlarms();
       }
       return;
     }
@@ -197,49 +193,10 @@ class UnifiedDatabaseService {
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? [],
           processedRawData);
-
-      _scheduleAlarms(categorizedData['today'] ?? [],
-          categorizedData['nextDay'] ?? []);
     }
   }
   void _updateHomeWidget(List<Map<String, dynamic>> todayRecords,List<Map<String, dynamic>> tomorrowRecords, List<Map<String, dynamic>> missedRecords,List<Map<String, dynamic>> noReminderDateRecords, Map<Object?, Object?> allRecords) {
     HomeWidgetService.updateWidgetData(todayRecords, tomorrowRecords, missedRecords, noReminderDateRecords, allRecords);
-  }
-
-  void _scheduleAlarms(List<Map<String, dynamic>> todayRecords, List<Map<String, dynamic>> tomorrowRecords) {
-    try {
-      print('UnifiedDatabaseService: Scheduling alarms with data...');
-      print('Today records: ${todayRecords.length}, Tomorrow records: ${tomorrowRecords.length}');
-      
-      // Try to call AlarmManager - if it fails due to background context, that's okay
-      // because RefreshService will handle alarm scheduling natively
-      try {
-        AlarmManager.scheduleAlarmsWithData(todayRecords, tomorrowRecords);
-        print('UnifiedDatabaseService: Alarms scheduled successfully via Flutter');
-      } catch (e) {
-        if (e.toString().contains('MissingPluginException')) {
-          print('UnifiedDatabaseService: Background context detected - native Android will handle alarm scheduling');
-        } else {
-          print('UnifiedDatabaseService: Error scheduling alarms: $e');
-          rethrow;
-        }
-      }
-    } catch (e) {
-      print('UnifiedDatabaseService: Error in alarm scheduling: $e');
-    }
-  }
-
-  void _cancelAllAlarms() {
-    try {
-      print('UnifiedDatabaseService: Cancelling all alarms...');
-      
-      // Call AlarmManager to cancel all alarms
-      AlarmManager.cancelAllAlarms();
-      
-      print('UnifiedDatabaseService: All alarms cancelled successfully');
-    } catch (e) {
-      print('UnifiedDatabaseService: Error cancelling alarms: $e');
-    }
   }
 
   void _processCategoriesData(Map<Object?, Object?> rawData) {
@@ -400,10 +357,6 @@ class UnifiedDatabaseService {
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? [],
               _cachedRawData);
-
-          // Schedule alarms with the same data
-          _scheduleAlarms(categorizedData['today'] ?? [],
-              categorizedData['nextDay'] ?? []);
         }
       }
       return;

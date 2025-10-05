@@ -9,7 +9,7 @@ import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/MarkAsDoneService.dart';
-import '../Utils/AlarmManager.dart';
+import '../Utils/WidgetDataNAlarmManager.dart';
 import '../firebase_options.dart';
 
 @pragma('vm:entry-point')
@@ -428,7 +428,17 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
     await HomeWidget.saveWidgetData(allDataRecordsKey, jsonEncode([]));  // NEW
     await HomeWidget.saveWidgetData('lastUpdated', DateTime.now().millisecondsSinceEpoch);
-    await _updateWidget();
+    try {
+      await WidgetDataNAlarmManager.scheduleAlarmsNWidgetRefresh();
+      print('HomeWidgetManager: Alarms scheduled successfully via Flutter');
+    } catch (e) {
+      if (e.toString().contains('MissingPluginException')) {
+        print('HomeWidgetManager: Background context detected - native Android will handle alarm scheduling');
+      } else {
+        print('HomeWidgetManager: Error scheduling alarms: $e');
+        rethrow;
+      }
+    }
   }
   static Future<void> updateWidgetData(
       List<Map<String, dynamic>> todayRecords,
@@ -437,45 +447,56 @@ class HomeWidgetService {
       List<Map<String, dynamic>> noReminderDateRecords,
       Map<Object?, Object?> allRecords,  // NEW
       ) async {
-    try {
-      // Format and save all data categories
-      await HomeWidget.saveWidgetData(
-        todayRecordsKey,
-        jsonEncode(_formatRecords(todayRecords)),
-      );
+        try {
+          // Format and save all data categories
+          await HomeWidget.saveWidgetData(
+            todayRecordsKey,
+            jsonEncode(_formatRecords(todayRecords)),
+          );
 
-      await HomeWidget.saveWidgetData(
-        tomorrowRecordsKey,  // NEW
-        jsonEncode(_formatRecords(tomorrowRecords)),
-      );
+          await HomeWidget.saveWidgetData(
+            tomorrowRecordsKey,  // NEW
+            jsonEncode(_formatRecords(tomorrowRecords)),
+          );
 
-      await HomeWidget.saveWidgetData(
-        missedRecordsKey,
-        jsonEncode(_formatRecords(missedRecords)),
-      );
+          await HomeWidget.saveWidgetData(
+            missedRecordsKey,
+            jsonEncode(_formatRecords(missedRecords)),
+          );
 
-      await HomeWidget.saveWidgetData(
-        noReminderDateRecordsKey,
-        jsonEncode(_formatRecords(noReminderDateRecords)),
-      );
+          await HomeWidget.saveWidgetData(
+            noReminderDateRecordsKey,
+            jsonEncode(_formatRecords(noReminderDateRecords)),
+          );
 
-      // ADD: Save all records for counter widget selection
-      await HomeWidget.saveWidgetData(
-        allDataRecordsKey,
-        jsonEncode(allRecords),
-      );
+          // ADD: Save all records for counter widget selection
+          await HomeWidget.saveWidgetData(
+            allDataRecordsKey,
+            jsonEncode(allRecords),
+          );
 
-      // Add timestamp to update the "last updated" time in widget
-      await HomeWidget.saveWidgetData(
-        'lastUpdated',
-        DateTime.now().millisecondsSinceEpoch,
-      );
+          // Add timestamp to update the "last updated" time in widget
+          await HomeWidget.saveWidgetData(
+            'lastUpdated',
+            DateTime.now().millisecondsSinceEpoch,
+          );
 
-      // Request widget update
-      await _updateWidget();
-    } catch (e) {
-      debugPrint('Error updating widget data: $e');
-    }
+          // Request widget update
+
+          try {
+            await WidgetDataNAlarmManager.scheduleAlarmsNWidgetRefresh();
+            print('HomeWidgetManager: Alarms scheduled successfully via Flutter');
+          } catch (e) {
+            if (e.toString().contains('MissingPluginException')) {
+              print('HomeWidgetManager: Background context detected - native Android will handle alarm scheduling');
+            } else {
+              print('HomeWidgetManager: Error scheduling alarms: $e');
+              rethrow;
+            }
+          }
+        } catch (e) {
+          debugPrint('Error updating widget data: $e');
+        }
   }
 
   static List<Map<String, dynamic>> _formatRecords(
@@ -494,36 +515,6 @@ class HomeWidgetService {
     }).toList();
   }
 
-  static Future<void> _updateWidget() async {
-    // Update TodayWidget
-    await HomeWidget.updateWidget(
-      name: 'TodayWidget',
-      androidName: 'TodayWidget',
-      iOSName: 'TodayWidget',
-    );
-
-    // Update CalendarWidget
-    await HomeWidget.updateWidget(
-      name: 'CalendarWidget',
-      androidName: 'CalendarWidget',
-    );
-
-    // Update CalendarOnlyWidget
-    await HomeWidget.updateWidget(
-      name: 'CalendarOnlyWidget',
-      androidName: 'CalendarOnlyWidget',
-    );
-
-    // Update CounterWidget
-    await HomeWidget.updateWidget(
-      name: 'CounterWidget',
-      androidName: 'CounterWidget',
-    );
-
-    // Note: Method channel notifications are not available in background contexts
-    // The HomeWidget.updateWidget() call above already handles the native widget update
-    print('All widgets updated via HomeWidget package');
-  }
 
   static Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
@@ -544,11 +535,30 @@ class HomeWidgetService {
         await HomeWidget.saveWidgetData(noReminderDateRecordsKey, jsonEncode([]));
         await HomeWidget.saveWidgetData(allDataRecordsKey, jsonEncode({}));  // Clear allRecords for CounterWidget
 
-        // cancel all the alarms when logging out
-        AlarmManager.cancelAllAlarms();
+        try {
+          await WidgetDataNAlarmManager.cancelAllAlarmsNWidgetData();
+          print('HomeWidgetManager: Alarms scheduled successfully via Flutter');
+        } catch (e) {
+          if (e.toString().contains('MissingPluginException')) {
+            print('HomeWidgetManager: Background context detected - native Android will handle alarm scheduling');
+          } else {
+            print('HomeWidgetManager: Error scheduling alarms: $e');
+            rethrow;
+          }
+        }
       }
 
-      await _updateWidget();
+      try {
+        await WidgetDataNAlarmManager.scheduleAlarmsNWidgetRefresh();
+        print('HomeWidgetManager: Alarms scheduled successfully via Flutter');
+      } catch (e) {
+        if (e.toString().contains('MissingPluginException')) {
+          print('HomeWidgetManager: Background context detected - native Android will handle alarm scheduling');
+        } else {
+          print('HomeWidgetManager: Error scheduling alarms: $e');
+          rethrow;
+        }
+      }
     } catch (e) {
       print('Error updating widget login status: $e');
     }

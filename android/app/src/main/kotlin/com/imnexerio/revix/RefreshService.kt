@@ -216,19 +216,12 @@ class RefreshService : Service() {
         // Show success notification
         showStatusNotification("Data refresh completed successfully!", true)
 
-        // Schedule alarms from updated data
-        try {
-            Log.d("RefreshService", "Scheduling alarms from updated data...")
-            val alarmHelper = AlarmManagerHelper(applicationContext)
-            alarmHelper.scheduleAlarmsFromWidgetData(applicationContext)
-            Log.d("RefreshService", "Alarms scheduled successfully from RefreshService")
-        } catch (e: Exception) {
-            Log.e("RefreshService", "Error scheduling alarms: ${e.message}", e)
-        }
-
         // Schedule next auto-refresh if enabled (with fresh lastUpdated timestamp)
         scheduleNextAutoRefreshIfEnabled()
-        
+
+        // Update widgets with new data
+        updateWidgets()
+
         Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
     }
@@ -281,7 +274,10 @@ class RefreshService : Service() {
 
         // Show error notification
         showStatusNotification("Refresh failed: $errorMessage", false)
-        
+
+        // Update widgets to remove refreshing state
+        updateWidgets()
+
         Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
     }    private fun handleRefreshTimeout(startId: Int) {
@@ -299,11 +295,22 @@ class RefreshService : Service() {
 
         // Show timeout notification
         showStatusNotification("Refresh operation timed out. Please try again.", false)
-        
+
+        // Update widgets to remove refreshing state
+        updateWidgets()
+
         Log.d("RefreshService", "Stopping service with startId: $startId")
         stopSelf(startId)
     }
 
+    private fun updateWidgets() {
+        try {
+            // Use the unified widget update manager to update all widget types
+            WidgetUpdateManager.updateAllWidgets(applicationContext)
+        } catch (e: Exception) {
+            Log.e("RefreshService", "Error updating widgets: ${e.message}")
+        }
+    }
 
     private fun showStatusNotification(message: String, isSuccess: Boolean) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager

@@ -47,9 +47,36 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
-        
-        // Register AlarmSchedulerPlugin
-        flutterEngine.plugins.add(AlarmSchedulerPlugin())
+
+        // Setup alarm refresh method channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "data_refresh").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "refreshAlarms_and_WidgetData" -> {
+                    try {
+                        Log.d("MainActivity", "Triggering WidgetUpdateManager via MethodChannel")
+                        WidgetUpdateManager.updateAllWidgets(applicationContext)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to refresh WidgetUpdateManager: ${e.message}", e)
+                        result.error("REFRESH_ERROR", "Failed to refresh WidgetUpdateManager: ${e.message}", null)
+                    }
+                }
+                "cancelAllAlarms_and_WidgetData" -> {
+                    try {
+                        Log.d("MainActivity", "Cancelling all WidgetUpdateManager via MethodChannel")
+                        WidgetUpdateManager.clearAllWidgets(applicationContext)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to cancel WidgetUpdateManager: ${e.message}", e)
+                        result.error("CANCEL_ERROR", "Failed to cancel WidgetUpdateManager: ${e.message}", null)
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
