@@ -7,6 +7,15 @@ class CustomThemeGenerator {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: primaryColor,
       brightness: Brightness.light,
+    ).copyWith(
+      // Override with neutral backgrounds (pure white)
+      surface: const Color(0xFFFFFFFF),
+      onSurface: const Color(0xFF000000),
+      surfaceContainerLowest: const Color(0xFFFFFFFF),
+      surfaceContainerLow: const Color(0xFFFAFAFA),
+      surfaceContainer: const Color(0xFFF5F5F5),
+      surfaceContainerHigh: const Color(0xFFF0F0F0),
+      surfaceContainerHighest: const Color(0xFFEBEBEB),
     );
 
     return ThemeData(
@@ -64,6 +73,15 @@ class CustomThemeGenerator {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: primaryColor,
       brightness: Brightness.dark,
+    ).copyWith(
+      // Override with neutral backgrounds (pure black)
+      surface: const Color(0xFF000000),
+      onSurface: const Color(0xFFFFFFFF),
+      surfaceContainerLowest: const Color(0xFF000000),
+      surfaceContainerLow: const Color(0xFF0A0A0A),
+      surfaceContainer: const Color(0xFF141414),
+      surfaceContainerHigh: const Color(0xFF1E1E1E),
+      surfaceContainerHighest: const Color(0xFF282828),
     );
 
     return ThemeData(
