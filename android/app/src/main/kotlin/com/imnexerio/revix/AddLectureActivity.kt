@@ -83,7 +83,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         // Set up initial data
         setInitialDates()
 
-        loadCustomData()
+        loadCustomDataAsync()
     }
 
     private fun initializeViews() {
@@ -158,18 +158,17 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    private fun loadCustomData() {
+    private fun loadCustomDataAsync() {
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 val trackingTypesDeferred = async { fetchTrackingTypesSync() }
                 val frequenciesDeferred = async { fetchFrequenciesSync() }
                 val categoriesDeferred = async { fetchCategoriesSync() }
-                
+
                 val trackingTypesResult = trackingTypesDeferred.await()
                 val frequenciesResult = frequenciesDeferred.await()
                 val categoriesResult = categoriesDeferred.await()
-                
-                // Update UI on main thread
+
                 withContext(Dispatchers.Main) {
                     // Update tracking types
                     trackingTypes.clear()
@@ -204,6 +203,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 Log.e("AddLectureActivity", "Error loading custom data: ${e.message}", e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@AddLectureActivity, "Error loading data", Toast.LENGTH_SHORT).show()
+                    setupListeners()
                 }
             }
         }
