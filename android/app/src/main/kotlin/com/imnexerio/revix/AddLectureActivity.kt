@@ -159,36 +159,54 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     }
 
     private fun loadCustomData() {
-        // Show a loading indicator if needed
-
-        // First, trigger a frequency data refresh to ensure we have the latest data
-        refreshFrequencyData()
-
-        // Add a small delay to allow frequency data to be refreshed by Flutter
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            // Fetch tracking types using SharedPreferences approach like frequency data
-            fetchTrackingTypesFromFlutter { types ->
-                trackingTypes.clear()
-                trackingTypes.addAll(types)
-
-                // Update UI with tracking types
-                updateLectureTypeSpinner()                // Fetch frequencies using SharedPreferences approach like TodayWidget
-                FrequencyCalculationUtils.fetchCustomFrequencies(this) { frequenciesMap ->
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val trackingTypesDeferred = async { fetchTrackingTypesSync() }
+                val frequenciesDeferred = async { fetchFrequenciesSync() }
+                val categoriesDeferred = async { fetchCategoriesSync() }
+                
+                val trackingTypesResult = trackingTypesDeferred.await()
+                val frequenciesResult = frequenciesDeferred.await()
+                val categoriesResult = categoriesDeferred.await()
+                
+                // Update UI on main thread
+                withContext(Dispatchers.Main) {
+                    // Update tracking types
+                    trackingTypes.clear()
+                    trackingTypes.addAll(trackingTypesResult)
+                    updateLectureTypeSpinner()
+                    
+                    // Update frequencies
                     frequencies.clear()
-                    frequencies.putAll(frequenciesMap)                    // Get frequency names for spinner
+                    frequencies.putAll(frequenciesResult)
                     frequencyNames.clear()
-                    frequencyNames.addAll(FrequencyCalculationUtils.getFrequencyNames(frequenciesMap))
+                    frequencyNames.addAll(FrequencyCalculationUtils.getFrequencyNames(frequenciesResult))
                     frequencyNames.add("Custom")
                     frequencyNames.add("No Repetition")
-
-                    // Update UI with frequencies
                     updateRevisionFrequencySpinner()
-
-                    // Now load subjects
-                    loadCategoriesAndSubCategories()
+                    
+                    // Update categories
+                    subjects.clear()
+                    subjects.addAll(categoriesResult.first)
+                    subCategories.clear()
+                    subCategories.putAll(categoriesResult.second)
+                    updateCategorySpinner()
+                    
+                    if (subjects.isNotEmpty()) {
+                        selectedCategory = subjects[0]
+                        updateSubCategorySpinner()
+                    }
+                    
+                    // Setup all listeners after data is loaded
+                    setupListeners()
+                }
+            } catch (e: Exception) {
+                Log.e("AddLectureActivity", "Error loading custom data: ${e.message}", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AddLectureActivity, "Error loading data", Toast.LENGTH_SHORT).show()
                 }
             }
-        }, 500) // Wait 500ms for Flutter to process the frequency refresh
+        }
     }
 
     private fun updateLectureTypeSpinner() {
@@ -615,30 +633,59 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    private fun loadCategoriesAndSubCategories() {
-        // Use CategoriesDataUtils to fetch data from SharedPreferences instead of direct Firebase call
-        CategoriesDataUtils.fetchCategoriesAndSubCategories(this) { subjectsList, subCategoriesMap ->
-            subjects.clear()
-            subCategories.clear()
-
-            // Add subjects
-            subjects.addAll(subjectsList)
-
-            // Add sub categories
-            subCategories.putAll(subCategoriesMap)
-
-            // Update the spinners
-            updateCategorySpinner()
-
-            // Set initial selection
-            if (subjects.isNotEmpty()) {
-                selectedCategory = subjects[0]
-                updateSubCategorySpinner()
+    private fun fetchCategoriesSync(): Pair<List<String>, Map<String, List<String>>> {
+        val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
+        val categoriesDataJson = sharedPrefs.getString("categoriesData", null)
+        
+        val subjectsList = mutableListOf<String>()
+        val subCategoriesMap = mutableMapOf<String, List<String>>()
+        
+        if (categoriesDataJson != null && categoriesDataJson.isNotEmpty() && categoriesDataJson != "{}") {
+            try {
+                val jsonData = org.json.JSONObject(categoriesDataJson)
+                
+                // Parse subjects array
+                if (jsonData.has("subjects")) {
+                    val subjectsArray = jsonData.getJSONArray("subjects")
+                    for (i in 0 until subjectsArray.length()) {
+                        subjectsList.add(subjectsArray.getString(i))
+                    }
+                }
+                
+                // Parse subCategories object
+                if (jsonData.has("subCategories")) {
+                    val subCategoriesObject = jsonData.getJSONObject("subCategories")
+                    val keys = subCategoriesObject.keys()
+                    
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        val value = subCategoriesObject.get(key)
+                        
+                        when (value) {
+                            is org.json.JSONArray -> {
+                                val subCategoryList = mutableListOf<String>()
+                                for (i in 0 until value.length()) {
+                                    subCategoryList.add(value.getString(i))
+                                }
+                                subCategoriesMap[key] = subCategoryList
+                            }
+                            else -> {
+                                Log.w("AddLectureActivity", "Unexpected value type for subcategory $key: $value")
+                                subCategoriesMap[key] = emptyList()
+                            }
+                        }
+                    }
+                }
+                
+                Log.d("AddLectureActivity", "Fetched categories - Subjects: $subjectsList, SubCategories: $subCategoriesMap")
+            } catch (e: Exception) {
+                Log.e("AddLectureActivity", "Error parsing categories JSON: $e")
             }
-
-            // Set up all listeners after data is loaded
-            setupListeners()
+        } else {
+            Log.d("AddLectureActivity", "No categories data found in SharedPreferences")
         }
+        
+        return Pair(subjectsList, subCategoriesMap)
     }
 
     private fun updateCategorySpinner() {
@@ -1044,60 +1091,67 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }.start()
     }
 
-    private fun refreshFrequencyData() {
-        FrequencyCalculationUtils.refreshFrequencyData(this)
+    private fun fetchTrackingTypesSync(): List<String> {
+        val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
+        val trackingTypesJson = sharedPrefs.getString("trackingTypes", null)
+        val data = mutableListOf<String>()
         
-        // Give a small delay for the background update to complete, then refresh our local cache
-        GlobalScope.launch(Dispatchers.Main) {
-            delay(100) // Small delay to ensure background update completes
-            
-            FrequencyCalculationUtils.fetchCustomFrequencies(this@AddLectureActivity) { frequencyData ->
-                Log.d("AddLectureActivity", "Frequency data refreshed: $frequencyData")
-                // Data is now updated in our local cache via SharedPreferences
-                // Any subsequent calls to fetchCustomFrequencies will get the fresh data
+        if (trackingTypesJson != null && trackingTypesJson.isNotEmpty()) {
+            try {
+                val jsonArray = org.json.JSONArray(trackingTypesJson)
+                for (i in 0 until jsonArray.length()) {
+                    data.add(jsonArray.getString(i))
+                }
+                Log.d("AddLectureActivity", "Parsed tracking types: $data")
+            } catch (e: Exception) {
+                Log.e("AddLectureActivity", "Error parsing tracking types: $e")
             }
         }
+        
+        if (data.isEmpty()) {
+            Log.d("AddLectureActivity", "No tracking types found, using empty list")
+        }
+        
+        return data
     }
-
-    // Fetch tracking types from SharedPreferences (similar to frequency data)
-    private fun fetchTrackingTypesFromFlutter(callback: (List<String>) -> Unit) {
-        GlobalScope.launch(Dispatchers.IO) {
+    
+    private fun fetchFrequenciesSync(): Map<String, List<Int>> {
+        val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
+        val frequencyDataJson = sharedPrefs.getString("frequencyData", null)
+        val frequencies = mutableMapOf<String, List<Int>>()
+        
+        if (frequencyDataJson != null && frequencyDataJson.isNotEmpty()) {
             try {
-                // Get tracking types data from SharedPreferences that Flutter stores
-                val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
-                val trackingTypesJson = sharedPrefs.getString("trackingTypes", null)
+                val jsonData = org.json.JSONObject(frequencyDataJson)
+                val keys = jsonData.keys()
                 
-                val data = mutableListOf<String>()
-                
-                if (trackingTypesJson != null && trackingTypesJson.isNotEmpty()) {
-                    try {
-                        // Parse JSON data - expecting array format like ["Lectures", "Handouts", "Others"]
-                        val jsonArray = org.json.JSONArray(trackingTypesJson)
-                        
-                        for (i in 0 until jsonArray.length()) {
-                            val value = jsonArray.getString(i)
-                            data.add(value)
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val value = jsonData.get(key)
+                    
+                    when (value) {
+                        is org.json.JSONArray -> {
+                            val frequencyList = mutableListOf<Int>()
+                            for (i in 0 until value.length()) {
+                                frequencyList.add(value.getInt(i))
+                            }
+                            frequencies[key] = frequencyList
                         }
-                        
-                        Log.d("AddLectureActivity", "Parsed tracking types: $data")
-                    } catch (e: Exception) {
-                        Log.e("AddLectureActivity", "Error parsing tracking types JSON data: $e")
+                        else -> {
+                            Log.w("AddLectureActivity", "Unexpected value type for frequency $key: $value")
+                        }
                     }
                 }
                 
-                // If no valid data was parsed, use default tracking types
-                if (data.isEmpty()) {
-                    Log.d("AddLectureActivity", "No tracking types data found, using defaults: $data")
-                }
-                
-                // Switch back to main thread for callback
-                runOnUiThread {
-                    callback(data)
-                }
+                Log.d("AddLectureActivity", "Fetched frequencies: $frequencies")
             } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error fetching tracking types: ${e.message}", e)
+                Log.e("AddLectureActivity", "Error parsing frequencies JSON: $e")
             }
+        } else {
+            Log.d("AddLectureActivity", "No frequency data found in SharedPreferences")
         }
+        
+        return frequencies
     }
 
     override fun onDestroy() {
