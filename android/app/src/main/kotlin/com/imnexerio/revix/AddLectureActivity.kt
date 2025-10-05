@@ -99,9 +99,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         reminderTimeEditText = findViewById(R.id.reminder_time_edit_text)
         allDayCheckBox = findViewById(R.id.all_day_checkbox)
         initiationDateEditText = findViewById(R.id.initiation_date_edit_text)
-        initiationDateCheckbox = findViewById(R.id.initiation_date_checkbox) // Initialize new checkbox
+        initiationDateCheckbox = findViewById(R.id.initiation_date_checkbox)
         revisionFrequencySpinner = findViewById(R.id.revision_frequency_spinner)
-        reviewFrequencyCheckbox = findViewById(R.id.review_frequency_checkbox) // Initialize new checkbox
+        reviewFrequencyCheckbox = findViewById(R.id.review_frequency_checkbox)
         scheduledDateEditText = findViewById(R.id.scheduled_date_edit_text)
         durationSpinner = findViewById(R.id.duration_spinner)
         descriptionEditText = findViewById(R.id.description_edit_text)
@@ -111,14 +111,17 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         reminderDurationText = findViewById(R.id.reminder_duration_text)
         cancelButton = findViewById(R.id.cancel_button)
         revision_FrequencyCard = findViewById(R.id.revision_frequency_card)
-        alarmTypeSpinner = findViewById(R.id.alarm_type_spinner)        // Set up initial states
+        alarmTypeSpinner = findViewById(R.id.alarm_type_spinner)
+        
+        // Set up ONLY initial states - defer spinner setup to reduce blocking
         addNewCategoryLayout.visibility = View.GONE
         addNewSubCategoryLayout.visibility = View.GONE
         reminderTimeEditText.setText("All Day")
-        setupDurationSpinner()
-        setupAlarmTypeSpinner()
+        
+        // Defer these to after layout is shown
+        // setupDurationSpinner() - will be called after data loads
+        // setupAlarmTypeSpinner() - will be called after data loads
 
-        // Set up checkboxes initial state
         // Set initial checkbox states
         initiationDateCheckbox.isChecked = false
         reviewFrequencyCheckbox.isChecked = false
@@ -170,6 +173,10 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 val categoriesResult = categoriesDeferred.await()
 
                 withContext(Dispatchers.Main) {
+                    // Setup deferred spinners first
+                    setupDurationSpinner()
+                    setupAlarmTypeSpinner()
+                    
                     // Update tracking types
                     trackingTypes.clear()
                     trackingTypes.addAll(trackingTypesResult)
@@ -203,6 +210,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 Log.e("AddLectureActivity", "Error loading custom data: ${e.message}", e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@AddLectureActivity, "Error loading data", Toast.LENGTH_SHORT).show()
+                    // Still setup spinners and listeners even on error
+                    setupDurationSpinner()
+                    setupAlarmTypeSpinner()
                     setupListeners()
                 }
             }
