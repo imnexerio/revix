@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:home_widget/home_widget.dart';
 import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
@@ -222,6 +224,7 @@ class FirebaseDatabaseService {
     try {
       if (await isGuestMode) {
         final profileData = await _localDatabase.getProfileData('custom_frequencies', defaultValue: {});
+        await HomeWidget.saveWidgetData('frequencyData', jsonEncode(profileData));
         return Map<String, dynamic>.from(profileData);
       } else {
         if (currentUserId == null) return {};
@@ -230,6 +233,7 @@ class FirebaseDatabaseService {
         DataSnapshot snapshot = await ref.get();
         
         if (snapshot.exists) {
+          await HomeWidget.saveWidgetData('frequencyData', jsonEncode(Map<String, dynamic>.from(snapshot.value as Map)));
           return Map<String, dynamic>.from(snapshot.value as Map);
         }
         return {};
@@ -245,6 +249,7 @@ class FirebaseDatabaseService {
     try {
       if (await isGuestMode) {
         final profileData = await _localDatabase.getProfileData('custom_trackingType', defaultValue: []);
+        await HomeWidget.saveWidgetData('trackingTypes', jsonEncode(profileData));
         return List<String>.from(profileData);
       } else {
         if (currentUserId == null) return [];
@@ -253,6 +258,7 @@ class FirebaseDatabaseService {
         DataSnapshot snapshot = await ref.get();
         
         if (snapshot.exists) {
+          await HomeWidget.saveWidgetData('trackingTypes', jsonEncode(List<String>.from(snapshot.value as List)));
           return List<String>.from(snapshot.value as List);
         }
         return [];
@@ -637,35 +643,7 @@ class FirebaseDatabaseService {
   
   // ====================================================================================
   // USER DATA (RECORDS) OPERATIONS
-  // ====================================================================================
-
-    /// Update a record in user data
-  // Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
-  //   try {
-  //     if (await isGuestMode) {
-  //       return await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
-  //     } else {
-  //       // Additional validation for Firebase operations
-  //       final currentUserId = this.currentUserId;
-  //       if (currentUserId == null || currentUserId.isEmpty) {
-  //         print('Error: No valid authenticated user for Firebase update operation');
-  //         return false;
-  //       }
-  //
-  //       print('Attempting Firebase record update for user: $currentUserId');
-  //       DatabaseReference ref = _database.ref('users/$currentUserId/user_data/$category/$subCategory/$lectureNo');
-  //       await ref.update(updates);
-  //       print('Firebase record update completed successfully');
-  //       return true;
-  //     }
-  //   } catch (e) {
-  //     print('Error updating record: $e');
-  //     if (e.toString().contains('Invalid token in path')) {
-  //       print('Authentication token invalid - user may need to re-authenticate');
-  //     }
-  //     return false;
-  //   }
-  // }
+  // ===================================================================================
 
   
   /// Checks if user data exists in the database

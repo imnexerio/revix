@@ -353,6 +353,16 @@ class UnifiedDatabaseService {
 
         List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
         _allRecordsController.add({'allRecords': allRecords});
+
+        if (PlatformUtils.instance.isAndroid ) {
+          _updateHomeWidget(categorizedData['today'] ?? [],
+              categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
+              categorizedData['missed'] ?? [],
+              categorizedData['noreminderdate'] ?? [],
+              _cachedRawData);
+          HomeWidget.saveWidgetData('categoriesData', _cachedCategoriesData);
+        }
+
       }
       return;
     }
