@@ -325,10 +325,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           setState(() {
                             if (newValue == "Add New Category") {
                               _showAddNewCategory = true;
+                              _showAddNewCategoryCode_ = false; // Reset subcategory input
                             } else {
                               _selectedCategory = newValue!;
                               _selectedCategoryCode = '';
                               _showAddNewCategory = false;
+                              _showAddNewCategoryCode_ = false; // Reset subcategory input
                               // Set default sub-category for the newly selected category
                               if (_subCategories[newValue]?.isNotEmpty == true) {
                                 _selectedCategoryCode = _subCategories[newValue]![0];
@@ -427,6 +429,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                 _showAddNewCategoryCode_ = true;
                               } else {
                                 _selectedCategoryCode = newValue!;
+                                _showAddNewCategoryCode_ = false; // Reset when selecting existing subcategory
                               }
                             });
                           },
