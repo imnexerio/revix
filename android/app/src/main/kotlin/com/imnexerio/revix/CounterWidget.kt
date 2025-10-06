@@ -187,7 +187,7 @@ class CounterWidget : AppWidgetProvider() {
                 "Unspecified", "" -> {
                     // Show infinity symbol with colorOnPrimary (special case)
                     views.setTextViewText(R.id.counter_text, "∞")
-                    views.setTextColor(R.id.counter_text, context.getColor(R.color.colorOnPrimary))
+//                    views.setTextColor(R.id.counter_text, context.getColor(R.color.colorOnPrimary))
                 }
                 else -> {
                     // Normal countdown calculation
@@ -195,13 +195,13 @@ class CounterWidget : AppWidgetProvider() {
                     val counterText = formatCounterText(daysRemaining)
                     views.setTextViewText(R.id.counter_text, counterText)
                     
-                    if (daysRemaining < 0) {
-                        val overdueColor = context.getColor(R.color.overdue)
-                        views.setTextColor(R.id.counter_text, overdueColor)
-                        views.setTextColor(R.id.category_text, overdueColor)
-                        views.setTextColor(R.id.subcategory_text, overdueColor)
-                        views.setTextColor(R.id.record_title, overdueColor)
-                    }
+//                    if (daysRemaining < 0) {
+//                        val overdueColor = context.getColor(R.color.overdue)
+//                        views.setTextColor(R.id.counter_text, overdueColor)
+//                        views.setTextColor(R.id.category_text, overdueColor)
+//                        views.setTextColor(R.id.subcategory_text, overdueColor)
+//                        views.setTextColor(R.id.record_title, overdueColor)
+//                    }
                 }
             }
             
