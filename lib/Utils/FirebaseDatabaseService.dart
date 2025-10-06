@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:revix/Utils/platform_utils.dart';
 import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
@@ -224,7 +225,9 @@ class FirebaseDatabaseService {
     try {
       if (await isGuestMode) {
         final profileData = await _localDatabase.getProfileData('custom_frequencies', defaultValue: {});
-        await HomeWidget.saveWidgetData('frequencyData', jsonEncode(profileData));
+        if (PlatformUtils.instance.isAndroid ) {
+          await HomeWidget.saveWidgetData('frequencyData', jsonEncode(profileData));
+        }
         return Map<String, dynamic>.from(profileData);
       } else {
         if (currentUserId == null) return {};
@@ -233,7 +236,10 @@ class FirebaseDatabaseService {
         DataSnapshot snapshot = await ref.get();
         
         if (snapshot.exists) {
-          await HomeWidget.saveWidgetData('frequencyData', jsonEncode(Map<String, dynamic>.from(snapshot.value as Map)));
+          if (PlatformUtils.instance.isAndroid ) {
+            await HomeWidget.saveWidgetData('frequencyData',
+                jsonEncode(Map<String, dynamic>.from(snapshot.value as Map)));
+          }
           return Map<String, dynamic>.from(snapshot.value as Map);
         }
         return {};
@@ -249,7 +255,10 @@ class FirebaseDatabaseService {
     try {
       if (await isGuestMode) {
         final profileData = await _localDatabase.getProfileData('custom_trackingType', defaultValue: []);
-        await HomeWidget.saveWidgetData('trackingTypes', jsonEncode(profileData));
+        if (PlatformUtils.instance.isAndroid ) {
+          await HomeWidget.saveWidgetData(
+              'trackingTypes', jsonEncode(profileData));
+        }
         return List<String>.from(profileData);
       } else {
         if (currentUserId == null) return [];
@@ -258,7 +267,10 @@ class FirebaseDatabaseService {
         DataSnapshot snapshot = await ref.get();
         
         if (snapshot.exists) {
-          await HomeWidget.saveWidgetData('trackingTypes', jsonEncode(List<String>.from(snapshot.value as List)));
+          if (PlatformUtils.instance.isAndroid ) {
+            await HomeWidget.saveWidgetData('trackingTypes',
+                jsonEncode(List<String>.from(snapshot.value as List)));
+          }
           return List<String>.from(snapshot.value as List);
         }
         return [];
