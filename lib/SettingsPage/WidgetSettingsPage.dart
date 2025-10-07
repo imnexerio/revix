@@ -20,6 +20,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   bool _autoRefreshEnabled = true; // Default enabled
   int _autoRefreshIntervalMinutes = 1440; // Default 24 hours (1440 minutes)
   bool _allowAlarmsOnDevice = true; // Default enabled
+  bool _autoRefreshOnNewDay = true; // Default enabled
   
   // Debounce timers
   Timer? _autoRefreshDebounceTimer;
@@ -50,6 +51,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       final autoRefreshEnabled = prefs.getBool('auto_refresh_enabled');
       final autoRefreshInterval = prefs.getInt('auto_refresh_interval_minutes');
       final allowAlarmsOnDevice = prefs.getBool('allow_alarms_on_device');
+      final autoRefreshOnNewDay = prefs.getBool('auto_refresh_on_new_day');
       
       // Check if user is in guest mode
       final isGuestMode = await GuestAuthService.isGuestMode();
@@ -62,6 +64,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       bool finalAutoRefreshEnabled = isGuestMode ? false : (autoRefreshEnabled ?? true);
       int finalAutoRefreshInterval = autoRefreshInterval ?? 1440;
       bool finalAllowAlarmsOnDevice = allowAlarmsOnDevice ?? true;
+      bool finalAutoRefreshOnNewDay = autoRefreshOnNewDay ?? true;
       
       // Save defaults to SharedPreferences if they don't exist
       if (duration == null) {
@@ -89,18 +92,25 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
         debugPrint('Saved default allow alarms on device: $finalAllowAlarmsOnDevice');
       }
       
+      if (autoRefreshOnNewDay == null) {
+        await prefs.setBool('auto_refresh_on_new_day', finalAutoRefreshOnNewDay);
+        needsToSaveDefaults = true;
+        debugPrint('Saved default auto refresh on new day: $finalAutoRefreshOnNewDay');
+      }
+      
       setState(() {
         _alarmDurationSeconds = finalAlarmDuration;
         _autoRefreshEnabled = finalAutoRefreshEnabled;
         _autoRefreshIntervalMinutes = finalAutoRefreshInterval;
         _allowAlarmsOnDevice = finalAllowAlarmsOnDevice;
+        _autoRefreshOnNewDay = finalAutoRefreshOnNewDay;
       });
       
       if (needsToSaveDefaults) {
         debugPrint('Default settings saved to SharedPreferences on first visit');
       }
       
-      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled (Guest: $isGuestMode), Interval: ${_autoRefreshIntervalMinutes}m, Allow alarms: $_allowAlarmsOnDevice');
+      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled (Guest: $isGuestMode), Interval: ${_autoRefreshIntervalMinutes}m, Allow alarms: $_allowAlarmsOnDevice, Auto-refresh on new day: $_autoRefreshOnNewDay');
     } catch (e) {
       debugPrint('Failed to load settings: $e');
       // Check guest mode for fallback as well
@@ -110,6 +120,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
         _autoRefreshEnabled = isGuestMode ? false : true; // Disable for guest users
         _autoRefreshIntervalMinutes = 1440; // Default 24 hours
         _allowAlarmsOnDevice = true; // Default enabled
+        _autoRefreshOnNewDay = true; // Default enabled
       });
     }
   }
@@ -237,6 +248,39 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
     }
   }
 
+  Future<void> _saveAutoRefreshOnNewDaySetting(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('auto_refresh_on_new_day', enabled);
+      
+      setState(() {
+        _autoRefreshOnNewDay = enabled;
+      });
+      
+      debugPrint('Auto-refresh on new day setting saved: $enabled');
+      
+      // Trigger reschedule of auto-refresh to apply new setting
+      await _updateAutoRefreshSchedule();
+      
+      if (mounted) {
+        customSnackBar(
+          context: context,
+          message: enabled 
+            ? 'Will refresh at midnight (00:01)' 
+            : 'Midnight refresh disabled',
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to save auto-refresh on new day setting: $e');
+      if (mounted) {
+        customSnackBar_error(
+          context: context,
+          message: 'Error saving setting: $e',
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -254,6 +298,8 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                 const Divider(height: 32),
               ],
               _buildAutoRefreshSetting(context),
+              const Divider(height: 32),
+              _buildAutoRefreshOnNewDayToggle(context),
               const Divider(height: 32),
               _buildWidgetOption(
                 context,
@@ -423,6 +469,57 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                 ),
               ),
             ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAutoRefreshOnNewDayToggle(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: GuestAuthService.isGuestMode(),
+      builder: (context, snapshot) {
+        final isGuestMode = snapshot.data ?? false;
+        
+        // Only show if auto-refresh is enabled and not in guest mode
+        if (!_autoRefreshEnabled || isGuestMode) {
+          return const SizedBox.shrink();
+        }
+        
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.nightlight_round),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Auto Refresh on New Day',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Refresh at midnight (00:01) in addition to regular interval',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            Switch.adaptive(
+              value: _autoRefreshOnNewDay,
+              onChanged: (value) {
+                _saveAutoRefreshOnNewDaySetting(value);
+              },
+            ),
           ],
         );
       },

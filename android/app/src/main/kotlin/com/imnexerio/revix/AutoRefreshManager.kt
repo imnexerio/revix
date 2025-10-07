@@ -99,4 +99,37 @@ object AutoRefreshManager {
         }
     }
 
+    fun scheduleAutoRefreshAtSpecificTime(context: Context, triggerTimeMillis: Long) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            
+            // Create intent for AutoRefreshService
+            val intent = Intent(context, AutoRefreshService::class.java)
+            val pendingIntent = PendingIntent.getService(
+                context,
+                AUTO_REFRESH_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            Log.d(TAG, "Scheduling auto-refresh for specific time: ${java.util.Date(triggerTimeMillis)}")
+            
+            // Schedule the alarm
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTimeMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTimeMillis, pendingIntent)
+            }
+            
+            Log.d(TAG, "Auto-refresh scheduled successfully for ${java.util.Date(triggerTimeMillis)}")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scheduling auto-refresh at specific time: ${e.message}", e)
+        }
+    }
+
 }

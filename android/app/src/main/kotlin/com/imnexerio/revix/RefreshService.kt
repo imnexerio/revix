@@ -237,22 +237,56 @@ class RefreshService : Service() {
                 return
             }
             
-            // Get auto-refresh interval
+            // Get auto-refresh settings
             val intervalMinutes = try {
                 flutterPrefs.getInt("flutter.auto_refresh_interval_minutes", 1440)
             } catch (e: ClassCastException) {
                 flutterPrefs.getLong("flutter.auto_refresh_interval_minutes", 1440L).toInt()
             }
             
+            val autoRefreshOnNewDay = flutterPrefs.getBoolean("flutter.auto_refresh_on_new_day", false)
+            
             // Get the fresh lastUpdated timestamp
             val widgetPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
             val lastUpdated = widgetPrefs.getLong("lastUpdated", 0L)
             
-            Log.d("RefreshService", "Scheduling next auto-refresh after successful refresh")
-            Log.d("RefreshService", "lastUpdated: ${java.util.Date(lastUpdated)}, interval: ${intervalMinutes}m")
-            
-            AutoRefreshManager.scheduleAutoRefreshFromLastUpdate(applicationContext, intervalMinutes, lastUpdated)
-            Log.d("RefreshService", "Next auto-refresh scheduled successfully")
+            if (autoRefreshOnNewDay) {
+                // Calculate next interval-based refresh time
+                val intervalMillis = intervalMinutes * 60 * 1000L
+                val nextIntervalTime = lastUpdated + intervalMillis
+                
+                // Calculate next midnight (00:01:00)
+                val calendar = java.util.Calendar.getInstance().apply {
+                    add(java.util.Calendar.DAY_OF_MONTH, 1) // Tomorrow
+                    set(java.util.Calendar.HOUR_OF_DAY, 0)
+                    set(java.util.Calendar.MINUTE, 1)
+                    set(java.util.Calendar.SECOND, 0)
+                    set(java.util.Calendar.MILLISECOND, 0)
+                }
+                val nextMidnight = calendar.timeInMillis
+                
+                Log.d("RefreshService", "Auto-refresh on new day enabled - comparing schedules")
+                Log.d("RefreshService", "Next interval time: ${java.util.Date(nextIntervalTime)}")
+                Log.d("RefreshService", "Next midnight time: ${java.util.Date(nextMidnight)}")
+                
+                // Schedule whichever comes first
+                if (nextMidnight < nextIntervalTime) {
+                    // Midnight is sooner
+                    AutoRefreshManager.scheduleAutoRefreshAtSpecificTime(applicationContext, nextMidnight)
+                    Log.d("RefreshService", "Scheduled for midnight (sooner than interval)")
+                } else {
+                    // Interval is sooner
+                    AutoRefreshManager.scheduleAutoRefreshFromLastUpdate(applicationContext, intervalMinutes, lastUpdated)
+                    Log.d("RefreshService", "Scheduled based on interval (sooner than midnight)")
+                }
+            } else {
+                // Original interval-based scheduling only
+                Log.d("RefreshService", "Scheduling next auto-refresh based on interval only")
+                Log.d("RefreshService", "lastUpdated: ${java.util.Date(lastUpdated)}, interval: ${intervalMinutes}m")
+                
+                AutoRefreshManager.scheduleAutoRefreshFromLastUpdate(applicationContext, intervalMinutes, lastUpdated)
+                Log.d("RefreshService", "Next auto-refresh scheduled successfully")
+            }
             
         } catch (e: Exception) {
             Log.e("RefreshService", "Error scheduling next auto-refresh: ${e.message}", e)
