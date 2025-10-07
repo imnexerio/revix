@@ -287,7 +287,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   }
 
   void _showWidgetSettingsPage(BuildContext context) {
-    _navigateToPage(context, WidgetSettingsPage(), 'Widget Settings');
+    _navigateToPage(context, WidgetSettingsPage(), 'Widgets & Alerts');
   }
 
   void _showAboutPage(BuildContext context) {
@@ -439,11 +439,11 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             'isSelected': _shouldShowSelectionHighlight('Data Management'),
           },
           if (PlatformUtils.instance.isAndroid) {
-            'title': 'Widget Settings',
-            'subtitle': 'Configure home widget preferences',
-            'icon': Icons.widgets_outlined,
+            'title': 'Widgets & Alerts',
+            'subtitle': 'Configure Home widgets and Alerts preferences',
+            'icon': Icons.tune_outlined,
             'onTap': () => _showWidgetSettingsPage(context),
-            'isSelected': _shouldShowSelectionHighlight('Widget Settings'),
+            'isSelected': _shouldShowSelectionHighlight('Widgets & Alerts'),
           },
           {
             'title': 'Set Theme',
