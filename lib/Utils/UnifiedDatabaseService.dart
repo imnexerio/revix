@@ -568,6 +568,85 @@ class UnifiedDatabaseService {
     }
   }
 
+  /// Delete records in a subcategory that have a specific field value
+  /// Example: Delete all holidays where record_added_via = 'PublicHolidayFetcher'
+  /// Returns: Number of records deleted
+  Future<int> deleteRecordsWithField({
+    required String category,
+    required String subCategory,
+    required String fieldName,
+    required dynamic fieldValue,
+  }) async {
+    int deletedCount = 0;
+    
+    if (_isGuestMode) {
+      // Guest mode: Get raw data, filter, and delete from local database
+      try {
+        final rawData = await _localDatabase.getRawData();
+        
+        if (rawData != null && rawData[category] != null) {
+          final categoryData = rawData[category];
+          
+          if (categoryData[subCategory] != null) {
+            final subCategoryData = categoryData[subCategory] as Map<dynamic, dynamic>;
+            
+            // Find and delete matching records
+            for (var entry in subCategoryData.entries) {
+              final recordName = entry.key.toString();
+              final recordData = entry.value;
+              
+              // Check if field matches
+              if (recordData is Map && recordData[fieldName] == fieldValue) {
+                final success = await _localDatabase.deleteRecord(category, subCategory, recordName);
+                if (success) {
+                  deletedCount++;
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        print('Error deleting records with field in guest mode: $e');
+      }
+    } else {
+      // Firebase mode: Fetch, filter, and delete
+      try {
+        if (_databaseRef == null) {
+          throw Exception('Database reference not initialized');
+        }
+        
+        // Fetch all records in subcategory
+        final snapshot = await _databaseRef!.child(category).child(subCategory).get();
+        
+        if (snapshot.exists && snapshot.value != null) {
+          final data = snapshot.value as Map<dynamic, dynamic>;
+          
+          // Find records with matching field
+          final recordsToDelete = <String>[];
+          data.forEach((key, value) {
+            if (value is Map && value[fieldName] == fieldValue) {
+              recordsToDelete.add(key.toString());
+            }
+          });
+          
+          // Delete matching records
+          for (var recordName in recordsToDelete) {
+            try {
+              await _databaseRef!.child(category).child(subCategory).child(recordName).remove();
+              deletedCount++;
+            } catch (e) {
+              print('Error deleting record $recordName: $e');
+            }
+          }
+        }
+      } catch (e) {
+        print('Error deleting records with field in Firebase: $e');
+      }
+    }
+    
+    return deletedCount;
+  }
+
   /// Bulk save multiple records in a single operation
   /// Returns: { 'success': count, 'failed': count, 'total': count }
   Future<Map<String, int>> bulkSaveRecords({

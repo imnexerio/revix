@@ -262,6 +262,7 @@ class PublicHolidayFetcher {
           'recurrence_data': {
             'frequency': 'No Repetition'
           },
+          'record_added_via': 'PublicHolidayFetcher',
           'status': 'Enabled',
           'duration': {
             'type': 'specificTimes',
@@ -309,10 +310,20 @@ class PublicHolidayFetcher {
       
       print('Converted ${records.length} holidays to records (${apiHolidays.length - records.length} skipped)');
       
-      // 3. Ensure HOLIDAY tracking type exists
+      // 3. Delete old holidays added by PublicHolidayFetcher for this country
+      print('Deleting old holidays for $countryCode with record_added_via = PublicHolidayFetcher');
+      final deletedCount = await _unifiedDatabaseService.deleteRecordsWithField(
+        category: 'HOLIDAY',
+        subCategory: countryCode,
+        fieldName: 'record_added_via',
+        fieldValue: 'PublicHolidayFetcher',
+      );
+      print('Deleted $deletedCount old holiday records for $countryCode');
+      
+      // 4. Ensure HOLIDAY tracking type exists
       await ensureHolidayTrackingType();
       
-      // 4. Bulk save to database
+      // 5. Bulk save to database
       final result = await _unifiedDatabaseService.bulkSaveRecords(
         category: 'HOLIDAY',
         subCategory: countryCode,
