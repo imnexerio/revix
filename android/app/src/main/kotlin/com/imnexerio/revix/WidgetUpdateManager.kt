@@ -9,14 +9,24 @@ object WidgetUpdateManager {
         try {
             Log.d("WidgetUpdateManager", "Updating all widget types...")
 
-            // Schedule alarms from updated data
-            try {
-                Log.d("WidgetUpdateManager", "Scheduling alarms from updated data...")
-                val alarmHelper = AlarmManagerHelper(context)
-                alarmHelper.scheduleAlarmsFromWidgetData(context)
-                Log.d("WidgetUpdateManager", "Alarms scheduled successfully from RefreshService")
-            } catch (e: Exception) {
-                Log.e("WidgetUpdateManager", "Error scheduling alarms: ${e.message}", e)
+            // Check if alarms are allowed on this device
+            val sharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val allowAlarmsOnDevice = sharedPreferences.getBoolean("flutter.allow_alarms_on_device", true)
+            
+            Log.d("WidgetUpdateManager", "Allow alarms on device: $allowAlarmsOnDevice")
+
+            // Schedule alarms from updated data (only if enabled)
+            if (allowAlarmsOnDevice) {
+                try {
+                    Log.d("WidgetUpdateManager", "Scheduling alarms from updated data...")
+                    val alarmHelper = AlarmManagerHelper(context)
+                    alarmHelper.scheduleAlarmsFromWidgetData(context)
+                    Log.d("WidgetUpdateManager", "Alarms scheduled successfully from RefreshService")
+                } catch (e: Exception) {
+                    Log.e("WidgetUpdateManager", "Error scheduling alarms: ${e.message}", e)
+                }
+            } else {
+                Log.d("WidgetUpdateManager", "Alarm scheduling skipped - disabled by user")
             }
             
             // Update TodayWidget (Records Only - combined data)

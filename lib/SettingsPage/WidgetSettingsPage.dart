@@ -6,6 +6,7 @@ import '../Utils/platform_utils.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/GuestAuthService.dart';
+import '../Utils/WidgetDataNAlarmManager.dart';
 
 class WidgetSettingsPage extends StatefulWidget {
   @override
@@ -18,6 +19,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   int _alarmDurationSeconds = 60; // Default 1 minute (60 seconds)
   bool _autoRefreshEnabled = true; // Default enabled
   int _autoRefreshIntervalMinutes = 1440; // Default 24 hours (1440 minutes)
+  bool _allowAlarmsOnDevice = true; // Default enabled
   
   // Debounce timers
   Timer? _autoRefreshDebounceTimer;
@@ -47,6 +49,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       final duration = prefs.getInt('alarm_duration_seconds');
       final autoRefreshEnabled = prefs.getBool('auto_refresh_enabled');
       final autoRefreshInterval = prefs.getInt('auto_refresh_interval_minutes');
+      final allowAlarmsOnDevice = prefs.getBool('allow_alarms_on_device');
       
       // Check if user is in guest mode
       final isGuestMode = await GuestAuthService.isGuestMode();
@@ -58,6 +61,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       int finalAlarmDuration = duration ?? 60;
       bool finalAutoRefreshEnabled = isGuestMode ? false : (autoRefreshEnabled ?? true);
       int finalAutoRefreshInterval = autoRefreshInterval ?? 1440;
+      bool finalAllowAlarmsOnDevice = allowAlarmsOnDevice ?? true;
       
       // Save defaults to SharedPreferences if they don't exist
       if (duration == null) {
@@ -79,17 +83,24 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
         debugPrint('Saved default auto-refresh interval: ${finalAutoRefreshInterval}m');
       }
       
+      if (allowAlarmsOnDevice == null) {
+        await prefs.setBool('allow_alarms_on_device', finalAllowAlarmsOnDevice);
+        needsToSaveDefaults = true;
+        debugPrint('Saved default allow alarms on device: $finalAllowAlarmsOnDevice');
+      }
+      
       setState(() {
         _alarmDurationSeconds = finalAlarmDuration;
         _autoRefreshEnabled = finalAutoRefreshEnabled;
         _autoRefreshIntervalMinutes = finalAutoRefreshInterval;
+        _allowAlarmsOnDevice = finalAllowAlarmsOnDevice;
       });
       
       if (needsToSaveDefaults) {
         debugPrint('Default settings saved to SharedPreferences on first visit');
       }
       
-      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled (Guest: $isGuestMode), Interval: ${_autoRefreshIntervalMinutes}m');
+      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled (Guest: $isGuestMode), Interval: ${_autoRefreshIntervalMinutes}m, Allow alarms: $_allowAlarmsOnDevice');
     } catch (e) {
       debugPrint('Failed to load settings: $e');
       // Check guest mode for fallback as well
@@ -98,6 +109,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
         _alarmDurationSeconds = 60; // Default to 1 minute
         _autoRefreshEnabled = isGuestMode ? false : true; // Disable for guest users
         _autoRefreshIntervalMinutes = 1440; // Default 24 hours
+        _allowAlarmsOnDevice = true; // Default enabled
       });
     }
   }
@@ -235,8 +247,12 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAlarmDurationSetting(context),
+              _buildAllowAlarmsSetting(context),
               const Divider(height: 32),
+              if (_allowAlarmsOnDevice) ...[  
+                _buildAlarmDurationSetting(context),
+                const Divider(height: 32),
+              ],
               _buildAutoRefreshSetting(context),
               const Divider(height: 32),
               _buildWidgetOption(
@@ -612,5 +628,80 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
       case 8: return 1440; // 24h
       default: return 1440; // Default to 24h
     }
+  }
+
+  Future<void> _saveAllowAlarmsSetting(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('allow_alarms_on_device', enabled);
+      
+      setState(() {
+        _allowAlarmsOnDevice = enabled;
+      });
+      
+      debugPrint('Allow alarms on device saved: $enabled');
+      
+      // Cancel all alarms first
+      await WidgetDataNAlarmManager.cancelAllAlarmsNWidgetData();
+      
+      // Then refresh (will schedule or skip based on saved preference)
+      await WidgetDataNAlarmManager.scheduleAlarmsNWidgetRefresh();
+      
+      if (mounted) {
+        customSnackBar(
+          context: context,
+          message: enabled 
+            ? 'Alarms enabled on this device' 
+            : 'Alarms disabled on this device',
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to save allow alarms setting: $e');
+      if (mounted) {
+        customSnackBar_error(
+          context: context,
+          message: 'Error saving setting: $e',
+        );
+      }
+    }
+  }
+
+  Widget _buildAllowAlarmsSetting(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.notifications_active_outlined),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Allow Alarms on This Device',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'Enable or disable alarm notifications on this device',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+        Switch.adaptive(
+          value: _allowAlarmsOnDevice,
+          onChanged: (value) {
+            _saveAllowAlarmsSetting(value);
+          },
+        ),
+      ],
+    );
   }
 }
