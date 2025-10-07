@@ -450,52 +450,24 @@ class AlarmManagerHelper(private val context: Context) {
 
     private fun cancelAlarm(alarmKey: String) {
         try {
-            // Get the alarm metadata to recreate the exact intent
-            val alarmMetadata = getStoredAlarmMetadata()[alarmKey]
+            val requestCode = alarmKey.hashCode()
+            val intent = Intent(context, AlarmReceiver::class.java).apply {
+                action = AlarmReceiver.ACTION_ALARM_TRIGGER
+            }
             
-            if (alarmMetadata != null) {
-                // Create the exact same intent that was used for scheduling
-                 val intent = Intent(context, AlarmReceiver::class.java).apply {
-                    action = AlarmReceiver.ACTION_ALARM_TRIGGER
-                    putExtra(AlarmReceiver.EXTRA_CATEGORY, alarmMetadata.category)
-                    putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, alarmMetadata.subCategory)
-                    putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, alarmMetadata.recordTitle)
-                    putExtra("scheduled_date", alarmMetadata.scheduledDate)
-                    putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmMetadata.alarmType)
-                    putExtra("reminder_time", alarmMetadata.reminderTime)
-                    putExtra("entry_type", alarmMetadata.entryType)
-                    putExtra("description", alarmMetadata.description)
-                }
-                
-                // Use the same request code calculation as in scheduleAlarm
-                val requestCode = alarmKey.hashCode()
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    requestCode,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            if (pendingIntent != null) {
                 alarmManager.cancel(pendingIntent)
                 pendingIntent.cancel()
-                Log.d(TAG, "Successfully cancelled alarm: $alarmKey with requestCode: $requestCode")
+                Log.d(TAG, "✓ Cancelled alarm: $alarmKey (requestCode: $requestCode)")
             } else {
-                Log.w(TAG, "Alarm metadata not found for key: $alarmKey")
-                // Even if metadata is missing, try to cancel with just the key
-                val requestCode = alarmKey.hashCode()
-                val intent = Intent(context, AlarmReceiver::class.java).apply {
-                    action = AlarmReceiver.ACTION_ALARM_TRIGGER
-                }
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    requestCode,
-                    intent,
-                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-                )
-                if (pendingIntent != null) {
-                    alarmManager.cancel(pendingIntent)
-                    pendingIntent.cancel()
-                    Log.d(TAG, "Cancelled alarm by requestCode only: $requestCode")
-                }
+                Log.w(TAG, "✗ No PendingIntent found for: $alarmKey (already cancelled or never existed)")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cancel alarm: $alarmKey", e)
