@@ -23,7 +23,10 @@ class ProfileHeader extends StatelessWidget {
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeOutQuart,
       width: double.infinity,
-      height: isSmallScreen ? 250 : 300,
+      constraints: BoxConstraints(
+        minHeight: isSmallScreen ? 220 : 280,
+        maxHeight: isSmallScreen ? 280 : 350,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -37,7 +40,9 @@ class ProfileHeader extends StatelessWidget {
       child: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
             // Animated profile image
             TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -57,8 +62,8 @@ class ProfileHeader extends StatelessWidget {
                     child: InkWell(
                       onTap: () => showEditProfilePage(context),
                       child: Container(
-                        width: 110,
-                        height: 110,
+                        width: isSmallScreen ? 90 : 110,
+                        height: isSmallScreen ? 90 : 110,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -75,9 +80,10 @@ class ProfileHeader extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // Animated display name
-            Consumer<ProfileProvider>(
+            Flexible(
+              child: Consumer<ProfileProvider>(
               builder: (context, profileProvider, child) {
                 if (profileProvider.displayName == null) {
                   return const SizedBox(
@@ -96,10 +102,12 @@ class ProfileHeader extends StatelessWidget {
                   );
                 }
               },
+              ),
             ),
             const SizedBox(height: 4),
             // Check if user is in guest mode before showing email verification status
-            FutureBuilder<bool>(
+            Flexible(
+              child: FutureBuilder<bool>(
               future: GuestAuthService.isGuestMode(),
               builder: (context, guestSnapshot) {
                 if (guestSnapshot.connectionState == ConnectionState.waiting) {
@@ -171,7 +179,9 @@ class ProfileHeader extends StatelessWidget {
                   );
                 }
               },
+              ),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
