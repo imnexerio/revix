@@ -110,18 +110,64 @@ class RefreshService : Service() {
 
     private fun showRefreshingState() {
         try {
-            val views = RemoteViews(packageName, R.layout.today_widget)
-            views.setTextViewText(R.id.title_text_n_refresh, "Refreshing...")
-
             val appWidgetManager = AppWidgetManager.getInstance(this)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                ComponentName(this, TodayWidget::class.java)
-            )
-
-            // Update each widget to show refreshing state
-            for (appWidgetId in appWidgetIds) {
-                appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+            val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+            
+            // Update TodayWidget
+            val todayWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(this, TodayWidget::class.java))
+            if (todayWidgetIds.isNotEmpty()) {
+                val todayViews = RemoteViews(packageName, R.layout.today_widget)
+                todayViews.setTextViewText(R.id.title_text_n_refresh, "Refreshing...")
+                todayWidgetIds.forEach { appWidgetManager.partiallyUpdateAppWidget(it, todayViews) }
+                Log.d("RefreshService", "Updated ${todayWidgetIds.size} TodayWidgets to refreshing state")
             }
+            
+            // Update CalendarWidget
+            val calendarWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(this, CalendarWidget::class.java))
+            if (calendarWidgetIds.isNotEmpty()) {
+                val calendarViews = RemoteViews(packageName, R.layout.calendar_widget)
+                calendarViews.setTextViewText(R.id.calendar_date_header, "Refreshing...")
+                calendarWidgetIds.forEach { appWidgetManager.partiallyUpdateAppWidget(it, calendarViews) }
+                Log.d("RefreshService", "Updated ${calendarWidgetIds.size} CalendarWidgets to refreshing state")
+            }
+            
+            // Update CalendarOnlyWidget
+            val calendarOnlyWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(this, CalendarOnlyWidget::class.java))
+            if (calendarOnlyWidgetIds.isNotEmpty()) {
+                val calendarOnlyViews = RemoteViews(packageName, R.layout.calendar_only_widget)
+                calendarOnlyViews.setTextViewText(R.id.calendar_date_header, "Refreshing...")
+                calendarOnlyWidgetIds.forEach { appWidgetManager.partiallyUpdateAppWidget(it, calendarOnlyViews) }
+                Log.d("RefreshService", "Updated ${calendarOnlyWidgetIds.size} CalendarOnlyWidgets to refreshing state")
+            }
+            
+            // Update CounterWidget (special handling to preserve counter and other fields)
+            val counterWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(this, CounterWidget::class.java))
+            if (counterWidgetIds.isNotEmpty()) {
+                counterWidgetIds.forEach { appWidgetId ->
+                    try {
+                        val counterViews = RemoteViews(packageName, R.layout.counter_widget)
+                        counterViews.setTextViewText(R.id.category_text, "Refreshing...")
+                        
+                        // Preserve subcategory and title
+                        val subcategory = prefs.getString(CounterWidget.getSubCategoryKey(appWidgetId), "")
+                        val title = prefs.getString(CounterWidget.getRecordTitleKey(appWidgetId), "")
+                        
+                        if (!subcategory.isNullOrEmpty()) {
+                            counterViews.setTextViewText(R.id.subcategory_text, subcategory)
+                        }
+                        if (!title.isNullOrEmpty()) {
+                            counterViews.setTextViewText(R.id.record_title, title)
+                        }
+                        
+                        appWidgetManager.partiallyUpdateAppWidget(appWidgetId, counterViews)
+                    } catch (e: Exception) {
+                        Log.e("RefreshService", "Error updating CounterWidget $appWidgetId: ${e.message}")
+                    }
+                }
+                Log.d("RefreshService", "Updated ${counterWidgetIds.size} CounterWidgets to refreshing state")
+            }
+            
+            Log.d("RefreshService", "Refreshing state shown on all widgets")
         } catch (e: Exception) {
             Log.e("RefreshService", "Error showing refreshing state: ${e.message}")
         }
