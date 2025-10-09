@@ -76,6 +76,14 @@
                 android:resource="@xml/counter_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <!-- HomeWidget background receiver and service for interactive widgets -->
         <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
             android:exported="true">
