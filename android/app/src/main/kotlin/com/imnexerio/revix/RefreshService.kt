@@ -290,7 +290,7 @@ class RefreshService : Service() {
                 flutterPrefs.getLong("flutter.auto_refresh_interval_minutes", 1440L).toInt()
             }
             
-            val autoRefreshOnNewDay = flutterPrefs.getBoolean("flutter.auto_refresh_on_new_day", false)
+            val autoRefreshOnNewDay = flutterPrefs.getBoolean("flutter.auto_refresh_on_new_day", true)
             
             // Get the fresh lastUpdated timestamp
             val widgetPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)

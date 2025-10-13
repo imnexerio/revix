@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/platform_utils.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
-import '../Utils/GuestAuthService.dart';
 import '../Utils/WidgetDataNAlarmManager.dart';
 
 class WidgetSettingsPage extends StatefulWidget {
@@ -47,80 +46,23 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final duration = prefs.getInt('alarm_duration_seconds');
-      final autoRefreshEnabled = prefs.getBool('auto_refresh_enabled');
-      final autoRefreshInterval = prefs.getInt('auto_refresh_interval_minutes');
-      final allowAlarmsOnDevice = prefs.getBool('allow_alarms_on_device');
-      final autoRefreshOnNewDay = prefs.getBool('auto_refresh_on_new_day');
-      
-      // Check if user is in guest mode
-      final isGuestMode = await GuestAuthService.isGuestMode();
-      
-      // Track if we need to save defaults
-      bool needsToSaveDefaults = false;
-      
-      // Set values and check if defaults need to be saved
-      int finalAlarmDuration = duration ?? 60;
-      bool finalAutoRefreshEnabled = isGuestMode ? false : (autoRefreshEnabled ?? true);
-      int finalAutoRefreshInterval = autoRefreshInterval ?? 1440;
-      bool finalAllowAlarmsOnDevice = allowAlarmsOnDevice ?? true;
-      bool finalAutoRefreshOnNewDay = autoRefreshOnNewDay ?? true;
-      
-      // Save defaults to SharedPreferences if they don't exist
-      if (duration == null) {
-        await prefs.setInt('alarm_duration_seconds', finalAlarmDuration);
-        needsToSaveDefaults = true;
-        debugPrint('Saved default alarm duration: ${finalAlarmDuration}s');
-      }
-      
-      if (autoRefreshEnabled == null && !isGuestMode) {
-        // Only save auto-refresh default for non-guest users
-        await prefs.setBool('auto_refresh_enabled', finalAutoRefreshEnabled);
-        needsToSaveDefaults = true;
-        debugPrint('Saved default auto-refresh enabled: $finalAutoRefreshEnabled');
-      }
-      
-      if (autoRefreshInterval == null) {
-        await prefs.setInt('auto_refresh_interval_minutes', finalAutoRefreshInterval);
-        needsToSaveDefaults = true;
-        debugPrint('Saved default auto-refresh interval: ${finalAutoRefreshInterval}m');
-      }
-      
-      if (allowAlarmsOnDevice == null) {
-        await prefs.setBool('allow_alarms_on_device', finalAllowAlarmsOnDevice);
-        needsToSaveDefaults = true;
-        debugPrint('Saved default allow alarms on device: $finalAllowAlarmsOnDevice');
-      }
-      
-      if (autoRefreshOnNewDay == null) {
-        await prefs.setBool('auto_refresh_on_new_day', finalAutoRefreshOnNewDay);
-        needsToSaveDefaults = true;
-        debugPrint('Saved default auto refresh on new day: $finalAutoRefreshOnNewDay');
-      }
-      
       setState(() {
-        _alarmDurationSeconds = finalAlarmDuration;
-        _autoRefreshEnabled = finalAutoRefreshEnabled;
-        _autoRefreshIntervalMinutes = finalAutoRefreshInterval;
-        _allowAlarmsOnDevice = finalAllowAlarmsOnDevice;
-        _autoRefreshOnNewDay = finalAutoRefreshOnNewDay;
+        _alarmDurationSeconds = prefs.getInt('alarm_duration_seconds') ?? 60;
+        _autoRefreshEnabled = prefs.getBool('auto_refresh_enabled') ?? true;
+        _autoRefreshIntervalMinutes = prefs.getInt('auto_refresh_interval_minutes') ?? 1440;
+        _allowAlarmsOnDevice = prefs.getBool('allow_alarms_on_device') ?? true;
+        _autoRefreshOnNewDay = prefs.getBool('auto_refresh_on_new_day') ?? true;
       });
       
-      if (needsToSaveDefaults) {
-        debugPrint('Default settings saved to SharedPreferences on first visit');
-      }
-      
-      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled (Guest: $isGuestMode), Interval: ${_autoRefreshIntervalMinutes}m, Allow alarms: $_allowAlarmsOnDevice, Auto-refresh on new day: $_autoRefreshOnNewDay');
+      debugPrint('Loaded settings - Alarm: ${_alarmDurationSeconds}s, Auto-refresh: $_autoRefreshEnabled, Interval: ${_autoRefreshIntervalMinutes}m, Allow alarms: $_allowAlarmsOnDevice, Auto-refresh on new day: $_autoRefreshOnNewDay');
     } catch (e) {
       debugPrint('Failed to load settings: $e');
-      // Check guest mode for fallback as well
-      final isGuestMode = await GuestAuthService.isGuestMode();
       setState(() {
-        _alarmDurationSeconds = 60; // Default to 1 minute
-        _autoRefreshEnabled = isGuestMode ? false : true; // Disable for guest users
-        _autoRefreshIntervalMinutes = 1440; // Default 24 hours
-        _allowAlarmsOnDevice = true; // Default enabled
-        _autoRefreshOnNewDay = true; // Default enabled
+        _alarmDurationSeconds = 60;
+        _autoRefreshEnabled = true;
+        _autoRefreshIntervalMinutes = 1440;
+        _allowAlarmsOnDevice = true;
+        _autoRefreshOnNewDay = true;
       });
     }
   }
@@ -155,20 +97,6 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
 
   Future<void> _saveAutoRefreshSettings(bool enabled, int intervalMinutes, {bool showSnackBar = true}) async {
     try {
-      // Check if user is in guest mode
-      final isGuestMode = await GuestAuthService.isGuestMode();
-      
-      // Don't allow enabling auto-refresh for guest users
-      if (isGuestMode && enabled) {
-        if (mounted && showSnackBar) {
-          customSnackBar_error(
-            context: context,
-            message: 'Auto-refresh is not available in guest mode and is not needed',
-          );
-        }
-        return;
-      }
-      
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('auto_refresh_enabled', enabled);
       await prefs.setInt('auto_refresh_interval_minutes', intervalMinutes);
@@ -359,55 +287,46 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   }
 
   Widget _buildAutoRefreshSetting(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: GuestAuthService.isGuestMode(),
-      builder: (context, snapshot) {
-        final isGuestMode = snapshot.data ?? false;
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.refresh_outlined),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Auto Refresh',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        isGuestMode 
-                          ? 'Not available in guest mode - as not syncing with other platforms'
-                          : 'Automatically refresh widget data at regular intervals',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: isGuestMode ? Colors.grey : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch.adaptive(
-                  value: _autoRefreshEnabled,
-                  onChanged: isGuestMode ? null : (value) {
-                    _saveAutoRefreshSettings(value, _autoRefreshIntervalMinutes);
-                  },
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.refresh_outlined),
             ),
-            if (_autoRefreshEnabled && !isGuestMode) ...[
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Auto Refresh',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Automatically refresh widget data at regular intervals',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            Switch.adaptive(
+              value: _autoRefreshEnabled,
+              onChanged: (value) {
+                _saveAutoRefreshSettings(value, _autoRefreshIntervalMinutes);
+              },
+            ),
+          ],
+        ),
+        if (_autoRefreshEnabled) ...[
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -469,24 +388,17 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                 ),
               ),
             ],
-          ],
-        );
-      },
+      ],
     );
   }
 
   Widget _buildAutoRefreshOnNewDayToggle(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: GuestAuthService.isGuestMode(),
-      builder: (context, snapshot) {
-        final isGuestMode = snapshot.data ?? false;
-        
-        // Only show if auto-refresh is enabled and not in guest mode
-        if (!_autoRefreshEnabled || isGuestMode) {
-          return const SizedBox.shrink();
-        }
-        
-        return Row(
+    // Only show if auto-refresh is enabled
+    if (!_autoRefreshEnabled) {
+      return const SizedBox.shrink();
+    }
+    
+    return Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -522,8 +434,6 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
             ),
           ],
         );
-      },
-    );
   }
 
   Widget _buildAlarmDurationSetting(BuildContext context) {
