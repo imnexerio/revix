@@ -65,20 +65,21 @@ class UnifiedWidgetListViewFactory(
     }
 
     private fun loadCombinedRecordsWithSeparators() {
-        // Load records for each category with separators (skip separator for today records - they go first)
+        // Load records for each category with separators and counts
         val categoryData = mapOf(
-            "todayRecords" to null, // No separator for today records - they go at the top
-            "tomorrowRecords" to "— TOMORROW —", 
-            "missedRecords" to "— MISSED —",
-            "noreminderdate" to "— NO REMINDER —"
+            "todayRecords" to "— TODAY (%d) —",
+            "tomorrowRecords" to "— TOMORROW (%d) —", 
+            "missedRecords" to "— MISSED (%d) —",
+            "noreminderdate" to "— NO REMINDER (%d) —"
         )
 
         for ((dataKey, separatorText) in categoryData) {
             val records = loadRecordsFromKey(dataKey)
             if (records.isNotEmpty()) {
-                // Add separator only if separatorText is not null (skip for today records)
+                // Add separator with count
                 if (separatorText != null) {
-                    allItems.add(WidgetItem.Separator(separatorText))
+                    val formattedText = separatorText.format(records.size)
+                    allItems.add(WidgetItem.Separator(formattedText))
                 }
                 
                 // Sort records within this category by reminder_time, category, sub_category, record_title
@@ -98,12 +99,7 @@ class UnifiedWidgetListViewFactory(
                     allItems.add(WidgetItem.Record(record))
                 }
 
-                val logMessage = if (separatorText != null) {
-                    "Added separator '$separatorText' and ${sortedRecords.size} records"
-                } else {
-                    "Added ${sortedRecords.size} today records (no separator)"
-                }
-                Log.d("UnifiedWidgetListViewFactory", logMessage)
+                Log.d("UnifiedWidgetListViewFactory", "Added separator with ${sortedRecords.size} records for $dataKey")
             }
         }
     }
