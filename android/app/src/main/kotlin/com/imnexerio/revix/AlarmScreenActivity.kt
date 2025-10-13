@@ -434,7 +434,7 @@ class AlarmScreenActivity : Activity() {
             startToStart = guidelineStart.id
             endToEnd = guidelineEnd.id
             width = 0  // MATCH_CONSTRAINT
-            height = 0  // MATCH_CONSTRAINT - fills remaining space
+            height = ConstraintLayout.LayoutParams.WRAP_CONTENT  // Take only needed space
         }
 
         // Glass button size (for glow animation)
@@ -626,7 +626,7 @@ class AlarmScreenActivity : Activity() {
         // Configure glassButton constraints
         (glassButton.layoutParams as ConstraintLayout.LayoutParams).apply {
             bottomToTop = guidelineBottom.id
-            bottomMargin = dpToPx(16)
+            bottomMargin = dpToPx(24)
             startToStart = ConstraintLayout.LayoutParams.PARENT_ID
             endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
             width = glowViewSize
