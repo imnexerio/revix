@@ -434,7 +434,10 @@ class AlarmScreenActivity : Activity() {
             startToStart = guidelineStart.id
             endToEnd = guidelineEnd.id
             width = 0  // MATCH_CONSTRAINT
+            matchConstraintMaxWidth = dpToPx(600)  // Max 600dp width for tablets
             height = ConstraintLayout.LayoutParams.WRAP_CONTENT  // Take only needed space
+            matchConstraintMinHeight = dpToPx(130)  // Min height for 3 lines of content
+            matchConstraintMaxHeight = dpToPx(350)  // Max height for 4-line description
         }
 
         // Glass button size (for glow animation)
