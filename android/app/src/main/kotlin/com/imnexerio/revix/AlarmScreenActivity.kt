@@ -197,7 +197,7 @@ class AlarmScreenActivity : Activity() {
             ContextCompat.getColor(this, R.color.colorOnPrimary)
         }
 
-        // Main container - FrameLayout for layering
+        // Main container - FrameLayout for layering gradient + UI
         val mainLayout = FrameLayout(this).apply {
             setBackgroundColor(backgroundColor)
             layoutParams = ViewGroup.LayoutParams(
@@ -206,25 +206,59 @@ class AlarmScreenActivity : Activity() {
             )
         }
 
-        // Second layer: Gradient background starting from button position
+        // Gradient background layer
         val gradientLayer = createGradientBackground(accentColor, dpToPx)
 
-        // Third layer: Glassmorphism content overlay
-        val contentOverlay = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(20), dpToPx(40), dpToPx(20), dpToPx(40))
+        // Main UI layer: ConstraintLayout with percentage-based margins
+        val contentLayout = ConstraintLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
 
+        // Create percentage-based guidelines for adaptive margins (5% left/right)
+        val guidelineStart = androidx.constraintlayout.widget.Guideline(this).apply {
+            id = View.generateViewId()
+        }
+        val guidelineEnd = androidx.constraintlayout.widget.Guideline(this).apply {
+            id = View.generateViewId()
+        }
+        val guidelineTop = androidx.constraintlayout.widget.Guideline(this).apply {
+            id = View.generateViewId()
+        }
+        val guidelineBottom = androidx.constraintlayout.widget.Guideline(this).apply {
+            id = View.generateViewId()
+        }
 
-        // Time and Date (no card background)
+        contentLayout.addView(guidelineStart)
+        contentLayout.addView(guidelineEnd)
+        contentLayout.addView(guidelineTop)
+        contentLayout.addView(guidelineBottom)
+
+        // Configure guidelines
+        (guidelineStart.layoutParams as ConstraintLayout.LayoutParams).apply {
+            orientation = ConstraintLayout.LayoutParams.VERTICAL
+            guidePercent = 0.05f  // 5% from left
+        }
+        (guidelineEnd.layoutParams as ConstraintLayout.LayoutParams).apply {
+            orientation = ConstraintLayout.LayoutParams.VERTICAL
+            guidePercent = 0.95f  // 95% from left (5% from right)
+        }
+        (guidelineTop.layoutParams as ConstraintLayout.LayoutParams).apply {
+            orientation = ConstraintLayout.LayoutParams.HORIZONTAL
+            guideBegin = dpToPx(32)  // 32dp from top
+        }
+        (guidelineBottom.layoutParams as ConstraintLayout.LayoutParams).apply {
+            orientation = ConstraintLayout.LayoutParams.HORIZONTAL
+            guideEnd = dpToPx(32)  // 32dp from bottom
+        }
+
+        // Time and Date display
         val timeDisplay = LinearLayout(this).apply {
+            id = View.generateViewId()
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
 
             // Time text
             val timeText = TextView(this@AlarmScreenActivity).apply {
@@ -256,148 +290,461 @@ class AlarmScreenActivity : Activity() {
 
             addView(timeText)
             addView(dateText)
-
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(24))
-            }
         }
 
-        // Information Glass Card
+        contentLayout.addView(timeDisplay)
+
+        // Configure timeDisplay constraints
+        (timeDisplay.layoutParams as ConstraintLayout.LayoutParams).apply {
+            topToBottom = guidelineTop.id
+            startToStart = guidelineStart.id
+            endToEnd = guidelineEnd.id
+            width = 0  // MATCH_CONSTRAINT
+        }
+
+        // Information Glass Card with hybrid scrolling
         val infoCard = createGlassCard(dpToPx, accentColor).apply {
-            val cardContent = LinearLayout(this@AlarmScreenActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
+            id = View.generateViewId()
+            
+            // Vertical ScrollView wrapper for entire card content
+            val verticalScrollView = android.widget.ScrollView(this@AlarmScreenActivity).apply {
+                isVerticalScrollBarEnabled = false  // Invisible scrollbar
+                isScrollbarFadingEnabled = true
+                scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+                overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+                
+                val cardContent = LinearLayout(this@AlarmScreenActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(20))
 
-                // Category text
-                val categoryText = TextView(this@AlarmScreenActivity).apply {
-                    text = "Category : $category"
-                    textSize = 22f
-                    setTextColor(textColor)
-                    gravity = Gravity.START  // Left aligned
-                    maxLines = 1  // Single line
-                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        setMargins(0, 0, 0, dpToPx(8))
+                    // Category with horizontal scroll
+                    val categoryScrollView = android.widget.HorizontalScrollView(this@AlarmScreenActivity).apply {
+                        isHorizontalScrollBarEnabled = false  // Invisible scrollbar
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, dpToPx(8))
+                        }
+                        
+                        addView(TextView(this@AlarmScreenActivity).apply {
+                            text = "Category : $category"
+                            textSize = 22f
+                            setTextColor(textColor)
+                            maxLines = 1
+                            setPadding(0, 0, dpToPx(16), 0)  // Right padding for scroll hint
+                        })
                     }
-                }
 
-                // Sub-category text
-                val subCategoryText = TextView(this@AlarmScreenActivity).apply {
-                    text = "Sub Category : $subCategory"
-                    textSize = 22f
-                    setTextColor(textColor)
-                    gravity = Gravity.START  // Left aligned
-                    maxLines = 1  // Single line
-                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        setMargins(0, 0, 0, dpToPx(8))
+                    // Sub-category with horizontal scroll
+                    val subCategoryScrollView = android.widget.HorizontalScrollView(this@AlarmScreenActivity).apply {
+                        isHorizontalScrollBarEnabled = false  // Invisible scrollbar
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, dpToPx(8))
+                        }
+                        
+                        addView(TextView(this@AlarmScreenActivity).apply {
+                            text = "Sub Category : $subCategory"
+                            textSize = 22f
+                            setTextColor(textColor)
+                            maxLines = 1
+                            setPadding(0, 0, dpToPx(16), 0)  // Right padding for scroll hint
+                        })
                     }
-                }
 
-                // Record title text
-                val recordTitleText = TextView(this@AlarmScreenActivity).apply {
-                    text = "Title : $recordTitle"
-                    textSize = 22f  // Same as category and subcategory
-                    setTextColor(textColor)
-                    gravity = Gravity.START  // Left aligned
-                    maxLines = 1  // Single line
-                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        setMargins(0, 0, 0, dpToPx(12))
+                    // Title with horizontal scroll
+                    val titleScrollView = android.widget.HorizontalScrollView(this@AlarmScreenActivity).apply {
+                        isHorizontalScrollBarEnabled = false  // Invisible scrollbar
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, dpToPx(12))
+                        }
+                        
+                        addView(TextView(this@AlarmScreenActivity).apply {
+                            text = "Title : $recordTitle"
+                            textSize = 22f
+                            setTextColor(textColor)
+                            maxLines = 1
+                            setPadding(0, 0, dpToPx(16), 0)  // Right padding for scroll hint
+                        })
                     }
-                }
 
-                val completionText = TextView(this@AlarmScreenActivity).apply {
-                    val completionValue = calculateCompletionFromCache()
-                    val recordData = getRecordDataFromWidgetCache()
-                    val missedCounts = recordData?.get("missed_counts") ?: "0"
-                    val skippedCounts = recordData?.get("skip_counts") ?: "0"
-                    text = "Completed: $completionValue\nMissed: $missedCounts | Skipped: $skippedCounts"
-                    textSize = 22f
-                    setTextColor(textColor)
-                    gravity = Gravity.START  // Left aligned
-                    maxLines = 2  // Two lines for completed and missed
-                    ellipsize = android.text.TextUtils.TruncateAt.END  // Truncate with "..."
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        setMargins(0, 0, 0, dpToPx(12))
+                    // Completion text (structured data, keep maxLines)
+                    val completionText = TextView(this@AlarmScreenActivity).apply {
+                        val completionValue = calculateCompletionFromCache()
+                        val recordData = getRecordDataFromWidgetCache()
+                        val missedCounts = recordData?.get("missed_counts") ?: "0"
+                        val skippedCounts = recordData?.get("skip_counts") ?: "0"
+                        text = "Completed: $completionValue\nMissed: $missedCounts | Skipped: $skippedCounts"
+                        textSize = 22f
+                        setTextColor(textColor)
+                        gravity = Gravity.START
+                        maxLines = 2
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, dpToPx(12))
+                        }
                     }
-                }
 
-                // Description text with proper 4-line truncation
-                val descriptionText = TextView(this@AlarmScreenActivity).apply {
-                    val displayDescription = if (description.isNotEmpty()) {
-                        description
-                    } else {
-                        "No description available"
+                    // Description text - NO maxLines (full scrollable content)
+                    val descriptionText = TextView(this@AlarmScreenActivity).apply {
+                        val displayDescription = if (description.isNotEmpty()) {
+                            description
+                        } else {
+                            "No description available"
+                        }
+                        text = "Description : $displayDescription"
+                        textSize = 22f
+                        setTextColor(textColor)
+                        gravity = Gravity.START
+                        // NO maxLines - full description visible via vertical scrolling
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
                     }
-                    text = "Description : $displayDescription"
-                    textSize = 22f  // Increased from 14f
-                    setTextColor(textColor)
-                    gravity = Gravity.START  // Left aligned
-                    // Removed alpha for better visibility
-                    maxLines = 4  // Show maximum 4 lines
-                    ellipsize = android.text.TextUtils.TruncateAt.END  // Auto truncate with "..."
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    )
-                }
 
-                addView(categoryText)
-                addView(subCategoryText)
-                addView(recordTitleText)
-                addView(completionText)
-                addView(descriptionText)
+                    addView(categoryScrollView)
+                    addView(subCategoryScrollView)
+                    addView(titleScrollView)
+                    addView(completionText)
+                    addView(descriptionText)
+                }
+                
+                addView(cardContent)
             }
 
-            addView(cardContent)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(32))
+            addView(verticalScrollView)
+        }
+        
+        contentLayout.addView(infoCard)
+        
+        // Configure infoCard constraints
+        (infoCard.layoutParams as ConstraintLayout.LayoutParams).apply {
+            topToBottom = timeDisplay.id
+            topMargin = dpToPx(20)  // Space below time
+            startToStart = guidelineStart.id
+            endToEnd = guidelineEnd.id
+            width = 0  // MATCH_CONSTRAINT
+            height = 0  // MATCH_CONSTRAINT - fills remaining space
+        }
+        // Configure infoCard constraints
+        (infoCard.layoutParams as ConstraintLayout.LayoutParams).apply {
+            topToBottom = timeDisplay.id
+            topMargin = dpToPx(20)  // Space below time
+            startToStart = guidelineStart.id
+            endToEnd = guidelineEnd.id
+            width = 0  // MATCH_CONSTRAINT
+            height = 0  // MATCH_CONSTRAINT - fills remaining space
+        }
+
+        // Glass button size (for glow animation)
+        val glowViewSize = dpToPx(220)
+        
+        // Glass swipe button with glow animation
+        val glassButton = object : TextView(this@AlarmScreenActivity) {
+            private var rippleProgress = 0f
+            private val glowPaint = Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeWidth = dpToPx(3).toFloat()
+            }
+            private val buttonPaint = Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+            private val buttonStrokePaint = Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeWidth = dpToPx(2).toFloat()
+            }
+            
+            override fun onDraw(canvas: Canvas) {
+                val centerX = width / 2f
+                val centerY = height / 2f
+                val buttonRadius = dpToPx(60).toFloat()
+                
+                // Draw glow ring animation
+                val maxRippleRadius = dpToPx(100).toFloat()
+                val currentRadius = buttonRadius + (rippleProgress * (maxRippleRadius - buttonRadius))
+                val alpha = ((1f - rippleProgress) * 120).toInt().coerceIn(0, 120)
+                
+                glowPaint.color = Color.argb(alpha, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+                
+                if (rippleProgress > 0f) {
+                    canvas.drawCircle(centerX, centerY, currentRadius, glowPaint)
+                }
+                
+                // Draw glass button background
+                val glassColor = Color.argb(
+                    40,
+                    (Color.red(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                    (Color.green(accentColor) * 0.3f + 255 * 0.7f).toInt(),
+                    (Color.blue(accentColor) * 0.3f + 255 * 0.7f).toInt()
+                )
+                buttonPaint.color = glassColor
+                canvas.drawCircle(centerX, centerY, buttonRadius, buttonPaint)
+                
+                // Draw button border
+                buttonStrokePaint.color = Color.argb(60, 255, 255, 255)
+                canvas.drawCircle(centerX, centerY, buttonRadius, buttonStrokePaint)
+                
+                // Draw the button text
+                super.onDraw(canvas)
+            }
+            
+            fun setRippleProgress(progress: Float) {
+                rippleProgress = progress
+                invalidate()
+            }
+        }.apply {
+            id = View.generateViewId()
+            text = "SWIPE TO\\nMARK DONE"
+            textSize = 14f
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            background = null
+            
+            // Animation logic
+            var isPressed = false
+            var glowAnimator: ValueAnimator? = null
+            
+            fun startGlowAnimation() {
+                glowAnimator?.cancel()
+                glowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                    duration = 1500
+                    repeatCount = ValueAnimator.INFINITE
+                    repeatMode = ValueAnimator.RESTART
+                    
+                    addUpdateListener { animator ->
+                        if (!isPressed) {
+                            val progress = animator.animatedValue as Float
+                            setRippleProgress(progress)
+                        }
+                    }
+                    start()
+                }
+            }
+            
+            fun stopGlowAnimation() {
+                glowAnimator?.cancel()
+                setRippleProgress(0f)
+            }
+            
+            post { startGlowAnimation() }
+            
+            val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                private val MIN_SWIPE_DISTANCE = dpToPx(100)
+                
+                override fun onFling(
+                    e1: MotionEvent?,
+                    e2: MotionEvent,
+                    velocityX: Float,
+                    velocityY: Float
+                ): Boolean {
+                    if (e1 == null) return false
+                    
+                    val diffX = e2.x - e1.x
+                    val diffY = e2.y - e1.y
+                    val distance = sqrt(diffX * diffX + diffY * diffY)
+                    
+                    if (distance >= MIN_SWIPE_DISTANCE) {
+                        animate()
+                            .scaleX(1.2f)
+                            .scaleY(1.2f)
+                            .setDuration(150)
+                            .withEndAction {
+                                markAsDone()
+                            }
+                        return true
+                    }
+                    return false
+                }
+
+                override fun onDown(e: MotionEvent): Boolean {
+                    return true
+                }
+            })
+            
+            setOnTouchListener { _, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        isPressed = true
+                        stopGlowAnimation()
+                        animate()
+                            .scaleX(1.1f)
+                            .scaleY(1.1f)
+                            .alpha(0.9f)
+                            .setDuration(200)
+                            .start()
+                    }
+                    
+                    MotionEvent.ACTION_MOVE -> {
+                        if (isPressed) {
+                            val diffX = event.x - (width / 2f)
+                            val diffY = event.y - (height / 2f)
+                            val distance = sqrt(diffX * diffX + diffY * diffY)
+                            val progress = (distance / dpToPx(100)).coerceIn(0f, 1f)
+                            
+                            val progressAlpha = 0.9f + (progress * 0.1f)
+                            val progressScale = 1.1f + (progress * 0.2f)
+                            
+                            alpha = progressAlpha
+                            scaleX = progressScale
+                            scaleY = progressScale
+                            
+                            if (progress > 0.7f) {
+                                setTextColor(Color.WHITE)
+                            } else {
+                                setTextColor(textColor)
+                            }
+                        }
+                    }
+                    
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        isPressed = false
+                        
+                        animate()
+                            .alpha(1.0f)
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setDuration(300)
+                            .withEndAction {
+                                startGlowAnimation()
+                            }
+                            .start()
+                        
+                        setTextColor(textColor)
+                    }
+                }
+                gestureDetector.onTouchEvent(event)
             }
         }
-        // Flexible spacer
-        val flexSpacer = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
+        
+        contentLayout.addView(glassButton)
+        
+        // Configure glassButton constraints
+        (glassButton.layoutParams as ConstraintLayout.LayoutParams).apply {
+            bottomToTop = guidelineBottom.id
+            bottomMargin = dpToPx(16)
+            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            width = glowViewSize
+            height = glowViewSize
+        }
+        
+        // Connect infoCard bottom to glassButton top
+        (infoCard.layoutParams as ConstraintLayout.LayoutParams).apply {
+            bottomToTop = glassButton.id
+            bottomMargin = dpToPx(24)
+        }
+        
+        // Skip button (bottom-left)
+        val skipButton = Button(this).apply {
+            id = View.generateViewId()
+            text = "SKIP"
+            textSize = 24f
+            setTypeface(null, android.graphics.Typeface.NORMAL)
+            isAllCaps = false
+            setTextColor(textColor)
+
+            val skipBackground = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dpToPx(25).toFloat()
+                setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
+            }
+            background = skipBackground
+
+            setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
+
+            setOnClickListener { skipAlarm() }
+
+            // Touch feedback
+            setOnTouchListener { view, event ->
+                when (event.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        view.alpha = 0.7f
+                        view.scaleX = 0.95f
+                        view.scaleY = 0.95f
+                    }
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        view.alpha = 1.0f
+                        view.scaleX = 1.0f
+                        view.scaleY = 1.0f
+                    }
+                }
+                false
+            }
+        }
+        
+        contentLayout.addView(skipButton)
+        
+        // Configure skipButton constraints
+        (skipButton.layoutParams as ConstraintLayout.LayoutParams).apply {
+            bottomToBottom = guidelineBottom.id
+            startToStart = guidelineStart.id
+        }
+        
+        // Ignore button (bottom-right)
+        val ignoreButton = Button(this).apply {
+            id = View.generateViewId()
+            text = "IGNORE"
+            textSize = 24f
+            setTypeface(null, android.graphics.Typeface.NORMAL)
+            isAllCaps = false
+            setTextColor(textColor)
+
+            val ignoreBackground = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dpToPx(25).toFloat()
+                setColor(Color.argb(40, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)))
+                setStroke(dpToPx(1), Color.argb(100, 255, 255, 255))
+            }
+            background = ignoreBackground
+
+            setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
+
+            setOnClickListener { ignoreAlarm() }
+
+            // Touch feedback
+            setOnTouchListener { view, event ->
+                when (event.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        view.alpha = 0.7f
+                        view.scaleX = 0.95f
+                        view.scaleY = 0.95f
+                    }
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        view.alpha = 1.0f
+                        view.scaleX = 1.0f
+                        view.scaleY = 1.0f
+                    }
+                }
+                false
+            }
+        }
+        
+        contentLayout.addView(ignoreButton)
+        
+        // Configure ignoreButton constraints
+        (ignoreButton.layoutParams as ConstraintLayout.LayoutParams).apply {
+            bottomToBottom = guidelineBottom.id
+            endToEnd = guidelineEnd.id
         }
 
-        // Create button layer with ConstraintLayout for precise positioning
-        val buttonLayer = createButtonLayer(
-            accentColor = accentColor,
-            textColor = textColor,
-            dpToPx = dpToPx
-        )
-
-
-        contentOverlay.addView(timeDisplay)
-        contentOverlay.addView(infoCard)
-        contentOverlay.addView(flexSpacer)
-
-        // Layer the components: gradient, content overlay, button layer
+        // Layer the components: gradient + content layout
         mainLayout.addView(gradientLayer)
-        mainLayout.addView(contentOverlay)
-        mainLayout.addView(buttonLayer) // New ConstraintLayout button layer
+        mainLayout.addView(contentLayout)
 
         setContentView(mainLayout)
     }
