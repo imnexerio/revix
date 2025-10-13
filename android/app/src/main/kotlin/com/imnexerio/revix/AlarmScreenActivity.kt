@@ -687,6 +687,8 @@ class AlarmScreenActivity : Activity() {
         (skipButton.layoutParams as ConstraintLayout.LayoutParams).apply {
             bottomToBottom = guidelineBottom.id
             startToStart = guidelineStart.id
+            width = dpToPx(140)  // Fixed width for symmetry
+            height = ConstraintLayout.LayoutParams.WRAP_CONTENT
         }
         
         // Ignore button (bottom-right)
@@ -734,6 +736,8 @@ class AlarmScreenActivity : Activity() {
         (ignoreButton.layoutParams as ConstraintLayout.LayoutParams).apply {
             bottomToBottom = guidelineBottom.id
             endToEnd = guidelineEnd.id
+            width = dpToPx(140)  // Fixed width for symmetry
+            height = ConstraintLayout.LayoutParams.WRAP_CONTENT
         }
 
         // Layer the components: gradient + content layout
