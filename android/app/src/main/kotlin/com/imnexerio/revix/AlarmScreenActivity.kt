@@ -50,6 +50,9 @@ class AlarmScreenActivity : Activity() {
     private var scheduledDate: String = ""
     private var description: String = ""
     private var userActionTaken: Boolean = false // Track if user clicked a button
+    
+    // Cached record data - fetched once per session for optimal performance
+    private var cachedRecordData: Map<String, String>? = null
 
     // Broadcast receiver to listen for alarm service events
     private val alarmServiceReceiver = object : BroadcastReceiver() {
@@ -92,10 +95,12 @@ class AlarmScreenActivity : Activity() {
         reminderTime = intent.getStringExtra("reminder_time") ?: ""
         scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
         
-        // Read entryType and description from SharedPreferences cache instead of Intent
-        val recordData = getRecordDataFromWidgetCache()
-        entryType = recordData?.get("entry_type") ?: ""
-        description = recordData?.get("description") ?: ""
+        // OPTIMIZATION: Fetch record data ONCE and cache it for entire session
+        cachedRecordData = getRecordDataFromWidgetCache()
+        
+        // Extract entryType and description from cached data
+        entryType = cachedRecordData?.get("entry_type") ?: ""
+        description = cachedRecordData?.get("description") ?: ""
 
         // Check if this is details mode or alarm mode
         val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
@@ -380,9 +385,9 @@ class AlarmScreenActivity : Activity() {
                     // Completion text (structured data, keep maxLines)
                     val completionText = TextView(this@AlarmScreenActivity).apply {
                         val completionValue = calculateCompletionFromCache()
-                        val recordData = getRecordDataFromWidgetCache()
-                        val missedCounts = recordData?.get("missed_counts") ?: "0"
-                        val skippedCounts = recordData?.get("skip_counts") ?: "0"
+                        // Use cached data instead of fetching again
+                        val missedCounts = cachedRecordData?.get("missed_counts") ?: "0"
+                        val skippedCounts = cachedRecordData?.get("skip_counts") ?: "0"
                         text = "Completed: $completionValue\nMissed: $missedCounts | Skipped: $skippedCounts"
                         textSize = 22f
                         setTextColor(textColor)
@@ -1084,9 +1089,9 @@ class AlarmScreenActivity : Activity() {
 
     private fun calculateCompletionFromCache(): String {
         return try {
-            val recordData = getRecordDataFromWidgetCache()
-            val completionCountsStr = recordData?.get("completion_counts") ?: "0"
-            val durationStr = recordData?.get("duration") ?: ""
+            // Use cached data instead of fetching again
+            val completionCountsStr = cachedRecordData?.get("completion_counts") ?: "0"
+            val durationStr = cachedRecordData?.get("duration") ?: ""
 
             val completionCount = completionCountsStr.toIntOrNull() ?: 0
 
