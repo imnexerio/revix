@@ -90,9 +90,12 @@ class AlarmScreenActivity : Activity() {
         subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
         reminderTime = intent.getStringExtra("reminder_time") ?: ""
-        entryType = intent.getStringExtra("entry_type") ?: ""
         scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
-        description = intent.getStringExtra("description") ?: ""
+        
+        // Read entryType and description from SharedPreferences cache instead of Intent
+        val recordData = getRecordDataFromWidgetCache()
+        entryType = recordData?.get("entry_type") ?: ""
+        description = recordData?.get("description") ?: ""
 
         // Check if this is details mode or alarm mode
         val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
