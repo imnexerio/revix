@@ -318,7 +318,7 @@ Question: $question''';
       ? messages.sublist(messages.length - 20) 
       : messages;
 
-    // Build proper conversation history with both user and model messages
+    // Build proper conversation history alternating user and model
     final List<Content> history = [];
     
     // Skip the first message if it's the welcome message
@@ -327,33 +327,36 @@ Question: $question''';
     for (int i = startIndex; i < limitedMessages.length; i++) {
       final message = limitedMessages[i];
       
+      // Add content with appropriate role
       if (message.isUser) {
-        history.add(Content.text(message.text));
-        history.add(Content.model([TextPart('')])); // Placeholder for model response
+        history.add(Content.text(message.text)); // 'user' role
       } else {
-        // Replace the last placeholder with actual model response
-        if (history.isNotEmpty && history.last.role == 'model') {
-          history[history.length - 1] = Content.model([TextPart(message.text)]);
-        }
+        // Model messages must use Content.model() constructor
+        history.add(Content.model([TextPart(message.text)]));
       }
     }
 
-    // Remove any trailing empty model responses
-    if (history.isNotEmpty && history.last.role == 'model') {
-      final lastText = (history.last.parts.first as TextPart).text;
-      if (lastText.isEmpty) {
-        history.removeLast();
-      }
+    // Ensure history alternates properly (user, model, user, model...)
+    // If last message is from user, we need to remove it (can't end on user message)
+    if (history.isNotEmpty && history.last.role == 'user') {
+      history.removeLast();
     }
 
     // Restart chat with history
     try {
       _chatSession = _model!.startChat(history: history);
-      _scheduleDataSent = false;
       
-      // Re-send schedule data if available
-      if (_currentScheduleData != null && _currentScheduleData!.isNotEmpty) {
-        await setScheduleData(_currentScheduleData!);
+      // Mark schedule data as already sent if we have history
+      // (assume it was sent in the original conversation)
+      if (history.isNotEmpty) {
+        _scheduleDataSent = true;
+      } else {
+        _scheduleDataSent = false;
+        
+        // Only re-send if no history and data is available
+        if (_currentScheduleData != null && _currentScheduleData!.isNotEmpty) {
+          await setScheduleData(_currentScheduleData!);
+        }
       }
     } catch (e) {
       print("Error loading chat history: $e");

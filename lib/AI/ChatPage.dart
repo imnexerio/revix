@@ -47,34 +47,16 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _fetchScheduleData() async {
     try {
-      // Use the UnifiedDatabaseService instance instead of wrapper
+      // UnifiedDatabaseService keeps data updated via listeners
+      // Just get the latest cached data
       final service = UnifiedDatabaseService();
       _scheduleData = service.getScheduleData();
 
-      // If the data isn't already in cache, try to fetch it
+      // If no cached data, try to fetch once
       if (_scheduleData == 'No schedule data available') {
         await service.fetchRawData();
         _scheduleData = service.getScheduleData();
       }
-
-      // Update the Gemini service with the new schedule data
-      if (_scheduleData != null && _aiEnabled) {
-        _geminiService.setScheduleData(_scheduleData!);
-      }
-
-      // Optional: Subscribe to raw data changes to keep the schedule data updated
-      service.rawDataStream.listen((data) {
-        if (data != null) {
-          _scheduleData = data.toString();
-
-          // Update the Gemini service with the new schedule data
-          if (_scheduleData != null && _aiEnabled) {
-            _geminiService.setScheduleData(_scheduleData!);
-          }
-        } else {
-          _scheduleData = 'No schedule data available';
-        }
-      });
     } catch (e) {
       _scheduleData = 'No schedule data available';
     }
@@ -111,6 +93,13 @@ class _ChatPageState extends State<ChatPage> {
         _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
         _aiEnabled = _geminiService.isAvailable;
       });
+      
+      // ✅ API KEY SET - Start fresh conversation with data
+      if (_aiEnabled) {
+        await _fetchScheduleData(); // Get latest data
+        await _startNewConversation(); // This will send data
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('API key saved, AI features enabled'),
@@ -259,30 +248,33 @@ class _ChatPageState extends State<ChatPage> {
     // Save the conversation with the user message
     _saveConversation();
 
-    // Create a placeholder for the AI response
-    final aiMessageIndex = _messages.length;
-    setState(() {
-      _messages.add(ChatMessage(text: '', isUser: false));
-    });
+    // Prepare index for AI response (will be added when first chunk arrives)
+    int aiMessageIndex = -1;
 
     try {
-      // Ensure the Gemini service has the schedule data
-      if (_scheduleData != null) {
-        await _geminiService.setScheduleData(_scheduleData!);
-      }
-
       // Use streaming for real-time response
+      // Schedule data is already sent when conversation started
+      StringBuffer fullResponse = StringBuffer();
       StringBuffer fullResponse = StringBuffer();
       
       await for (final chunk in _geminiService.askAboutScheduleStream(userMessage)) {
         fullResponse.write(chunk);
         
         setState(() {
-          _messages[aiMessageIndex] = ChatMessage(
-            text: fullResponse.toString(),
-            isUser: false,
-            timestamp: _messages[aiMessageIndex].timestamp,
-          );
+          // Add message on first chunk, update on subsequent chunks
+          if (aiMessageIndex == -1) {
+            aiMessageIndex = _messages.length;
+            _messages.add(ChatMessage(
+              text: fullResponse.toString(),
+              isUser: false,
+            ));
+          } else {
+            _messages[aiMessageIndex] = ChatMessage(
+              text: fullResponse.toString(),
+              isUser: false,
+              timestamp: _messages[aiMessageIndex].timestamp,
+            );
+          }
           _isLoading = false;
         });
 
@@ -293,11 +285,19 @@ class _ChatPageState extends State<ChatPage> {
       _saveConversation();
     } catch (e) {
       setState(() {
-        _messages[aiMessageIndex] = ChatMessage(
-          text: "Sorry, I encountered an error. Please try again or check your connection.\n\nError: ${e.toString()}",
-          isUser: false,
-          timestamp: _messages[aiMessageIndex].timestamp,
-        );
+        // Add error message if no message was created yet
+        if (aiMessageIndex == -1) {
+          _messages.add(ChatMessage(
+            text: "Sorry, I encountered an error. Please try again or check your connection.\n\nError: ${e.toString()}",
+            isUser: false,
+          ));
+        } else {
+          _messages[aiMessageIndex] = ChatMessage(
+            text: "Sorry, I encountered an error. Please try again or check your connection.\n\nError: ${e.toString()}",
+            isUser: false,
+            timestamp: _messages[aiMessageIndex].timestamp,
+          );
+        }
         _isLoading = false;
       });
 
@@ -318,7 +318,7 @@ class _ChatPageState extends State<ChatPage> {
     if (_aiEnabled) {
       _geminiService.resetChat();
 
-      // Set the schedule data in the Gemini service
+      // ✅ SEND SCHEDULE DATA - This is a new chat
       if (_scheduleData != null) {
         await _geminiService.setScheduleData(_scheduleData!);
       }
@@ -534,8 +534,38 @@ class _ChatPageState extends State<ChatPage> {
                 child: ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: _messages.length,
+                  itemCount: _messages.length + (_isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
+                    // Show loading dots as last item when loading
+                    if (_isLoading && index == _messages.length) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                              bottomLeft: Radius.circular(4),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _AnimatedDot(delay: 0),
+                              const SizedBox(width: 4),
+                              _AnimatedDot(delay: 200),
+                              const SizedBox(width: 4),
+                              _AnimatedDot(delay: 400),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     final message = _messages[index];
                     final isLastMessage = index == _messages.length - 1;
 
@@ -547,42 +577,6 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ),
             ),
-
-            // Loading indicator
-            if (_isLoading)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  border: Border(
-                    top: BorderSide(
-                      color: colorScheme.outlineVariant.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Thinking...',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
             // Input area
             Container(
@@ -696,6 +690,73 @@ class _ChatPageState extends State<ChatPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Animated Dot Widget for loading indicator
+class _AnimatedDot extends StatefulWidget {
+  final int delay;
+
+  const _AnimatedDot({required this.delay});
+
+  @override
+  State<_AnimatedDot> createState() => _AnimatedDotState();
+}
+
+class _AnimatedDotState extends State<_AnimatedDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _animation = Tween<double>(begin: 0, end: -8).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // Start animation with delay
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) {
+        _controller.repeat(reverse: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _animation.value),
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
     );
   }
 }
