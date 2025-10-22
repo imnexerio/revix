@@ -239,7 +239,7 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-// Modify _sendMessage to save the conversation only when the user actually sends a message
+// Modify _sendMessage to use streaming for real-time responses
   void _sendMessage(String text) async {
     if (text.trim().isEmpty || !_aiEnabled) return;
 
@@ -253,43 +253,51 @@ class _ChatPageState extends State<ChatPage> {
 
     _scrollToBottom();
 
-    // First, check if this is the first message in a new conversation
+    // Check if this is the first message in a new conversation
     bool isFirstMessageInNewConversation = !await ChatStorage.conversationExists(_currentConversationId);
 
-    // Now save the conversation with the user message - this will be the first save for a new conversation
+    // Save the conversation with the user message
     _saveConversation();
+
+    // Create a placeholder for the AI response
+    final aiMessageIndex = _messages.length;
+    setState(() {
+      _messages.add(ChatMessage(text: '', isUser: false));
+    });
 
     try {
       // Ensure the Gemini service has the schedule data
       if (_scheduleData != null) {
-        _geminiService.setScheduleData(_scheduleData!);
+        await _geminiService.setScheduleData(_scheduleData!);
       }
 
-      // Determine if this is the first user message
-      final isFirstUserMessage = _messages.where((msg) => msg.isUser).length == 1;
+      // Use streaming for real-time response
+      StringBuffer fullResponse = StringBuffer();
+      
+      await for (final chunk in _geminiService.askAboutScheduleStream(userMessage)) {
+        fullResponse.write(chunk);
+        
+        setState(() {
+          _messages[aiMessageIndex] = ChatMessage(
+            text: fullResponse.toString(),
+            isUser: false,
+            timestamp: _messages[aiMessageIndex].timestamp,
+          );
+          _isLoading = false;
+        });
 
-      // Send message to Gemini
-      final response = await _geminiService.askAboutSchedule(
-        userMessage,
-        _scheduleData ?? 'No schedule data available',
-        withContext: isFirstUserMessage, // Only send context with first message
-      );
-
-      setState(() {
-        _messages.add(ChatMessage(text: response, isUser: false));
-        _isLoading = false;
-      });
-
-      _scrollToBottom();
+        _scrollToBottom();
+      }
 
       // Save conversation with assistant's response
       _saveConversation();
     } catch (e) {
       setState(() {
-        _messages.add(ChatMessage(
-          text: "Sorry, I encountered an error. Please try again or check your connection.",
+        _messages[aiMessageIndex] = ChatMessage(
+          text: "Sorry, I encountered an error. Please try again or check your connection.\n\nError: ${e.toString()}",
           isUser: false,
-        ));
+          timestamp: _messages[aiMessageIndex].timestamp,
+        );
         _isLoading = false;
       });
 
@@ -312,7 +320,7 @@ class _ChatPageState extends State<ChatPage> {
 
       // Set the schedule data in the Gemini service
       if (_scheduleData != null) {
-        _geminiService.setScheduleData(_scheduleData!);
+        await _geminiService.setScheduleData(_scheduleData!);
       }
     }
 
