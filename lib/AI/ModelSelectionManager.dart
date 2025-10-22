@@ -59,16 +59,46 @@ class ModelSelectionManager {
     },
   };
 
-  // Get the saved model
+  // Get the saved model with validation
   static Future<String> getSelectedModel() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(selectedModelPrefKey) ?? defaultModel;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedModel = prefs.getString(selectedModelPrefKey);
+      
+      // Validate saved model exists in available models
+      if (savedModel != null && isValidModel(savedModel)) {
+        return savedModel;
+      }
+      
+      // Fallback to default if saved model is invalid or deprecated
+      if (savedModel != null && savedModel != defaultModel) {
+        print('Saved model "$savedModel" is no longer available. Falling back to default.');
+        // Update to default
+        await saveSelectedModel(defaultModel);
+      }
+      
+      return defaultModel;
+    } catch (e) {
+      print('Error getting selected model: $e');
+      return defaultModel;
+    }
   }
 
-  // Save the selected model
-  static Future<void> saveSelectedModel(String model) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(selectedModelPrefKey, model);
+  // Save the selected model with validation
+  static Future<bool> saveSelectedModel(String model) async {
+    try {
+      if (!isValidModel(model)) {
+        print('Invalid model ID: $model');
+        return false;
+      }
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(selectedModelPrefKey, model);
+      return true;
+    } catch (e) {
+      print('Error saving selected model: $e');
+      return false;
+    }
   }
 
   // Get model display name
