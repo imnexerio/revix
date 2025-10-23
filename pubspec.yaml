@@ -41,7 +41,6 @@ dependencies:
   firebase_auth: ^6.0.2
   flutter_launcher_icons: ^0.14.1
   fl_chart: ^1.1.1
-  firebase_storage: ^13.0.1
   image_picker: ^1.1.2
   url_launcher: ^6.3.1
   package_info_plus: ^9.0.0
