@@ -61,20 +61,20 @@ dependencies:
 
 flutter_launcher_icons:
   android: true
-  ios: true
+#  ios: true
   image_path: "assets/icon/icon.png"
   web:
     generate: true
     image_path: "assets/icon/icon.png"
     background_color: "#hexcode"
     theme_color: "#hexcode"
-  windows:
-    generate: true
-    image_path: "assets/icon/icon.png"
-    icon_size: 48 # min:48, max:256, default: 48
-  macos:
-    generate: true
-    image_path: "assets/icon/icon.png"
+#  windows:
+#    generate: true
+#    image_path: "assets/icon/icon.png"
+#    icon_size: 48 # min:48, max:256, default: 48
+#  macos:
+#    generate: true
+#    image_path: "assets/icon/icon.png"
 
 
 dev_dependencies:
