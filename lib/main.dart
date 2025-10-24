@@ -201,10 +201,18 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
+  final GlobalKey<ChatPageState> _chatPageKey = GlobalKey<ChatPageState>();
+  late final List<Widget> _widgetOptions;
 
   @override
   void initState() {
     super.initState();
+    _widgetOptions = <Widget>[
+      HomePage(),
+      TodayPage(),
+      DetailsPage(),
+      ChatPage(key: _chatPageKey),
+    ];
     Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
     
     // Check for app updates after a short delay to ensure UI is ready
@@ -233,6 +241,142 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Build hamburger menu button for Chat tab
+  Widget _buildChatMenuButton(ThemeData theme) {
+    return IconButton(
+      icon: Icon(
+        Icons.menu,
+        color: theme.colorScheme.onSurface,
+      ),
+      onPressed: () {
+        _chatPageKey.currentState?.openDrawer();
+      },
+      tooltip: 'Chat History',
+    );
+  }
+
+  // Build chat-specific action buttons
+  List<Widget> _buildChatActions(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    final chatState = _chatPageKey.currentState;
+    
+    return [
+      // API Key button
+      Material(
+        borderRadius: BorderRadius.circular(20),
+        color: (chatState?.isAiEnabled ?? false)
+            ? colorScheme.primaryContainer.withOpacity(0.8)
+            : colorScheme.errorContainer.withOpacity(0.8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            _chatPageKey.currentState?.showApiKeyDialog();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  (chatState?.isAiEnabled ?? false) ? Icons.key : Icons.key_off,
+                  size: 16,
+                  color: (chatState?.isAiEnabled ?? false)
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onErrorContainer,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  (chatState?.isAiEnabled ?? false) ? 'API Key' : 'Set Key',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: (chatState?.isAiEnabled ?? false)
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+      // Model selection button
+      Material(
+        borderRadius: BorderRadius.circular(20),
+        color: colorScheme.secondaryContainer.withOpacity(0.8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            _chatPageKey.currentState?.showModelSelectionDialog();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.psychology,
+                  size: 16,
+                  color: colorScheme.onSecondaryContainer,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Model',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSecondaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+    ];
+  }
+
+  // Build profile button (used on all tabs)
+  Widget _buildProfileButton(ThemeData theme) {
+    return InkWell(
+      onTap: _openSettings,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.3),
+              width: 2,
+            ),
+          ),
+          child: Consumer<ProfileProvider>(
+            builder: (context, profileProvider, child) {
+              return profileProvider.profileImage != null
+                  ? CircleAvatar(
+                      radius: 17.5,
+                      backgroundImage: profileProvider.profileImage!.image,
+                      backgroundColor: Colors.transparent,
+                    )
+                  : Container(
+                      width: 35,
+                      height: 35,
+                      padding: const EdgeInsets.all(8),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.primary,
+                        ),
+                      ),
+                    );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   void _addLecture() {
     showModalBottomSheet(
       context: context,
@@ -254,13 +398,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  final List<Widget> _widgetOptions = <Widget>[
-    HomePage(),
-    TodayPage(),
-    DetailsPage(),
-    const ChatPage(),
-  ];
-
   final List<String> _pageTitles = <String>[
     'Home',
     'Schedule',
@@ -278,7 +415,7 @@ class _MyHomePageState extends State<MyHomePage> {
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Text(
+          title: _selectedIndex == 3 ? null : Text(
             _pageTitles[_selectedIndex],
             style: TextStyle(
               color: theme.colorScheme.primary,
@@ -286,44 +423,10 @@ class _MyHomePageState extends State<MyHomePage> {
               fontSize: 25,
             ),
           ),
+          leading: _selectedIndex == 3 ? _buildChatMenuButton(theme) : null,
           actions: [
-            InkWell(
-              onTap: _openSettings,
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: Consumer<ProfileProvider>(
-                    builder: (context, profileProvider, child) {
-                      return profileProvider.profileImage != null
-                          ? CircleAvatar(
-                        radius: 17.5,
-                        backgroundImage: profileProvider.profileImage!.image,
-                        backgroundColor: Colors.transparent,
-                      )
-                          : Container(
-                        width: 35,
-                        height: 35,
-                        padding: const EdgeInsets.all(8),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            theme.colorScheme.primary,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            )
+            if (_selectedIndex == 3) ..._buildChatActions(theme),
+            _buildProfileButton(theme),
           ],
         ),
         body: Stack(

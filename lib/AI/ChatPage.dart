@@ -13,10 +13,10 @@ class ChatPage extends StatefulWidget {
 
   const ChatPage({Key? key, this.conversationId}) : super(key: key);
   @override
-  _ChatPageState createState() => _ChatPageState();
+  ChatPageState createState() => ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class ChatPageState extends State<ChatPage> {
   final TextEditingController _controller = TextEditingController();
   final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
@@ -31,6 +31,23 @@ class _ChatPageState extends State<ChatPage> {
 
   // Store schedule data directly
   String? _scheduleData;
+
+  // Expose AI enabled status for parent widget
+  bool get isAiEnabled => _aiEnabled;
+
+  // Method to open drawer from parent
+  void openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
+  // Expose dialog methods for parent widget
+  void showApiKeyDialog() {
+    _showApiKeyDialog();
+  }
+
+  void showModelSelectionDialog() {
+    _showModelSelectionDialog();
+  }
 
   @override
   void initState() {
@@ -542,119 +559,6 @@ class _ChatPageState extends State<ChatPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar section
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Hamburger menu button (opens drawer)
-                  IconButton(
-                    icon: Icon(
-                      Icons.menu,
-                      color: colorScheme.onSurface,
-                    ),
-                    onPressed: () {
-                      _scaffoldKey.currentState?.openDrawer();
-                    },
-                    tooltip: 'Chat History',
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'revAIx',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  // API key button
-                  Material(
-                    borderRadius: BorderRadius.circular(20),
-                    color: _aiEnabled
-                        ? colorScheme.primaryContainer.withOpacity(0.8)
-                        : colorScheme.errorContainer.withOpacity(0.8),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: _showApiKeyDialog,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _aiEnabled ? Icons.key : Icons.key_off,
-                              size: 16,
-                              color: _aiEnabled
-                                  ? colorScheme.onPrimaryContainer
-                                  : colorScheme.onErrorContainer,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _aiEnabled ? 'API Key' : 'Set Key',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: _aiEnabled
-                                    ? colorScheme.onPrimaryContainer
-                                    : colorScheme.onErrorContainer,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),                  // Model selection button
-                  FutureBuilder<String>(
-                    future: _getCurrentModelDisplay(),
-                    builder: (context, snapshot) {
-                      String currentModel = snapshot.data ?? 'Loading...';
-                      return Tooltip(
-                        message: 'Current model: $currentModel\nTap to change',
-                        child: Material(
-                          borderRadius: BorderRadius.circular(20),
-                          color: colorScheme.secondaryContainer.withOpacity(0.8),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(20),
-                            onTap: _showModelSelectionDialog,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.psychology,
-                                    size: 16,
-                                    color: colorScheme.onSecondaryContainer,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Model',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSecondaryContainer,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
             if (!_aiEnabled)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
