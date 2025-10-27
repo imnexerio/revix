@@ -140,6 +140,26 @@ class CalendarViewActivity : AppCompatActivity() {
         calendarGrid.removeAllViews()
         dayViews.clear()
         
+        // Add weekday headers (Mon-Sun)
+        val weekdays = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        for (weekday in weekdays) {
+            val headerView = TextView(this).apply {
+                text = weekday
+                textSize = 14f
+                gravity = android.view.Gravity.CENTER
+                setTextColor(getColor(R.color.textSecondary))
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                setPadding(4, 8, 4, 8)
+            }
+            val headerParams = GridLayout.LayoutParams()
+            headerParams.width = 0
+            headerParams.height = GridLayout.LayoutParams.WRAP_CONTENT
+            headerParams.columnSpec = GridLayout.spec(weekdays.indexOf(weekday), 1f)
+            headerParams.rowSpec = GridLayout.spec(0)
+            headerView.layoutParams = headerParams
+            calendarGrid.addView(headerView)
+        }
+        
         // Get calendar data
         val tempCalendar = currentCalendar.clone() as Calendar
         tempCalendar.set(Calendar.DAY_OF_MONTH, 1)
@@ -157,7 +177,7 @@ class CalendarViewActivity : AppCompatActivity() {
             layoutParams.width = 0
             layoutParams.height = GridLayout.LayoutParams.WRAP_CONTENT
             layoutParams.columnSpec = GridLayout.spec(i % 7, 1f)
-            layoutParams.rowSpec = GridLayout.spec(i / 7)
+            layoutParams.rowSpec = GridLayout.spec((i / 7) + 1) // +1 to account for header row
             layoutParams.setMargins(4, 4, 4, 4)
             
             val dayNumber = i - startPosition + 1
