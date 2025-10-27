@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/WidgetBackground">
+
+    <!-- Header with Month/Year and Today button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Month/Year text (centered) -->
+        <TextView
+            android:id="@+id/month_year_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="October 2025"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text"
+            android:gravity="center" />
+
+        <!-- Today button -->
+        <Button
+            android:id="@+id/today_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Today"
+            android:textSize="14sp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+
+    </LinearLayout>
+
+    <!-- Statistics header -->
+    <LinearLayout
+        android:id="@+id/statistics_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center"
+        android:background="@color/WidgetBackground">
+
+        <!-- Initiated badge -->
+        <TextView
+            android:id="@+id/stat_initiated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔵 0"
+            android:textSize="14sp"
+            android:textColor="@color/text"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/stat_badge_blue" />
+
+        <!-- Revised badge -->
+        <TextView
+            android:id="@+id/stat_revised"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🟢 0"
+            android:textSize="14sp"
+            android:textColor="@color/text"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/stat_badge_green" />
+
+        <!-- Scheduled badge -->
+        <TextView
+            android:id="@+id/stat_scheduled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🟠 0"
+            android:textSize="14sp"
+            android:textColor="@color/text"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/stat_badge_orange" />
+
+        <!-- Missed badge -->
+        <TextView
+            android:id="@+id/stat_missed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔴 0"
+            android:textSize="14sp"
+            android:textColor="@color/text"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:background="@drawable/stat_badge_red" />
+
+    </LinearLayout>
+
+    <!-- Calendar Grid -->
+    <GridLayout
+        android:id="@+id/calendar_grid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="7"
+        android:rowCount="7"
+        android:layout_margin="8dp"
+        android:padding="8dp" />
+
+    <!-- Selected date text -->
+    <TextView
+        android:id="@+id/selected_date_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Events for October 27, 2025"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/text"
+        android:padding="16dp"
+        android:gravity="center" />
+
+    <!-- Events RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/events_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp" />
+
+    <!-- Empty view -->
+    <TextView
+        android:id="@+id/empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="No events for this date"
+        android:textSize="16sp"
+        android:textColor="@color/textSecondary"
+        android:gravity="center"
+        android:visibility="gone" />
+
+</LinearLayout>

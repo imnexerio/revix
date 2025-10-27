@@ -17,6 +17,7 @@ class CalendarWidget : AppWidgetProvider() {
     companion object {
         const val ACTION_CALENDAR_REFRESH = "revix.ACTION_CALENDAR_REFRESH"
         const val ACTION_ITEM_CLICK = "revix.ACTION_ITEM_CLICK"
+        const val ACTION_OPEN_CALENDAR_VIEW = "revix.ACTION_OPEN_CALENDAR_VIEW_CALENDAR"
         
         fun updateCalendarWidgets(context: Context) {
             try {
@@ -68,6 +69,9 @@ class CalendarWidget : AppWidgetProvider() {
 
                 // Setup calendar grid with current month
                 setupCalendarGrid(context, views)
+
+                // Setup calendar grid click to open CalendarViewActivity
+                setupCalendarGridClick(context, views, appWidgetId)
 
                 // Setup records ListView
                 setupRecordsList(context, views, appWidgetId)
@@ -152,6 +156,33 @@ class CalendarWidget : AppWidgetProvider() {
                 Log.d("CalendarWidget", "Calendar grid setup completed for month with $daysInMonth days, today is $today, first day position: $firstDayOfWeek, rows needed: $rowsNeeded")
             } catch (e: Exception) {
                 Log.e("CalendarWidget", "Error setting up calendar grid: ${e.message}", e)
+            }
+        }
+
+        private fun setupCalendarGridClick(context: Context, views: RemoteViews, appWidgetId: Int) {
+            try {
+                // Set up calendar grid container click to open CalendarViewActivity
+                val calendarViewIntent = Intent(context, CalendarWidget::class.java)
+                calendarViewIntent.action = ACTION_OPEN_CALENDAR_VIEW
+                val calendarViewRequestCode = appWidgetId + 800 + System.currentTimeMillis().toInt()
+                val calendarViewPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    calendarViewRequestCode,
+                    calendarViewIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                
+                // Set click on the calendar grid rows to open CalendarViewActivity
+                views.setOnClickPendingIntent(R.id.calendar_row_1, calendarViewPendingIntent)
+                views.setOnClickPendingIntent(R.id.calendar_row_2, calendarViewPendingIntent)
+                views.setOnClickPendingIntent(R.id.calendar_row_3, calendarViewPendingIntent)
+                views.setOnClickPendingIntent(R.id.calendar_row_4, calendarViewPendingIntent)
+                views.setOnClickPendingIntent(R.id.calendar_row_5, calendarViewPendingIntent)
+                views.setOnClickPendingIntent(R.id.calendar_row_6, calendarViewPendingIntent)
+                
+                Log.d("CalendarWidget", "Calendar grid click setup completed for widget $appWidgetId")
+            } catch (e: Exception) {
+                Log.e("CalendarWidget", "Error setting up calendar grid click: ${e.message}", e)
             }
         }
 
@@ -248,6 +279,17 @@ class CalendarWidget : AppWidgetProvider() {
             ACTION_CALENDAR_REFRESH -> {
                 Log.d("CalendarWidget", "Calendar refresh requested")
                 updateCalendarWidgets(context)
+            }
+            ACTION_OPEN_CALENDAR_VIEW -> {
+                try {
+                    // Launch CalendarViewActivity
+                    val activityIntent = Intent(context, CalendarViewActivity::class.java)
+                    activityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    context.startActivity(activityIntent)
+                    Log.d("CalendarWidget", "Launching CalendarViewActivity")
+                } catch (e: Exception) {
+                    Log.e("CalendarWidget", "Error launching CalendarViewActivity: ${e.message}", e)
+                }
             }
             ACTION_ITEM_CLICK -> {
                 // Calendar records always go to details view (no ACTION_TYPE check needed)
