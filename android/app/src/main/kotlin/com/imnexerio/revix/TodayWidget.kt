@@ -204,16 +204,10 @@ class TodayWidget : AppWidgetProvider() {
                     val alarmIntent = Intent(context, AlarmScreenActivity::class.java)
                     alarmIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     
-                    // Copy all record data to alarm intent
-                    intent.extras?.let { extras ->
-                        for (key in extras.keySet()) {
-                            val value = extras.getString(key)
-                            if (value != null) {
-                                alarmIntent.putExtra(key, value)
-                            }
-                        }
-                    }
-                    
+                    // Only pass the three unique identifiers - AlarmScreenActivity will fetch the rest from cache
+                    alarmIntent.putExtra(AlarmScreenActivity.EXTRA_CATEGORY, category)
+                    alarmIntent.putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, subCategory)
+                    alarmIntent.putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, recordTitle)
                     alarmIntent.putExtra("DETAILS_MODE", true)
                     
                     try {

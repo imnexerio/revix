@@ -88,8 +88,6 @@ class CalendarEventAdapter(
                         putExtra(AlarmScreenActivity.EXTRA_CATEGORY, event.category)
                         putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, event.subCategory)
                         putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, event.recordTitle)
-                        putExtra("entry_type", event.entryType)
-                        putExtra("description", event.description)
                         putExtra("DETAILS_MODE", true) // Always open in details mode from calendar
                     }
                     context.startActivity(intent)
