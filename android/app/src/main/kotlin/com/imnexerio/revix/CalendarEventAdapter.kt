@@ -60,7 +60,7 @@ class CalendarEventAdapter(
                 // Use utility function for consistent colors
                 val color = when {
                     separator.contains("INITIATED") -> CalendarViewActivity.getEventTypeColor("initiated")
-                    separator.contains("REVIEWED") -> CalendarViewActivity.getEventTypeColor("revised")
+                    separator.contains("REVIEWED") -> CalendarViewActivity.getEventTypeColor("reviewed")
                     separator.contains("SCHEDULED") -> CalendarViewActivity.getEventTypeColor("scheduled")
                     separator.contains("MISSED") -> CalendarViewActivity.getEventTypeColor("missed")
                     else -> android.graphics.Color.GRAY

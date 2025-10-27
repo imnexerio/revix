@@ -32,7 +32,7 @@ class CalendarViewActivity : AppCompatActivity() {
         fun getEventTypeColor(type: String): Int {
             return when (type) {
                 "initiated", "learned" -> android.graphics.Color.rgb(33, 150, 243) // Light Blue
-                "revised" -> Color.GREEN
+                "reviewed" -> Color.GREEN
                 "scheduled" -> android.graphics.Color.rgb(255, 165, 0) // Orange
                 "missed" -> Color.RED
                 else -> Color.GRAY
@@ -42,7 +42,7 @@ class CalendarViewActivity : AppCompatActivity() {
         fun getEventTypeEmoji(type: String): String {
             return when (type) {
                 "initiated", "learned" -> "🔵"
-                "revised" -> "🟢"
+                "reviewed" -> "🟢"
                 "scheduled" -> "🟠"
                 "missed" -> "🔴"
                 else -> "⚪"
@@ -371,7 +371,7 @@ class CalendarViewActivity : AppCompatActivity() {
             
             // Create list with separators in order
             val groupedItems = mutableListOf<Any>()
-            val typeOrder = listOf("initiated", "revised", "scheduled", "missed")
+            val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed")
             
             for (type in typeOrder) {
                 val eventsOfType = eventsByType[type] ?: continue
@@ -470,7 +470,7 @@ class CalendarViewActivity : AppCompatActivity() {
             }
         }
         
-        // Parse dates_updated (revised)
+        // Parse dates_updated (reviewed)
         val datesUpdated = recordObject.optJSONArray("dates_updated")
         if (datesUpdated != null) {
             for (i in 0 until datesUpdated.length()) {
@@ -479,7 +479,7 @@ class CalendarViewActivity : AppCompatActivity() {
                     val date = parseDate(dateStr)
                     if (date != null) {
                         addEventToMap(eventsMap, date, CalendarEvent(
-                            type = "revised",
+                            type = "reviewed",
                             category = category,
                             subCategory = subcategory,
                             recordTitle = recordTitle,
@@ -583,7 +583,7 @@ class CalendarViewActivity : AppCompatActivity() {
 }
 
 data class CalendarEvent(
-    val type: String, // initiated, revised, scheduled, missed
+    val type: String, // initiated, reviewed, scheduled, missed
     val category: String,
     val subCategory: String,
     val recordTitle: String,
