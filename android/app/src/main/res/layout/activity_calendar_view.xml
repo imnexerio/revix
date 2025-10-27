@@ -52,63 +52,6 @@
         android:layout_margin="4dp"
         android:padding="4dp" />
 
-    <!-- Event Type Legend -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:gravity="center">
-
-        <!-- Initiated -->
-        <TextView
-            android:id="@+id/legend_initiated"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🔵 Initiated"
-            android:textSize="12sp"
-            android:textColor="@color/textSecondary"
-            android:gravity="center" />
-
-        <!-- Reviewed -->
-        <TextView
-            android:id="@+id/legend_reviewed"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🟢 Reviewed"
-            android:textSize="12sp"
-            android:textColor="@color/textSecondary"
-            android:gravity="center" />
-
-        <!-- Scheduled -->
-        <TextView
-            android:id="@+id/legend_scheduled"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🟠 Scheduled"
-            android:textSize="12sp"
-            android:textColor="@color/textSecondary"
-            android:gravity="center" />
-
-        <!-- Missed -->
-        <TextView
-            android:id="@+id/legend_missed"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🔴 Missed"
-            android:textSize="12sp"
-            android:textColor="@color/textSecondary"
-            android:gravity="center" />
-
-    </LinearLayout>
-
     <!-- Events RecyclerView (grouped by type) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/events_recycler_view"

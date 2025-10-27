@@ -28,10 +28,6 @@ class CalendarViewActivity : AppCompatActivity() {
     private lateinit var calendarGrid: GridLayout
     private lateinit var eventsRecyclerView: RecyclerView
     private lateinit var emptyView: TextView
-    private lateinit var legendInitiated: TextView
-    private lateinit var legendReviewed: TextView
-    private lateinit var legendScheduled: TextView
-    private lateinit var legendMissed: TextView
     
     private var currentCalendar = Calendar.getInstance()
     private var selectedDate = Calendar.getInstance()
@@ -57,10 +53,6 @@ class CalendarViewActivity : AppCompatActivity() {
         calendarGrid = findViewById(R.id.calendar_grid)
         eventsRecyclerView = findViewById(R.id.events_recycler_view)
         emptyView = findViewById(R.id.empty_view)
-        legendInitiated = findViewById(R.id.legend_initiated)
-        legendReviewed = findViewById(R.id.legend_reviewed)
-        legendScheduled = findViewById(R.id.legend_scheduled)
-        legendMissed = findViewById(R.id.legend_missed)
         
         // Setup RecyclerView
         eventAdapter = CalendarEventAdapter(listOf(), this)
@@ -504,17 +496,6 @@ class CalendarViewActivity : AppCompatActivity() {
         
         val dayEvents = events[dateKey] ?: emptyList()
         
-        // Update legend counts
-        val initiatedCount = dayEvents.count { it.type == "initiated" || it.type == "learned" }
-        val reviewedCount = dayEvents.count { it.type == "revised" }
-        val scheduledCount = dayEvents.count { it.type == "scheduled" }
-        val missedCount = dayEvents.count { it.type == "missed" }
-        
-        legendInitiated.text = "🔵 Initiated ($initiatedCount)"
-        legendReviewed.text = "🟢 Reviewed ($reviewedCount)"
-        legendScheduled.text = "🟠 Scheduled ($scheduledCount)"
-        legendMissed.text = "🔴 Missed ($missedCount)"
-        
         if (dayEvents.isEmpty()) {
             eventsRecyclerView.visibility = View.GONE
             emptyView.visibility = View.VISIBLE
@@ -528,25 +509,25 @@ class CalendarViewActivity : AppCompatActivity() {
             // Order: initiated, reviewed, scheduled, missed
             val initiatedEvents = dayEvents.filter { it.type == "initiated" || it.type == "learned" }
             if (initiatedEvents.isNotEmpty()) {
-                groupedItems.add("— INITIATED (${initiatedEvents.size}) —")
+                groupedItems.add("— 🔵 INITIATED (${initiatedEvents.size}) —")
                 groupedItems.addAll(initiatedEvents)
             }
             
             val reviewedEvents = dayEvents.filter { it.type == "revised" }
             if (reviewedEvents.isNotEmpty()) {
-                groupedItems.add("— REVIEWED (${reviewedEvents.size}) —")
+                groupedItems.add("— 🟢 REVIEWED (${reviewedEvents.size}) —")
                 groupedItems.addAll(reviewedEvents)
             }
             
             val scheduledEvents = dayEvents.filter { it.type == "scheduled" }
             if (scheduledEvents.isNotEmpty()) {
-                groupedItems.add("— SCHEDULED (${scheduledEvents.size}) —")
+                groupedItems.add("— 🟠 SCHEDULED (${scheduledEvents.size}) —")
                 groupedItems.addAll(scheduledEvents)
             }
             
             val missedEvents = dayEvents.filter { it.type == "missed" }
             if (missedEvents.isNotEmpty()) {
-                groupedItems.add("— MISSED (${missedEvents.size}) —")
+                groupedItems.add("— 🔴 MISSED (${missedEvents.size}) —")
                 groupedItems.addAll(missedEvents)
             }
             
