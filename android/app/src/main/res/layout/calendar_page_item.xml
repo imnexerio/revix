@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- This layout only contains the calendar grid, not the events list -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/calendar_grid"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/WidgetBackground">
-
-    <GridLayout
-        android:id="@+id/calendar_grid"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:columnCount="7"
-        android:rowCount="8"
-        android:layout_margin="4dp"
-        android:padding="4dp" />
-
-</FrameLayout>
+    android:columnCount="7"
+    android:rowCount="8"
+    android:layout_margin="4dp"
+    android:padding="4dp"
+    android:background="@color/WidgetBackground" />

@@ -90,9 +90,6 @@ class CalendarViewActivity : AppCompatActivity() {
         
         // Update header to show current month
         updateHeader(INITIAL_POSITION)
-        
-        // Update events list for today
-        updateEventsList()
     }
     
     private fun setupListeners() {
@@ -178,6 +175,8 @@ class CalendarViewActivity : AppCompatActivity() {
                 events = parsedEvents
                 Log.d("CalendarViewActivity", "Loaded ${events.size} days with events")
                 calendarPagerAdapter.notifyDataSetChanged()
+                // Update events list for today's date after data is loaded
+                updateEventsList()
             } catch (e: Exception) {
                 Log.e("CalendarViewActivity", "Error loading events: ${e.message}", e)
             }
@@ -386,7 +385,7 @@ class CalendarViewActivity : AppCompatActivity() {
         }
         
         inner class CalendarPageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            private val calendarGrid: GridLayout = itemView.findViewById(R.id.calendar_grid)
+            private val calendarGrid: GridLayout = itemView as GridLayout
             
             fun bind(position: Int) {
                 val monthCalendar = getCalendarForPosition(position)
