@@ -25,6 +25,14 @@ import java.util.*
 class CalendarViewActivity : AppCompatActivity() {
     
     companion object {
+        // Cached date formatters for performance
+        private val monthYearFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+        private val dateFormats = listOf(
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()),
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()),
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        )
+        
         // Event type color mapping - single source of truth
         fun getEventTypeColor(type: String): Int {
             return when (type) {
@@ -57,6 +65,7 @@ class CalendarViewActivity : AppCompatActivity() {
     private var selectedDate = Calendar.getInstance()
     private var events = mutableMapOf<String, List<CalendarEvent>>()
     private lateinit var calendarPagerAdapter: CalendarPagerAdapter
+    private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
     
     // ViewPager position mapping (position 12 = current month)
     private val INITIAL_POSITION = 12
@@ -94,13 +103,14 @@ class CalendarViewActivity : AppCompatActivity() {
     
     private fun setupListeners() {
         // ViewPager2 page change listener
-        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        pageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 super.onPageSelected(position)
                 updateHeader(position)
                 calendarPagerAdapter.notifyPageSelected(position)
             }
-        })
+        }
+        viewPager.registerOnPageChangeCallback(pageChangeCallback!!)
         
         // Setup today button
         todayButton.setOnClickListener {
@@ -110,9 +120,15 @@ class CalendarViewActivity : AppCompatActivity() {
         }
     }
     
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister callback to prevent memory leak
+        pageChangeCallback?.let { viewPager.unregisterOnPageChangeCallback(it) }
+        pageChangeCallback = null
+    }
+    
     private fun updateHeader(position: Int) {
         val calendar = getCalendarForPosition(position)
-        val monthYearFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
         monthYearText.text = monthYearFormat.format(calendar.time)
         
         // Update today button state
@@ -289,15 +305,8 @@ class CalendarViewActivity : AppCompatActivity() {
     
     private fun parseDate(dateStr: String): Calendar? {
         return try {
-            val formats = listOf(
-                "yyyy-MM-dd'T'HH:mm:ss",
-                "yyyy-MM-dd'T'HH:mm",
-                "yyyy-MM-dd"
-            )
-            
-            for (format in formats) {
+            for (sdf in dateFormats) {
                 try {
-                    val sdf = SimpleDateFormat(format, Locale.getDefault())
                     val date = sdf.parse(dateStr)
                     if (date != null) {
                         val cal = Calendar.getInstance()
