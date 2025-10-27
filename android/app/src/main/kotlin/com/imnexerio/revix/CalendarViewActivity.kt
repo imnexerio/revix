@@ -494,7 +494,7 @@ class CalendarViewActivity : AppCompatActivity() {
     
     private fun updateEventsList() {
         val dateFormat = SimpleDateFormat("EEEE, MMM dd, yyyy", Locale.getDefault())
-        selectedDateText.text = "Events for ${dateFormat.format(selectedDate.time)}"
+        selectedDateText.text = dateFormat.format(selectedDate.time)
         
         val dateKey = getDateKey(selectedDate.get(Calendar.YEAR), 
             selectedDate.get(Calendar.MONTH), 
