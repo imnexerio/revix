@@ -26,13 +26,12 @@ class CalendarViewActivity : AppCompatActivity() {
     private lateinit var todayButton: Button
     private lateinit var monthYearText: TextView
     private lateinit var calendarGrid: GridLayout
-    private lateinit var selectedDateText: TextView
     private lateinit var eventsRecyclerView: RecyclerView
     private lateinit var emptyView: TextView
-    private lateinit var statInitiated: TextView
-    private lateinit var statRevised: TextView
-    private lateinit var statScheduled: TextView
-    private lateinit var statMissed: TextView
+    private lateinit var legendInitiated: TextView
+    private lateinit var legendReviewed: TextView
+    private lateinit var legendScheduled: TextView
+    private lateinit var legendMissed: TextView
     
     private var currentCalendar = Calendar.getInstance()
     private var selectedDate = Calendar.getInstance()
@@ -56,13 +55,12 @@ class CalendarViewActivity : AppCompatActivity() {
         todayButton = findViewById(R.id.today_button)
         monthYearText = findViewById(R.id.month_year_text)
         calendarGrid = findViewById(R.id.calendar_grid)
-        selectedDateText = findViewById(R.id.selected_date_text)
         eventsRecyclerView = findViewById(R.id.events_recycler_view)
         emptyView = findViewById(R.id.empty_view)
-        statInitiated = findViewById(R.id.stat_initiated)
-        statRevised = findViewById(R.id.stat_revised)
-        statScheduled = findViewById(R.id.stat_scheduled)
-        statMissed = findViewById(R.id.stat_missed)
+        legendInitiated = findViewById(R.id.legend_initiated)
+        legendReviewed = findViewById(R.id.legend_reviewed)
+        legendScheduled = findViewById(R.id.legend_scheduled)
+        legendMissed = findViewById(R.id.legend_missed)
         
         // Setup RecyclerView
         eventAdapter = CalendarEventAdapter(listOf(), this)
@@ -500,25 +498,22 @@ class CalendarViewActivity : AppCompatActivity() {
     }
     
     private fun updateEventsList() {
-        val dateFormat = SimpleDateFormat("EEEE, MMM dd, yyyy", Locale.getDefault())
-        selectedDateText.text = dateFormat.format(selectedDate.time)
-        
         val dateKey = getDateKey(selectedDate.get(Calendar.YEAR), 
             selectedDate.get(Calendar.MONTH), 
             selectedDate.get(Calendar.DAY_OF_MONTH))
         
         val dayEvents = events[dateKey] ?: emptyList()
         
-        // Update statistics for selected day only
-        val initiatedCount = dayEvents.count { it.type == "initiated" }
-        val revisedCount = dayEvents.count { it.type == "revised" }
+        // Update legend counts
+        val initiatedCount = dayEvents.count { it.type == "initiated" || it.type == "learned" }
+        val reviewedCount = dayEvents.count { it.type == "revised" }
         val scheduledCount = dayEvents.count { it.type == "scheduled" }
         val missedCount = dayEvents.count { it.type == "missed" }
         
-        statInitiated.text = "🔵 $initiatedCount"
-        statRevised.text = "🟢 $revisedCount"
-        statScheduled.text = "🟠 $scheduledCount"
-        statMissed.text = "🔴 $missedCount"
+        legendInitiated.text = "🔵 Initiated ($initiatedCount)"
+        legendReviewed.text = "🟢 Reviewed ($reviewedCount)"
+        legendScheduled.text = "🟠 Scheduled ($scheduledCount)"
+        legendMissed.text = "🔴 Missed ($missedCount)"
         
         if (dayEvents.isEmpty()) {
             eventsRecyclerView.visibility = View.GONE

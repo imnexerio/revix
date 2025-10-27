@@ -52,97 +52,64 @@
         android:layout_margin="4dp"
         android:padding="4dp" />
 
-    <!-- Selected date and Statistics in one row -->
+    <!-- Event Type Legend -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:gravity="center">
 
-        <!-- Selected date text (left aligned) -->
+        <!-- Initiated -->
         <TextView
-            android:id="@+id/selected_date_text"
+            android:id="@+id/legend_initiated"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="October 27, 2025"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/text"
-            android:gravity="start|center_vertical" />
+            android:text="🔵 Initiated"
+            android:textSize="12sp"
+            android:textColor="@color/textSecondary"
+            android:gravity="center" />
 
-        <!-- Statistics badges (right aligned) -->
-        <LinearLayout
-            android:id="@+id/statistics_header"
-            android:layout_width="wrap_content"
+        <!-- Reviewed -->
+        <TextView
+            android:id="@+id/legend_reviewed"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end|center_vertical">
+            android:layout_weight="1"
+            android:text="🟢 Reviewed"
+            android:textSize="12sp"
+            android:textColor="@color/textSecondary"
+            android:gravity="center" />
 
-            <!-- Initiated badge -->
-            <TextView
-                android:id="@+id/stat_initiated"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔵 0"
-                android:textSize="12sp"
-                android:textColor="@color/text"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/stat_badge_blue" />
+        <!-- Scheduled -->
+        <TextView
+            android:id="@+id/legend_scheduled"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🟠 Scheduled"
+            android:textSize="12sp"
+            android:textColor="@color/textSecondary"
+            android:gravity="center" />
 
-            <!-- Revised badge -->
-            <TextView
-                android:id="@+id/stat_revised"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🟢 0"
-                android:textSize="12sp"
-                android:textColor="@color/text"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/stat_badge_green" />
+        <!-- Missed -->
+        <TextView
+            android:id="@+id/legend_missed"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🔴 Missed"
+            android:textSize="12sp"
+            android:textColor="@color/textSecondary"
+            android:gravity="center" />
 
-            <!-- Scheduled badge -->
-            <TextView
-                android:id="@+id/stat_scheduled"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🟠 0"
-                android:textSize="12sp"
-                android:textColor="@color/text"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/stat_badge_orange" />
-
-            <!-- Missed badge -->
-            <TextView
-                android:id="@+id/stat_missed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔴 0"
-                android:textSize="12sp"
-                android:textColor="@color/text"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:background="@drawable/stat_badge_red" />
-
-        </LinearLayout>
     </LinearLayout>
 
-    <!-- Events RecyclerView -->
+    <!-- Events RecyclerView (grouped by type) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/events_recycler_view"
         android:layout_width="match_parent"
