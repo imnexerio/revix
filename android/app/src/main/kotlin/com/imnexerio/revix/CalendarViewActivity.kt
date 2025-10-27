@@ -32,7 +32,7 @@ class CalendarViewActivity : AppCompatActivity() {
         fun getEventTypeColor(type: String): Int {
             return when (type) {
                 "initiated", "learned" -> android.graphics.Color.rgb(33, 150, 243) // Light Blue
-                "reviewed" -> Color.GREEN
+                "reviewed" -> android.graphics.Color.rgb(76, 175, 80) // Material Green
                 "scheduled" -> android.graphics.Color.rgb(255, 165, 0) // Orange
                 "missed" -> Color.RED
                 else -> Color.GRAY
