@@ -575,6 +575,7 @@ class CalendarViewActivity : AppCompatActivity() {
                         
                         var startAngle = -90f
                         
+                        // Draw event rings
                         for ((index, segment) in segments.withIndex()) {
                             val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
                             val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
@@ -593,13 +594,27 @@ class CalendarViewActivity : AppCompatActivity() {
                             canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
                             startAngle += sweepAngle
                         }
+                        
+                        // Draw selection ring if selected (outermost ring)
+                        if (isSelected) {
+                            val selectionStrokeWidth = 5f * density
+                            val selectionRadius = (size / 2f) - (selectionStrokeWidth / 2f) - (0.5f * density)
+                            
+                            val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                                style = Paint.Style.STROKE
+                                this.strokeWidth = selectionStrokeWidth
+                                strokeCap = Paint.Cap.ROUND
+                                color = getColor(R.color.colorOnPrimary)
+                            }
+                            
+                            canvas.drawCircle(centerX, centerY, selectionRadius, selectionPaint)
+                        }
                     }
                 }
             }
             
-            // Add today/selected styling
+            // Update text color if selected
             if (isSelected) {
-                container.setBackgroundResource(R.drawable.selected_day_background)
                 dayView.setTextColor(getColor(R.color.colorOnPrimary))
             } else if (isToday) {
                 val drawable = GradientDrawable()
@@ -616,10 +631,49 @@ class CalendarViewActivity : AppCompatActivity() {
             return container
             
         } else {
-            // No events - just style the TextView
+            // No events - wrap in FrameLayout to draw selection ring
             if (isSelected) {
-                dayView.setBackgroundResource(R.drawable.selected_day_background)
+                // Create container to draw selection ring
+                val container = object : FrameLayout(this) {
+                    override fun dispatchDraw(canvas: Canvas) {
+                        super.dispatchDraw(canvas)
+                        
+                        // Draw selection ring
+                        if (width > 0 && height > 0) {
+                            val centerX = width / 2f
+                            val centerY = height / 2f
+                            val size = minOf(width, height).toFloat()
+                            val strokeWidth = 4.5f * density
+                            val radius = (size / 2f) - (strokeWidth / 2f) - density
+                            
+                            val rectF = RectF(
+                                centerX - radius,
+                                centerY - radius,
+                                centerX + radius,
+                                centerY + radius
+                            )
+                            
+                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                                style = Paint.Style.STROKE
+                                this.strokeWidth = strokeWidth
+                                strokeCap = Paint.Cap.ROUND
+                                color = getColor(R.color.colorOnPrimary)
+                            }
+                            
+                            canvas.drawCircle(centerX, centerY, radius, paint)
+                        }
+                    }
+                }
+                
                 dayView.setTextColor(getColor(R.color.colorOnPrimary))
+                dayView.typeface = android.graphics.Typeface.DEFAULT_BOLD
+                
+                container.addView(dayView, FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                ))
+                
+                return container
             } else if (isToday) {
                 val drawable = GradientDrawable()
                 drawable.shape = GradientDrawable.OVAL
