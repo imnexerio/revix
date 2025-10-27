@@ -291,7 +291,14 @@ class CalendarViewActivity : AppCompatActivity() {
             val totalEvents = eventCounts.values.sum()
             
             val segments = eventCounts.map { (type, count) ->
-                val color = LectureColors.getLectureTypeColorSync(this, type)
+                // Use hardcoded colors to match Flutter
+                val color = when (type) {
+                    "initiated", "learned" -> android.graphics.Color.rgb(33, 150, 243) // Light Blue
+                    "revised" -> Color.GREEN
+                    "scheduled" -> android.graphics.Color.rgb(255, 165, 0) // Orange
+                    "missed" -> Color.RED
+                    else -> LectureColors.getLectureTypeColorSync(this, type)
+                }
                 EventSegment(count, color)
             }.sortedByDescending { it.count }
             
