@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- This layout only contains the calendar grid, not the events list -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/WidgetBackground">
 
-    <!-- Calendar Grid -->
     <GridLayout
         android:id="@+id/calendar_grid"
         android:layout_width="match_parent"
@@ -15,24 +14,4 @@
         android:layout_margin="4dp"
         android:padding="4dp" />
 
-    <!-- Events RecyclerView (grouped by type) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/events_recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp" />
-
-    <!-- Empty view -->
-    <TextView
-        android:id="@+id/empty_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:text="No events for this date"
-        android:textSize="16sp"
-        android:textColor="@color/textSecondary"
-        android:gravity="center"
-        android:visibility="gone" />
-
-</LinearLayout>
+</FrameLayout>

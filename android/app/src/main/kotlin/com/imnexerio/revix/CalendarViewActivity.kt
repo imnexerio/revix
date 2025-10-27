@@ -50,6 +50,9 @@ class CalendarViewActivity : AppCompatActivity() {
     private lateinit var todayButton: Button
     private lateinit var monthYearText: TextView
     private lateinit var viewPager: ViewPager2
+    private lateinit var eventsRecyclerView: RecyclerView
+    private lateinit var emptyView: TextView
+    private lateinit var eventAdapter: CalendarEventAdapter
     
     private var selectedDate = Calendar.getInstance()
     private var events = mutableMapOf<String, List<CalendarEvent>>()
@@ -72,6 +75,13 @@ class CalendarViewActivity : AppCompatActivity() {
         todayButton = findViewById(R.id.today_button)
         monthYearText = findViewById(R.id.month_year_text)
         viewPager = findViewById(R.id.calendar_view_pager)
+        eventsRecyclerView = findViewById(R.id.events_recycler_view)
+        emptyView = findViewById(R.id.empty_view)
+        
+        // Setup events RecyclerView (shared, not in ViewPager)
+        eventAdapter = CalendarEventAdapter(listOf(), this)
+        eventsRecyclerView.layoutManager = LinearLayoutManager(this)
+        eventsRecyclerView.adapter = eventAdapter
         
         // Setup ViewPager2 with adapter
         calendarPagerAdapter = CalendarPagerAdapter()
@@ -80,6 +90,9 @@ class CalendarViewActivity : AppCompatActivity() {
         
         // Update header to show current month
         updateHeader(INITIAL_POSITION)
+        
+        // Update events list for today
+        updateEventsList()
     }
     
     private fun setupListeners() {
@@ -314,6 +327,44 @@ class CalendarViewActivity : AppCompatActivity() {
         return "$year-${month + 1}-$day"
     }
     
+    private fun updateEventsList() {
+        val dateKey = getDateKey(selectedDate.get(Calendar.YEAR), 
+            selectedDate.get(Calendar.MONTH), 
+            selectedDate.get(Calendar.DAY_OF_MONTH))
+        
+        val dayEvents = events[dateKey] ?: emptyList()
+        
+        if (dayEvents.isEmpty()) {
+            eventsRecyclerView.visibility = View.GONE
+            emptyView.visibility = View.VISIBLE
+        } else {
+            eventsRecyclerView.visibility = View.VISIBLE
+            emptyView.visibility = View.GONE
+            
+            // Single-pass grouping by normalizing type
+            val normalizedEvents = dayEvents.map { event ->
+                event.copy(type = if (event.type == "learned") "initiated" else event.type)
+            }
+            val eventsByType = normalizedEvents.groupBy { it.type }
+            
+            // Create list with separators in order
+            val groupedItems = mutableListOf<Any>()
+            val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed")
+            
+            for (type in typeOrder) {
+                val eventsOfType = eventsByType[type] ?: continue
+                if (eventsOfType.isNotEmpty()) {
+                    val emoji = getEventTypeEmoji(type)
+                    val label = type.uppercase()
+                    groupedItems.add("— $emoji $label (${eventsOfType.size}) —")
+                    groupedItems.addAll(eventsOfType)
+                }
+            }
+            
+            eventAdapter.updateEvents(groupedItems)
+        }
+    }
+    
     // ViewPager2 Adapter for calendar pages
     inner class CalendarPagerAdapter : RecyclerView.Adapter<CalendarPagerAdapter.CalendarPageViewHolder>() {
         
@@ -336,20 +387,10 @@ class CalendarViewActivity : AppCompatActivity() {
         
         inner class CalendarPageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             private val calendarGrid: GridLayout = itemView.findViewById(R.id.calendar_grid)
-            private val eventsRecyclerView: RecyclerView = itemView.findViewById(R.id.events_recycler_view)
-            private val emptyView: TextView = itemView.findViewById(R.id.empty_view)
-            private lateinit var eventAdapter: CalendarEventAdapter
-            
-            init {
-                eventAdapter = CalendarEventAdapter(listOf(), this@CalendarViewActivity)
-                eventsRecyclerView.layoutManager = LinearLayoutManager(this@CalendarViewActivity)
-                eventsRecyclerView.adapter = eventAdapter
-            }
             
             fun bind(position: Int) {
                 val monthCalendar = getCalendarForPosition(position)
                 drawCalendarGrid(monthCalendar)
-                updateEventsList(monthCalendar)
             }
             
             private fun drawCalendarGrid(monthCalendar: Calendar) {
@@ -425,6 +466,7 @@ class CalendarViewActivity : AppCompatActivity() {
                                 selectedDate.set(tempCalendar.get(Calendar.YEAR), 
                                     tempCalendar.get(Calendar.MONTH), dayNumber)
                                 notifyItemChanged(adapterPosition)
+                                updateEventsList()
                             }
                             
                             calendarGrid.addView(dayCellView)
@@ -445,6 +487,7 @@ class CalendarViewActivity : AppCompatActivity() {
                                 // Navigate to previous month
                                 viewPager.setCurrentItem(adapterPosition - 1, true)
                                 selectedDate.set(prevMonthYear, prevMonth, prevMonthDay)
+                                updateEventsList()
                             }
                             
                             calendarGrid.addView(dayCellView)
@@ -467,49 +510,12 @@ class CalendarViewActivity : AppCompatActivity() {
                                 // Navigate to next month
                                 viewPager.setCurrentItem(adapterPosition + 1, true)
                                 selectedDate.set(nextMonthYear, nextMonth, nextMonthDay)
+                                updateEventsList()
                             }
                             
                             calendarGrid.addView(dayCellView)
                         }
                     }
-                }
-            }
-            
-            private fun updateEventsList(monthCalendar: Calendar) {
-                val dateKey = getDateKey(selectedDate.get(Calendar.YEAR), 
-                    selectedDate.get(Calendar.MONTH), 
-                    selectedDate.get(Calendar.DAY_OF_MONTH))
-                
-                val dayEvents = events[dateKey] ?: emptyList()
-                
-                if (dayEvents.isEmpty()) {
-                    eventsRecyclerView.visibility = View.GONE
-                    emptyView.visibility = View.VISIBLE
-                } else {
-                    eventsRecyclerView.visibility = View.VISIBLE
-                    emptyView.visibility = View.GONE
-                    
-                    // Single-pass grouping by normalizing type
-                    val normalizedEvents = dayEvents.map { event ->
-                        event.copy(type = if (event.type == "learned") "initiated" else event.type)
-                    }
-                    val eventsByType = normalizedEvents.groupBy { it.type }
-                    
-                    // Create list with separators in order
-                    val groupedItems = mutableListOf<Any>()
-                    val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed")
-                    
-                    for (type in typeOrder) {
-                        val eventsOfType = eventsByType[type] ?: continue
-                        if (eventsOfType.isNotEmpty()) {
-                            val emoji = getEventTypeEmoji(type)
-                            val label = type.uppercase()
-                            groupedItems.add("— $emoji $label (${eventsOfType.size}) —")
-                            groupedItems.addAll(eventsOfType)
-                        }
-                    }
-                    
-                    eventAdapter.updateEvents(groupedItems)
                 }
             }
         }

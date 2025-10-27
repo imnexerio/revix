@@ -45,11 +45,30 @@
 
     </LinearLayout>
 
-    <!-- ViewPager2 for horizontal month scrolling -->
+    <!-- ViewPager2 for horizontal calendar scrolling (only calendar grid) -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/calendar_view_pager"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Events RecyclerView (grouped by type) - Fixed, doesn't scroll horizontally -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/events_recycler_view"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:padding="8dp" />
+
+    <!-- Empty view -->
+    <TextView
+        android:id="@+id/empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="No events for this date"
+        android:textSize="16sp"
+        android:textColor="@color/textSecondary"
+        android:gravity="center"
+        android:visibility="gone" />
 
 </LinearLayout>
