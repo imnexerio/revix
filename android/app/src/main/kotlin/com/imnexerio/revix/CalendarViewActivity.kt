@@ -522,16 +522,35 @@ class CalendarViewActivity : AppCompatActivity() {
             eventsRecyclerView.visibility = View.VISIBLE
             emptyView.visibility = View.GONE
             
-            // Group events by type
-            val groupedEvents = mutableListOf<CalendarEvent>()
+            // Create list with separators for each event type
+            val groupedItems = mutableListOf<Any>()
             
-            // Order: initiated, revised, scheduled, missed
-            groupedEvents.addAll(dayEvents.filter { it.type == "initiated" })
-            groupedEvents.addAll(dayEvents.filter { it.type == "revised" })
-            groupedEvents.addAll(dayEvents.filter { it.type == "scheduled" })
-            groupedEvents.addAll(dayEvents.filter { it.type == "missed" })
+            // Order: initiated, reviewed, scheduled, missed
+            val initiatedEvents = dayEvents.filter { it.type == "initiated" || it.type == "learned" }
+            if (initiatedEvents.isNotEmpty()) {
+                groupedItems.add("— INITIATED (${initiatedEvents.size}) —")
+                groupedItems.addAll(initiatedEvents)
+            }
             
-            eventAdapter.updateEvents(groupedEvents)
+            val reviewedEvents = dayEvents.filter { it.type == "revised" }
+            if (reviewedEvents.isNotEmpty()) {
+                groupedItems.add("— REVIEWED (${reviewedEvents.size}) —")
+                groupedItems.addAll(reviewedEvents)
+            }
+            
+            val scheduledEvents = dayEvents.filter { it.type == "scheduled" }
+            if (scheduledEvents.isNotEmpty()) {
+                groupedItems.add("— SCHEDULED (${scheduledEvents.size}) —")
+                groupedItems.addAll(scheduledEvents)
+            }
+            
+            val missedEvents = dayEvents.filter { it.type == "missed" }
+            if (missedEvents.isNotEmpty()) {
+                groupedItems.add("— MISSED (${missedEvents.size}) —")
+                groupedItems.addAll(missedEvents)
+            }
+            
+            eventAdapter.updateEvents(groupedItems)
         }
     }
     
