@@ -57,16 +57,12 @@ class CalendarEventAdapter(
                 val separator = items[position] as String
                 holder.separatorText.text = separator
                 
-                // Set color based on separator type
+                // Use utility function for consistent colors
                 val color = when {
-                    separator.contains("🔵") || separator.contains("INITIATED") -> 
-                        android.graphics.Color.rgb(33, 150, 243) // Light blue
-                    separator.contains("🟢") || separator.contains("REVIEWED") -> 
-                        android.graphics.Color.GREEN
-                    separator.contains("🟠") || separator.contains("SCHEDULED") -> 
-                        android.graphics.Color.rgb(255, 165, 0) // Orange
-                    separator.contains("🔴") || separator.contains("MISSED") -> 
-                        android.graphics.Color.RED
+                    separator.contains("INITIATED") -> CalendarViewActivity.getEventTypeColor("initiated")
+                    separator.contains("REVIEWED") -> CalendarViewActivity.getEventTypeColor("revised")
+                    separator.contains("SCHEDULED") -> CalendarViewActivity.getEventTypeColor("scheduled")
+                    separator.contains("MISSED") -> CalendarViewActivity.getEventTypeColor("missed")
                     else -> android.graphics.Color.GRAY
                 }
                 holder.separatorText.setTextColor(color)

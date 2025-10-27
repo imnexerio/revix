@@ -17,11 +17,38 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 
 class CalendarViewActivity : AppCompatActivity() {
+    
+    companion object {
+        // Event type color mapping - single source of truth
+        fun getEventTypeColor(type: String): Int {
+            return when (type) {
+                "initiated", "learned" -> android.graphics.Color.rgb(33, 150, 243) // Light Blue
+                "revised" -> Color.GREEN
+                "scheduled" -> android.graphics.Color.rgb(255, 165, 0) // Orange
+                "missed" -> Color.RED
+                else -> Color.GRAY
+            }
+        }
+        
+        fun getEventTypeEmoji(type: String): String {
+            return when (type) {
+                "initiated", "learned" -> "🔵"
+                "revised" -> "🟢"
+                "scheduled" -> "🟠"
+                "missed" -> "🔴"
+                else -> "⚪"
+            }
+        }
+    }
     
     private lateinit var todayButton: Button
     private lateinit var monthYearText: TextView
@@ -33,7 +60,6 @@ class CalendarViewActivity : AppCompatActivity() {
     private var selectedDate = Calendar.getInstance()
     private var events = mutableMapOf<String, List<CalendarEvent>>()
     private lateinit var eventAdapter: CalendarEventAdapter
-    private val dayViews = mutableListOf<View>()
     private lateinit var gestureDetector: GestureDetector
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,6 +137,12 @@ class CalendarViewActivity : AppCompatActivity() {
         }
     }
     
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clear gesture detector to prevent memory leak
+        gestureDetector.setOnDoubleTapListener(null)
+    }
+    
     private fun updateCalendar() {
         // Update month/year text
         val monthYearFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
@@ -128,7 +160,6 @@ class CalendarViewActivity : AppCompatActivity() {
         
         // Clear existing day views
         calendarGrid.removeAllViews()
-        dayViews.clear()
         
         // Add weekday headers (Mon-Sun)
         val weekdays = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -212,53 +243,6 @@ class CalendarViewActivity : AppCompatActivity() {
     
     private data class EventSegment(val count: Int, val color: Int)
     
-    // Custom drawable for proportional event rings
-    private inner class ProportionalRingDrawable(
-        private val segments: List<EventSegment>,
-        private val totalEvents: Int,
-        private val density: Float
-    ) : android.graphics.drawable.Drawable() {
-        
-        override fun draw(canvas: Canvas) {
-            val bounds = getBounds()
-            val centerX = bounds.exactCenterX()
-            val centerY = bounds.exactCenterY()
-            val strokeWidth = 4.5f * density
-            
-            // Calculate radius from edge (like selector ring)
-            val radius = (bounds.width() / 2f) - (strokeWidth / 2f)
-            
-            val rectF = RectF(
-                centerX - radius,
-                centerY - radius,
-                centerX + radius,
-                centerY + radius
-            )
-            
-            var startAngle = -90f // Start at top
-            
-            // Draw rings from largest to smallest
-            for ((index, segment) in segments.withIndex()) {
-                val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
-                
-                val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
-                
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    style = Paint.Style.STROKE
-                    this.strokeWidth = currentStrokeWidth
-                    strokeCap = Paint.Cap.ROUND
-                    color = segment.color
-                }
-                
-                canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
-            }
-        }
-        
-        override fun setAlpha(alpha: Int) {}
-        override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {}
-        override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
-    }
-    
     private fun createDayCell(dayNumber: Int, isToday: Boolean, isSelected: Boolean, dayEvents: List<CalendarEvent>?): View {
         val density = resources.displayMetrics.density
         
@@ -281,15 +265,7 @@ class CalendarViewActivity : AppCompatActivity() {
             val totalEvents = eventCounts.values.sum()
             
             val segments = eventCounts.map { (type, count) ->
-                // Use hardcoded colors to match Flutter
-                val color = when (type) {
-                    "initiated", "learned" -> android.graphics.Color.rgb(33, 150, 243) // Light Blue
-                    "revised" -> Color.GREEN
-                    "scheduled" -> android.graphics.Color.rgb(255, 165, 0) // Orange
-                    "missed" -> Color.RED
-                    else -> LectureColors.getLectureTypeColorSync(this, type)
-                }
-                EventSegment(count, color)
+                EventSegment(count, getEventTypeColor(type))
             }.sortedByDescending { it.count }
             
             // Wrap TextView in custom FrameLayout that draws rings
@@ -347,7 +323,6 @@ class CalendarViewActivity : AppCompatActivity() {
                 FrameLayout.LayoutParams.MATCH_PARENT
             ))
             
-            dayViews.add(container)
             return container
             
         } else {
@@ -362,126 +337,11 @@ class CalendarViewActivity : AppCompatActivity() {
                 dayView.background = drawable
             }
             
-            dayViews.add(dayView)
             return dayView
         }
     }
     
-    private fun addEventDots(dayView: TextView, dayEvents: List<CalendarEvent>) {
-        // Count events by type
-        val initiatedCount = dayEvents.count { it.type == "initiated" }
-        val revisedCount = dayEvents.count { it.type == "revised" }
-        val scheduledCount = dayEvents.count { it.type == "scheduled" }
-        val missedCount = dayEvents.count { it.type == "missed" }
-        
-        val totalEvents = initiatedCount + revisedCount + scheduledCount + missedCount
-        
-        if (totalEvents == 0) return
-        
-        // Get colors from LectureColors
-        val initiatedColor = LectureColors.getLectureTypeColorSync(this, "initiated")
-        val revisedColor = LectureColors.getLectureTypeColorSync(this, "revised")
-        val scheduledColor = LectureColors.getLectureTypeColorSync(this, "scheduled")
-        val missedColor = LectureColors.getLectureTypeColorSync(this, "missed")
-        
-        // Create event segments for ring painter
-        val eventSegments = mutableListOf<EventSegment>()
-        if (initiatedCount > 0) eventSegments.add(EventSegment(initiatedCount, initiatedColor))
-        if (revisedCount > 0) eventSegments.add(EventSegment(revisedCount, revisedColor))
-        if (scheduledCount > 0) eventSegments.add(EventSegment(scheduledCount, scheduledColor))
-        if (missedCount > 0) eventSegments.add(EventSegment(missedCount, missedColor))
-        
-        // Store original background and click listener
-        val originalBackground = dayView.background
-        val originalClickListener = dayView.hasOnClickListeners()
-        
-        // Wrap in custom view that draws ring
-        val ringDayView = object : android.widget.FrameLayout(this) {
-            private val ringPaint = android.graphics.Paint().apply {
-                isAntiAlias = true
-                style = android.graphics.Paint.Style.STROKE
-                strokeWidth = TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 4.5f, resources.displayMetrics
-                ) // 4.5dp like Flutter
-                strokeCap = android.graphics.Paint.Cap.ROUND
-            }
-            
-            init {
-                setWillNotDraw(false) // CRITICAL: Enable onDraw() for FrameLayout
-            }
-            
-            override fun onDraw(canvas: android.graphics.Canvas) {
-                super.onDraw(canvas)
-                
-                if (eventSegments.isEmpty()) return
-                
-                val centerX = width / 2f
-                val centerY = height / 2f
-                
-                // Ring radius: Flutter uses size.width / 2.5 - 1
-                val radius = kotlin.math.min(width, height) / 2.5f - 1f
-                
-                val rect = android.graphics.RectF(
-                    centerX - radius,
-                    centerY - radius,
-                    centerX + radius,
-                    centerY + radius
-                )
-                
-                // Sort events by count (largest to smallest) like Flutter
-                val sortedSegments = eventSegments.sortedByDescending { it.count }
-                
-                var startAngle = -90f // Start from top (12 o'clock)
-                
-                // Draw rings from largest (back) to smallest (front)
-                for (segment in sortedSegments) {
-                    val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
-                    
-                    ringPaint.color = segment.color
-                    canvas.drawArc(rect, startAngle, sweepAngle, false, ringPaint)
-                    
-                    startAngle += sweepAngle
-                }
-            }
-        }
-        
-        // Apply original layout params
-        ringDayView.layoutParams = dayView.layoutParams
-        
-        // Create inner TextView for day number
-        val innerDayText = TextView(this).apply {
-            text = dayView.text
-            textSize = 16f
-            setTextColor(dayView.currentTextColor)
-            gravity = android.view.Gravity.CENTER
-            background = originalBackground
-            layoutParams = android.widget.FrameLayout.LayoutParams(
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-        
-        ringDayView.addView(innerDayText)
-        
-        // Replace dayView with ringDayView in parent
-        val parent = dayView.parent as? android.view.ViewGroup
-        parent?.let {
-            val index = it.indexOfChild(dayView)
-            it.removeViewAt(index)
-            it.addView(ringDayView, index)
-            
-            // Transfer click functionality
-            if (originalClickListener) {
-                ringDayView.setOnClickListener { view ->
-                    // Trigger the day selection logic
-                    val year = currentCalendar.get(Calendar.YEAR)
-                    val month = currentCalendar.get(Calendar.MONTH)
-                    val day = dayView.text.toString().toIntOrNull() ?: return@setOnClickListener
-                    onDaySelected(year, month, day)
-                }
-            }
-        }
-    }
+
     
     private fun onDaySelected(year: Int, month: Int, day: Int) {
         selectedDate.set(year, month, day)
@@ -503,32 +363,24 @@ class CalendarViewActivity : AppCompatActivity() {
             eventsRecyclerView.visibility = View.VISIBLE
             emptyView.visibility = View.GONE
             
-            // Create list with separators for each event type
+            // Single-pass grouping by normalizing type
+            val normalizedEvents = dayEvents.map { event ->
+                event.copy(type = if (event.type == "learned") "initiated" else event.type)
+            }
+            val eventsByType = normalizedEvents.groupBy { it.type }
+            
+            // Create list with separators in order
             val groupedItems = mutableListOf<Any>()
+            val typeOrder = listOf("initiated", "revised", "scheduled", "missed")
             
-            // Order: initiated, reviewed, scheduled, missed
-            val initiatedEvents = dayEvents.filter { it.type == "initiated" || it.type == "learned" }
-            if (initiatedEvents.isNotEmpty()) {
-                groupedItems.add("— 🔵 INITIATED (${initiatedEvents.size}) —")
-                groupedItems.addAll(initiatedEvents)
-            }
-            
-            val reviewedEvents = dayEvents.filter { it.type == "revised" }
-            if (reviewedEvents.isNotEmpty()) {
-                groupedItems.add("— 🟢 REVIEWED (${reviewedEvents.size}) —")
-                groupedItems.addAll(reviewedEvents)
-            }
-            
-            val scheduledEvents = dayEvents.filter { it.type == "scheduled" }
-            if (scheduledEvents.isNotEmpty()) {
-                groupedItems.add("— 🟠 SCHEDULED (${scheduledEvents.size}) —")
-                groupedItems.addAll(scheduledEvents)
-            }
-            
-            val missedEvents = dayEvents.filter { it.type == "missed" }
-            if (missedEvents.isNotEmpty()) {
-                groupedItems.add("— 🔴 MISSED (${missedEvents.size}) —")
-                groupedItems.addAll(missedEvents)
+            for (type in typeOrder) {
+                val eventsOfType = eventsByType[type] ?: continue
+                if (eventsOfType.isNotEmpty()) {
+                    val emoji = getEventTypeEmoji(type)
+                    val label = type.uppercase()
+                    groupedItems.add("— $emoji $label (${eventsOfType.size}) —")
+                    groupedItems.addAll(eventsOfType)
+                }
             }
             
             eventAdapter.updateEvents(groupedItems)
@@ -536,49 +388,62 @@ class CalendarViewActivity : AppCompatActivity() {
     }
     
     private fun loadEvents() {
-        try {
-            val prefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
-            val allRecordsJson = prefs.getString("allRecords", "{}")
-            
-            if (allRecordsJson.isNullOrEmpty() || allRecordsJson == "{}") {
-                Log.d("CalendarViewActivity", "No records found")
-                return
-            }
-            
-            val allRecordsObject = org.json.JSONObject(allRecordsJson)
-            
-            // Parse records
-            val categoryKeys = allRecordsObject.keys()
-            while (categoryKeys.hasNext()) {
-                val category = categoryKeys.next()
-                val categoryObject = allRecordsObject.getJSONObject(category)
-                
-                val subcategoryKeys = categoryObject.keys()
-                while (subcategoryKeys.hasNext()) {
-                    val subcategory = subcategoryKeys.next()
-                    val subcategoryObject = categoryObject.getJSONObject(subcategory)
+        lifecycleScope.launch {
+            try {
+                // Move heavy JSON parsing to background thread
+                val parsedEvents = withContext(Dispatchers.IO) {
+                    val prefs = getSharedPreferences("HomeWidgetPreferences", MODE_PRIVATE)
+                    val allRecordsJson = prefs.getString("allRecords", "{}")
                     
-                    val recordKeys = subcategoryObject.keys()
-                    while (recordKeys.hasNext()) {
-                        val recordTitle = recordKeys.next()
-                        val recordObject = subcategoryObject.getJSONObject(recordTitle)
-                        
-                        parseRecordEvents(category, subcategory, recordTitle, recordObject)
+                    if (allRecordsJson.isNullOrEmpty() || allRecordsJson == "{}") {
+                        Log.d("CalendarViewActivity", "No records found")
+                        return@withContext mutableMapOf<String, List<CalendarEvent>>()
                     }
+                    
+                    val allRecordsObject = org.json.JSONObject(allRecordsJson)
+                    val tempEvents = mutableMapOf<String, MutableList<CalendarEvent>>()
+                    
+                    // Parse records
+                    val categoryKeys = allRecordsObject.keys()
+                    while (categoryKeys.hasNext()) {
+                        val category = categoryKeys.next()
+                        val categoryObject = allRecordsObject.getJSONObject(category)
+                        
+                        val subcategoryKeys = categoryObject.keys()
+                        while (subcategoryKeys.hasNext()) {
+                            val subcategory = subcategoryKeys.next()
+                            val subcategoryObject = categoryObject.getJSONObject(subcategory)
+                            
+                            val recordKeys = subcategoryObject.keys()
+                            while (recordKeys.hasNext()) {
+                                val recordTitle = recordKeys.next()
+                                val recordObject = subcategoryObject.getJSONObject(recordTitle)
+                                
+                                parseRecordEventsToMap(category, subcategory, recordTitle, recordObject, tempEvents)
+                            }
+                        }
+                    }
+                    
+                    tempEvents.mapValues { it.value.toList() }.toMutableMap()
                 }
+                
+                // Update UI on main thread
+                events = parsedEvents
+                Log.d("CalendarViewActivity", "Loaded ${events.size} days with events")
+                updateCalendar()
+                updateEventsList()
+            } catch (e: Exception) {
+                Log.e("CalendarViewActivity", "Error loading events: ${e.message}", e)
             }
-            
-            Log.d("CalendarViewActivity", "Loaded ${events.size} days with events")
-        } catch (e: Exception) {
-            Log.e("CalendarViewActivity", "Error loading events: ${e.message}", e)
         }
     }
     
-    private fun parseRecordEvents(
+    private fun parseRecordEventsToMap(
         category: String, 
         subcategory: String, 
         recordTitle: String, 
-        recordObject: org.json.JSONObject
+        recordObject: org.json.JSONObject,
+        eventsMap: MutableMap<String, MutableList<CalendarEvent>>
     ) {
         val status = recordObject.optString("status", "Enabled")
         val description = recordObject.optString("description", "No description")
@@ -590,7 +455,7 @@ class CalendarViewActivity : AppCompatActivity() {
             try {
                 val date = parseDate(startTimestamp)
                 if (date != null) {
-                    addEvent(date, CalendarEvent(
+                    addEventToMap(eventsMap, date, CalendarEvent(
                         type = "initiated",
                         category = category,
                         subCategory = subcategory,
@@ -613,7 +478,7 @@ class CalendarViewActivity : AppCompatActivity() {
                     val dateStr = datesUpdated.getString(i)
                     val date = parseDate(dateStr)
                     if (date != null) {
-                        addEvent(date, CalendarEvent(
+                        addEventToMap(eventsMap, date, CalendarEvent(
                             type = "revised",
                             category = category,
                             subCategory = subcategory,
@@ -637,7 +502,7 @@ class CalendarViewActivity : AppCompatActivity() {
             try {
                 val date = parseDate(scheduledDate)
                 if (date != null) {
-                    addEvent(date, CalendarEvent(
+                    addEventToMap(eventsMap, date, CalendarEvent(
                         type = "scheduled",
                         category = category,
                         subCategory = subcategory,
@@ -660,7 +525,7 @@ class CalendarViewActivity : AppCompatActivity() {
                     val dateStr = datesMissed.getString(i)
                     val date = parseDate(dateStr)
                     if (date != null) {
-                        addEvent(date, CalendarEvent(
+                        addEventToMap(eventsMap, date, CalendarEvent(
                             type = "missed",
                             category = category,
                             subCategory = subcategory,
@@ -704,14 +569,12 @@ class CalendarViewActivity : AppCompatActivity() {
         }
     }
     
-    private fun addEvent(date: Calendar, event: CalendarEvent) {
+    private fun addEventToMap(eventsMap: MutableMap<String, MutableList<CalendarEvent>>, date: Calendar, event: CalendarEvent) {
         val dateKey = getDateKey(date.get(Calendar.YEAR), 
             date.get(Calendar.MONTH), 
             date.get(Calendar.DAY_OF_MONTH))
         
-        val eventList = events.getOrPut(dateKey) { mutableListOf() }.toMutableList()
-        eventList.add(event)
-        events[dateKey] = eventList
+        eventsMap.getOrPut(dateKey) { mutableListOf() }.add(event)
     }
     
     private fun getDateKey(year: Int, month: Int, day: Int): String {
