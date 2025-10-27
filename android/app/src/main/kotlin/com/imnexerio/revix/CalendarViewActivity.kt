@@ -95,6 +95,7 @@ class CalendarViewActivity : AppCompatActivity() {
         // Setup ViewPager2 with adapter
         calendarPagerAdapter = CalendarPagerAdapter()
         viewPager.adapter = calendarPagerAdapter
+        viewPager.offscreenPageLimit = 1 // Keep adjacent pages in memory
         viewPager.setCurrentItem(INITIAL_POSITION, false)
         
         // Update header to show current month
@@ -116,7 +117,14 @@ class CalendarViewActivity : AppCompatActivity() {
         todayButton.setOnClickListener {
             val today = Calendar.getInstance()
             selectedDate.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
-            viewPager.setCurrentItem(INITIAL_POSITION, true)
+            
+            // Immediately update events for today
+            updateEventsList()
+            
+            // Then navigate to today's month (without animation to prevent spacing issues)
+            viewPager.post {
+                viewPager.setCurrentItem(INITIAL_POSITION, false)
+            }
         }
     }
     

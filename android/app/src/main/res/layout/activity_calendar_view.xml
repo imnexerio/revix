@@ -45,11 +45,17 @@
 
     </LinearLayout>
 
-    <!-- ViewPager2 for horizontal calendar scrolling (only calendar grid) -->
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/calendar_view_pager"
+    <!-- Custom wrapper that enables ViewPager2 to support wrap_content -->
+    <com.imnexerio.revix.WrapContentViewPager2
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content">
+        
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/calendar_view_pager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+            
+    </com.imnexerio.revix.WrapContentViewPager2>
 
     <!-- Events RecyclerView (grouped by type) - Fixed, doesn't scroll horizontally -->
     <androidx.recyclerview.widget.RecyclerView
