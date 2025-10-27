@@ -158,7 +158,7 @@ class CounterWidget : AppWidgetProvider() {
                 setupSelectRecordListener(context, views, appWidgetId)
                 setupRefreshListener(context, views, appWidgetId)
                 setupAddButtonListener(context, views, appWidgetId)
-                setupCalendarViewButton(context, views, appWidgetId)
+                setupStickClickListener(context, views, appWidgetId)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
 
             } catch (e: Exception) {
@@ -330,8 +330,8 @@ class CounterWidget : AppWidgetProvider() {
             Log.d("CounterWidget", "Add button setup completed for widget $appWidgetId")
         }
 
-        private fun setupCalendarViewButton(context: Context, views: RemoteViews, appWidgetId: Int) {
-            // Calendar icon to open CalendarViewActivity
+        private fun setupStickClickListener(context: Context, views: RemoteViews, appWidgetId: Int) {
+            // Stick indicator to open CalendarViewActivity
             val calendarIntent = Intent(context, CalendarViewActivity::class.java)
             calendarIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             val calendarRequestCode = appWidgetId + 900 + System.currentTimeMillis().toInt()
@@ -341,9 +341,9 @@ class CounterWidget : AppWidgetProvider() {
                 calendarIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.counter_calendar_view_button, calendarPendingIntent)
+            views.setOnClickPendingIntent(R.id.lecture_type_indicator, calendarPendingIntent)
             
-            Log.d("CounterWidget", "Calendar view button setup completed for widget $appWidgetId")
+            Log.d("CounterWidget", "Stick click listener setup completed for widget $appWidgetId")
         }
 
         private fun calculateDaysRemaining(scheduledDateStr: String): Int {
