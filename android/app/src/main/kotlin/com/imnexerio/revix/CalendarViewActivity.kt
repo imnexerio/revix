@@ -1,10 +1,14 @@
 package com.imnexerio.revix
 
 import android.content.Intent
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -34,7 +38,7 @@ class CalendarViewActivity : AppCompatActivity() {
     private var selectedDate = Calendar.getInstance()
     private var events = mutableMapOf<String, List<CalendarEvent>>()
     private lateinit var eventAdapter: CalendarEventAdapter
-    private val dayViews = mutableListOf<TextView>()
+    private val dayViews = mutableListOf<View>()
     private lateinit var gestureDetector: GestureDetector
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -149,24 +153,16 @@ class CalendarViewActivity : AppCompatActivity() {
         // Create day views
         val totalCells = 42 // 6 rows * 7 days
         for (i in 0 until totalCells) {
-            val dayView = TextView(this)
             val layoutParams = GridLayout.LayoutParams()
             layoutParams.width = 0
             layoutParams.height = GridLayout.LayoutParams.WRAP_CONTENT
             layoutParams.columnSpec = GridLayout.spec(i % 7, 1f)
             layoutParams.rowSpec = GridLayout.spec(i / 7)
             layoutParams.setMargins(4, 4, 4, 4)
-            dayView.layoutParams = layoutParams
-            dayView.gravity = android.view.Gravity.CENTER
-            dayView.setPadding(8, 16, 8, 16)
-            dayView.textSize = 16f
             
             val dayNumber = i - startPosition + 1
             
             if (dayNumber in 1..daysInMonth) {
-                dayView.text = dayNumber.toString()
-                dayView.setTextColor(getColor(R.color.text))
-                
                 // Check if this is today
                 val isToday = (tempCalendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                         tempCalendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
@@ -177,38 +173,180 @@ class CalendarViewActivity : AppCompatActivity() {
                         tempCalendar.get(Calendar.MONTH) == selectedDate.get(Calendar.MONTH) &&
                         dayNumber == selectedDate.get(Calendar.DAY_OF_MONTH))
                 
-                // Apply styling
-                if (isSelected) {
-                    dayView.setBackgroundResource(R.drawable.selected_day_background)
-                    dayView.setTextColor(getColor(R.color.colorOnPrimary))
-                } else if (isToday) {
-                    val drawable = GradientDrawable()
-                    drawable.shape = GradientDrawable.OVAL
-                    drawable.setStroke(4, getColor(R.color.colorOnPrimary))
-                    dayView.background = drawable
-                }
-                
-                // Add event indicator dots
+                // Get events for this day
                 val dateKey = getDateKey(tempCalendar.get(Calendar.YEAR), 
                     tempCalendar.get(Calendar.MONTH), dayNumber)
                 val dayEvents = events[dateKey]
-                if (!dayEvents.isNullOrEmpty()) {
-                    addEventDots(dayView, dayEvents)
-                }
+                
+                // Create day cell (with or without ring)
+                val dayCellView = createDayCell(dayNumber, isToday, isSelected, dayEvents)
+                dayCellView.layoutParams = layoutParams
                 
                 // Click listener
-                dayView.setOnClickListener {
+                dayCellView.setOnClickListener {
                     onDaySelected(tempCalendar.get(Calendar.YEAR), 
                         tempCalendar.get(Calendar.MONTH), dayNumber)
                 }
                 
-                dayViews.add(dayView)
+                calendarGrid.addView(dayCellView)
             } else {
-                dayView.text = ""
-                dayView.isEnabled = false
+                // Empty cell
+                val emptyView = TextView(this)
+                emptyView.layoutParams = layoutParams
+                emptyView.text = ""
+                emptyView.isEnabled = false
+                calendarGrid.addView(emptyView)
+            }
+        }
+    }
+    
+    private data class EventSegment(val count: Int, val color: Int)
+    
+    // Custom drawable for proportional event rings
+    private inner class ProportionalRingDrawable(
+        private val segments: List<EventSegment>,
+        private val totalEvents: Int,
+        private val density: Float
+    ) : android.graphics.drawable.Drawable() {
+        
+        override fun draw(canvas: Canvas) {
+            val bounds = getBounds()
+            val centerX = bounds.exactCenterX()
+            val centerY = bounds.exactCenterY()
+            val strokeWidth = 4.5f * density
+            
+            // Calculate radius from edge (like selector ring)
+            val radius = (bounds.width() / 2f) - (strokeWidth / 2f)
+            
+            val rectF = RectF(
+                centerX - radius,
+                centerY - radius,
+                centerX + radius,
+                centerY + radius
+            )
+            
+            var startAngle = -90f // Start at top
+            
+            // Draw rings from largest to smallest
+            for ((index, segment) in segments.withIndex()) {
+                val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
+                
+                val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
+                
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.STROKE
+                    this.strokeWidth = currentStrokeWidth
+                    strokeCap = Paint.Cap.ROUND
+                    color = segment.color
+                }
+                
+                canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
+            }
+        }
+        
+        override fun setAlpha(alpha: Int) {}
+        override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {}
+        override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
+    }
+    
+    private fun createDayCell(dayNumber: Int, isToday: Boolean, isSelected: Boolean, dayEvents: List<CalendarEvent>?): View {
+        val density = resources.displayMetrics.density
+        
+        // Create simple TextView for day number
+        val dayView = TextView(this).apply {
+            text = dayNumber.toString()
+            textSize = 16f
+            gravity = android.view.Gravity.CENTER
+            setPadding(8, 16, 8, 16)
+            setTextColor(getColor(R.color.text))
+            
+            if (isToday || isSelected) {
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+        }
+        
+        // If there are events, wrap in custom view with ring
+        if (!dayEvents.isNullOrEmpty()) {
+            val eventCounts = dayEvents.groupBy { it.type }.mapValues { it.value.size }
+            val totalEvents = eventCounts.values.sum()
+            
+            val segments = eventCounts.map { (type, count) ->
+                val color = LectureColors.getLectureTypeColorSync(this, type)
+                EventSegment(count, color)
+            }.sortedByDescending { it.count }
+            
+            // Wrap TextView in custom FrameLayout that draws rings
+            val container = object : FrameLayout(this) {
+                override fun dispatchDraw(canvas: Canvas) {
+                    super.dispatchDraw(canvas) // Draw children (TextView) first
+                    
+                    // Then draw rings on top
+                    if (width > 0 && height > 0) {
+                        val centerX = width / 2f
+                        val centerY = height / 2f
+                        val size = minOf(width, height).toFloat()
+                        val strokeWidth = 4.5f * density
+                        val radius = (size / 2f) - (strokeWidth / 2f) - density // Increased radius more (was 2 * density)
+                        
+                        val rectF = RectF(
+                            centerX - radius,
+                            centerY - radius,
+                            centerX + radius,
+                            centerY + radius
+                        )
+                        
+                        var startAngle = -90f
+                        
+                        for ((index, segment) in segments.withIndex()) {
+                            val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
+                            val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
+                            
+                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                                style = Paint.Style.STROKE
+                                this.strokeWidth = currentStrokeWidth
+                                strokeCap = Paint.Cap.ROUND
+                                color = segment.color
+                            }
+                            
+                            canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
+                        }
+                    }
+                }
             }
             
-            calendarGrid.addView(dayView)
+            // Add today/selected styling
+            if (isSelected) {
+                container.setBackgroundResource(R.drawable.selected_day_background)
+                dayView.setTextColor(getColor(R.color.colorOnPrimary))
+            } else if (isToday) {
+                val drawable = GradientDrawable()
+                drawable.shape = GradientDrawable.OVAL
+                drawable.setStroke((2 * density).toInt(), getColor(R.color.colorOnPrimary))
+                container.background = drawable
+            }
+            
+            container.addView(dayView, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            
+            dayViews.add(container)
+            return container
+            
+        } else {
+            // No events - just style the TextView
+            if (isSelected) {
+                dayView.setBackgroundResource(R.drawable.selected_day_background)
+                dayView.setTextColor(getColor(R.color.colorOnPrimary))
+            } else if (isToday) {
+                val drawable = GradientDrawable()
+                drawable.shape = GradientDrawable.OVAL
+                drawable.setStroke((4 * density).toInt(), getColor(R.color.colorOnPrimary))
+                dayView.background = drawable
+            }
+            
+            dayViews.add(dayView)
+            return dayView
         }
     }
     
@@ -219,15 +357,112 @@ class CalendarViewActivity : AppCompatActivity() {
         val scheduledCount = dayEvents.count { it.type == "scheduled" }
         val missedCount = dayEvents.count { it.type == "missed" }
         
-        // Create dots indicator text
-        val dots = mutableListOf<String>()
-        if (initiatedCount > 0) dots.add("●")
-        if (revisedCount > 0) dots.add("●")
-        if (scheduledCount > 0) dots.add("●")
-        if (missedCount > 0) dots.add("●")
+        val totalEvents = initiatedCount + revisedCount + scheduledCount + missedCount
         
-        if (dots.isNotEmpty()) {
-            dayView.text = "${dayView.text}\n${dots.joinToString("")}"
+        if (totalEvents == 0) return
+        
+        // Get colors from LectureColors
+        val initiatedColor = LectureColors.getLectureTypeColorSync(this, "initiated")
+        val revisedColor = LectureColors.getLectureTypeColorSync(this, "revised")
+        val scheduledColor = LectureColors.getLectureTypeColorSync(this, "scheduled")
+        val missedColor = LectureColors.getLectureTypeColorSync(this, "missed")
+        
+        // Create event segments for ring painter
+        val eventSegments = mutableListOf<EventSegment>()
+        if (initiatedCount > 0) eventSegments.add(EventSegment(initiatedCount, initiatedColor))
+        if (revisedCount > 0) eventSegments.add(EventSegment(revisedCount, revisedColor))
+        if (scheduledCount > 0) eventSegments.add(EventSegment(scheduledCount, scheduledColor))
+        if (missedCount > 0) eventSegments.add(EventSegment(missedCount, missedColor))
+        
+        // Store original background and click listener
+        val originalBackground = dayView.background
+        val originalClickListener = dayView.hasOnClickListeners()
+        
+        // Wrap in custom view that draws ring
+        val ringDayView = object : android.widget.FrameLayout(this) {
+            private val ringPaint = android.graphics.Paint().apply {
+                isAntiAlias = true
+                style = android.graphics.Paint.Style.STROKE
+                strokeWidth = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 4.5f, resources.displayMetrics
+                ) // 4.5dp like Flutter
+                strokeCap = android.graphics.Paint.Cap.ROUND
+            }
+            
+            init {
+                setWillNotDraw(false) // CRITICAL: Enable onDraw() for FrameLayout
+            }
+            
+            override fun onDraw(canvas: android.graphics.Canvas) {
+                super.onDraw(canvas)
+                
+                if (eventSegments.isEmpty()) return
+                
+                val centerX = width / 2f
+                val centerY = height / 2f
+                
+                // Ring radius: Flutter uses size.width / 2.5 - 1
+                val radius = kotlin.math.min(width, height) / 2.5f - 1f
+                
+                val rect = android.graphics.RectF(
+                    centerX - radius,
+                    centerY - radius,
+                    centerX + radius,
+                    centerY + radius
+                )
+                
+                // Sort events by count (largest to smallest) like Flutter
+                val sortedSegments = eventSegments.sortedByDescending { it.count }
+                
+                var startAngle = -90f // Start from top (12 o'clock)
+                
+                // Draw rings from largest (back) to smallest (front)
+                for (segment in sortedSegments) {
+                    val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
+                    
+                    ringPaint.color = segment.color
+                    canvas.drawArc(rect, startAngle, sweepAngle, false, ringPaint)
+                    
+                    startAngle += sweepAngle
+                }
+            }
+        }
+        
+        // Apply original layout params
+        ringDayView.layoutParams = dayView.layoutParams
+        
+        // Create inner TextView for day number
+        val innerDayText = TextView(this).apply {
+            text = dayView.text
+            textSize = 16f
+            setTextColor(dayView.currentTextColor)
+            gravity = android.view.Gravity.CENTER
+            background = originalBackground
+            layoutParams = android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        
+        ringDayView.addView(innerDayText)
+        
+        // Replace dayView with ringDayView in parent
+        val parent = dayView.parent as? android.view.ViewGroup
+        parent?.let {
+            val index = it.indexOfChild(dayView)
+            it.removeViewAt(index)
+            it.addView(ringDayView, index)
+            
+            // Transfer click functionality
+            if (originalClickListener) {
+                ringDayView.setOnClickListener { view ->
+                    // Trigger the day selection logic
+                    val year = currentCalendar.get(Calendar.YEAR)
+                    val month = currentCalendar.get(Calendar.MONTH)
+                    val day = dayView.text.toString().toIntOrNull() ?: return@setOnClickListener
+                    onDaySelected(year, month, day)
+                }
+            }
         }
     }
     
