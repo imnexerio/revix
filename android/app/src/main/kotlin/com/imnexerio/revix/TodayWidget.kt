@@ -57,6 +57,9 @@ class TodayWidget : AppWidgetProvider() {
                 // Setup add record button
                 setupAddButton(context, views, appWidgetId)
 
+                // Setup calendar view button
+                setupCalendarViewButton(context, views, appWidgetId)
+
                 // Setup refresh functionality on header click
                 setupRefreshOnHeaderClick(context, views, appWidgetId)
 
@@ -151,6 +154,25 @@ class TodayWidget : AppWidgetProvider() {
                 Log.d("TodayWidget", "Add button setup completed for widget $appWidgetId")
             } catch (e: Exception) {
                 Log.e("TodayWidget", "Error setting up add button: ${e.message}", e)
+            }
+        }
+
+        private fun setupCalendarViewButton(context: Context, views: RemoteViews, appWidgetId: Int) {
+            try {
+                val calendarIntent = Intent(context, CalendarViewActivity::class.java)
+                calendarIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                val calendarRequestCode = appWidgetId + 300 + System.currentTimeMillis().toInt()
+                val calendarPendingIntent = PendingIntent.getActivity(
+                    context,
+                    calendarRequestCode,
+                    calendarIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.calendar_view_button, calendarPendingIntent)
+
+                Log.d("TodayWidget", "Calendar view button setup completed for widget $appWidgetId")
+            } catch (e: Exception) {
+                Log.e("TodayWidget", "Error setting up calendar view button: ${e.message}", e)
             }
         }
 
