@@ -1,6 +1,5 @@
 package com.imnexerio.revix
 
-import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -8,22 +7,20 @@ import android.graphics.RectF
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
-import android.util.TypedValue
-import android.view.GestureDetector
-import android.view.MotionEvent
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
+import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.abs
 
 class CalendarViewActivity : AppCompatActivity() {
     
@@ -52,15 +49,15 @@ class CalendarViewActivity : AppCompatActivity() {
     
     private lateinit var todayButton: Button
     private lateinit var monthYearText: TextView
-    private lateinit var calendarGrid: GridLayout
-    private lateinit var eventsRecyclerView: RecyclerView
-    private lateinit var emptyView: TextView
+    private lateinit var viewPager: ViewPager2
     
-    private var currentCalendar = Calendar.getInstance()
     private var selectedDate = Calendar.getInstance()
     private var events = mutableMapOf<String, List<CalendarEvent>>()
-    private lateinit var eventAdapter: CalendarEventAdapter
-    private lateinit var gestureDetector: GestureDetector
+    private lateinit var calendarPagerAdapter: CalendarPagerAdapter
+    
+    // ViewPager position mapping (position 12 = current month)
+    private val INITIAL_POSITION = 12
+    private val TOTAL_MONTHS = 25 // 12 previous + current + 12 next
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,322 +66,59 @@ class CalendarViewActivity : AppCompatActivity() {
         initializeViews()
         loadEvents()
         setupListeners()
-        updateCalendar()
-        updateEventsList()
     }
     
     private fun initializeViews() {
         todayButton = findViewById(R.id.today_button)
         monthYearText = findViewById(R.id.month_year_text)
-        calendarGrid = findViewById(R.id.calendar_grid)
-        eventsRecyclerView = findViewById(R.id.events_recycler_view)
-        emptyView = findViewById(R.id.empty_view)
+        viewPager = findViewById(R.id.calendar_view_pager)
         
-        // Setup RecyclerView
-        eventAdapter = CalendarEventAdapter(listOf(), this)
-        eventsRecyclerView.layoutManager = LinearLayoutManager(this)
-        eventsRecyclerView.adapter = eventAdapter
+        // Setup ViewPager2 with adapter
+        calendarPagerAdapter = CalendarPagerAdapter()
+        viewPager.adapter = calendarPagerAdapter
+        viewPager.setCurrentItem(INITIAL_POSITION, false)
+        
+        // Update header to show current month
+        updateHeader(INITIAL_POSITION)
     }
     
     private fun setupListeners() {
-        // Setup swipe gestures for month navigation
-        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(
-                e1: MotionEvent?,
-                e2: MotionEvent,
-                velocityX: Float,
-                velocityY: Float
-            ): Boolean {
-                if (e1 == null) return false
-                
-                val diffX = e2.x - e1.x
-                val diffY = e2.y - e1.y
-                
-                if (abs(diffX) > abs(diffY) && abs(diffX) > 100 && abs(velocityX) > 100) {
-                    if (diffX > 0) {
-                        // Swipe right - previous month
-                        currentCalendar.add(Calendar.MONTH, -1)
-                        updateCalendar()
-                        updateEventsList()
-                        return true
-                    } else {
-                        // Swipe left - next month
-                        currentCalendar.add(Calendar.MONTH, 1)
-                        updateCalendar()
-                        updateEventsList()
-                        return true
-                    }
-                }
-                return false
+        // ViewPager2 page change listener
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                updateHeader(position)
+                calendarPagerAdapter.notifyPageSelected(position)
             }
         })
         
         // Setup today button
         todayButton.setOnClickListener {
             val today = Calendar.getInstance()
-            currentCalendar.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
             selectedDate.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
-            updateCalendar()
-            updateEventsList()
+            viewPager.setCurrentItem(INITIAL_POSITION, true)
         }
     }
     
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        return if (gestureDetector.onTouchEvent(event)) {
-            true
-        } else {
-            super.onTouchEvent(event)
-        }
-    }
-    
-    override fun onDestroy() {
-        super.onDestroy()
-        // Clear gesture detector to prevent memory leak
-        gestureDetector.setOnDoubleTapListener(null)
-    }
-    
-    private fun updateCalendar() {
-        // Update month/year text
+    private fun updateHeader(position: Int) {
+        val calendar = getCalendarForPosition(position)
         val monthYearFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-        monthYearText.text = monthYearFormat.format(currentCalendar.time)
-        
-        // Get today's calendar for comparisons
-        val today = Calendar.getInstance()
+        monthYearText.text = monthYearFormat.format(calendar.time)
         
         // Update today button state
-        val isCurrentMonth = (currentCalendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                              currentCalendar.get(Calendar.MONTH) == today.get(Calendar.MONTH))
+        val today = Calendar.getInstance()
+        val isCurrentMonth = (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                              calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH))
         
         todayButton.isEnabled = !isCurrentMonth
         todayButton.alpha = if (isCurrentMonth) 0.5f else 1.0f
-        
-        // Clear existing day views
-        calendarGrid.removeAllViews()
-        
-        // Add weekday headers (Mon-Sun)
-        val weekdays = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-        for (weekday in weekdays) {
-            val headerView = TextView(this).apply {
-                text = weekday
-                textSize = 14f
-                gravity = android.view.Gravity.CENTER
-                setTextColor(getColor(R.color.textSecondary))
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                setPadding(4, 8, 4, 8)
-            }
-            val headerParams = GridLayout.LayoutParams()
-            headerParams.width = 0
-            headerParams.height = GridLayout.LayoutParams.WRAP_CONTENT
-            headerParams.columnSpec = GridLayout.spec(weekdays.indexOf(weekday), 1f)
-            headerParams.rowSpec = GridLayout.spec(0)
-            headerView.layoutParams = headerParams
-            calendarGrid.addView(headerView)
-        }
-        
-        // Get calendar data
-        val tempCalendar = currentCalendar.clone() as Calendar
-        tempCalendar.set(Calendar.DAY_OF_MONTH, 1)
-        
-        val firstDayOfWeek = tempCalendar.get(Calendar.DAY_OF_WEEK)
-        val daysInMonth = tempCalendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-        
-        // Convert to Monday-first (0=Monday, 6=Sunday)
-        val startPosition = if (firstDayOfWeek == Calendar.SUNDAY) 6 else firstDayOfWeek - 2
-        
-        // Create day views
-        val totalCells = 42 // 6 rows * 7 days
-        for (i in 0 until totalCells) {
-            val layoutParams = GridLayout.LayoutParams()
-            layoutParams.width = 0
-            layoutParams.height = GridLayout.LayoutParams.WRAP_CONTENT
-            layoutParams.columnSpec = GridLayout.spec(i % 7, 1f)
-            layoutParams.rowSpec = GridLayout.spec((i / 7) + 1) // +1 to account for header row
-            layoutParams.setMargins(4, 4, 4, 4)
-            
-            val dayNumber = i - startPosition + 1
-            
-            if (dayNumber in 1..daysInMonth) {
-                // Check if this is today
-                val isToday = (tempCalendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                        tempCalendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
-                        dayNumber == today.get(Calendar.DAY_OF_MONTH))
-                
-                // Check if this is selected day
-                val isSelected = (tempCalendar.get(Calendar.YEAR) == selectedDate.get(Calendar.YEAR) &&
-                        tempCalendar.get(Calendar.MONTH) == selectedDate.get(Calendar.MONTH) &&
-                        dayNumber == selectedDate.get(Calendar.DAY_OF_MONTH))
-                
-                // Get events for this day
-                val dateKey = getDateKey(tempCalendar.get(Calendar.YEAR), 
-                    tempCalendar.get(Calendar.MONTH), dayNumber)
-                val dayEvents = events[dateKey]
-                
-                // Create day cell (with or without ring)
-                val dayCellView = createDayCell(dayNumber, isToday, isSelected, dayEvents)
-                dayCellView.layoutParams = layoutParams
-                
-                // Click listener
-                dayCellView.setOnClickListener {
-                    onDaySelected(tempCalendar.get(Calendar.YEAR), 
-                        tempCalendar.get(Calendar.MONTH), dayNumber)
-                }
-                
-                calendarGrid.addView(dayCellView)
-            } else {
-                // Empty cell
-                val emptyView = TextView(this)
-                emptyView.layoutParams = layoutParams
-                emptyView.text = ""
-                emptyView.isEnabled = false
-                calendarGrid.addView(emptyView)
-            }
-        }
     }
     
-    private data class EventSegment(val count: Int, val color: Int)
-    
-    private fun createDayCell(dayNumber: Int, isToday: Boolean, isSelected: Boolean, dayEvents: List<CalendarEvent>?): View {
-        val density = resources.displayMetrics.density
-        
-        // Create simple TextView for day number
-        val dayView = TextView(this).apply {
-            text = dayNumber.toString()
-            textSize = 16f
-            gravity = android.view.Gravity.CENTER
-            setPadding(8, 16, 8, 16)
-            setTextColor(getColor(R.color.text))
-            
-            if (isToday || isSelected) {
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-            }
-        }
-        
-        // If there are events, wrap in custom view with ring
-        if (!dayEvents.isNullOrEmpty()) {
-            val eventCounts = dayEvents.groupBy { it.type }.mapValues { it.value.size }
-            val totalEvents = eventCounts.values.sum()
-            
-            val segments = eventCounts.map { (type, count) ->
-                EventSegment(count, getEventTypeColor(type))
-            }.sortedByDescending { it.count }
-            
-            // Wrap TextView in custom FrameLayout that draws rings
-            val container = object : FrameLayout(this) {
-                override fun dispatchDraw(canvas: Canvas) {
-                    super.dispatchDraw(canvas) // Draw children (TextView) first
-                    
-                    // Then draw rings on top
-                    if (width > 0 && height > 0) {
-                        val centerX = width / 2f
-                        val centerY = height / 2f
-                        val size = minOf(width, height).toFloat()
-                        val strokeWidth = 4.5f * density
-                        val radius = (size / 2f) - (strokeWidth / 2f) - density // Increased radius more (was 2 * density)
-                        
-                        val rectF = RectF(
-                            centerX - radius,
-                            centerY - radius,
-                            centerX + radius,
-                            centerY + radius
-                        )
-                        
-                        var startAngle = -90f
-                        
-                        for ((index, segment) in segments.withIndex()) {
-                            val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
-                            val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
-                            
-                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                                style = Paint.Style.STROKE
-                                this.strokeWidth = currentStrokeWidth
-                                strokeCap = Paint.Cap.ROUND
-                                color = segment.color
-                            }
-                            
-                            canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
-                        }
-                    }
-                }
-            }
-            
-            // Add today/selected styling
-            if (isSelected) {
-                container.setBackgroundResource(R.drawable.selected_day_background)
-                dayView.setTextColor(getColor(R.color.colorOnPrimary))
-            } else if (isToday) {
-                val drawable = GradientDrawable()
-                drawable.shape = GradientDrawable.OVAL
-                drawable.setStroke((2 * density).toInt(), getColor(R.color.colorOnPrimary))
-                container.background = drawable
-            }
-            
-            container.addView(dayView, FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            ))
-            
-            return container
-            
-        } else {
-            // No events - just style the TextView
-            if (isSelected) {
-                dayView.setBackgroundResource(R.drawable.selected_day_background)
-                dayView.setTextColor(getColor(R.color.colorOnPrimary))
-            } else if (isToday) {
-                val drawable = GradientDrawable()
-                drawable.shape = GradientDrawable.OVAL
-                drawable.setStroke((4 * density).toInt(), getColor(R.color.colorOnPrimary))
-                dayView.background = drawable
-            }
-            
-            return dayView
-        }
-    }
-    
-
-    
-    private fun onDaySelected(year: Int, month: Int, day: Int) {
-        selectedDate.set(year, month, day)
-        updateCalendar()
-        updateEventsList()
-    }
-    
-    private fun updateEventsList() {
-        val dateKey = getDateKey(selectedDate.get(Calendar.YEAR), 
-            selectedDate.get(Calendar.MONTH), 
-            selectedDate.get(Calendar.DAY_OF_MONTH))
-        
-        val dayEvents = events[dateKey] ?: emptyList()
-        
-        if (dayEvents.isEmpty()) {
-            eventsRecyclerView.visibility = View.GONE
-            emptyView.visibility = View.VISIBLE
-        } else {
-            eventsRecyclerView.visibility = View.VISIBLE
-            emptyView.visibility = View.GONE
-            
-            // Single-pass grouping by normalizing type
-            val normalizedEvents = dayEvents.map { event ->
-                event.copy(type = if (event.type == "learned") "initiated" else event.type)
-            }
-            val eventsByType = normalizedEvents.groupBy { it.type }
-            
-            // Create list with separators in order
-            val groupedItems = mutableListOf<Any>()
-            val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed")
-            
-            for (type in typeOrder) {
-                val eventsOfType = eventsByType[type] ?: continue
-                if (eventsOfType.isNotEmpty()) {
-                    val emoji = getEventTypeEmoji(type)
-                    val label = type.uppercase()
-                    groupedItems.add("— $emoji $label (${eventsOfType.size}) —")
-                    groupedItems.addAll(eventsOfType)
-                }
-            }
-            
-            eventAdapter.updateEvents(groupedItems)
-        }
+    private fun getCalendarForPosition(position: Int): Calendar {
+        val calendar = Calendar.getInstance()
+        val monthOffset = position - INITIAL_POSITION
+        calendar.add(Calendar.MONTH, monthOffset)
+        return calendar
     }
     
     private fun loadEvents() {
@@ -430,8 +164,7 @@ class CalendarViewActivity : AppCompatActivity() {
                 // Update UI on main thread
                 events = parsedEvents
                 Log.d("CalendarViewActivity", "Loaded ${events.size} days with events")
-                updateCalendar()
-                updateEventsList()
+                calendarPagerAdapter.notifyDataSetChanged()
             } catch (e: Exception) {
                 Log.e("CalendarViewActivity", "Error loading events: ${e.message}", e)
             }
@@ -579,6 +312,318 @@ class CalendarViewActivity : AppCompatActivity() {
     
     private fun getDateKey(year: Int, month: Int, day: Int): String {
         return "$year-${month + 1}-$day"
+    }
+    
+    // ViewPager2 Adapter for calendar pages
+    inner class CalendarPagerAdapter : RecyclerView.Adapter<CalendarPagerAdapter.CalendarPageViewHolder>() {
+        
+        override fun getItemCount() = TOTAL_MONTHS
+        
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CalendarPageViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.calendar_page_item, parent, false)
+            return CalendarPageViewHolder(view)
+        }
+        
+        override fun onBindViewHolder(holder: CalendarPageViewHolder, position: Int) {
+            holder.bind(position)
+        }
+        
+        fun notifyPageSelected(position: Int) {
+            // Refresh the current page to update selected date highlight
+            notifyItemChanged(position)
+        }
+        
+        inner class CalendarPageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private val calendarGrid: GridLayout = itemView.findViewById(R.id.calendar_grid)
+            private val eventsRecyclerView: RecyclerView = itemView.findViewById(R.id.events_recycler_view)
+            private val emptyView: TextView = itemView.findViewById(R.id.empty_view)
+            private lateinit var eventAdapter: CalendarEventAdapter
+            
+            init {
+                eventAdapter = CalendarEventAdapter(listOf(), this@CalendarViewActivity)
+                eventsRecyclerView.layoutManager = LinearLayoutManager(this@CalendarViewActivity)
+                eventsRecyclerView.adapter = eventAdapter
+            }
+            
+            fun bind(position: Int) {
+                val monthCalendar = getCalendarForPosition(position)
+                drawCalendarGrid(monthCalendar)
+                updateEventsList(monthCalendar)
+            }
+            
+            private fun drawCalendarGrid(monthCalendar: Calendar) {
+                calendarGrid.removeAllViews()
+                
+                // Add weekday headers
+                val weekdays = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                for (weekday in weekdays) {
+                    val headerView = TextView(this@CalendarViewActivity).apply {
+                        text = weekday
+                        textSize = 14f
+                        gravity = android.view.Gravity.CENTER
+                        setTextColor(getColor(R.color.textSecondary))
+                        typeface = android.graphics.Typeface.DEFAULT_BOLD
+                        setPadding(4, 8, 4, 8)
+                    }
+                    val headerParams = GridLayout.LayoutParams()
+                    headerParams.width = 0
+                    headerParams.height = GridLayout.LayoutParams.WRAP_CONTENT
+                    headerParams.columnSpec = GridLayout.spec(weekdays.indexOf(weekday), 1f)
+                    headerParams.rowSpec = GridLayout.spec(0)
+                    headerView.layoutParams = headerParams
+                    calendarGrid.addView(headerView)
+                }
+                
+                // Get calendar data
+                val tempCalendar = monthCalendar.clone() as Calendar
+                val today = Calendar.getInstance()
+                
+                tempCalendar.set(Calendar.DAY_OF_MONTH, 1)
+                val firstDayOfWeek = tempCalendar.get(Calendar.DAY_OF_WEEK)
+                val daysInMonth = tempCalendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                
+                // Convert to Monday-first (0=Monday, 6=Sunday)
+                val startPosition = if (firstDayOfWeek == Calendar.SUNDAY) 6 else firstDayOfWeek - 2
+                
+                // Get previous and next month info for filling empty cells
+                val prevMonthCal = monthCalendar.clone() as Calendar
+                prevMonthCal.add(Calendar.MONTH, -1)
+                val daysInPrevMonth = prevMonthCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+                
+                // Create day views
+                val totalCells = 42 // 6 rows * 7 days
+                for (i in 0 until totalCells) {
+                    val layoutParams = GridLayout.LayoutParams()
+                    layoutParams.width = 0
+                    layoutParams.height = GridLayout.LayoutParams.WRAP_CONTENT
+                    layoutParams.columnSpec = GridLayout.spec(i % 7, 1f)
+                    layoutParams.rowSpec = GridLayout.spec((i / 7) + 1)
+                    layoutParams.setMargins(4, 4, 4, 4)
+                    
+                    val dayNumber = i - startPosition + 1
+                    
+                    when {
+                        dayNumber in 1..daysInMonth -> {
+                            // Current month date
+                            val isToday = (tempCalendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                                    tempCalendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                                    dayNumber == today.get(Calendar.DAY_OF_MONTH))
+                            
+                            val isSelected = (tempCalendar.get(Calendar.YEAR) == selectedDate.get(Calendar.YEAR) &&
+                                    tempCalendar.get(Calendar.MONTH) == selectedDate.get(Calendar.MONTH) &&
+                                    dayNumber == selectedDate.get(Calendar.DAY_OF_MONTH))
+                            
+                            val dateKey = getDateKey(tempCalendar.get(Calendar.YEAR), 
+                                tempCalendar.get(Calendar.MONTH), dayNumber)
+                            val dayEvents = events[dateKey]
+                            
+                            val dayCellView = createDayCell(dayNumber, isToday, isSelected, dayEvents, false)
+                            dayCellView.layoutParams = layoutParams
+                            
+                            dayCellView.setOnClickListener {
+                                selectedDate.set(tempCalendar.get(Calendar.YEAR), 
+                                    tempCalendar.get(Calendar.MONTH), dayNumber)
+                                notifyItemChanged(adapterPosition)
+                            }
+                            
+                            calendarGrid.addView(dayCellView)
+                        }
+                        dayNumber < 1 -> {
+                            // Previous month date
+                            val prevMonthDay = daysInPrevMonth + dayNumber
+                            val prevMonthYear = prevMonthCal.get(Calendar.YEAR)
+                            val prevMonth = prevMonthCal.get(Calendar.MONTH)
+                            
+                            val dateKey = getDateKey(prevMonthYear, prevMonth, prevMonthDay)
+                            val dayEvents = events[dateKey]
+                            
+                            val dayCellView = createDayCell(prevMonthDay, false, false, dayEvents, true)
+                            dayCellView.layoutParams = layoutParams
+                            
+                            dayCellView.setOnClickListener {
+                                // Navigate to previous month
+                                viewPager.setCurrentItem(adapterPosition - 1, true)
+                                selectedDate.set(prevMonthYear, prevMonth, prevMonthDay)
+                            }
+                            
+                            calendarGrid.addView(dayCellView)
+                        }
+                        else -> {
+                            // Next month date
+                            val nextMonthDay = dayNumber - daysInMonth
+                            val nextMonthCal = monthCalendar.clone() as Calendar
+                            nextMonthCal.add(Calendar.MONTH, 1)
+                            val nextMonthYear = nextMonthCal.get(Calendar.YEAR)
+                            val nextMonth = nextMonthCal.get(Calendar.MONTH)
+                            
+                            val dateKey = getDateKey(nextMonthYear, nextMonth, nextMonthDay)
+                            val dayEvents = events[dateKey]
+                            
+                            val dayCellView = createDayCell(nextMonthDay, false, false, dayEvents, true)
+                            dayCellView.layoutParams = layoutParams
+                            
+                            dayCellView.setOnClickListener {
+                                // Navigate to next month
+                                viewPager.setCurrentItem(adapterPosition + 1, true)
+                                selectedDate.set(nextMonthYear, nextMonth, nextMonthDay)
+                            }
+                            
+                            calendarGrid.addView(dayCellView)
+                        }
+                    }
+                }
+            }
+            
+            private fun updateEventsList(monthCalendar: Calendar) {
+                val dateKey = getDateKey(selectedDate.get(Calendar.YEAR), 
+                    selectedDate.get(Calendar.MONTH), 
+                    selectedDate.get(Calendar.DAY_OF_MONTH))
+                
+                val dayEvents = events[dateKey] ?: emptyList()
+                
+                if (dayEvents.isEmpty()) {
+                    eventsRecyclerView.visibility = View.GONE
+                    emptyView.visibility = View.VISIBLE
+                } else {
+                    eventsRecyclerView.visibility = View.VISIBLE
+                    emptyView.visibility = View.GONE
+                    
+                    // Single-pass grouping by normalizing type
+                    val normalizedEvents = dayEvents.map { event ->
+                        event.copy(type = if (event.type == "learned") "initiated" else event.type)
+                    }
+                    val eventsByType = normalizedEvents.groupBy { it.type }
+                    
+                    // Create list with separators in order
+                    val groupedItems = mutableListOf<Any>()
+                    val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed")
+                    
+                    for (type in typeOrder) {
+                        val eventsOfType = eventsByType[type] ?: continue
+                        if (eventsOfType.isNotEmpty()) {
+                            val emoji = getEventTypeEmoji(type)
+                            val label = type.uppercase()
+                            groupedItems.add("— $emoji $label (${eventsOfType.size}) —")
+                            groupedItems.addAll(eventsOfType)
+                        }
+                    }
+                    
+                    eventAdapter.updateEvents(groupedItems)
+                }
+            }
+        }
+    }
+    
+    private data class EventSegment(val count: Int, val color: Int)
+    
+    private fun createDayCell(dayNumber: Int, isToday: Boolean, isSelected: Boolean, 
+                               dayEvents: List<CalendarEvent>?, isDimmed: Boolean): View {
+        val density = resources.displayMetrics.density
+        
+        // Create simple TextView for day number
+        val dayView = TextView(this).apply {
+            text = dayNumber.toString()
+            textSize = 16f
+            gravity = android.view.Gravity.CENTER
+            setPadding(8, 16, 8, 16)
+            setTextColor(getColor(R.color.text))
+            
+            // Apply dimming for prev/next month dates
+            if (isDimmed) {
+                alpha = 0.5f
+            }
+            
+            if (isToday || isSelected) {
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+        }
+        
+        // If there are events, wrap in custom view with ring
+        if (!dayEvents.isNullOrEmpty()) {
+            val eventCounts = dayEvents.groupBy { it.type }.mapValues { it.value.size }
+            val totalEvents = eventCounts.values.sum()
+            
+            val segments = eventCounts.map { (type, count) ->
+                EventSegment(count, getEventTypeColor(type))
+            }.sortedByDescending { it.count }
+            
+            // Wrap TextView in custom FrameLayout that draws rings
+            val container = object : FrameLayout(this) {
+                override fun dispatchDraw(canvas: Canvas) {
+                    super.dispatchDraw(canvas) // Draw children (TextView) first
+                    
+                    // Then draw rings on top
+                    if (width > 0 && height > 0) {
+                        val centerX = width / 2f
+                        val centerY = height / 2f
+                        val size = minOf(width, height).toFloat()
+                        val strokeWidth = 4.5f * density
+                        val radius = (size / 2f) - (strokeWidth / 2f) - density
+                        
+                        val rectF = RectF(
+                            centerX - radius,
+                            centerY - radius,
+                            centerX + radius,
+                            centerY + radius
+                        )
+                        
+                        var startAngle = -90f
+                        
+                        for ((index, segment) in segments.withIndex()) {
+                            val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
+                            val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
+                            
+                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                                style = Paint.Style.STROKE
+                                this.strokeWidth = currentStrokeWidth
+                                strokeCap = Paint.Cap.ROUND
+                                color = segment.color
+                                // Apply dimming to rings too
+                                if (isDimmed) {
+                                    alpha = 128 // 50% opacity
+                                }
+                            }
+                            
+                            canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
+                            startAngle += sweepAngle
+                        }
+                    }
+                }
+            }
+            
+            // Add today/selected styling
+            if (isSelected) {
+                container.setBackgroundResource(R.drawable.selected_day_background)
+                dayView.setTextColor(getColor(R.color.colorOnPrimary))
+            } else if (isToday) {
+                val drawable = GradientDrawable()
+                drawable.shape = GradientDrawable.OVAL
+                drawable.setStroke((2 * density).toInt(), getColor(R.color.colorOnPrimary))
+                container.background = drawable
+            }
+            
+            container.addView(dayView, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            
+            return container
+            
+        } else {
+            // No events - just style the TextView
+            if (isSelected) {
+                dayView.setBackgroundResource(R.drawable.selected_day_background)
+                dayView.setTextColor(getColor(R.color.colorOnPrimary))
+            } else if (isToday) {
+                val drawable = GradientDrawable()
+                drawable.shape = GradientDrawable.OVAL
+                drawable.setStroke((4 * density).toInt(), getColor(R.color.colorOnPrimary))
+                dayView.background = drawable
+            }
+            
+            return dayView
+        }
     }
 }
 
