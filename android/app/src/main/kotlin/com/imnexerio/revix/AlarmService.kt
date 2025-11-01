@@ -575,8 +575,6 @@ class AlarmService : Service() {    companion object {
                 putExtra(AlarmScreenActivity.EXTRA_CATEGORY, alarm.category)
                 putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
                 putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
-                putExtra("reminder_time", alarm.reminderTime)
-                putExtra("scheduled_date", alarm.scheduledDate)
                 // Use FLAG_ACTIVITY_MULTIPLE_TASK to ensure separate task instances
                 addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -595,8 +593,6 @@ class AlarmService : Service() {    companion object {
                     putExtra(AlarmScreenActivity.EXTRA_CATEGORY, alarm.category)
                     putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, alarm.subCategory)
                     putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, alarm.recordTitle)
-                    putExtra("reminder_time", alarm.reminderTime)
-                    putExtra("scheduled_date", alarm.scheduledDate)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 startActivity(fallbackIntent)

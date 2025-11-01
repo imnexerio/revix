@@ -88,19 +88,19 @@ class AlarmScreenActivity : Activity() {
             finish()
             return
         }
-        // Extract alarm details from intent
+        // Extract alarm details from intent (only the three unique identifiers)
         category = intent.getStringExtra(EXTRA_CATEGORY) ?: ""
         subCategory = intent.getStringExtra(EXTRA_SUB_CATEGORY) ?: ""
         recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
-        reminderTime = intent.getStringExtra("reminder_time") ?: ""
-        scheduledDate = intent.getStringExtra("scheduled_date") ?: ""
         
         // OPTIMIZATION: Fetch record data ONCE and cache it for entire session
         cachedRecordData = getRecordDataFromWidgetCache()
         
-        // Extract entryType and description from cached data
-        entryType = cachedRecordData?.get("entry_type") ?: ""
-        description = cachedRecordData?.get("description") ?: ""
+        // Get all other data from cached record data (single source of truth)
+        reminderTime = intent.getStringExtra("reminder_time") ?: cachedRecordData?.get("reminder_time") ?: ""
+        scheduledDate = intent.getStringExtra("scheduled_date") ?: cachedRecordData?.get("scheduled_date") ?: ""
+        entryType = intent.getStringExtra("entry_type") ?: cachedRecordData?.get("entry_type") ?: ""
+        description = intent.getStringExtra("description") ?: cachedRecordData?.get("description") ?: ""
 
         // Check if this is details mode or alarm mode
         val isDetailsMode = intent.getBooleanExtra("DETAILS_MODE", false)
@@ -1183,9 +1183,10 @@ class AlarmScreenActivity : Activity() {
         return try {
             val sharedPrefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
 
-            val recordSources = listOf("todayRecords", "tomorrowRecords", "missedRecords", "noreminderdate")
+            // OPTIMIZATION: Check small, frequently-accessed lists first (90% of cases)
+            val quickSources = listOf("todayRecords", "tomorrowRecords", "missedRecords", "noreminderdate")
 
-            for (source in recordSources) {
+            for (source in quickSources) {
                 val recordsJson = sharedPrefs.getString(source, "[]") ?: "[]"
                 if (recordsJson != "[]") {
                     val jsonArray = org.json.JSONArray(recordsJson)
@@ -1208,7 +1209,41 @@ class AlarmScreenActivity : Activity() {
                                 recordData[key] = record.optString(key, "")
                             }
 
-                            Log.d(TAG, "Found matching record in $source: $recordData")
+                            Log.d(TAG, "Found matching record in $source (fast path)")
+                            return recordData
+                        }
+                    }
+                }
+            }
+            
+            // FALLBACK: Check allRecords (hierarchical structure, different from arrays above)
+            Log.d(TAG, "Not found in quick lists, checking allRecords...")
+            val allRecordsJson = sharedPrefs.getString("allRecords", "{}") ?: "{}"
+            
+            if (allRecordsJson.isNotEmpty() && allRecordsJson != "{}") {
+                val allRecordsObject = org.json.JSONObject(allRecordsJson)
+                
+                // Navigate the hierarchy: category → sub_category → record_title
+                if (allRecordsObject.has(category)) {
+                    val categoryObject = allRecordsObject.getJSONObject(category)
+                    
+                    if (categoryObject.has(subCategory)) {
+                        val subCategoryObject = categoryObject.getJSONObject(subCategory)
+                        
+                        if (subCategoryObject.has(recordTitle)) {
+                            val record = subCategoryObject.getJSONObject(recordTitle)
+                            
+                            // Extract all data from the record
+                            val recordData = mutableMapOf<String, String>()
+                            val keys = record.keys()
+                            while (keys.hasNext()) {
+                                val key = keys.next()
+                                // Convert any value to string
+                                val value = record.opt(key)
+                                recordData[key] = value?.toString() ?: ""
+                            }
+                            
+                            Log.d(TAG, "Found matching record in allRecords (fallback path)")
                             return recordData
                         }
                     }

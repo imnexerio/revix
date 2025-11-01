@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/WidgetBackground">
+
+    <!-- Fixed Header with Month/Year and Today button -->
+    <LinearLayout
+        android:id="@+id/header_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical"
+        android:elevation="4dp"
+        android:background="@color/WidgetBackground">
+
+        <!-- Month/Year text (centered) -->
+        <TextView
+            android:id="@+id/month_year_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="October 2025"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text"
+            android:gravity="center" />
+
+        <!-- Today button -->
+        <Button
+            android:id="@+id/today_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Today"
+            android:textSize="14sp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+
+    </LinearLayout>
+
+    <!-- Custom wrapper that enables ViewPager2 to support wrap_content -->
+    <com.imnexerio.revix.WrapContentViewPager2
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/calendar_view_pager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+            
+    </com.imnexerio.revix.WrapContentViewPager2>
+
+    <!-- Events RecyclerView (grouped by type) - Fixed, doesn't scroll horizontally -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/events_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp" />
+
+    <!-- Empty view -->
+    <TextView
+        android:id="@+id/empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="No events for this date"
+        android:textSize="16sp"
+        android:textColor="@color/textSecondary"
+        android:gravity="center"
+        android:visibility="gone" />
+
+</LinearLayout>

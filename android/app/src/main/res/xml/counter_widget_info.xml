@@ -3,6 +3,8 @@
     android:description="@string/counter_widget_description"
     android:initialKeyguardLayout="@layout/counter_widget"
     android:initialLayout="@layout/counter_widget"
+    android:minWidth="110dp"
+    android:minHeight="40dp"
     android:previewImage="@mipmap/ic_launcher"
     android:previewLayout="@layout/counter_widget"
     android:resizeMode="horizontal|vertical"

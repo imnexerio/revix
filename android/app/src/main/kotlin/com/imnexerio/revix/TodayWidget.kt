@@ -57,6 +57,9 @@ class TodayWidget : AppWidgetProvider() {
                 // Setup add record button
                 setupAddButton(context, views, appWidgetId)
 
+                // Setup calendar view button
+                setupCalendarViewButton(context, views, appWidgetId)
+
                 // Setup refresh functionality on header click
                 setupRefreshOnHeaderClick(context, views, appWidgetId)
 
@@ -154,6 +157,25 @@ class TodayWidget : AppWidgetProvider() {
             }
         }
 
+        private fun setupCalendarViewButton(context: Context, views: RemoteViews, appWidgetId: Int) {
+            try {
+                val calendarIntent = Intent(context, CalendarViewActivity::class.java)
+                calendarIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                val calendarRequestCode = appWidgetId + 300 + System.currentTimeMillis().toInt()
+                val calendarPendingIntent = PendingIntent.getActivity(
+                    context,
+                    calendarRequestCode,
+                    calendarIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.calendar_view_button, calendarPendingIntent)
+
+                Log.d("TodayWidget", "Calendar view button setup completed for widget $appWidgetId")
+            } catch (e: Exception) {
+                Log.e("TodayWidget", "Error setting up calendar view button: ${e.message}", e)
+            }
+        }
+
         private fun setupRefreshOnHeaderClick(context: Context, views: RemoteViews, appWidgetId: Int) {
             try {
                 val refreshIntent = Intent(context, TodayWidget::class.java)
@@ -204,16 +226,10 @@ class TodayWidget : AppWidgetProvider() {
                     val alarmIntent = Intent(context, AlarmScreenActivity::class.java)
                     alarmIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     
-                    // Copy all record data to alarm intent
-                    intent.extras?.let { extras ->
-                        for (key in extras.keySet()) {
-                            val value = extras.getString(key)
-                            if (value != null) {
-                                alarmIntent.putExtra(key, value)
-                            }
-                        }
-                    }
-                    
+                    // Only pass the three unique identifiers - AlarmScreenActivity will fetch the rest from cache
+                    alarmIntent.putExtra(AlarmScreenActivity.EXTRA_CATEGORY, category)
+                    alarmIntent.putExtra(AlarmScreenActivity.EXTRA_SUB_CATEGORY, subCategory)
+                    alarmIntent.putExtra(AlarmScreenActivity.EXTRA_RECORD_TITLE, recordTitle)
                     alarmIntent.putExtra("DETAILS_MODE", true)
                     
                     try {

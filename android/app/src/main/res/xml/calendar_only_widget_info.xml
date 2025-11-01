@@ -3,6 +3,8 @@
     android:description="@string/calendar_only_widget_description"
     android:initialKeyguardLayout="@layout/calendar_only_widget"
     android:initialLayout="@layout/calendar_only_widget"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
     android:previewImage="@mipmap/ic_launcher"
     android:previewLayout="@layout/calendar_only_widget"
     android:resizeMode="horizontal|vertical"

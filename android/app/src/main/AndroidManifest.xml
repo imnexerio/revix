@@ -165,6 +165,12 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
+        <activity
+            android:name=".CalendarViewActivity"
+            android:exported="false"
+            android:label="Calendar View"
+            android:theme="@style/DialogWithCenteredTitle">
+        </activity>
 
         <meta-data
             android:name="flutterEmbedding"

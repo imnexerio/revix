@@ -9,7 +9,15 @@
         android:layout_marginStart="8dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <ImageView
+            android:id="@+id/calendar_view_button"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="6dp"
+            android:src="@drawable/ic_calendar"
+            android:contentDescription="Open Calendar View"/>
         <TextView
             android:id="@+id/title_text_n_refresh"
             android:layout_width="0dp"
@@ -18,7 +26,7 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="@color/text"
-            android:gravity="left"/>
+            android:gravity="center"/>
         <ImageView
             android:id="@+id/add_record_button"
             android:layout_width="24dp"

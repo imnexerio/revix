@@ -341,9 +341,7 @@ class AlarmManagerHelper(private val context: Context) {
             putExtra(AlarmReceiver.EXTRA_CATEGORY, metadata.category)
             putExtra(AlarmReceiver.EXTRA_SUB_CATEGORY, metadata.subCategory)
             putExtra(AlarmReceiver.EXTRA_RECORD_TITLE, metadata.recordTitle)
-            putExtra("scheduled_date", metadata.scheduledDate)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, metadata.alarmType)
-            putExtra("reminder_time", metadata.reminderTime)
         }
 
         // Use a consistent request code based on the key

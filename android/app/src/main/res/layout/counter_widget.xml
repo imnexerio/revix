@@ -30,6 +30,7 @@
         android:paddingEnd="8dp">
 
         <!-- Left: Colored stick indicator (50% hidden on left, 50% visible - coming out of wall) -->
+        <!-- Now clickable to open CalendarViewActivity -->
         <ImageView
             android:id="@+id/lecture_type_indicator"
             android:layout_width="14dp"
@@ -38,7 +39,9 @@
             android:layout_marginStart="-5dp"
             android:layout_marginEnd="8dp"
             android:layout_gravity="center_vertical"
-            android:contentDescription="Counter type indicator" />
+            android:contentDescription="Open Calendar View"
+            android:clickable="true"
+            android:focusable="true" />
 
         <!-- Center: Counter area (35% width, clickable for refresh) -->
         <TextView
