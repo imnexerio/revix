@@ -16,6 +16,6 @@
     android:layout_marginBottom="4dp"
     android:textSize="16sp"
     android:textColor="@color/text"
-    android:background="@drawable/rounded_cancel_button"
+    android:background="@drawable/rounded_unselected_button"
     android:singleLine="true"
     android:ellipsize="end" />

@@ -258,7 +258,7 @@ class RecordSelectionActivity : AppCompatActivity() {
                 holder.textView.setBackgroundResource(R.drawable.rounded_save_button)
                 holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
             } else {
-                holder.textView.setBackgroundResource(R.drawable.rounded_cancel_button)
+                holder.textView.setBackgroundResource(R.drawable.rounded_unselected_button)
                 holder.textView.setTextColor(resources.getColor(R.color.text, null))
             }
 
@@ -308,7 +308,7 @@ class RecordSelectionActivity : AppCompatActivity() {
                 holder.textView.setBackgroundResource(R.drawable.rounded_save_button)
                 holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
             } else {
-                holder.textView.setBackgroundResource(R.drawable.rounded_cancel_button)
+                holder.textView.setBackgroundResource(R.drawable.rounded_unselected_button)
                 holder.textView.setTextColor(resources.getColor(R.color.text, null))
             }
 
