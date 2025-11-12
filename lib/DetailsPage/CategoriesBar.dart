@@ -132,7 +132,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                 Expanded(
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: CodeBar(selectedCategory: _selectedCategory!),
+                    child: SubCategoriesBar(selectedCategory: _selectedCategory!),
                   ),
                 ),
               Container(

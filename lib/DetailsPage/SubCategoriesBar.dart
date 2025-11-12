@@ -4,16 +4,16 @@ import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
 import 'LectureBar.dart';
 
-class CodeBar extends StatefulWidget {
+class SubCategoriesBar extends StatefulWidget {
   final String selectedCategory;
 
-  CodeBar({required this.selectedCategory});
+  SubCategoriesBar({required this.selectedCategory});
 
   @override
-  _CodeBarState createState() => _CodeBarState();
+  _SubCategoriesBarState createState() => _SubCategoriesBarState();
 }
 
-class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
+class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerProviderStateMixin {
   String? _selectedCategoryCode;
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
@@ -71,7 +71,7 @@ class _CodeBarState extends State<CodeBar> with SingleTickerProviderStateMixin {
   }
 
   @override
-  void didUpdateWidget(CodeBar oldWidget) {
+  void didUpdateWidget(SubCategoriesBar oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     // If the category has changed, we need to update the selected code
