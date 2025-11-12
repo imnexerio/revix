@@ -255,11 +255,11 @@ class RecordSelectionActivity : AppCompatActivity() {
 
             // Apply selection styling
             if (category == selectedCategory) {
-                holder.textView.setBackgroundColor(0xFF3F51B5.toInt()) // Primary color
+                holder.textView.setBackgroundResource(R.drawable.rounded_save_button)
                 holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
             } else {
-                holder.textView.setBackgroundResource(android.R.drawable.btn_default)
-                holder.textView.setTextColor(0xFF000000.toInt()) // Black text
+                holder.textView.setBackgroundResource(R.drawable.rounded_cancel_button)
+                holder.textView.setTextColor(resources.getColor(R.color.text, null))
             }
 
             holder.itemView.setOnClickListener { onCategoryClick(category) }
@@ -305,11 +305,11 @@ class RecordSelectionActivity : AppCompatActivity() {
 
             // Apply selection styling
             if (subcategory == selectedSubcategory) {
-                holder.textView.setBackgroundColor(0xFF3F51B5.toInt()) // Primary color
+                holder.textView.setBackgroundResource(R.drawable.rounded_save_button)
                 holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
             } else {
-                holder.textView.setBackgroundResource(android.R.drawable.btn_default)
-                holder.textView.setTextColor(0xFF000000.toInt()) // Black text
+                holder.textView.setBackgroundResource(R.drawable.rounded_cancel_button)
+                holder.textView.setTextColor(resources.getColor(R.color.text, null))
             }
 
             holder.itemView.setOnClickListener { onSubcategoryClick(subcategory) }
