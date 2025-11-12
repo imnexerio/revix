@@ -153,6 +153,8 @@
             android:name=".RecordSelectionActivity"
             android:exported="false"
             android:label="Select Record to Track"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
             android:theme="@style/DialogWithCenteredTitle">
         </activity>
         <activity
