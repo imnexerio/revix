@@ -21,7 +21,6 @@ class RecordSelectionActivity : AppCompatActivity() {
     private lateinit var categoriesRecycler: RecyclerView
     private lateinit var subcategoriesRecycler: RecyclerView
     private lateinit var recordsRecycler: RecyclerView
-    private lateinit var btnCancel: Button
 
     private lateinit var categoriesAdapter: CategoriesAdapter
     private lateinit var subcategoriesAdapter: SubcategoriesAdapter
@@ -35,6 +34,8 @@ class RecordSelectionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_record_selection)
+
+        setFinishOnTouchOutside(true)
 
         // Get widget ID
         appWidgetId = intent.getIntExtra(
@@ -56,9 +57,6 @@ class RecordSelectionActivity : AppCompatActivity() {
         categoriesRecycler = findViewById(R.id.categories_recycler)
         subcategoriesRecycler = findViewById(R.id.subcategories_recycler)
         recordsRecycler = findViewById(R.id.records_recycler)
-        btnCancel = findViewById(R.id.cancel_button)
-
-        btnCancel.setOnClickListener { finish() }
     }
 
     private fun loadAllRecords() {
