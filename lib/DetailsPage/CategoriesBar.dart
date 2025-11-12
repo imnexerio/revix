@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
-import 'CodeBar.dart';
+import 'SubCategoriesBar.dart';
 
 class CategoriesBar extends StatefulWidget {
   @override
