@@ -136,16 +136,9 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                   ),
                 ),
               Container(
-                height: 70.0,
+                height: 50.0,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -159,7 +152,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
 
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 6.0),
+                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -174,61 +167,23 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                               context: context,
                               category: category,
                             ),
-                            borderRadius: BorderRadius.circular(15.0),
+                            borderRadius: BorderRadius.circular(8.0),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 20.0,
-                                vertical: 12.0,
+                                horizontal: 12.0,
+                                vertical: 8.0,
                               ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(15.0),
-                                border: Border.all(
+                              child: Text(
+                                category,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
                                   color: isSelected
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                                  width: 1.5,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                  BoxShadow(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                                    : null,
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.book,
-                                      size: 18,
-                                      color: isSelected
-                                          ? Theme.of(context).colorScheme.onPrimary
-                                          : Theme.of(context).colorScheme.onSurface,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      category,
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Theme.of(context).colorScheme.onPrimary
-                                            : Theme.of(context).colorScheme.onSurface,
-                                        fontSize: 16,
-                                        fontWeight:
-                                        isSelected ? FontWeight.w600 : FontWeight.w500,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ],
+                                      : Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 14,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ),
