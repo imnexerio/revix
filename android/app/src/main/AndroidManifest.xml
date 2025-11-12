@@ -145,7 +145,7 @@
         </activity>        <activity
         android:name=".AddLectureActivity"
         android:exported="false"
-        android:label="Add New Record(revix)"
+        android:label="Add New Record (revix)"
         android:excludeFromRecents="true"
         android:noHistory="true"
         android:theme="@style/DialogWithCenteredTitle"
@@ -154,7 +154,7 @@
         <activity
             android:name=".RecordSelectionActivity"
             android:exported="false"
-            android:label="Select Record to Track(revix)"
+            android:label="Select Record to Track (revix)"
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@style/DialogWithCenteredTitle">
@@ -172,7 +172,7 @@
         <activity
             android:name=".CalendarViewActivity"
             android:exported="false"
-            android:label="Calendar View(revix)"
+            android:label="Calendar View (revix)"
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@style/DialogWithCenteredTitle">
