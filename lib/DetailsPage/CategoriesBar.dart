@@ -136,12 +136,12 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                   ),
                 ),
               Container(
-                height: 50.0,
+                height: 40.0,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
@@ -171,7 +171,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12.0,
-                                vertical: 8.0,
+                                vertical: 4.0,
                               ),
                               child: Text(
                                 category,

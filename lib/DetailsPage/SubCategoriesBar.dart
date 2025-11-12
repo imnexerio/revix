@@ -183,8 +183,8 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
               if (_selectedCategoryCode != null)
                 Positioned.fill(
                   child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).size.height * 0.1,
+                    padding: const EdgeInsets.only(
+                      bottom: 40.0,
                     ),
                     child: ScaleTransition(
                       scale: _slideAnimation,
@@ -201,12 +201,12 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
-                  height: 50.0,
+                  height: 40.0,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
@@ -237,7 +237,7 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12.0,
-                                  vertical: 8.0,
+                                  vertical: 4.0,
                                 ),
                                 child: Text(
                                   code,
