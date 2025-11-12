@@ -247,8 +247,8 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
                                     color: isSelected
                                         ? Theme.of(context).colorScheme.primary
                                         : Theme.of(context).colorScheme.onSurface,
-                                    fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: 16,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                     letterSpacing: 0.3,
                                   ),
                                 ),

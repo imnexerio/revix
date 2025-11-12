@@ -181,8 +181,8 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                                   color: isSelected
                                       ? Theme.of(context).colorScheme.primary
                                       : Theme.of(context).colorScheme.onSurface,
-                                  fontSize: 14,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  fontSize: 16,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                   letterSpacing: 0.3,
                                 ),
                               ),
