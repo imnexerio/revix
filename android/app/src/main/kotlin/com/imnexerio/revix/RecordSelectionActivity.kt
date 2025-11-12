@@ -253,13 +253,13 @@ class RecordSelectionActivity : AppCompatActivity() {
             val category = categories[position]
             holder.textView.text = category
 
-            // Apply selection styling
+            // Apply selection styling - just change text color and make bold
             if (category == selectedCategory) {
-                holder.textView.setBackgroundResource(R.drawable.rounded_save_button)
-                holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
+                holder.textView.setTextColor(resources.getColor(R.color.colorOnPrimary, null)) // Accent color
+                holder.textView.setTypeface(null, android.graphics.Typeface.BOLD)
             } else {
-                holder.textView.setBackgroundResource(R.drawable.rounded_unselected_button)
                 holder.textView.setTextColor(resources.getColor(R.color.text, null))
+                holder.textView.setTypeface(null, android.graphics.Typeface.NORMAL)
             }
 
             holder.itemView.setOnClickListener { onCategoryClick(category) }
@@ -303,13 +303,13 @@ class RecordSelectionActivity : AppCompatActivity() {
             val subcategory = subcategories[position]
             holder.textView.text = subcategory
 
-            // Apply selection styling
+            // Apply selection styling - just change text color and make bold
             if (subcategory == selectedSubcategory) {
-                holder.textView.setBackgroundResource(R.drawable.rounded_save_button)
-                holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
+                holder.textView.setTextColor(resources.getColor(R.color.colorOnPrimary, null)) // Accent color
+                holder.textView.setTypeface(null, android.graphics.Typeface.BOLD)
             } else {
-                holder.textView.setBackgroundResource(R.drawable.rounded_unselected_button)
                 holder.textView.setTextColor(resources.getColor(R.color.text, null))
+                holder.textView.setTypeface(null, android.graphics.Typeface.NORMAL)
             }
 
             holder.itemView.setOnClickListener { onSubcategoryClick(subcategory) }
