@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -477,28 +478,38 @@ class _MyHomePageState extends State<MyHomePage> {
             children: [
               // Custom navigation bar with rounded corners - takes remaining space
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(25),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(25),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.2),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', theme),
-                        _buildNavItem(1, Icons.today_outlined, Icons.today_rounded, 'Schedule', theme),
-                        _buildNavItem(2, Icons.fiber_smart_record_outlined, Icons.fiber_smart_record_rounded, 'Details', theme),
-                        _buildNavItem(3, Icons.auto_awesome_outlined, Icons.auto_awesome_rounded, 'Chat', theme),
-                      ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', theme),
+                            _buildNavItem(1, Icons.today_outlined, Icons.today_rounded, 'Schedule', theme),
+                            _buildNavItem(2, Icons.fiber_smart_record_outlined, Icons.fiber_smart_record_rounded, 'Details', theme),
+                            _buildNavItem(3, Icons.auto_awesome_outlined, Icons.auto_awesome_rounded, 'Chat', theme),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
