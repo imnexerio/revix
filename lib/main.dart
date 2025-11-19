@@ -406,20 +406,20 @@ class _MyHomePageState extends State<MyHomePage> {
         onTap: () => _onItemTapped(index),
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isSelected ? activeIcon : icon,
                 color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
-                size: 24,
+                size: 22,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
@@ -462,6 +462,7 @@ class _MyHomePageState extends State<MyHomePage> {
             _buildProfileButton(theme),
           ],
         ),
+        extendBody: true,
         body: Stack(
           children: [
             IndexedStack(
