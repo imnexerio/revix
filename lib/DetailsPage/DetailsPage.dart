@@ -18,7 +18,7 @@ class _DetailsPageState extends State<DetailsPage> {
 Widget build(BuildContext context) {
   return Scaffold(
     body: Padding(
-      padding: const EdgeInsets.all(0.0),
+      padding: const EdgeInsets.only(bottom: 88.0), // Extra space for bottom navigation
       child: Center(
         child: CategoriesBar(),
       ),
