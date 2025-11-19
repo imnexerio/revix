@@ -398,6 +398,39 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, ThemeData theme) {
+    final isSelected = _selectedIndex == index;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _onItemTapped(index),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? activeIcon : icon,
+                color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
+                size: 24,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   final List<String> _pageTitles = <String>[
     'Home',
     'Schedule',
@@ -437,80 +470,76 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            elevation: 0,
-            backgroundColor: theme.colorScheme.surface,
-            items: <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home_rounded, color: theme.colorScheme.primary),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.today_outlined),
-                activeIcon: Icon(Icons.today_rounded, color: theme.colorScheme.primary),
-                label: 'Schedule',
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.fiber_smart_record_outlined),
-                activeIcon: Icon(Icons.fiber_smart_record_rounded, color: theme.colorScheme.primary),
-                label: 'Details',
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.auto_awesome_outlined),
-                activeIcon: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary),
-                label: 'Chat',
-              ),
-            ],
-            currentIndex: _selectedIndex,
-            selectedItemColor: theme.colorScheme.primary,
-            unselectedItemColor: theme.colorScheme.onSurface.withOpacity(0.6),
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-            onTap: _onItemTapped,
-          ),
-        ),
-        floatingActionButton: Transform.translate(
-          offset: const Offset(0, 10),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              // Custom navigation bar with rounded corners - takes remaining space
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', theme),
+                        _buildNavItem(1, Icons.today_outlined, Icons.today_rounded, 'Schedule', theme),
+                        _buildNavItem(2, Icons.fiber_smart_record_outlined, Icons.fiber_smart_record_rounded, 'Details', theme),
+                        _buildNavItem(3, Icons.auto_awesome_outlined, Icons.auto_awesome_rounded, 'Chat', theme),
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            child: FloatingActionButton(
-              onPressed: _addLecture,
-              child: Icon(Icons.add_rounded, color: theme.colorScheme.onPrimary),
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              shape: const CircleBorder(),
-            ),
+              ),
+              const SizedBox(width: 12),
+              // Add lecture button
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.secondary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _addLecture,
+                    borderRadius: BorderRadius.circular(28),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      alignment: Alignment.center,
+                      child: Icon(Icons.add_rounded, color: theme.colorScheme.onPrimary, size: 28),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
