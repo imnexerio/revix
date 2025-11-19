@@ -484,15 +484,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface.withOpacity(0.7),
+                        // Lower opacity for more transparency (glassier effect)
+                        color: theme.colorScheme.surface.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(25),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.2),
+                          color: theme.colorScheme.primary.withOpacity(0.15),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.15),
+                            color: theme.colorScheme.primary.withOpacity(0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
