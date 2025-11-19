@@ -299,19 +299,19 @@ class CounterWidget : AppWidgetProvider() {
         }
 
         private fun setupRefreshListener(context: Context, views: RemoteViews, appWidgetId: Int) {
-            // Click on counter text to trigger refresh (like tapping date in other widgets)
-            val refreshIntent = Intent(context, TodayWidget::class.java)
-            refreshIntent.action = TodayWidget.ACTION_REFRESH
-            val refreshRequestCode = appWidgetId + 600 + System.currentTimeMillis().toInt()
-            val refreshPendingIntent = PendingIntent.getBroadcast(
+            // Click on counter text to open CalendarViewActivity
+            val calendarIntent = Intent(context, CalendarViewActivity::class.java)
+            calendarIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            val calendarRequestCode = appWidgetId + 600 + System.currentTimeMillis().toInt()
+            val calendarPendingIntent = PendingIntent.getActivity(
                 context,
-                refreshRequestCode,
-                refreshIntent,
+                calendarRequestCode,
+                calendarIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.counter_text, refreshPendingIntent)
+            views.setOnClickPendingIntent(R.id.counter_text, calendarPendingIntent)
             
-            Log.d("CounterWidget", "Counter refresh listener setup completed for widget $appWidgetId")
+            Log.d("CounterWidget", "Counter calendar listener setup completed for widget $appWidgetId")
         }
 
         private fun setupAddButtonListener(context: Context, views: RemoteViews, appWidgetId: Int) {
@@ -331,19 +331,19 @@ class CounterWidget : AppWidgetProvider() {
         }
 
         private fun setupStickClickListener(context: Context, views: RemoteViews, appWidgetId: Int) {
-            // Stick indicator to open CalendarViewActivity
-            val calendarIntent = Intent(context, CalendarViewActivity::class.java)
-            calendarIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            val calendarRequestCode = appWidgetId + 900 + System.currentTimeMillis().toInt()
-            val calendarPendingIntent = PendingIntent.getActivity(
+            // Stick indicator to trigger refresh (like tapping date in other widgets)
+            val refreshIntent = Intent(context, TodayWidget::class.java)
+            refreshIntent.action = TodayWidget.ACTION_REFRESH
+            val refreshRequestCode = appWidgetId + 900 + System.currentTimeMillis().toInt()
+            val refreshPendingIntent = PendingIntent.getBroadcast(
                 context,
-                calendarRequestCode,
-                calendarIntent,
+                refreshRequestCode,
+                refreshIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.lecture_type_indicator, calendarPendingIntent)
+            views.setOnClickPendingIntent(R.id.lecture_type_indicator, refreshPendingIntent)
             
-            Log.d("CounterWidget", "Stick click listener setup completed for widget $appWidgetId")
+            Log.d("CounterWidget", "Stick refresh listener setup completed for widget $appWidgetId")
         }
 
         private fun calculateDaysRemaining(scheduledDateStr: String): Int {
