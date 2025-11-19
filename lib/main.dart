@@ -406,20 +406,20 @@ class _MyHomePageState extends State<MyHomePage> {
         onTap: () => _onItemTapped(index),
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isSelected ? activeIcon : icon,
                 color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
-                size: 22,
+                size: 24,
               ),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
