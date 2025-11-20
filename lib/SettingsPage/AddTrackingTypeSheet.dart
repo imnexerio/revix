@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:revix/Utils/customSnackBar.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/lecture_colors.dart';
 
@@ -206,21 +207,9 @@ class _AddTrackingTypeWidgetState extends State<AddTrackingTypeWidget> {
 
                       widget.onTypeAdded(); // Call the callback to refresh the dropdown
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Row(
-                            children: [
-                              Icon(Icons.error, color: Colors.white),
-                              SizedBox(width: 8),
-                              Text('Failed to add Type'),
-                            ],
-                          ),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                      customSnackBar_error(
+                        context: context,
+                        message: 'Failed to add Type',
                       );
                     }
                   }

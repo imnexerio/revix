@@ -1102,11 +1102,9 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                   });
                   Navigator.of(context).pop();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid number (minimum 1)'),
-                      duration: Duration(seconds: 2),
-                    ),
+                  customSnackBar_error(
+                    context: context,
+                    message: 'Please enter a valid number (minimum 1)',
                   );
                 }
               },

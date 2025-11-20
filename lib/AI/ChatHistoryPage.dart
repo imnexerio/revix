@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../Utils/CustomSnackBar.dart';
 import 'ChatStorage.dart';
 import 'ChatMessage.dart';
 
@@ -237,14 +238,9 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                         _conversationIds.removeAt(index);
                         _conversationPreviews.remove(id);
                       });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Conversation deleted'),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                      customSnackBar(
+                        context: context,
+                        message: 'Conversation deleted',
                       );
                     },
                     child: Card(

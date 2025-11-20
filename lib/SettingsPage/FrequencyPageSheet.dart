@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:revix/Utils/customSnackBar.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 
 void showAddFrequencySheet(
@@ -166,21 +167,9 @@ void showAddFrequencySheet(
                       onFrequencyAdded(); // Call the callback to refresh the dropdown
 
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Row(
-                            children: [
-                              Icon(Icons.error, color: Colors.white),
-                              SizedBox(width: 8),
-                              Text('Failed to add frequency'),
-                            ],
-                          ),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                      customSnackBar_error(
+                        context: context,
+                        message: 'Failed to add frequency',
                       );
                     }
                   }
