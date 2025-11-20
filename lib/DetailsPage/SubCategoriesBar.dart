@@ -178,89 +178,81 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
             }
           }
 
-          return Stack(
+          return Column(
             children: [
-              if (_selectedCategoryCode != null)
-                Positioned.fill(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 40.0,
-                    ),
-                    child: ScaleTransition(
-                      scale: _slideAnimation,
-                      child: FadeTransition(
-                        opacity: _slideAnimation,
-                        child: LectureBar(
-                          selectedCategory: widget.selectedCategory,
-                          selectedCategoryCode: _selectedCategoryCode!,
-                        ),
-                      ),
-                    ),
-                  ),
+              Container(
+                height: 40.0,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
                 ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  height: 40.0,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: codes.length,
-                      itemBuilder: (context, index) {
-                        final code = codes[index].toString();
-                        final isSelected = _selectedCategoryCode == code;
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: codes.length,
+                    itemBuilder: (context, index) {
+                      final code = codes[index].toString();
+                      final isSelected = _selectedCategoryCode == code;
 
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _selectedCategoryCode = code;
-                                });
-                                _controller.reset();
-                                _controller.forward();
-                              },
-                              onLongPress: () => DeleteConfirmationDialog.showDeleteSubCategory(
-                                context: context,
-                                category: widget.selectedCategory,
-                                subCategory: code,
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedCategoryCode = code;
+                              });
+                              _controller.reset();
+                              _controller.forward();
+                            },
+                            onLongPress: () => DeleteConfirmationDialog.showDeleteSubCategory(
+                              context: context,
+                              category: widget.selectedCategory,
+                              subCategory: code,
+                            ),
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                                vertical: 4.0,
                               ),
-                              borderRadius: BorderRadius.circular(8.0),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12.0,
-                                  vertical: 4.0,
-                                ),
-                                child: Text(
-                                  code,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.onSurface,
-                                    fontSize: 16,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                    letterSpacing: 0.3,
-                                  ),
+                              child: Text(
+                                code,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 16,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
+              if (_selectedCategoryCode != null)
+                Expanded(
+                  child: ScaleTransition(
+                    scale: _slideAnimation,
+                    child: FadeTransition(
+                      opacity: _slideAnimation,
+                      child: LectureBar(
+                        selectedCategory: widget.selectedCategory,
+                        selectedCategoryCode: _selectedCategoryCode!,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           );
         },
