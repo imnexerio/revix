@@ -26,11 +26,8 @@ class DetailsPageState extends State<DetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.only(bottom: 88.0),
-        child: CategoriesBar(
-          isSidebarVisible: _isSidebarVisible,
-        ),
+      body: CategoriesBar(
+        isSidebarVisible: _isSidebarVisible,
       ),
     );
   }
