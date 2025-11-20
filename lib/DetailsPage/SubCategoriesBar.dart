@@ -192,7 +192,11 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
                     ? RepaintBoundary(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
-                          child: ListView.builder(
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(
+                              scrollbars: false,
+                            ),
+                            child: ListView.builder(
                     scrollDirection: Axis.vertical,
                     physics: const BouncingScrollPhysics(),
                     cacheExtent: 100,
@@ -249,6 +253,7 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
                       );
                     },
                   ),
+                            ),
                         ),
                       )
                     : const SizedBox.shrink(),
