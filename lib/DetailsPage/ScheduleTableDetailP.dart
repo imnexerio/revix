@@ -265,6 +265,7 @@ class _ScheduleTableState extends State<ScheduleTableDetailP> with SingleTickerP
               );
             },
           ),
+          const SizedBox(height: 88.0),
         ],
       ),
     );
