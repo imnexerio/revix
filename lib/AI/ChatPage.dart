@@ -550,7 +550,7 @@ class ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: colorScheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       // Add drawer for chat history
       drawer: Drawer(
         width: MediaQuery.of(context).size.width > 600 ? 350 : 280,
