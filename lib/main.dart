@@ -517,35 +517,38 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               const SizedBox(width: 12),
               // Add lecture button
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.surface.withOpacity(0.5),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.15),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _addLecture,
-                    borderRadius: BorderRadius.circular(28),
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      alignment: Alignment.center,
-                      child: Icon(Icons.add_rounded, color: theme.colorScheme.onPrimary, size: 28),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _addLecture,
+                        borderRadius: BorderRadius.circular(28),
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          alignment: Alignment.center,
+                          child: Icon(Icons.add_rounded, color: theme.colorScheme.primary, size: 28),
+                        ),
+                      ),
                     ),
                   ),
                 ),
