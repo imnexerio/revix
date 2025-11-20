@@ -4,14 +4,23 @@ import '../Utils/DeleteConfirmationDialog.dart';
 import 'SubCategoriesBar.dart';
 
 class CategoriesBar extends StatefulWidget {
+  final bool isSidebarVisible;
+
+  const CategoriesBar({
+    Key? key,
+    required this.isSidebarVisible,
+  }) : super(key: key);
+
   @override
   _CategoriesBarState createState() => _CategoriesBarState();
 }
 
-class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProviderStateMixin {
+class _CategoriesBarState extends State<CategoriesBar> with TickerProviderStateMixin {
   String? _selectedCategory;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  late AnimationController _slideController;
+  late Animation<double> _slideAnimation;
 
   // Stream subscription
   Stream<Map<String, dynamic>>? _categoriesStream;
@@ -28,6 +37,15 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
+    // Slide animation for sidebar
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
+    );
+
     // Initialize with current data if available
     _initializeSelectedCategory();
 
@@ -35,11 +53,27 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
     _categoriesStream = UnifiedDatabaseService().subjectsStream;
 
     _controller.forward();
+    if (widget.isSidebarVisible) {
+      _slideController.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(CategoriesBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSidebarVisible != oldWidget.isSidebarVisible) {
+      if (widget.isSidebarVisible) {
+        _slideController.forward();
+      } else {
+        _slideController.reverse();
+      }
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
@@ -128,14 +162,18 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
 
           return Row(
             children: [
-              Container(
-                width: 40.0,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
-                  child: ListView.builder(
+              AnimatedBuilder(
+                animation: _slideAnimation,
+                builder: (context, child) {
+                  return Container(
+                    width: 40.0 * _slideAnimation.value,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                    child: _slideAnimation.value > 0.5
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
+                            child: ListView.builder(
                     scrollDirection: Axis.vertical,
                     physics: const BouncingScrollPhysics(),
                     itemCount: subjects.length,
@@ -189,13 +227,19 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                       );
                     },
                   ),
-                ),
+                )
+                        : const SizedBox(),
+                  );
+                },
               ),
               if (_selectedCategory != null)
                 Expanded(
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: SubCategoriesBar(selectedCategory: _selectedCategory!),
+                    child: SubCategoriesBar(
+                      selectedCategory: _selectedCategory!,
+                      isSidebarVisible: widget.isSidebarVisible,
+                    ),
                   ),
                 ),
             ],

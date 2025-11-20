@@ -203,6 +203,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ChatPageState> _chatPageKey = GlobalKey<ChatPageState>();
+  final GlobalKey<DetailsPageState> _detailsPageKey = GlobalKey<DetailsPageState>();
   late final List<Widget> _widgetOptions;
 
   @override
@@ -211,7 +212,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _widgetOptions = <Widget>[
       HomePage(),
       TodayPage(),
-      DetailsPage(),
+      DetailsPage(key: _detailsPageKey),
       ChatPage(key: _chatPageKey),
     ];
     Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
@@ -439,6 +440,21 @@ class _MyHomePageState extends State<MyHomePage> {
     'Chat',
   ];
 
+  // Build hamburger menu button for Details tab
+  Widget _buildDetailsMenuButton(ThemeData theme) {
+    return IconButton(
+      icon: Icon(
+        Icons.menu,
+        color: theme.colorScheme.onSurface,
+      ),
+      onPressed: () {
+        // Toggle the sidebar visibility in DetailsPage
+        _detailsPageKey.currentState?.toggleSidebar();
+      },
+      tooltip: 'Toggle Categories',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -449,7 +465,7 @@ class _MyHomePageState extends State<MyHomePage> {
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: _selectedIndex == 3 ? null : Text(
+          title: (_selectedIndex == 3 || _selectedIndex == 2) ? null : Text(
             _pageTitles[_selectedIndex],
             style: TextStyle(
               color: theme.colorScheme.primary,
@@ -457,7 +473,11 @@ class _MyHomePageState extends State<MyHomePage> {
               fontSize: 25,
             ),
           ),
-          leading: _selectedIndex == 3 ? _buildChatMenuButton(theme) : null,
+          leading: _selectedIndex == 3 
+              ? _buildChatMenuButton(theme) 
+              : _selectedIndex == 2 
+                  ? _buildDetailsMenuButton(theme)
+                  : null,
           actions: [
             if (_selectedIndex == 3) ..._buildChatActions(theme),
             _buildProfileButton(theme),
