@@ -499,16 +499,19 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ],
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', theme),
-                            _buildNavItem(1, Icons.today_outlined, Icons.today_rounded, 'Schedule', theme),
-                            _buildNavItem(2, Icons.fiber_smart_record_outlined, Icons.fiber_smart_record_rounded, 'Details', theme),
-                            _buildNavItem(3, Icons.auto_awesome_outlined, Icons.auto_awesome_rounded, 'Chat', theme),
-                          ],
+                      child: SizedBox(
+                        height: 56,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', theme),
+                              _buildNavItem(1, Icons.today_outlined, Icons.today_rounded, 'Schedule', theme),
+                              _buildNavItem(2, Icons.fiber_smart_record_outlined, Icons.fiber_smart_record_rounded, 'Details', theme),
+                              _buildNavItem(3, Icons.auto_awesome_outlined, Icons.auto_awesome_rounded, 'Chat', theme),
+                            ],
+                          ),
                         ),
                       ),
                     ),
