@@ -178,17 +178,17 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
             }
           }
 
-          return Column(
+          return Row(
             children: [
               Container(
-                height: 40.0,
+                width: 40.0,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
                   child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
+                    scrollDirection: Axis.vertical,
                     physics: const BouncingScrollPhysics(),
                     itemCount: codes.length,
                     itemBuilder: (context, index) {
@@ -197,7 +197,7 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
 
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                        margin: const EdgeInsets.symmetric(vertical: 4.0),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -216,20 +216,24 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
                             borderRadius: BorderRadius.circular(8.0),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12.0,
-                                vertical: 4.0,
+                                horizontal: 4.0,
+                                vertical: 12.0,
                               ),
-                              child: Text(
-                                code,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface,
-                                  fontSize: 16,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                  letterSpacing: 0.3,
+                              child: RotatedBox(
+                                quarterTurns: 3,
+                                child: Text(
+                                  code,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 16,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    letterSpacing: 0.3,
+                                  ),
                                 ),
                               ),
                             ),
