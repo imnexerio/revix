@@ -15,12 +15,10 @@ class CategoriesBar extends StatefulWidget {
   _CategoriesBarState createState() => _CategoriesBarState();
 }
 
-class _CategoriesBarState extends State<CategoriesBar> with TickerProviderStateMixin {
+class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProviderStateMixin {
   String? _selectedCategory;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late AnimationController _slideController;
-  late Animation<double> _slideAnimation;
 
   // Stream subscription
   Stream<Map<String, dynamic>>? _categoriesStream;
@@ -30,20 +28,11 @@ class _CategoriesBarState extends State<CategoriesBar> with TickerProviderStateM
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-
-    // Slide animation for sidebar
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
     // Initialize with current data if available
@@ -53,27 +42,11 @@ class _CategoriesBarState extends State<CategoriesBar> with TickerProviderStateM
     _categoriesStream = UnifiedDatabaseService().subjectsStream;
 
     _controller.forward();
-    if (widget.isSidebarVisible) {
-      _slideController.forward();
-    }
-  }
-
-  @override
-  void didUpdateWidget(CategoriesBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isSidebarVisible != oldWidget.isSidebarVisible) {
-      if (widget.isSidebarVisible) {
-        _slideController.forward();
-      } else {
-        _slideController.reverse();
-      }
-    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _slideController.dispose();
     super.dispose();
   }
 
@@ -162,37 +135,39 @@ class _CategoriesBarState extends State<CategoriesBar> with TickerProviderStateM
 
           return Row(
             children: [
-              AnimatedBuilder(
-                animation: _slideAnimation,
-                builder: (context, child) {
-                  return Container(
-                    width: 40.0 * _slideAnimation.value,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                    child: _slideAnimation.value > 0.5
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
-                            child: ListView.builder(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                width: widget.isSidebarVisible ? 40.0 : 0.0,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                child: widget.isSidebarVisible
+                    ? RepaintBoundary(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
+                          child: ListView.builder(
                     scrollDirection: Axis.vertical,
                     physics: const BouncingScrollPhysics(),
+                    cacheExtent: 100,
                     itemCount: subjects.length,
                     itemBuilder: (context, index) {
                       final category = subjects[index];
                       final isSelected = _selectedCategory == category;
 
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                      return Container(
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              setState(() {
-                                _selectedCategory = category;
-                              });
-                              _controller.reset();
-                              _controller.forward();
+                              if (_selectedCategory != category) {
+                                setState(() {
+                                  _selectedCategory = category;
+                                });
+                                _controller.reset();
+                                _controller.forward();
+                              }
                             },
                             onLongPress: () => DeleteConfirmationDialog.showDeleteCategory(
                               context: context,
@@ -227,10 +202,9 @@ class _CategoriesBarState extends State<CategoriesBar> with TickerProviderStateM
                       );
                     },
                   ),
-                )
-                        : const SizedBox(),
-                  );
-                },
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
               if (_selectedCategory != null)
                 Expanded(

@@ -18,12 +18,10 @@ class SubCategoriesBar extends StatefulWidget {
   _SubCategoriesBarState createState() => _SubCategoriesBarState();
 }
 
-class _SubCategoriesBarState extends State<SubCategoriesBar> with TickerProviderStateMixin {
+class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerProviderStateMixin {
   String? _selectedCategoryCode;
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
-  late AnimationController _sidebarSlideController;
-  late Animation<double> _sidebarSlideAnimation;
   Stream<Map<String, dynamic>>? _categoriesStream;
   Map<String, dynamic>? _categoryData;
   bool _isLoading = true;
@@ -32,20 +30,11 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with TickerProvider
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _slideAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
-
-    // Sidebar slide animation
-    _sidebarSlideController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _sidebarSlideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _sidebarSlideController, curve: Curves.easeInOut),
+    _slideAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
     // Subscribe to the stream first
@@ -53,31 +42,16 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with TickerProvider
 
     // Then initialize data
     _initializeSelectedCategoryCode();
-
-    if (widget.isSidebarVisible) {
-      _sidebarSlideController.forward();
-    }
   }
 
   @override
   void didUpdateWidget(SubCategoriesBar oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Handle sidebar visibility change
-    if (widget.isSidebarVisible != oldWidget.isSidebarVisible) {
-      if (widget.isSidebarVisible) {
-        _sidebarSlideController.forward();
-      } else {
-        _sidebarSlideController.reverse();
-      }
-    }
-
     // If the category has changed, we need to update the selected code
     if (oldWidget.selectedCategory != widget.selectedCategory) {
       // Reset the selected code
-      setState(() {
-        _selectedCategoryCode = null;
-      });
+      _selectedCategoryCode = null;
 
       // Check if we already have data loaded
       if (_categoryData != null &&
@@ -86,9 +60,7 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with TickerProvider
 
         final codes = _categoryData!['subCategories'][widget.selectedCategory] as List<dynamic>;
         if (codes.isNotEmpty) {
-          setState(() {
-            _selectedCategoryCode = codes.first.toString();
-          });
+          _selectedCategoryCode = codes.first.toString();
           _controller.reset();
           _controller.forward();
         }
@@ -99,7 +71,6 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with TickerProvider
   @override
   void dispose() {
     _controller.dispose();
-    _sidebarSlideController.dispose();
     super.dispose();
   }
 
@@ -210,37 +181,39 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with TickerProvider
 
           return Row(
             children: [
-              AnimatedBuilder(
-                animation: _sidebarSlideAnimation,
-                builder: (context, child) {
-                  return Container(
-                    width: 40.0 * _sidebarSlideAnimation.value,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                    child: _sidebarSlideAnimation.value > 0.5
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
-                            child: ListView.builder(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                width: widget.isSidebarVisible ? 40.0 : 0.0,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                child: widget.isSidebarVisible
+                    ? RepaintBoundary(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
+                          child: ListView.builder(
                     scrollDirection: Axis.vertical,
                     physics: const BouncingScrollPhysics(),
+                    cacheExtent: 100,
                     itemCount: codes.length,
                     itemBuilder: (context, index) {
                       final code = codes[index].toString();
                       final isSelected = _selectedCategoryCode == code;
 
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                      return Container(
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              setState(() {
-                                _selectedCategoryCode = code;
-                              });
-                              _controller.reset();
-                              _controller.forward();
+                              if (_selectedCategoryCode != code) {
+                                setState(() {
+                                  _selectedCategoryCode = code;
+                                });
+                                _controller.reset();
+                                _controller.forward();
+                              }
                             },
                             onLongPress: () => DeleteConfirmationDialog.showDeleteSubCategory(
                               context: context,
@@ -276,15 +249,13 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with TickerProvider
                       );
                     },
                   ),
-                )
-                        : const SizedBox(),
-                  );
-                },
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
               if (_selectedCategoryCode != null)
                 Expanded(
-                  child: ScaleTransition(
-                    scale: _slideAnimation,
+                  child: RepaintBoundary(
                     child: FadeTransition(
                       opacity: _slideAnimation,
                       child: LectureBar(
