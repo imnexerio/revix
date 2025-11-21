@@ -21,7 +21,6 @@ class RecordSelectionActivity : AppCompatActivity() {
     private lateinit var categoriesRecycler: RecyclerView
     private lateinit var subcategoriesRecycler: RecyclerView
     private lateinit var recordsRecycler: RecyclerView
-    private lateinit var btnCancel: Button
 
     private lateinit var categoriesAdapter: CategoriesAdapter
     private lateinit var subcategoriesAdapter: SubcategoriesAdapter
@@ -35,6 +34,8 @@ class RecordSelectionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_record_selection)
+
+        setFinishOnTouchOutside(true)
 
         // Get widget ID
         appWidgetId = intent.getIntExtra(
@@ -56,9 +57,6 @@ class RecordSelectionActivity : AppCompatActivity() {
         categoriesRecycler = findViewById(R.id.categories_recycler)
         subcategoriesRecycler = findViewById(R.id.subcategories_recycler)
         recordsRecycler = findViewById(R.id.records_recycler)
-        btnCancel = findViewById(R.id.cancel_button)
-
-        btnCancel.setOnClickListener { finish() }
     }
 
     private fun loadAllRecords() {
@@ -253,13 +251,13 @@ class RecordSelectionActivity : AppCompatActivity() {
             val category = categories[position]
             holder.textView.text = category
 
-            // Apply selection styling
+            // Apply selection styling - just change text color and make bold
             if (category == selectedCategory) {
-                holder.textView.setBackgroundColor(0xFF3F51B5.toInt()) // Primary color
-                holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
+                holder.textView.setTextColor(resources.getColor(R.color.colorOnPrimary, null)) // Accent color
+                holder.textView.setTypeface(null, android.graphics.Typeface.BOLD)
             } else {
-                holder.textView.setBackgroundResource(android.R.drawable.btn_default)
-                holder.textView.setTextColor(0xFF000000.toInt()) // Black text
+                holder.textView.setTextColor(resources.getColor(R.color.text, null))
+                holder.textView.setTypeface(null, android.graphics.Typeface.NORMAL)
             }
 
             holder.itemView.setOnClickListener { onCategoryClick(category) }
@@ -303,13 +301,13 @@ class RecordSelectionActivity : AppCompatActivity() {
             val subcategory = subcategories[position]
             holder.textView.text = subcategory
 
-            // Apply selection styling
+            // Apply selection styling - just change text color and make bold
             if (subcategory == selectedSubcategory) {
-                holder.textView.setBackgroundColor(0xFF3F51B5.toInt()) // Primary color
-                holder.textView.setTextColor(0xFFFFFFFF.toInt()) // White text
+                holder.textView.setTextColor(resources.getColor(R.color.colorOnPrimary, null)) // Accent color
+                holder.textView.setTypeface(null, android.graphics.Typeface.BOLD)
             } else {
-                holder.textView.setBackgroundResource(android.R.drawable.btn_default)
-                holder.textView.setTextColor(0xFF000000.toInt()) // Black text
+                holder.textView.setTextColor(resources.getColor(R.color.text, null))
+                holder.textView.setTypeface(null, android.graphics.Typeface.NORMAL)
             }
 
             holder.itemView.setOnClickListener { onSubcategoryClick(subcategory) }

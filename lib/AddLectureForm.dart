@@ -999,11 +999,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                                     Navigator.of(context).pop();
                                                   } else {
                                                     // Show error feedback
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text('Please enter a valid number (minimum 1)'),
-                                                        duration: Duration(seconds: 2),
-                                                      ),
+                                                    customSnackBar_error(
+                                                      context: context,
+                                                      message: 'Please enter a valid number (minimum 1)',
                                                     );
                                                   }
                                                 },

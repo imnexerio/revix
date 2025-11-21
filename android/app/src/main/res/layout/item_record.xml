@@ -8,13 +8,15 @@
     android:paddingEnd="8dp"
     android:paddingBottom="8dp"
     android:paddingStart="0dp"
-    android:background="@drawable/rounded_background"
+    android:layout_margin="4dp"
+    android:background="@drawable/rounded_corner_background"
+    android:elevation="2dp"
     android:gravity="center_vertical">
 
     <!-- Colored line indicator for lecture type -->
     <ImageView
         android:id="@+id/lecture_type_indicator"
-        android:layout_width="5dp"
+        android:layout_width="8dp"
         android:layout_height="match_parent"
         android:src="@drawable/rounded_line_indicator"
         android:contentDescription="Lecture type indicator" />

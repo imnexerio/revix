@@ -149,6 +149,8 @@ class _TodayPageState extends State<TodayPage> {
               title: 'Unspecified Date (${data['noreminderdate']!.length})',
               onSelect: (context, record) => showLectureScheduleP(context, record),
             ),
+          // Extra scrollable space for bottom navigation
+          const SizedBox(height: 88.0),
         ],
       ),
     );

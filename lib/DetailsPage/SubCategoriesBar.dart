@@ -1,47 +1,71 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
-import 'SubCategoriesBar.dart';
+import 'LectureBar.dart';
 
-class CategoriesBar extends StatefulWidget {
+class SubCategoriesBar extends StatefulWidget {
+  final String selectedCategory;
   final bool isSidebarVisible;
 
-  const CategoriesBar({
+  const SubCategoriesBar({
     Key? key,
+    required this.selectedCategory,
     required this.isSidebarVisible,
   }) : super(key: key);
 
   @override
-  _CategoriesBarState createState() => _CategoriesBarState();
+  _SubCategoriesBarState createState() => _SubCategoriesBarState();
 }
 
-class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProviderStateMixin {
-  String? _selectedCategory;
+class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerProviderStateMixin {
+  String? _selectedCategoryCode;
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
-  // Stream subscription
+  late Animation<double> _slideAnimation;
   Stream<Map<String, dynamic>>? _categoriesStream;
-  Map<String, dynamic>? _currentData;
+  Map<String, dynamic>? _categoryData;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _slideAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
-    // Initialize with current data if available
-    _initializeSelectedCategory();
-
-    // Subscribe to the stream
+    // Subscribe to the stream first
     _categoriesStream = UnifiedDatabaseService().subjectsStream;
 
-    _controller.forward();
+    // Then initialize data
+    _initializeSelectedCategoryCode();
+  }
+
+  @override
+  void didUpdateWidget(SubCategoriesBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // If the category has changed, we need to update the selected code
+    if (oldWidget.selectedCategory != widget.selectedCategory) {
+      // Reset the selected code
+      _selectedCategoryCode = null;
+
+      // Check if we already have data loaded
+      if (_categoryData != null &&
+          _categoryData!['subCategories'] != null &&
+          _categoryData!['subCategories'][widget.selectedCategory] != null) {
+
+        final codes = _categoryData!['subCategories'][widget.selectedCategory] as List<dynamic>;
+        if (codes.isNotEmpty) {
+          _selectedCategoryCode = codes.first.toString();
+          _controller.reset();
+          _controller.forward();
+        }
+      }
+    }
   }
 
   @override
@@ -50,27 +74,44 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
     super.dispose();
   }
 
-  Future<void> _initializeSelectedCategory() async {
+  Future<void> _initializeSelectedCategoryCode() async {
     try {
       final data = await UnifiedDatabaseService().fetchCategoriesAndSubCategories();
-      if (data['subjects'].isNotEmpty) {
-        setState(() {
-          _selectedCategory = data['subjects'].first;
-          _currentData = data;
-        });
-      }
+
+      setState(() {
+        _categoryData = data;
+        _isLoading = false;
+
+        // Set the initial code for the selected category
+        if (data['subCategories'].containsKey(widget.selectedCategory)) {
+          final codes = data['subCategories'][widget.selectedCategory] as List<dynamic>;
+          if (codes.isNotEmpty) {
+            _selectedCategoryCode = codes.first.toString();
+            _controller.forward();
+          }
+        }
+      });
     } catch (e) {
-      // Handle error silently
+      // print('Error initializing Sub Category: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<Map<String, dynamic>>(
-        // Use the stream instead of future
+      body: _isLoading
+          ? Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+          strokeWidth: 3,
+        ),
+      )
+          : StreamBuilder<Map<String, dynamic>>(
         stream: _categoriesStream,
-        initialData: _currentData,
+        initialData: _categoryData,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return Center(
@@ -97,7 +138,9 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                 ],
               ),
             );
-          } else if (!snapshot.hasData || snapshot.data!['subjects'].isEmpty) {
+          } else if (!snapshot.hasData ||
+              !snapshot.data!['subCategories'].containsKey(widget.selectedCategory) ||
+              (snapshot.data!['subCategories'][widget.selectedCategory] as List).isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -105,7 +148,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                   Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'No categories found',
+                    'No sub category found for ${widget.selectedCategory}',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -117,19 +160,22 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
             );
           }
 
-          final subjects = snapshot.data!['subjects'];
+          // Prepare list of codes for the selected category
+          final codes = snapshot.data!['subCategories'][widget.selectedCategory] as List<dynamic>;
 
           // If we have data but no selected category, select the first one
-          if (_selectedCategory == null && subjects.isNotEmpty) {
-            _selectedCategory = subjects.first;
+          if (_selectedCategoryCode == null && codes.isNotEmpty) {
+            _selectedCategoryCode = codes.first.toString();
+            // Don't call setState here as it can cause rebuild loops
           }
 
           // If selected category no longer exists in the updated list
-          if (_selectedCategory != null && !subjects.contains(_selectedCategory)) {
-            if (subjects.isNotEmpty) {
-              _selectedCategory = subjects.first;
+          if (_selectedCategoryCode != null && !codes.contains(_selectedCategoryCode)) {
+            if (codes.isNotEmpty) {
+              _selectedCategoryCode = codes.first.toString();
+              // Don't call setState here as it can cause rebuild loops
             } else {
-              _selectedCategory = null;
+              _selectedCategoryCode = null;
             }
           }
 
@@ -154,10 +200,10 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                     scrollDirection: Axis.vertical,
                     physics: const BouncingScrollPhysics(),
                     cacheExtent: 100,
-                    itemCount: subjects.length,
+                    itemCount: codes.length,
                     itemBuilder: (context, index) {
-                      final category = subjects[index];
-                      final isSelected = _selectedCategory == category;
+                      final code = codes[index].toString();
+                      final isSelected = _selectedCategoryCode == code;
 
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -165,17 +211,18 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              if (_selectedCategory != category) {
+                              if (_selectedCategoryCode != code) {
                                 setState(() {
-                                  _selectedCategory = category;
+                                  _selectedCategoryCode = code;
                                 });
                                 _controller.reset();
                                 _controller.forward();
                               }
                             },
-                            onLongPress: () => DeleteConfirmationDialog.showDeleteCategory(
+                            onLongPress: () => DeleteConfirmationDialog.showDeleteSubCategory(
                               context: context,
-                              category: category,
+                              category: widget.selectedCategory,
+                              subCategory: code,
                             ),
                             borderRadius: BorderRadius.circular(8.0),
                             child: Container(
@@ -186,7 +233,7 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                               child: RotatedBox(
                                 quarterTurns: 3,
                                 child: Text(
-                                  category,
+                                  code,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,
@@ -211,13 +258,15 @@ class _CategoriesBarState extends State<CategoriesBar> with SingleTickerProvider
                       )
                     : const SizedBox.shrink(),
               ),
-              if (_selectedCategory != null)
+              if (_selectedCategoryCode != null)
                 Expanded(
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: SubCategoriesBar(
-                      selectedCategory: _selectedCategory!,
-                      isSidebarVisible: widget.isSidebarVisible,
+                  child: RepaintBoundary(
+                    child: FadeTransition(
+                      opacity: _slideAnimation,
+                      child: LectureBar(
+                        selectedCategory: widget.selectedCategory,
+                        selectedCategoryCode: _selectedCategoryCode!,
+                      ),
                     ),
                   ),
                 ),

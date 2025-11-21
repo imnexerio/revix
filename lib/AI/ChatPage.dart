@@ -3,6 +3,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:revix/AI/gemini_service.dart';
 import 'package:uuid/uuid.dart';
 import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/CustomSnackBar.dart';
+import '../Utils/customSnackBar_error.dart';
 import 'ApiKeyManager.dart';
 import 'ChatMessage.dart';
 import 'ChatStorage.dart';
@@ -118,24 +120,14 @@ class ChatPageState extends State<ChatPage> {
         await _startNewConversation(); // This will send data
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('API key saved, AI features enabled'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      customSnackBar(
+        context: context,
+        message: 'API key saved, AI features enabled',
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('AI features disabled'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      customSnackBar_error(
+        context: context,
+        message: 'AI features disabled',
       );
     }
   }
@@ -152,25 +144,10 @@ class ChatPageState extends State<ChatPage> {
           _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
           _aiEnabled = _geminiService.isAvailable;
         });
-          ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Model changed to ${ModelSelectionManager.getModelDisplayName(selectedModel)}'),
-                Text(
-                  ModelSelectionManager.getModelDescription(selectedModel),
-                  style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                ),
-              ],
-            ),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 4),
-          ),
+        customSnackBar(
+          context: context,
+          message: 'Model changed to ${ModelSelectionManager.getModelDisplayName(selectedModel)}\n${ModelSelectionManager.getModelDescription(selectedModel)}',
+          duration: const Duration(seconds: 4),
         );
       }
     }
@@ -193,11 +170,9 @@ class ChatPageState extends State<ChatPage> {
         // No messages found, start new conversation instead
         await _startNewConversation();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Conversation not found. Started a new one.'),
-              duration: Duration(seconds: 2),
-            ),
+          customSnackBar_error(
+            context: context,
+            message: 'Conversation not found. Started a new one.',
           );
         }
         return;
@@ -224,11 +199,9 @@ class ChatPageState extends State<ChatPage> {
         // No valid messages, start new conversation
         await _startNewConversation();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Conversation data corrupted. Started a new one.'),
-              duration: Duration(seconds: 2),
-            ),
+          customSnackBar_error(
+            context: context,
+            message: 'Conversation data corrupted. Started a new one.',
           );
         }
         return;
@@ -270,15 +243,10 @@ class ChatPageState extends State<ChatPage> {
       await _startNewConversation();
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading conversation: ${e.toString()}'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'OK',
-              onPressed: () {},
-            ),
-          ),
+        customSnackBar_error(
+          context: context,
+          message: 'Error loading conversation: ${e.toString()}',
+          duration: const Duration(seconds: 3),
         );
       }
     }
@@ -550,7 +518,7 @@ class ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: colorScheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       // Add drawer for chat history
       drawer: Drawer(
         width: MediaQuery.of(context).size.width > 600 ? 350 : 280,
@@ -983,15 +951,9 @@ class ChatPageState extends State<ChatPage> {
                                 }
                                 
                                 // Show confirmation
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text('Conversation deleted'),
-                                    duration: const Duration(seconds: 2),
-                                    action: SnackBarAction(
-                                      label: 'OK',
-                                      onPressed: () {},
-                                    ),
-                                  ),
+                                customSnackBar(
+                                  context: context,
+                                  message: 'Conversation deleted',
                                 );
                               }
                             }

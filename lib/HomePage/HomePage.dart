@@ -430,6 +430,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                       ? _buildTwoColumnLayout(filteredRecords, subjectDistribution, cardPadding)
                       : _buildSingleColumnLayout(filteredRecords, subjectDistribution, cardPadding),
                 ),
+                // Extra scrollable space for bottom navigation
+                const SliverPadding(padding: EdgeInsets.only(bottom: 88.0)),
               ],
             );
           },

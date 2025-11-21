@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException, EmailAuthProvider;
 import 'package:revix/Utils/CustomSnackBar.dart';
+import 'package:revix/Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseAuthService.dart';
 
 class ChangeCredentialsPage extends StatefulWidget {
@@ -325,23 +326,10 @@ class _ChangeCredentialsPageState extends State<ChangeCredentialsPage> with Tick
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
+    customSnackBar_error(
+      context: context,
+      message: message,
+      duration: const Duration(seconds: 3),
     );
   }
 
