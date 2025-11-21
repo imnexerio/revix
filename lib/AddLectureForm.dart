@@ -238,6 +238,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
           ),
           child: CustomFrequencySelector(
             initialParams: _customFrequencyParams,
+            referenceDate: todayDate != 'Unspecified' ? DateTime.parse(todayDate) : DateTime.now(),
           ),
         );
       },

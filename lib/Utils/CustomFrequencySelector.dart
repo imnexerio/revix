@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 
 class CustomFrequencySelector extends StatefulWidget {
   final Map<String, dynamic> initialParams;
+  final DateTime? referenceDate;
   const CustomFrequencySelector({
     Key? key,
     this.initialParams = const {},
+    this.referenceDate,
   }) : super(key: key);
   @override
   State<CustomFrequencySelector> createState() => _CustomFrequencySelectorState();
@@ -47,7 +49,7 @@ class _CustomFrequencySelectorState extends State<CustomFrequencySelector> {
   }
 
   void _initializeDefaultValues() {
-    _currentDate = DateTime.now();
+    _currentDate = widget.referenceDate ?? DateTime.now();
     _currentDayOfMonth = _currentDate.day;
     _currentMonth = _getMonthAbbreviation(_currentDate.month);
     _currentDayOfWeek = _getDayOfWeekName(_currentDate.weekday);

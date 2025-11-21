@@ -448,7 +448,24 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
 
     private fun openCustomFrequencySelector() {
-        val dialog = CustomFrequencySelector.newInstance(customFrequencyData)
+        // Parse todayDate to Calendar for reference, fallback to current date
+        val referenceCal = if (todayDate != "Unspecified" && todayDate.isNotEmpty()) {
+            try {
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val parsedDate = dateFormat.parse(todayDate)
+                Calendar.getInstance().apply {
+                    if (parsedDate != null) {
+                        time = parsedDate
+                    }
+                }
+            } catch (e: Exception) {
+                Calendar.getInstance()
+            }
+        } else {
+            Calendar.getInstance()
+        }
+        
+        val dialog = CustomFrequencySelector.newInstance(customFrequencyData, referenceCal)
         dialog.show(supportFragmentManager, "CustomFrequencySelector")
     }
 

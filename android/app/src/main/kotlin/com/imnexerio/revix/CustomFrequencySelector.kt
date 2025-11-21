@@ -52,11 +52,16 @@ class CustomFrequencySelector : DialogFragment() {
 
     private var listener: OnFrequencySelectedListener? = null
     private var initialParams: HashMap<String, Any> = HashMap()
+    private var referenceDate: Calendar? = null
 
     companion object {
-        fun newInstance(initialParams: HashMap<String, Any> = HashMap()): CustomFrequencySelector {
+        fun newInstance(
+            initialParams: HashMap<String, Any> = HashMap(),
+            referenceDate: Calendar? = null
+        ): CustomFrequencySelector {
             val fragment = CustomFrequencySelector()
             fragment.initialParams = initialParams
+            fragment.referenceDate = referenceDate
             return fragment
         }
     }
@@ -84,7 +89,7 @@ class CustomFrequencySelector : DialogFragment() {
 
 
     private fun initializeDefaultValues() {
-        currentDate = Calendar.getInstance()
+        currentDate = referenceDate?.clone() as? Calendar ?: Calendar.getInstance()
         currentDayOfMonth = currentDate.get(Calendar.DAY_OF_MONTH)
         currentMonth = getMonthAbbreviation(currentDate.get(Calendar.MONTH) + 1)
         currentDayOfWeek = getDayOfWeekName(currentDate.get(Calendar.DAY_OF_WEEK))
