@@ -9,6 +9,7 @@ import 'shared_components/GridLayoutUtils.dart';
 class ScheduleTable extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;
   final String title;
+  final String tableId;
   final Function(BuildContext, Map<String, dynamic>) onSelect;
   final bool initiallyExpanded;
 
@@ -16,6 +17,7 @@ class ScheduleTable extends StatefulWidget {
     Key? key,
     required this.initialRecords,
     required this.title,
+    required this.tableId,
     required this.onSelect,
     this.initiallyExpanded = true,
   }) : super(key: key);
@@ -76,8 +78,8 @@ class _ScheduleTable extends State<ScheduleTable>
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Create a unique key for this particular table based on its title
-      final String tableKey = 'schedule_table_${widget.title.replaceAll(RegExp(r'[^\w]'), '_')}';
+      // Create a unique key using the static tableId (not affected by record count changes)
+      final String tableKey = 'schedule_table_${widget.tableId}';
 
       // Load sort field (default to 'reminder_time' if not found)
       final loadedSortField = prefs.getString('${tableKey}_sort_field') ?? 'reminder_time';
@@ -138,8 +140,8 @@ class _ScheduleTable extends State<ScheduleTable>
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Create a unique key for this particular table based on its title
-      final String tableKey = 'schedule_table_${widget.title.replaceAll(RegExp(r'[^\w]'), '_')}';
+      // Create a unique key using the static tableId (not affected by record count changes)
+      final String tableKey = 'schedule_table_${widget.tableId}';
 
       // Save sort field
       await prefs.setString('${tableKey}_sort_field', currentSortField ?? 'reminder_time');
