@@ -1205,8 +1205,21 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
+        // Parse the initiation date to use as reference, fallback to today if parsing fails
+        DateTime referenceDate = DateTime.now();
+        if (widget.details['date_initiated'] != null && 
+            widget.details['date_initiated'] != 'Unspecified') {
+          try {
+            referenceDate = DateTime.parse(widget.details['date_initiated']);
+          } catch (e) {
+            // If parsing fails, use today's date
+            referenceDate = DateTime.now();
+          }
+        }
+        
         return CustomFrequencySelector(
           initialParams: initialParams,
+          referenceDate: referenceDate,
         );
       },
     );
