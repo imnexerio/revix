@@ -250,8 +250,19 @@ class AlarmService : Service() {    companion object {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        ensureForegroundNotification(intent)
         intent?.let { processIntent(it) }
         return START_NOT_STICKY
+    }
+    
+    private fun ensureForegroundNotification(intent: Intent?) {
+        val category = intent?.getStringExtra(AlarmReceiver.EXTRA_CATEGORY) ?: "Alarm"
+        val subCategory = intent?.getStringExtra(AlarmReceiver.EXTRA_SUB_CATEGORY) ?: ""
+        val recordTitle = intent?.getStringExtra(AlarmReceiver.EXTRA_RECORD_TITLE) ?: "Alarm Active"
+        val reminderTime = intent?.getStringExtra("reminder_time") ?: ""
+        
+        val notification = createForegroundNotification(category, subCategory, recordTitle, reminderTime)
+        startForeground(999, notification)
     }
     private fun processIntent(intent: Intent) {
         when (intent.action) {
@@ -309,11 +320,10 @@ class AlarmService : Service() {    companion object {
         // Start auto-stop timer only when alarm becomes active
         startAutoStopTimerForAlarm(alarm.alarmKey)
         
-        // Start as foreground service if first alarm
-        if (activeAlarms.size == 1) {
-            val notification = createForegroundNotification(alarm.category, alarm.subCategory, alarm.recordTitle, alarm.reminderTime)
-            startForeground(999, notification)
-        }
+        // Update foreground notification with current alarm details
+        val notification = createForegroundNotification(alarm.category, alarm.subCategory, alarm.recordTitle, alarm.reminderTime)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(999, notification)
 
         // Launch full-screen alarm and handle audio/vibration
         handleAudioForAlarm(alarm)
@@ -416,7 +426,13 @@ class AlarmService : Service() {    companion object {
             }
         } else {
             Log.d(TAG, "No active alarm found for: $recordTitle (alarmKey: $alarmKey)")
-        }}    private fun processNextAlarm() {
+            if (activeAlarms.isEmpty() && alarmQueue.isEmpty()) {
+                Log.d(TAG, "No active alarms - stopping service")
+                releaseWakeLock()
+                stopSelf()
+            }
+        }
+    }    private fun processNextAlarm() {
         Log.d(TAG, "Processing next alarm. Queue size: ${alarmQueue.size}")
         
         if (alarmQueue.isNotEmpty()) {

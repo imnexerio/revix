@@ -122,7 +122,8 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         val recordTitle = intent.getStringExtra(EXTRA_RECORD_TITLE) ?: ""
 
         val actionType = if (intent.action == ACTION_DISMISS_ALARM) "dismissed" else "ignored"
-        Log.d(TAG, "Alarm $actionType: $category - $subCategory - $recordTitle")        // Stop alarm service - this will convert to reminder notification
+        Log.d(TAG, "Alarm $actionType: $category - $subCategory - $recordTitle")
+        // Stop alarm service - this will convert to reminder notification
         val stopAlarmIntent = Intent(context, AlarmService::class.java).apply {
             action = "STOP_SPECIFIC_ALARM"
             putExtra(EXTRA_CATEGORY, category)
@@ -132,6 +133,11 @@ class AlarmReceiver : BroadcastReceiver() {    companion object {
         }
         context.startForegroundService(stopAlarmIntent)
 
-        Log.d(TAG, "Alarm $actionType and will be converted to reminder for: $recordTitle")
+        // Dismiss the reminder notification (if it exists)
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val notificationId = (category + subCategory + recordTitle).hashCode()
+        notificationManager.cancel(notificationId)
+
+        Log.d(TAG, "Alarm $actionType - reminder notification dismissed for: $recordTitle")
     }
 }
