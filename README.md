@@ -2,6 +2,10 @@
 
 A powerful Flutter-based task scheduling and productivity application integrated with Firebase for secure data storage and authentication, featuring AI-powered assistance for enhanced productivity.
 
+[![Build, Deploy & Release](https://github.com/imnexerio/revix/actions/workflows/build.yml/badge.svg)](https://github.com/imnexerio/revix/actions/workflows/build.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/imnexerio/revix?include_prereleases)](https://github.com/imnexerio/revix/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 ## 📋 Overview
 
 revix is a comprehensive task management solution designed to help you organize, schedule, and track your tasks efficiently. Built with Flutter and powered by Firebase, it provides a seamless cross-platform experience with real-time synchronization and advanced features.
@@ -94,6 +98,11 @@ Before getting started, ensure you have the following installed on your developm
 - **Image Picker**: Camera and gallery access
 - **URL Launcher**: External link handling
 - **Path Provider**: File system access
+
+### Desktop (Tauri)
+- **Tauri**: Rust-based framework for building lightweight desktop applications
+- **WebView**: Native webview for rendering Flutter web builds
+- **Auto-updater**: Built-in update mechanism for desktop apps
 
 ## 🚀 Installation
 
@@ -220,9 +229,26 @@ flutter run
 - ✅ **Android** (Primary platform with extra features)
 - ✅ **iOS** (Full feature support)
 - ✅ **Web** (Progressive Web App)
-- ✅ **Windows** (Desktop application)
-- ✅ **macOS** (Desktop application)
-- ✅ **Linux** (Desktop application)
+- ✅ **Windows** (Desktop application via Tauri)
+- ✅ **macOS** (Desktop application via Tauri - Intel & Apple Silicon)
+- ✅ **Linux** (Desktop application via Tauri - AppImage, DEB)
+
+## 📥 Download
+
+### Latest Release
+
+Download the latest version for your platform from the [Releases Page](https://github.com/imnexerio/revix/releases/latest):
+
+| Platform | Download | Format |
+|----------|----------|--------|
+| **Android** | [Download APK](https://github.com/imnexerio/revix/releases/latest) | `.apk` |
+| **Windows** | [Download Installer](https://github.com/imnexerio/revix/releases/latest) | `.msi` / `.exe` / Portable `.zip` |
+| **macOS (Apple Silicon)** | [Download DMG](https://github.com/imnexerio/revix/releases/latest) | `.dmg` |
+| **macOS (Intel)** | [Download DMG](https://github.com/imnexerio/revix/releases/latest) | `.dmg` |
+| **Linux** | [Download](https://github.com/imnexerio/revix/releases/latest) | `.AppImage` / `.deb` / Portable `.tar.gz` |
+| **Web** | [Live App](https://revix-e86ea.web.app) | Browser |
+
+> 💡 **Note**: All builds are automatically generated via GitHub Actions CI/CD pipeline.
 
 ## 🔧 Configuration
 
@@ -285,7 +311,112 @@ flutterfire configure --project=your-project-id
 - **Lazy Loading**: Efficient memory usage with on-demand loading
 - **Background Services**: Minimal battery impact with optimized background tasks
 
-## 🔒 Security & Privacy
+## � CI/CD Pipeline
+
+This project uses **GitHub Actions** for automated builds, deployments, and releases.
+
+### Automated Build Workflow
+
+The CI/CD pipeline is triggered on:
+- Push to `main`/`master` branches
+- Pull requests to `main`/`master` branches
+- Version tags (e.g., `v1.2.3`)
+- Manual workflow dispatch
+
+### Build Jobs
+
+| Job | Description | Outputs |
+|-----|-------------|---------|
+| **build-flutter** | Builds Android APK and Flutter Web | APK, Web artifacts |
+| **build-tauri** | Builds desktop apps for all platforms | Windows (MSI, EXE, Portable), Linux (AppImage, DEB, Portable), macOS (DMG for ARM & Intel) |
+| **release** | Creates GitHub Release with all artifacts | Automated release with binaries |
+
+### Deployment
+
+- **Firebase Hosting**: Web app is automatically deployed on push to main/master or version tags
+- **GitHub Releases**: Created automatically when pushing a version tag (e.g., `git tag v1.2.3 && git push --tags`)
+
+### Creating a New Release
+
+1. Update version in `pubspec.yaml`
+2. Commit your changes
+3. Create and push a version tag:
+   ```sh
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+4. GitHub Actions will automatically:
+   - Build all platform binaries
+   - Deploy web app to Firebase Hosting
+   - Create a GitHub Release with all artifacts
+
+### Required Secrets
+
+For maintainers setting up the CI/CD pipeline, the following secrets must be configured in GitHub repository settings.
+
+#### How to Add GitHub Secrets
+
+1. Go to your GitHub repository
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Enter the secret name and value
+5. Click **Add secret**
+
+<details>
+<summary>📱 Android Signing Secrets</summary>
+
+| Secret Name | Description | How to Get It |
+|-------------|-------------|---------------|
+| `KEYSTORE_BASE64` | Base64 encoded keystore file | Run: `base64 -i upload-keystore.jks` (macOS/Linux) or `certutil -encode upload-keystore.jks encoded.txt` (Windows) |
+| `KEYSTORE_PASSWORD` | Keystore password | The password you set when creating the keystore |
+| `KEY_ALIAS` | Key alias | The alias you specified (e.g., `upload`) |
+| `KEY_PASSWORD` | Key password | The key password (often same as keystore password) |
+| `GOOGLE_SERVICES_JSON` | Base64 encoded google-services.json | Run: `base64 -i android/app/google-services.json` |
+
+**Creating a Keystore (if you don't have one):**
+```sh
+keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+</details>
+
+<details>
+<summary>🔥 Firebase Configuration Secrets</summary>
+
+| Secret Name | Description | Where to Find It |
+|-------------|-------------|------------------|
+| `FIREBASE_SERVICE_ACCOUNT` | Service account JSON for deployment | Firebase Console → Project Settings → Service Accounts → Generate new private key |
+| `FIREBASE_PROJECT_ID` | Firebase project ID | Firebase Console → Project Settings → General → Project ID |
+| `FIREBASE_API_KEY_WEB` | Web API key | Firebase Console → Project Settings → General → Web API key |
+| `FIREBASE_API_KEY_ANDROID` | Android API key | Found in `google-services.json` under `api_key[0].current_key` |
+| `FIREBASE_APP_ID_WEB` | Web app ID | Firebase Console → Project Settings → General → Your apps → Web app ID |
+| `FIREBASE_APP_ID_ANDROID` | Android app ID | Found in `google-services.json` under `mobilesdk_app_id` |
+| `FIREBASE_MESSAGING_SENDER_ID` | Messaging sender ID | Firebase Console → Project Settings → Cloud Messaging → Sender ID |
+| `FIREBASE_AUTH_DOMAIN` | Auth domain | Format: `your-project-id.firebaseapp.com` |
+| `FIREBASE_DATABASE_URL` | Realtime Database URL | Firebase Console → Realtime Database → Copy URL |
+| `FIREBASE_STORAGE_BUCKET` | Storage bucket | Format: `your-project-id.appspot.com` |
+
+</details>
+
+<details>
+<summary>🖥️ Tauri Signing Secrets (Optional - for auto-updates)</summary>
+
+| Secret Name | Description | How to Get It |
+|-------------|-------------|---------------|
+| `TAURI_SIGNING_PRIVATE_KEY` | Tauri signing private key | Generated using Tauri CLI |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Signing key password | Password you set during key generation |
+
+**Generating Tauri Signing Keys:**
+```sh
+npm install -g @tauri-apps/cli
+tauri signer generate -w ~/.tauri/revix.key
+```
+
+This will output a public key and save the private key. Add the private key content to `TAURI_SIGNING_PRIVATE_KEY`.
+
+</details>
+
+## �🔒 Security & Privacy
 
 - **Data Encryption**: All user data is encrypted in transit and at rest
 - **Authentication**: Secure Firebase authentication
