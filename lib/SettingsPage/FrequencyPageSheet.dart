@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:revix/Utils/customSnackBar.dart';
+import 'package:revix/Utils/CustomSnackBar.dart';
 import 'package:revix/Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 
