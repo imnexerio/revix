@@ -1,8 +1,10 @@
-name: Build Flutter APK
+name: Build, Deploy & Release
 
 on:
   push:
     branches: [main, master]
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3
   pull_request:
     branches: [main, master]
   workflow_dispatch:  # Allows manual trigger
@@ -119,13 +121,60 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      # ==================== ANDROID BUILD ====================
+      
       # Step 9: Build APK
       - name: Build Release APK
         run: flutter build apk --release
+      
+      # Step 10: Rename APK with version
+      - name: Rename APK
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/revix-$VERSION.apk
 
-      # Step 10: Upload APK as artifact
+      # Step 11: Upload APK as artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/revix-*.apk
+
+      # ==================== WEB BUILD ====================
+      
+      # Step 12: Build Web
+      - name: Build Web
+        run: flutter build web --release --web-renderer html
+
+      # Step 13: Upload Web artifact
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
+      # ==================== FIREBASE HOSTING DEPLOY ====================
+      
+      # Step 14: Deploy to Firebase Hosting
+      - name: Deploy to Firebase Hosting
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      # ==================== AUTO RELEASE ====================
+      
+      # Step 15: Create GitHub Release (only on tags)
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/app/outputs/flutter-apk/revix-*.apk
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
