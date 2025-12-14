@@ -20,9 +20,7 @@
         "minHeight": 600,
         "resizable": true,
         "fullscreen": false,
-        "center": true,
-        "devtools": false,
-        "useHttpsScheme": true
+        "center": true
       }
     ],
     "security": {
