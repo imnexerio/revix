@@ -1,0 +1,39 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "revix-web",
+          "appId": "1:280116519568:android:9463c3b356ee4a0dd12e15",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "revix-web",
+          "configurations": {
+            "android": "1:280116519568:android:9463c3b356ee4a0dd12e15",
+            "ios": "1:280116519568:ios:389238cf2ca67c69d12e15",
+            "macos": "1:280116519568:ios:389238cf2ca67c69d12e15",
+            "web": "1:280116519568:web:f224de390c4b44d5d12e15",
+            "windows": "1:280116519568:web:4f6554bcc43dc38dd12e15"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
