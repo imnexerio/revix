@@ -12,6 +12,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::Manager;
+use tauri_plugin_updater::UpdaterExt;
 
 fn main() {
     tauri::Builder::default()
@@ -26,6 +27,26 @@ fn main() {
 
             // Show window when ready
             window.show().unwrap();
+
+            // Check for updates in background
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                match handle.updater().check().await {
+                    Ok(Some(update)) => {
+                        println!("Update available: {}", update.version);
+                        // Download and install the update
+                        if let Err(e) = update.download_and_install(|_, _| {}, || {}).await {
+                            eprintln!("Failed to install update: {}", e);
+                        }
+                    }
+                    Ok(None) => {
+                        println!("No updates available");
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to check for updates: {}", e);
+                    }
+                }
+            });
 
             Ok(())
         })
