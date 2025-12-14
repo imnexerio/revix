@@ -1,0 +1,71 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Revix",
+  "version": "1.2.8",
+  "identifier": "com.imnexerio.revix",
+  "build": {
+    "frontendDist": "../build/web",
+    "devUrl": "http://localhost:8080",
+    "beforeBuildCommand": "",
+    "beforeDevCommand": ""
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "title": "Revix",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "category": "Productivity",
+    "shortDescription": "Task Management App",
+    "longDescription": "Revix is a comprehensive task management solution designed to help you organize, schedule, and track your tasks efficiently.",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13",
+      "signingIdentity": null,
+      "entitlements": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/imnexerio/revix/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

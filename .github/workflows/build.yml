@@ -9,8 +9,9 @@ on:
     branches: [main, master]
   workflow_dispatch:  # Allows manual trigger
 
+# ==================== JOB 1: BUILD FLUTTER (Android + Web) ====================
 jobs:
-  build:
+  build-flutter:
     runs-on: ubuntu-latest
     
     steps:
@@ -126,36 +127,29 @@ jobs:
       # Step 9: Build APK
       - name: Build Release APK
         run: flutter build apk --release
-      
-      # Step 10: Rename APK with version
+
       - name: Rename APK
         run: |
           VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
-          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/revix-$VERSION.apk
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/revix-$VERSION-android.apk
 
-      # Step 11: Upload APK as artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/revix-*.apk
+          name: android-apk
+          path: build/app/outputs/flutter-apk/revix-*-android.apk
 
-      # ==================== WEB BUILD ====================
-      
-      # Step 12: Build Web
+      # Build Flutter Web
       - name: Build Web
-        run: flutter build web --release --web-renderer html
+        run: flutter build web --release
 
-      # Step 13: Upload Web artifact
       - name: Upload Web Build
         uses: actions/upload-artifact@v4
         with:
           name: web-build
           path: build/web
 
-      # ==================== FIREBASE HOSTING DEPLOY ====================
-      
-      # Step 14: Deploy to Firebase Hosting
+      # Deploy to Firebase Hosting
       - name: Deploy to Firebase Hosting
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -165,15 +159,142 @@ jobs:
           channelId: live
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
 
-      # ==================== AUTO RELEASE ====================
-      
-      # Step 15: Create GitHub Release (only on tags)
+  # ==================== JOB 2: BUILD TAURI DESKTOP APPS ====================
+  build-tauri:
+    needs: build-flutter
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            args: ''
+            name: 'linux'
+          - platform: 'windows-latest'
+            args: ''
+            name: 'windows'
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            name: 'macos-arm'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            name: 'macos-intel'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Download Flutter web build from previous job
+      - name: Download Web Build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
+      # Install Linux dependencies
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # Setup Rust
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      # Add macOS targets
+      - name: Add macOS targets
+        if: matrix.platform == 'macos-latest'
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
+
+      # Setup Rust cache
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      # Setup Node.js (required for Tauri CLI)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Install Tauri CLI
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
+
+      # Build Tauri app (icons are already committed in src-tauri/icons/)
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+
+      # Upload platform-specific artifacts
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+
+      - name: Upload macOS ARM artifacts
+        if: matrix.platform == 'macos-latest' && matrix.name == 'macos-arm'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-arm
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
+
+      - name: Upload macOS Intel artifacts
+        if: matrix.platform == 'macos-latest' && matrix.name == 'macos-intel'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-intel
+          path: |
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
+
+  # ==================== JOB 3: CREATE GITHUB RELEASE ====================
+  release:
+    needs: [build-flutter, build-tauri]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            build/app/outputs/flutter-apk/revix-*.apk
+            artifacts/android-apk/*.apk
+            artifacts/desktop-linux/*.deb
+            artifacts/desktop-linux/*.AppImage
+            artifacts/desktop-windows/*.msi
+            artifacts/desktop-windows/*.exe
+            artifacts/desktop-macos-arm/*.dmg
+            artifacts/desktop-macos-intel/*.dmg
           generate_release_notes: true
           draft: false
         env:

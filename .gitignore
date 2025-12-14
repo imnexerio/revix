@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# ===== TAURI BUILD FILES =====
+src-tauri/target/
+
 # IntelliJ related
 *.iml
 *.ipr
