@@ -36,8 +36,8 @@
     ],
     "resources": [],
     "category": "Productivity",
-    "shortDescription": "Task Management App",
-    "longDescription": "Revix is a comprehensive task management solution designed to help you organize, schedule, and track your tasks efficiently.",
+    "shortDescription": "AI-powered task scheduling and productivity app",
+    "longDescription": "Revix is a comprehensive task management solution designed to help you organize, schedule, and track your tasks efficiently. Built with Flutter and powered by Firebase, it provides a seamless cross-platform experience with real-time synchronization, AI-powered assistance via Gemini, and advanced features including home widgets and public holiday integration.",
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",

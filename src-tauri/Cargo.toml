@@ -1,10 +1,14 @@
 [package]
 name = "revix"
 version = "1.2.8"
-description = "Revix - A comprehensive task management solution"
+description = "A powerful task scheduling and productivity app with AI-powered assistance, built with Flutter and Firebase"
 authors = ["imnexerio"]
-license = "MIT"
+license = "AGPL-3.0"
 repository = "https://github.com/imnexerio/revix"
+homepage = "https://github.com/imnexerio/revix"
+readme = "../README.md"
+keywords = ["productivity", "task-management", "flutter", "tauri"]
+categories = ["gui"]
 edition = "2021"
 
 [build-dependencies]
