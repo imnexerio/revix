@@ -59,7 +59,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZCODBCQTJEMDUyRUUyNkIKUldScjRpNEZMYnFBYTNiclNFOTgzN2J1aWQzMDN2eWlRSG83bm1TaEwrME1WSVFnSW4rTVR5d0EK",
       "endpoints": [
         "https://github.com/imnexerio/revix/releases/latest/download/latest.json"
       ],

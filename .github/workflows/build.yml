@@ -230,6 +230,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           args: ${{ matrix.args }}
 
@@ -249,6 +251,8 @@ jobs:
           path: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
+            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
             src-tauri/target/release/Revix-portable-linux-x64.tar.gz
 
       # Create portable Windows exe (zip the exe with WebView2Loader.dll)
@@ -266,7 +270,11 @@ jobs:
           name: desktop-windows
           path: |
             src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/msi/*.msi.zip
+            src-tauri/target/release/bundle/msi/*.msi.zip.sig
             src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*.nsis.zip
+            src-tauri/target/release/bundle/nsis/*.nsis.zip.sig
             src-tauri/target/release/Revix-portable-windows-x64.zip
 
       - name: Upload macOS ARM artifacts
@@ -293,6 +301,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -301,6 +312,39 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R artifacts
 
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate latest.json for updater
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          
+          # Read signatures
+          WINDOWS_MSI_SIG=$(cat artifacts/desktop-windows/*.msi.zip.sig 2>/dev/null || echo "")
+          WINDOWS_NSIS_SIG=$(cat artifacts/desktop-windows/*.nsis.zip.sig 2>/dev/null || echo "")
+          LINUX_SIG=$(cat artifacts/desktop-linux/*.AppImage.tar.gz.sig 2>/dev/null || echo "")
+          
+          # Create latest.json
+          cat > latest.json << EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See release notes on GitHub",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "${WINDOWS_NSIS_SIG}",
+                "url": "https://github.com/imnexerio/revix/releases/download/v${VERSION}/Revix_${VERSION}_x64-setup.nsis.zip"
+              },
+              "linux-x86_64": {
+                "signature": "${LINUX_SIG}",
+                "url": "https://github.com/imnexerio/revix/releases/download/v${VERSION}/Revix_${VERSION}_amd64.AppImage.tar.gz"
+              }
+            }
+          }
+          EOF
+          cat latest.json
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -308,12 +352,19 @@ jobs:
             artifacts/android-apk/*.apk
             artifacts/desktop-linux/*.deb
             artifacts/desktop-linux/*.AppImage
+            artifacts/desktop-linux/*.AppImage.tar.gz
+            artifacts/desktop-linux/*.AppImage.tar.gz.sig
             artifacts/desktop-linux/*.tar.gz
             artifacts/desktop-windows/*.msi
+            artifacts/desktop-windows/*.msi.zip
+            artifacts/desktop-windows/*.msi.zip.sig
             artifacts/desktop-windows/*.exe
+            artifacts/desktop-windows/*.nsis.zip
+            artifacts/desktop-windows/*.nsis.zip.sig
             artifacts/desktop-windows/*.zip
             artifacts/desktop-macos-arm/*.dmg
             artifacts/desktop-macos-intel/*.dmg
+            latest.json
           generate_release_notes: true
           draft: false
         env:
