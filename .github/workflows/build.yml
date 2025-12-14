@@ -200,7 +200,7 @@ jobs:
 
       # Setup Rust
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       # Add macOS targets
       - name: Add macOS targets
