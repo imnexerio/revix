@@ -7,6 +7,9 @@ on:
     branches: [main, master]
   workflow_dispatch:  # Allows manual trigger
 
+permissions:
+  contents: write
+
 # ==================== JOB 1: BUILD FLUTTER (Android + Web) ====================
 jobs:
   build-flutter:
@@ -240,6 +243,15 @@ jobs:
           cd src-tauri/target/release
           tar -czvf Revix-portable-linux-x64.tar.gz revix
 
+      # List built files for debugging
+      - name: List Linux build outputs
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          echo "=== Bundle directory structure ==="
+          find src-tauri/target/release/bundle -type f 2>/dev/null || echo "Bundle directory not found"
+          echo "=== Release directory ==="
+          ls -la src-tauri/target/release/*.tar.gz 2>/dev/null || echo "No tar.gz files"
+
       # Upload platform-specific artifacts
       - name: Upload Linux artifacts
         if: matrix.platform == 'ubuntu-22.04'
@@ -252,6 +264,7 @@ jobs:
             src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
             src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
             src-tauri/target/release/Revix-portable-linux-x64.tar.gz
+          if-no-files-found: warn
 
       # Create portable Windows exe (zip the exe with WebView2Loader.dll)
       - name: Create Windows portable
@@ -259,6 +272,16 @@ jobs:
         run: |
           cd src-tauri/target/release
           Compress-Archive -Path revix.exe -DestinationPath Revix-portable-windows-x64.zip
+        shell: pwsh
+
+      # List built files for debugging
+      - name: List Windows build outputs
+        if: matrix.platform == 'windows-latest'
+        run: |
+          echo "=== Bundle directory structure ==="
+          Get-ChildItem -Path src-tauri/target/release/bundle -Recurse -File | Select-Object FullName
+          echo "=== Release directory ==="
+          Get-ChildItem -Path src-tauri/target/release/*.zip
         shell: pwsh
 
       - name: Upload Windows artifacts
@@ -274,6 +297,7 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.nsis.zip
             src-tauri/target/release/bundle/nsis/*.nsis.zip.sig
             src-tauri/target/release/Revix-portable-windows-x64.zip
+          if-no-files-found: warn
 
       - name: Upload macOS ARM artifacts
         if: matrix.platform == 'macos-latest' && matrix.name == 'macos-arm'
@@ -283,6 +307,7 @@ jobs:
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
+          if-no-files-found: warn
 
       - name: Upload macOS Intel artifacts
         if: matrix.platform == 'macos-latest' && matrix.name == 'macos-intel'
@@ -292,6 +317,7 @@ jobs:
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
             src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
+          if-no-files-found: warn
 
   # ==================== JOB 3: CREATE GITHUB RELEASE ====================
   release:
@@ -365,5 +391,6 @@ jobs:
             latest.json
           generate_release_notes: true
           draft: false
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
