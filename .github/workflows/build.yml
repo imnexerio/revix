@@ -2,10 +2,8 @@ name: Build, Deploy & Release
 
 on:
   push:
-    branches: [main, master]
     tags:
       - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3
-  pull_request:
     branches: [main, master]
   workflow_dispatch:  # Allows manual trigger
 
