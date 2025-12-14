@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:revix/Utils/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,8 +15,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   int _selectedThemeIndex;
   Color? _customThemeColor;
   SharedPreferences? _prefs;
-  StreamSubscription? _connectivitySubscription;
-  bool _isOnline = false;
   static const int customThemeIndex = -1; // Special index for custom theme
 
   // Preference keys - make them public so main.dart can use them
@@ -36,7 +33,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     // Register as an observer to listen for system theme changes
     WidgetsBinding.instance.addObserver(this);
     _initPreferences();
-    _setupConnectivityListener();
   }
 
   // Set initial values from cached data (called from main.dart)
@@ -51,39 +47,9 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     // We don't need to load theme from SharedPreferences here
     // since we already did that in main.dart and passed it to the constructor
 
-    // Check if user is in guest mode
-    bool isGuestMode = await GuestAuthService.isGuestMode();
-    if (isGuestMode) {
-      // For guest users, fetch theme from local storage
-      fetchRemoteTheme();
-    } else {
-      // For authenticated users, check connectivity and fetch remote theme if online
-      final connectivityResult = await Connectivity().checkConnectivity();
-      _isOnline = connectivityResult.any((result) => result != ConnectivityResult.none);
-      if (_isOnline) {
-        fetchRemoteTheme();
-      }
-    }
+    // Always try to fetch remote theme (will fail silently if offline)
+    fetchRemoteTheme();
   }
-  // Setup connectivity listener to detect when internet becomes available
-  void _setupConnectivityListener() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
-        List<ConnectivityResult> results) async {
-      // Only handle connectivity changes for authenticated users
-      bool isGuestMode = await GuestAuthService.isGuestMode();
-      if (isGuestMode) return;
-
-      final wasOffline = !_isOnline;
-      // Check if any connection is available
-      _isOnline = results.any((result) => result != ConnectivityResult.none);
-
-      // If we just came online, try to fetch the remote theme
-      if (wasOffline && _isOnline) {
-        fetchRemoteTheme();
-      }
-    });
-  }
-
   // Load theme from local storage - only used when needed
   // (not for initial app load, which is handled in main.dart)
   Future<void> _loadLocalTheme() async {
@@ -148,7 +114,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _connectivitySubscription?.cancel();
     super.dispose();
   }
 
@@ -208,9 +173,9 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
         await localDb.saveProfileData('theme_data.themeMode', _currentThemeMode.toString());
 
         return;
-      }      // Original Firebase logic for authenticated users
-      if (!_isOnline) return;
+      }
 
+      // Original Firebase logic for authenticated users (will fail silently if offline)
       final firebaseService = FirebaseDatabaseService();
       await firebaseService.saveThemeData({
         'customThemeColor': _customThemeColor?.value,
