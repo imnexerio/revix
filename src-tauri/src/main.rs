@@ -31,7 +31,15 @@ fn main() {
             // Check for updates in background
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                match handle.updater().check().await {
+                let updater = match handle.updater() {
+                    Ok(updater) => updater,
+                    Err(e) => {
+                        eprintln!("Failed to create updater: {}", e);
+                        return;
+                    }
+                };
+                
+                match updater.check().await {
                     Ok(Some(update)) => {
                         println!("Update available: {}", update.version);
                         // Download and install the update
