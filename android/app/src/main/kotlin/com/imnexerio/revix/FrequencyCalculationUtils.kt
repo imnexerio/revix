@@ -15,7 +15,7 @@ object FrequencyCalculationUtils {
 
     /**
      * Calculate next recurrence date using cached frequency data from SharedPreferences
-     * This replaces RevisionScheduler.calculateNextRecurrenceDate for better performance
+     * This replaces RecurrenceScheduler.calculateNextRecurrenceDate for better performance
      */
     fun calculateNextRecurrenceDate(
         context: Context,

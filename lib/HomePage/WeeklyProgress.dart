@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 
 class WeeklyProgressData {
   final int weekIndex;
-  final int lectures;
-  final int revisions;
+  final int entries;
+  final int reviews;
   final int missed;
   final int scheduled;
 
-  WeeklyProgressData(this.weekIndex, this.lectures, this.revisions, this.missed, this.scheduled);
+  WeeklyProgressData(this.weekIndex, this.entries, this.reviews, this.missed, this.scheduled);
 }
 
 // Updated chart creation function
@@ -34,31 +34,31 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     // Extract dates for different actions
     String? dateLearnt;
     List<dynamic>? datesRevised;
-    List<dynamic>? datesMissedRevisions;
+    List<dynamic>? datesMissedReviews;
     String? dateScheduled;
 
     if (record['details'] != null) {
       dateLearnt = record['details']['date_initiated'];
       datesRevised = record['details']['dates_updated'];
-      datesMissedRevisions = record['details']['dates_missed_reviews'];
+      datesMissedReviews = record['details']['dates_missed_reviews'];
       dateScheduled = record['details']['scheduled_date'];
     }
 
-    // Process lecture date
+    // Process entry date
     if (dateLearnt!='Unspecified')
     if (dateLearnt != null) {
-      DateTime lectureDate = DateTime.parse(dateLearnt);
-      if (lectureDate.isAfter(startDate) && lectureDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
+      DateTime entryDate = DateTime.parse(dateLearnt);
+      if (entryDate.isAfter(startDate) && entryDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
         // Calculate which week this date belongs to
-        int daysFromNextSunday = nextSunday.difference(lectureDate).inDays;
+        int daysFromNextSunday = nextSunday.difference(entryDate).inDays;
         int weekIndex = 3 - (daysFromNextSunday ~/ 7); // Reverse the index so newest week is at index 3
 
         if (weekIndex >= 0 && weekIndex < 4) {
           var currentData = weeklyData[weekIndex]!;
           weeklyData[weekIndex] = WeeklyProgressData(
             weekIndex,
-            currentData.lectures + 1,
-            currentData.revisions,
+            currentData.entries + 1,
+            currentData.reviews,
             currentData.missed,
             currentData.scheduled,
           );
@@ -66,21 +66,21 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
       }
     }
 
-    // Process revision dates
+    // Process review dates
     if (datesRevised != null) {
-      for (var revisionDateStr in datesRevised) {
-        if (revisionDateStr is String) {
-          DateTime revisionDate = DateTime.parse(revisionDateStr);
-          if (revisionDate.isAfter(startDate) && revisionDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
-            int daysFromNextSunday = nextSunday.difference(revisionDate).inDays;
+      for (var reviewDateStr in datesRevised) {
+        if (reviewDateStr is String) {
+          DateTime reviewDate = DateTime.parse(reviewDateStr);
+          if (reviewDate.isAfter(startDate) && reviewDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
+            int daysFromNextSunday = nextSunday.difference(reviewDate).inDays;
             int weekIndex = 3 - (daysFromNextSunday ~/ 7);
 
             if (weekIndex >= 0 && weekIndex < 4) {
               var currentData = weeklyData[weekIndex]!;
               weeklyData[weekIndex] = WeeklyProgressData(
                 weekIndex,
-                currentData.lectures,
-                currentData.revisions + 1,
+                currentData.entries,
+                currentData.reviews + 1,
                 currentData.missed,
                 currentData.scheduled,
               );
@@ -91,8 +91,8 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     }
 
     // Process missed reviews using dates_missed_reviews array
-    if (datesMissedRevisions != null) {
-      for (var missedDateStr in datesMissedRevisions) {
+    if (datesMissedReviews != null) {
+      for (var missedDateStr in datesMissedReviews) {
         if (missedDateStr is String) {
           DateTime missedDate = DateTime.parse(missedDateStr);
           if (missedDate.isAfter(startDate) && missedDate.isBefore(nextSunday.add(const Duration(days: 1)))) {
@@ -103,8 +103,8 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
               var currentData = weeklyData[weekIndex]!;
               weeklyData[weekIndex] = WeeklyProgressData(
                 weekIndex,
-                currentData.lectures,
-                currentData.revisions,
+                currentData.entries,
+                currentData.reviews,
                 currentData.missed + 1,
                 currentData.scheduled,
               );
@@ -140,8 +140,8 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
           var currentData = weeklyData[weekIndex]!;
           weeklyData[weekIndex] = WeeklyProgressData(
             weekIndex,
-            currentData.lectures,
-            currentData.revisions,
+            currentData.entries,
+            currentData.reviews,
             currentData.missed,
             currentData.scheduled + 1,
           );
@@ -153,8 +153,8 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
   // Calculate maxY from the data for all categories
   double maxY = 0;
   weeklyData.values.forEach((data) {
-    maxY = max(maxY, data.lectures.toDouble());
-    maxY = max(maxY, data.revisions.toDouble());
+    maxY = max(maxY, data.entries.toDouble());
+    maxY = max(maxY, data.reviews.toDouble());
     maxY = max(maxY, data.missed.toDouble());
     maxY = max(maxY, data.scheduled.toDouble());
   });
@@ -243,7 +243,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
         x: entry.key,
         barRods: [
           BarChartRodData(
-            toY: data.lectures.toDouble(),
+            toY: data.entries.toDouble(),
             color: Colors.blue,
             width: 12,
             borderRadius: const BorderRadius.only(
@@ -252,7 +252,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
             ),
           ),
           BarChartRodData(
-            toY: data.revisions.toDouble(),
+            toY: data.reviews.toDouble(),
             color: Colors.green,
             width: 12,
             borderRadius: const BorderRadius.only(

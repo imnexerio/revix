@@ -6,7 +6,7 @@ import '../Utils/customSnackBar_error.dart';
 import '../Utils/date_utils.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 
-class MarkAsDoneService {  /// Determines if the lecture should be enabled based on duration settings
+class MarkAsDoneService {  /// Determines if the entry should be enabled based on duration settings
   static bool determineEnabledStatus(Map<String, dynamic> details) {
     // Default to the current status (convert from string to bool)
     bool isEnabled = details['status'] == 'Enabled';
@@ -25,10 +25,10 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
     // Check duration conditions
     if (durationType == 'specificTimes') {
       int? numberOfTimes = durationData['numberOfTimes'] as int?;
-      int currentRevisions = (details['completion_counts'] as num?)?.toInt() ?? 0;
+      int currentCompletions = (details['completion_counts'] as num?)?.toInt() ?? 0;
 
-      // Disable if we've reached or exceeded the specified number of revisions
-      if (numberOfTimes != null && currentRevisions >= numberOfTimes) {
+      // Disable if we've reached or exceeded the specified number of completions
+      if (numberOfTimes != null && currentCompletions >= numberOfTimes) {
         isEnabled = false;
       }
     }
@@ -49,13 +49,13 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
   }
 
 
-  /// Extracts revision data from details for custom frequency
-  static Map<String, dynamic> _extractRevisionData(Map<String, dynamic> details) {
-    Map<String, dynamic> revisionData = {};
+  /// Extracts recurrence data from details for custom frequency
+  static Map<String, dynamic> _extractRecurrenceData(Map<String, dynamic> details) {
+    Map<String, dynamic> recurrenceData = {};
 
     if (details['recurrence_data'] != null) {
       final rawData = details['recurrence_data'];
-      revisionData['frequency'] = rawData['frequency'];
+      recurrenceData['frequency'] = rawData['frequency'];
 
       if (rawData['custom_params'] != null) {
         Map<String, dynamic> customParams = {};
@@ -73,11 +73,11 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
           customParams['daysOfWeek'] = List<bool>.from(rawCustomParams['daysOfWeek']);
         }
 
-        revisionData['custom_params'] = customParams;
+        recurrenceData['custom_params'] = customParams;
       }
     }
 
-    return revisionData;
+    return recurrenceData;
   }
 
   static void _showLoadingDialog(BuildContext context) {
@@ -171,17 +171,17 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       }
 
       String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
-      int missedRevision = (details['missed_counts'] as num).toInt();
+      int missedReviewCount = (details['missed_counts'] as num).toInt();
       DateTime scheduledDate = DateTime.parse(details['scheduled_date'].toString());
 
-      // Check if revision was missed (only for mark as done, not skip)
+      // Check if review was missed (only for mark as done, not skip)
       if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
-        missedRevision += 1;
+        missedReviewCount += 1;
       }
 
-      List<String> datesMissedRevisions = List<String>.from(details['dates_missed_reviews'] ?? []);
+      List<String> datesMissedReviews = List<String>.from(details['dates_missed_reviews'] ?? []);
       if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
-        datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
+        datesMissedReviews.add(scheduledDate.toIso8601String().split('T')[0]);
       }
 
       List<String> datesRevised = List<String>.from(details['dates_updated'] ?? []);
@@ -219,27 +219,27 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Calculate next scheduled date
       String dateScheduled;
       if (details['recurrence_frequency'] == 'Custom') {
-        Map<String, dynamic> revisionData = _extractRevisionData(details);
+        Map<String, dynamic> recurrenceData = _extractRecurrenceData(details);
         DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
           DateTime.parse(details['scheduled_date']),
-          revisionData,
+          recurrenceData,
         );
         dateScheduled = nextDateTime.toIso8601String().split('T')[0];
       } else {
         int completionCountForCalculation = isSkip 
             ? details['completion_counts'] 
             : details['completion_counts'] + 1;
-        dateScheduled = (await DateNextRevision.calculateNextRecurrenceDate(
+        dateScheduled = (await DateNextRecurrence.calculateNextRecurrenceDate(
           scheduledDate,
           details['recurrence_frequency'],
           completionCountForCalculation,
         )).toIso8601String().split('T')[0];
       }
 
-      // Handle negative revision case (only for mark as done)
+      // Handle negative completion case (only for mark as done)
       if (!isSkip && details['completion_counts'] < 0) {
         datesRevised = [];
-        dateScheduled = (await DateNextRevision.calculateNextRecurrenceDate(
+        dateScheduled = (await DateNextRecurrence.calculateNextRecurrenceDate(
           DateTime.parse(dateRevised),
           details['recurrence_frequency'],
           details['completion_counts'] + 1,
@@ -255,8 +255,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         newStatus = determineEnabledStatus(updatedDetails) ? 'Enabled' : 'Disabled';
       }
 
-      // Use the dedicated updateRecordRevision for partial update with status
-      bool updateSuccess = await dbService.updateRecordRevision(
+      // Use the dedicated updateRecordReview for partial update with status
+      bool updateSuccess = await dbService.updateRecordReview(
         category,
         subCategory,
         entryTitle,
@@ -266,8 +266,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         isSkip ? details['completion_counts'] : details['completion_counts'] + 1, // Don't increment for skip
         dateScheduled,
         datesRevised,
-        missedRevision,
-        datesMissedRevisions,
+        missedReviewCount,
+        datesMissedReviews,
         newStatus,
         isSkip: isSkip,
         skippedDates: skippedDates,

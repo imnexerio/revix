@@ -724,8 +724,8 @@ class UnifiedDatabaseService {
     };
   }
   
-  // Add public method for updating record revision data
-  Future<bool> updateRecordRevision(
+  // Add public method for updating record review data
+  Future<bool> updateRecordReview(
     String category,
     String subCategory,
     String entryTitle,
@@ -735,8 +735,8 @@ class UnifiedDatabaseService {
     int completionCount,
     String dateScheduled,
     List<String> datesRevised,
-    int missedRevision,
-    List<String> datesMissedRevisions,
+    int missedReviewCount,
+    List<String> datesMissedReviews,
     String status, {
     bool isSkip = false,
     List<String>? skippedDates,
@@ -748,8 +748,8 @@ class UnifiedDatabaseService {
         'reminder_time': reminderTime,
         'completion_counts': completionCount,
         'scheduled_date': dateScheduled,
-        'missed_counts': missedRevision,
-        'dates_missed_reviews': datesMissedRevisions,
+        'missed_counts': missedReviewCount,
+        'dates_missed_reviews': datesMissedReviews,
         'description': description,
         'status': status,
         'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
@@ -768,7 +768,7 @@ class UnifiedDatabaseService {
       // Update the record using the existing updateRecord method
       return await updateRecord(category, subCategory, entryTitle, updateData);
     } catch (e) {
-      _addErrorToAllControllers('Failed to update record revision: $e');
+      _addErrorToAllControllers('Failed to update record review: $e');
       return false;
     }
   }

@@ -1170,7 +1170,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
         );
         newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
       } else {
-        DateTime nextDateTime = await DateNextRevision.calculateNextRecurrenceDate(
+        DateTime nextDateTime = await DateNextRecurrence.calculateNextRecurrenceDate(
           baseDate,
           frequency,
           completionCount,

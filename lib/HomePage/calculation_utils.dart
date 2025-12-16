@@ -40,12 +40,12 @@ Color getCompletionColor(double percentage) {
 }
 
 double calculatePercentageCompletion(List<Map<String, dynamic>> records) {
-  int completedLectures = records.where((record) =>
+  int completedEntries = records.where((record) =>
   record['details']['date_initiated'] != null
   ).length;
-  int totalLectures = 322;
-  double percentageCompletion = totalLectures > 0
-      ? (completedLectures / totalLectures) * 100
+  int totalEntries = 322;
+  double percentageCompletion = totalEntries > 0
+      ? (completedEntries / totalEntries) * 100
       : 0;
   return percentageCompletion;
 }

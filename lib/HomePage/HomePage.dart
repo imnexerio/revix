@@ -687,11 +687,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   }
 
   double calculatePercentageCompletion(List<Map<String, dynamic>> records, int customCompletionTarget) {
-    int completedLectures = records.where((record) =>
+    int completedEntries = records.where((record) =>
     record['details']['date_initiated'] != null
     ).length;
     double percentageCompletion = customCompletionTarget > 0
-        ? (completedLectures / customCompletionTarget) * 100
+        ? (completedEntries / customCompletionTarget) * 100
         : 0;
     return percentageCompletion;
   }

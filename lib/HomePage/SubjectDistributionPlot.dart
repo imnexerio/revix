@@ -19,11 +19,11 @@ List<PieChartSectionData> createPieChartSections(
   ];
 
   List<PieChartSectionData> sections = [];
-  int totalLectures = subjectCounts.values.fold(0, (sum, count) => sum + count);
+  int totalEntries = subjectCounts.values.fold(0, (sum, count) => sum + count);
   int colorIndex = 0;
 
   // If there's no data, return an empty chart
-  if (totalLectures == 0) {
+  if (totalEntries == 0) {
     return [
       PieChartSectionData(
         color: Colors.grey.withOpacity(0.2),
@@ -44,7 +44,7 @@ List<PieChartSectionData> createPieChartSections(
 
   for (var entry in sortedEntries) {
     int count = entry.value;
-    double percentage = (count / totalLectures) * 100;
+    double percentage = (count / totalEntries) * 100;
     Color sectionColor = colors[colorIndex % colors.length];
 
     sections.add(

@@ -26,7 +26,7 @@ class RecordSortingUtils {
           final List<String> aRevised = List<String>.from(a['dates_updated'] ?? []);
           final List<String> bRevised = List<String>.from(b['dates_updated'] ?? []);
 
-          // Get the most recent revision date
+          // Get the most recent review date
           String? aLatest = aRevised.isNotEmpty
               ? aRevised.reduce((curr, next) => curr.compareTo(next) > 0 ? curr : next)
               : null;
@@ -48,10 +48,10 @@ class RecordSortingUtils {
           return ascending ? aMissed.compareTo(bMissed) : bMissed.compareTo(aMissed);
 
         case 'completion_counts':
-          final int aRevisions = a['completion_counts'] as int? ?? 0;
-          final int bRevisions = b['completion_counts'] as int? ?? 0;
+          final int aCompletions = a['completion_counts'] as int? ?? 0;
+          final int bCompletions = b['completion_counts'] as int? ?? 0;
 
-          return ascending ? aRevisions.compareTo(bRevisions) : bRevisions.compareTo(aRevisions);
+          return ascending ? aCompletions.compareTo(bCompletions) : bCompletions.compareTo(aCompletions);
 
         case 'reminder_time':
           final String aTime = a['reminder_time'] as String? ?? '';

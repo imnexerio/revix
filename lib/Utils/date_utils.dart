@@ -1,6 +1,6 @@
 import 'FirebaseDatabaseService.dart';
 
-class DateNextRevision {
+class DateNextRecurrence {
   static Future<DateTime> calculateNextRecurrenceDate(DateTime scheduledDate, String frequency, int completionCount) async {
     List<Map<String, String>> frequencies = await fetchFrequencies();
 

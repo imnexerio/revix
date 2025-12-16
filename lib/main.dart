@@ -539,7 +539,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Add lecture button
+              // Add entry button
               ClipRRect(
                 borderRadius: BorderRadius.circular(28),
                 child: BackdropFilter(

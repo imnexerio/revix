@@ -10,14 +10,14 @@ import android.content.SharedPreferences
  */
 class EntryColors private constructor() {
     companion object {
-        private const val PREF_COLOR_PREFIX = "lecture_color_"
+        private const val PREF_COLOR_PREFIX = "entry_color_"
         private const val PREF_INITIALIZED = "colors_initialized"
         
         /**
          * Initialize colors for all existing tracking types (call once on app start)
          */
         fun initializeColors(context: Context) {
-            val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
+            val sharedPrefs = context.getSharedPreferences("EntryColorsCache", Context.MODE_PRIVATE)
             
             // Check if already initialized
             if (sharedPrefs.getBoolean(PREF_INITIALIZED, false)) {
@@ -40,7 +40,7 @@ class EntryColors private constructor() {
                 return getDefaultTextColor()
             }
             
-            val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
+            val sharedPrefs = context.getSharedPreferences("EntryColorsCache", Context.MODE_PRIVATE)
             val cacheKey = PREF_COLOR_PREFIX + entryType
             val cachedColor = sharedPrefs.getInt(cacheKey, Int.MIN_VALUE)
             
@@ -66,7 +66,7 @@ class EntryColors private constructor() {
         fun cacheColorForNewType(context: Context, trackingType: String) {
             if (trackingType.isEmpty()) return
             
-            val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
+            val sharedPrefs = context.getSharedPreferences("EntryColorsCache", Context.MODE_PRIVATE)
             val cacheKey = PREF_COLOR_PREFIX + trackingType
             
             // Only cache if not already cached
@@ -119,7 +119,7 @@ class EntryColors private constructor() {
          * Clear all cached colors (useful for testing)
          */
         fun clearCache(context: Context) {
-            val sharedPrefs = context.getSharedPreferences("LectureColorsCache", Context.MODE_PRIVATE)
+            val sharedPrefs = context.getSharedPreferences("EntryColorsCache", Context.MODE_PRIVATE)
             val editor = sharedPrefs.edit()
             
             // Remove all cached colors and initialization flag
