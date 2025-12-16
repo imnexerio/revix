@@ -141,7 +141,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Right side with the revision graph
+                        // Right side with the recurrence graph
                         Expanded(
                           flex: 2,
                           child: Padding(

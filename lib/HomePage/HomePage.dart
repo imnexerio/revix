@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     await prefs.setString('selectedEntryType', _selectedEntryType);
   }
 
-  // Modified method to load available lecture types
+  // Modified method to load available entry types
   Future<void> _loadAvailableEntryTypes() async {
     try {
       final databaseService = FirebaseDatabaseService();

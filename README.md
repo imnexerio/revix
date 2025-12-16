@@ -33,7 +33,7 @@ revix is a comprehensive task management solution designed to help you organize,
 - Protected user data storage
 
 ### 📱 Task Management
-- **Add Lecture/Task Form**: Streamlined task creation interface
+- **Add Entry Form**: Streamlined entry creation interface
 - **Schedule Tracking**: Comprehensive scheduling system with today's view
 - **Task Details**: Detailed view for each task with full information
 - **Real-time Synchronization**: Instant updates across all devices
@@ -213,7 +213,7 @@ flutter run
 
 ### Getting Started
 1. **Sign Up/Login**: Create a new account or login with existing credentials
-2. **Add Tasks**: Use the "Add Lecture/Task" form to create new tasks
+2. **Add Entries**: Use the "Add Entry" form to create new entries
 3. **Schedule View**: Check your daily schedule in the "Today" section
 4. **AI Assistant**: Access the AI chat for productivity tips and task suggestions
 

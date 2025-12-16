@@ -68,7 +68,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
         });
       }
 
-      // Add revision dates
+      // Add recurrence dates
       if (details.containsKey('dates_updated') && details['dates_updated'] is List) {
         for (var dateStr in (details['dates_updated'] as List)) {
           final dateRevised = DateTime.parse(dateStr.toString());
