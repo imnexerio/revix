@@ -40,7 +40,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
     if (record['details'] != null) {
       dateLearnt = record['details']['date_initiated'];
       datesRevised = record['details']['dates_updated'];
-      datesMissedRevisions = record['details']['dates_missed_revisions'];
+      datesMissedRevisions = record['details']['dates_missed_reviews'];
       dateScheduled = record['details']['scheduled_date'];
     }
 
@@ -90,7 +90,7 @@ BarChartData createBarChartWeeklyData(List<Map<String, dynamic>> records) {
       }
     }
 
-    // Process missed revisions using dates_missed_revisions array
+    // Process missed reviews using dates_missed_reviews array
     if (datesMissedRevisions != null) {
       for (var missedDateStr in datesMissedRevisions) {
         if (missedDateStr is String) {

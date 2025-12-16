@@ -4,9 +4,9 @@ int calculateMonthlyMissed(List<Map<String, dynamic>> records) {
 
   int count = 0;
   for (var record in records) {
-    if (record['details']['dates_missed_revisions'] == null) continue;
+    if (record['details']['dates_missed_reviews'] == null) continue;
 
-    List<dynamic> missedDates = record['details']['dates_missed_revisions'];
+    List<dynamic> missedDates = record['details']['dates_missed_reviews'];
     for (var dateStr in missedDates) {
       final date = DateTime.parse(dateStr);
       if (date.isAfter(startOfMonth) || date.isAtSameMomentAs(startOfMonth)) {
@@ -24,9 +24,9 @@ int calculateWeeklyMissed(List<Map<String, dynamic>> records) {
 
   int count = 0;
   for (var record in records) {
-    if (record['details']['dates_missed_revisions'] == null) continue;
+    if (record['details']['dates_missed_reviews'] == null) continue;
 
-    List<dynamic> missedDates = record['details']['dates_missed_revisions'];
+    List<dynamic> missedDates = record['details']['dates_missed_reviews'];
     for (var dateStr in missedDates) {
       final date = DateTime.parse(dateStr);
       if (date.isAfter(startOfDay) || date.isAtSameMomentAs(startOfDay)) {
@@ -43,9 +43,9 @@ int calculateDailyMissed(List<Map<String, dynamic>> records) {
 
   int count = 0;
   for (var record in records) {
-    if (record['details']['dates_missed_revisions'] == null) continue;
+    if (record['details']['dates_missed_reviews'] == null) continue;
 
-    List<dynamic> missedDates = record['details']['dates_missed_revisions'];
+    List<dynamic> missedDates = record['details']['dates_missed_reviews'];
     for (var dateStr in missedDates) {
       final date = DateTime.parse(dateStr);
       if (date.isAfter(startOfDay) || date.isAtSameMomentAs(startOfDay)) {

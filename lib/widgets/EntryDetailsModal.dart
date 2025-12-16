@@ -287,7 +287,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                         aspectRatio: 1.0,
                         child: RecurrenceRadarChart(
                           dateInitiated: widget.details['date_initiated'],
-                          datesMissedReviews: List.from(widget.details['dates_missed_revisions'] ?? []),
+                          datesMissedReviews: List.from(widget.details['dates_missed_reviews'] ?? []),
                           datesReviewed: List.from(widget.details['dates_updated'] ?? []),
                           datesSkipped: List.from(widget.details['skipped_dates'] ?? []),
                         ),
@@ -397,7 +397,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                             },
                           );
 
-                          List<String> datesMissedReviews = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
+                          List<String> datesMissedReviews = List<String>.from(widget.details['dates_missed_reviews'] ?? []);
                           List<String> datesReviewed = List<String>.from(widget.details['dates_updated'] ?? []);
                           
                           // Use the already calculated dateScheduled value (no need to recalculate)
@@ -422,7 +422,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                             'completion_counts': completionCount,
                             'scheduled_date': finalDateScheduled,
                             'missed_counts': widget.details['missed_counts'],
-                            'dates_missed_revisions': datesMissedReviews,
+                            'dates_missed_reviews': datesMissedReviews,
                             'recurrence_frequency': recurrenceFrequency,
                             'status': isEnabled ? 'Enabled' : 'Disabled',
                             'dates_updated': datesReviewed,
@@ -1170,7 +1170,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
         );
         newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
       } else {
-        DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
+        DateTime nextDateTime = await DateNextRevision.calculateNextRecurrenceDate(
           baseDate,
           frequency,
           completionCount,

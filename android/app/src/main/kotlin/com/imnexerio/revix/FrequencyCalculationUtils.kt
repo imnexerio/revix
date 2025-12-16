@@ -14,13 +14,13 @@ import java.util.*
 object FrequencyCalculationUtils {
 
     /**
-     * Calculate next revision date using cached frequency data from SharedPreferences
-     * This replaces RevisionScheduler.calculateNextRevisionDate for better performance
+     * Calculate next recurrence date using cached frequency data from SharedPreferences
+     * This replaces RevisionScheduler.calculateNextRecurrenceDate for better performance
      */
-    fun calculateNextRevisionDate(
+    fun calculateNextRecurrenceDate(
         context: Context,
         frequency: String,
-        noRevision: Int,
+        completionCount: Int,
         scheduledDate: Date,
         callback: (String) -> Unit
     ) {
@@ -30,7 +30,7 @@ object FrequencyCalculationUtils {
                     val intervals = frequencyData[frequency] ?: emptyList()
                     
                     if (intervals.isNotEmpty()) {
-                        val nextInterval = if (noRevision < intervals.size) intervals[noRevision] else intervals.last()
+                        val nextInterval = if (completionCount < intervals.size) intervals[completionCount] else intervals.last()
                         
                         val calendar = Calendar.getInstance()
                         calendar.time = scheduledDate
@@ -47,7 +47,7 @@ object FrequencyCalculationUtils {
                 callback(nextDate)
                 
             } catch (e: Exception) {
-                Log.e("FrequencyCalculationUtils", "Error calculating next revision date: ${e.message}")
+                Log.e("FrequencyCalculationUtils", "Error calculating next recurrence date: ${e.message}")
                 val nextDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(scheduledDate)
                 callback(nextDate)
             }
@@ -56,7 +56,7 @@ object FrequencyCalculationUtils {
 
     /**
      * Fetch custom frequencies directly from SharedPreferences
-     * This replaces the need for RevisionScheduler by using cached data
+     * This replaces the need for RecurrenceScheduler by using cached data
      */
     fun fetchCustomFrequencies(context: Context, callback: (Map<String, List<Int>>) -> Unit) {
         GlobalScope.launch(Dispatchers.IO) {

@@ -2,15 +2,15 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 LineChartData createLineChartData(List<Map<String, dynamic>> records) {
-  Map<String, int> lectureCounts = {};
-  Map<String, int> revisionCounts = {};
+  Map<String, int> entryCounts = {};
+  Map<String, int> reviewCounts = {};
 
   DateTime today = DateTime.now();
   for (int i = 0; i < 14; i++) {
     DateTime date = today.subtract(Duration(days: i));
     String dateStr = date.toIso8601String().split('T')[0];
-    lectureCounts[dateStr] = 0;
-    revisionCounts[dateStr] = 0;
+    entryCounts[dateStr] = 0;
+    reviewCounts[dateStr] = 0;
   }
 
   for (var record in records) {
@@ -18,32 +18,32 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
     List<dynamic>? datesRevised = record['details']['dates_updated'];
     // print('record: $record');
 
-    if (dateLearnt != null && lectureCounts.containsKey(dateLearnt)) {
-      lectureCounts[dateLearnt] = lectureCounts[dateLearnt]! + 1;
+    if (dateLearnt != null && entryCounts.containsKey(dateLearnt)) {
+      entryCounts[dateLearnt] = entryCounts[dateLearnt]! + 1;
     }
 
     if (datesRevised != null) {
       for (var dateRevised in datesRevised) {
         String dateRevisedStr = DateTime.parse(dateRevised).toIso8601String().split('T')[0];
-        if (revisionCounts.containsKey(dateRevisedStr)) {
-          revisionCounts[dateRevisedStr] = revisionCounts[dateRevisedStr]! + 1;
+        if (reviewCounts.containsKey(dateRevisedStr)) {
+          reviewCounts[dateRevisedStr] = reviewCounts[dateRevisedStr]! + 1;
         }
       }
     }
   }
 
-  List<FlSpot> lectureSpots = [];
-  List<FlSpot> revisionSpots = [];
+  List<FlSpot> entrySpots = [];
+  List<FlSpot> reviewSpots = [];
 
   int index = 6; // Start from the rightmost position
-  lectureCounts.forEach((date, count) {
-    lectureSpots.add(FlSpot(index.toDouble(), count.toDouble()));
+  entryCounts.forEach((date, count) {
+    entrySpots.add(FlSpot(index.toDouble(), count.toDouble()));
     index--;
   });
 
   index = 6; // Start from the rightmost position
-  revisionCounts.forEach((date, count) {
-    revisionSpots.add(FlSpot(index.toDouble(), count.toDouble()));
+  reviewCounts.forEach((date, count) {
+    reviewSpots.add(FlSpot(index.toDouble(), count.toDouble()));
     index--;
   });
 
@@ -74,7 +74,7 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
     ),
     lineBarsData: [
       LineChartBarData(
-        spots: lectureSpots,
+        spots: entrySpots,
         isCurved: true,
         color: Colors.blue,
         barWidth: 3,
@@ -85,7 +85,7 @@ LineChartData createLineChartData(List<Map<String, dynamic>> records) {
         ),
       ),
       LineChartBarData(
-        spots: revisionSpots,
+        spots: reviewSpots,
         isCurved: true,
         color: Colors.orange,
         barWidth: 3,

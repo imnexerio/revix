@@ -179,7 +179,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         missedRevision += 1;
       }
 
-      List<String> datesMissedRevisions = List<String>.from(details['dates_missed_revisions'] ?? []);
+      List<String> datesMissedRevisions = List<String>.from(details['dates_missed_reviews'] ?? []);
       if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
         datesMissedRevisions.add(scheduledDate.toIso8601String().split('T')[0]);
       }
@@ -229,7 +229,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         int completionCountForCalculation = isSkip 
             ? details['completion_counts'] 
             : details['completion_counts'] + 1;
-        dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+        dateScheduled = (await DateNextRevision.calculateNextRecurrenceDate(
           scheduledDate,
           details['recurrence_frequency'],
           completionCountForCalculation,
@@ -239,7 +239,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Handle negative revision case (only for mark as done)
       if (!isSkip && details['completion_counts'] < 0) {
         datesRevised = [];
-        dateScheduled = (await DateNextRevision.calculateNextRevisionDate(
+        dateScheduled = (await DateNextRevision.calculateNextRecurrenceDate(
           DateTime.parse(dateRevised),
           details['recurrence_frequency'],
           details['completion_counts'] + 1,

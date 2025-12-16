@@ -433,19 +433,19 @@ class FirebaseDatabaseService {
     }
   }
 
-  /// Saves completion target for a lecture type
-  Future<void> saveHomePageCompletionTarget(String lectureType, String targetValue) async {
+  /// Saves completion target for an entry type
+  Future<void> saveHomePageCompletionTarget(String entryType, String targetValue) async {
     if (await GuestAuthService.isGuestMode()) {
       // Use local database for guest users
       final localDb = LocalDatabaseService();
-      await localDb.saveProfileData('home_page.completionTargets.$lectureType', targetValue);
+      await localDb.saveProfileData('home_page.completionTargets.$entryType', targetValue);
     } else {
       // Use Firebase for authenticated users
       User? user = _auth.currentUser;
       if (user == null) throw Exception('No authenticated user');
       
       final ref = _database.ref('users/${user.uid}/profile_data/home_page/completionTargets');
-      await ref.update({lectureType: targetValue});
+      await ref.update({entryType: targetValue});
     }
   }
 

@@ -150,10 +150,10 @@ class AnimatedCardDetailP extends StatelessWidget {
                               // Add a key to force rebuild of RecurrenceRadarChart when data changes
                               child: RecurrenceRadarChart(
                                 key: ValueKey(
-                                    'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_revisions'] as List?)?.length ?? 0}_${(record['skipped_dates'] as List?)?.length ?? 0}'
+                                    'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_reviews'] as List?)?.length ?? 0}_${(record['skipped_dates'] as List?)?.length ?? 0}'
                                 ),
                                 dateInitiated: record['date_initiated'],
-                                datesMissedReviews: _safeListConversion(record['dates_missed_revisions']),
+                                datesMissedReviews: _safeListConversion(record['dates_missed_reviews']),
                                 datesReviewed: _safeListConversion(record['dates_updated']),
                                 datesSkipped: _safeListConversion(record['skipped_dates']),
                                 showLabels: false,

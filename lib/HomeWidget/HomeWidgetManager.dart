@@ -217,11 +217,11 @@ class HomeWidgetService {
         final title = uri?.queryParameters['title'] ?? '';
         final startTimestamp = uri?.queryParameters['startTimestamp'] ?? '';
         final reminderTime = uri?.queryParameters['reminderTime'] ?? '';
-        final lectureType = uri?.queryParameters['lectureType'] ?? '';
+        final entryType = uri?.queryParameters['entryType'] ?? '';
         final todayDate = uri?.queryParameters['todayDate'] ?? '';
         final dateScheduled = uri?.queryParameters['dateScheduled'] ?? '';
         final description = uri?.queryParameters['description'] ?? '';
-        final revisionFrequency = uri?.queryParameters['revisionFrequency'] ?? '';
+        final recurrenceFrequency = uri?.queryParameters['recurrenceFrequency'] ?? '';
         final durationDataStr = uri?.queryParameters['durationData'] ?? '{}';
         final customFrequencyParamsStr = uri?.queryParameters['customFrequencyParams'] ?? '{}';
         final alarmTypeStr = uri?.queryParameters['alarmType'] ?? '0';
@@ -264,11 +264,11 @@ class HomeWidgetService {
                 title,
                 startTimestamp,
                 reminderTime,
-                lectureType,
+                entryType,
                 todayDate,
                 dateScheduled,
                 description,
-                revisionFrequency,
+                recurrenceFrequency,
                 durationData,
                 customFrequencyParams,
                 alarmType,

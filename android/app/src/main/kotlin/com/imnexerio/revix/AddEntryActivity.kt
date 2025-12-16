@@ -794,7 +794,7 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
 
                 val currentCalendar = Calendar.getInstance()
                 val currentDate = dateFormat.parse(dateFormat.format(currentCalendar.time))
-                FrequencyCalculationUtils.calculateNextRevisionDate(
+                FrequencyCalculationUtils.calculateNextRecurrenceDate(
                     this,
                     recurrenceFrequency,
                     0, // Initial recurrence
@@ -1009,11 +1009,11 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
                     .appendQueryParameter("title", title)
                     .appendQueryParameter("startTimestamp", recordData["start_timestamp"]?.toString() ?: "")
                     .appendQueryParameter("reminderTime", reminderTime)
-                    .appendQueryParameter("lectureType", entryType)
+                    .appendQueryParameter("entryType", entryType)
                     .appendQueryParameter("todayDate", todayDate)
                     .appendQueryParameter("dateScheduled", dateScheduled)
                     .appendQueryParameter("description", description)
-                    .appendQueryParameter("revisionFrequency", recurrenceFrequency)
+                    .appendQueryParameter("recurrenceFrequency", recurrenceFrequency)
                     .appendQueryParameter("durationData", durationDataJson)
                     .appendQueryParameter("customFrequencyParams", customFrequencyParamsJson)
                     .appendQueryParameter("alarmType", alarmType.toString())

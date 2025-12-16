@@ -90,9 +90,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
         }
       }
 
-      // Add missed revision dates
-      if (details.containsKey('dates_missed_revisions') && details['dates_missed_revisions'] is List) {
-        for (var dateStr in (details['dates_missed_revisions'] as List)) {
+      // Add missed review dates
+      if (details.containsKey('dates_missed_reviews') && details['dates_missed_reviews'] is List) {
+        for (var dateStr in (details['dates_missed_reviews'] as List)) {
           final dateMissed = DateTime.parse(dateStr.toString());
           final key = DateTime(dateMissed.year, dateMissed.month, dateMissed.day);
 

@@ -155,7 +155,7 @@ class _AddEntryFormState extends State<AddEntryForm> {
       }
 
       // For standard frequencies
-      DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
+      DateTime initialDate = await DateNextRevision.calculateNextRecurrenceDate(
         DateTime.parse(todayDate),
         _recurrenceFrequency,
         0,
@@ -857,7 +857,7 @@ class _AddEntryFormState extends State<AddEntryForm> {
                             }
 
                             // Use unified method for all frequency types
-                            DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
+                            DateTime initialDate = await DateNextRevision.calculateNextRecurrenceDate(
                               DateTime.parse(todayDate),
                               _recurrenceFrequency,
                               0,

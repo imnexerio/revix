@@ -65,7 +65,7 @@ The schedule data is in JSON format with this structure:
   • completion_counts: Number of times completed (-1 means not started)
   • missed_counts: Number of times missed
   • dates_updated: Array of completion timestamps
-  • dates_missed_revisions: Array of missed dates
+  • dates_missed_reviews: Array of missed dates
   • last_mark_done: Last completion date
   • skipped_dates: Dates when user skipped the task
 

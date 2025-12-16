@@ -1,7 +1,7 @@
 import 'FirebaseDatabaseService.dart';
 
 class DateNextRevision {
-  static Future<DateTime> calculateNextRevisionDate(DateTime scheduledDate, String frequency, int noRevision) async {
+  static Future<DateTime> calculateNextRecurrenceDate(DateTime scheduledDate, String frequency, int completionCount) async {
     List<Map<String, String>> frequencies = await fetchFrequencies();
 
     // Check if the frequency is in the fetched frequencies
@@ -12,7 +12,7 @@ class DateNextRevision {
 
     if (customFrequency['title']!.isNotEmpty) {
       List<int> intervals = customFrequency['frequency']!.split(',').map((e) => int.parse(e.trim())).toList();
-      int additionalDays = (noRevision < intervals.length) ? intervals[noRevision] : intervals.last;
+      int additionalDays = (completionCount < intervals.length) ? intervals[completionCount] : intervals.last;
       return scheduledDate.add(Duration(days: additionalDays));
     }
 
