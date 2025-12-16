@@ -108,12 +108,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       },
     );
   }
-  /// Main function to mark a lecture as done
+  /// Main function to mark an entry as done
   static Future<void> markAsDone({
     BuildContext? context, // Made nullable for background processing
     required String category,
     required String subCategory,
-    required String lectureNo,
+    required String entryTitle,
     bool isSkip = false,
     bool isWidget = false, // New parameter to indicate if request is from widget
   }) async {
@@ -126,12 +126,12 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Get the unified database service instance
       final UnifiedDatabaseService dbService = UnifiedDatabaseService();
       
-      // Fetch current lecture data from database
-      Map<String, dynamic>? details = await dbService.getDataAtLocation(category, subCategory, lectureNo);
+      // Fetch current entry data from database
+      Map<String, dynamic>? details = await dbService.getDataAtLocation(category, subCategory, entryTitle);
       
       if (details == null) {
         if (context != null) Navigator.pop(context);
-        throw 'Lecture data not found';
+        throw 'Entry data not found';
       }
 
       // Check if not enabled
@@ -155,7 +155,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Handle unspecified date_initiated case
       if (details['date_initiated'] == 'Unspecified') {
         if (!isSkip) {
-          await dbService.deleteRecord(category, subCategory, lectureNo);
+          await dbService.deleteRecord(category, subCategory, entryTitle);
         }
         if (context != null) {
           Navigator.pop(context);
@@ -163,8 +163,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
           customSnackBar(
             context: context,
             message: isSkip 
-                ? 'Cannot skip lecture with unspecified date'
-                : '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
+                ? 'Cannot skip entry with unspecified date'
+                : '$category $subCategory $entryTitle has been marked as done and moved to deleted data.',
           );
         }
         return;
@@ -201,7 +201,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       // Handle 'No Repetition' case
       if (details['recurrence_frequency'] == 'No Repetition') {
         if (!isSkip) {
-          await dbService.deleteRecord(category, subCategory, lectureNo);
+          await dbService.deleteRecord(category, subCategory, entryTitle);
         }
         if (context != null) {
           Navigator.pop(context);
@@ -209,8 +209,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
           customSnackBar(
             context: context,
             message: isSkip 
-                ? 'Cannot skip lecture with no repetition'
-                : '$category $subCategory $lectureNo has been marked as done and moved to deleted data.',
+                ? 'Cannot skip entry with no repetition'
+                : '$category $subCategory $entryTitle has been marked as done and moved to deleted data.',
           );
         }
         return;
@@ -259,7 +259,7 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
       bool updateSuccess = await dbService.updateRecordRevision(
         category,
         subCategory,
-        lectureNo,
+        entryTitle,
         isSkip ? details['date_updated'] ?? '' : dateRevised, // Don't update date_updated for skip
         details['description'] ?? '',
         details['reminder_time'] ?? '',
@@ -287,8 +287,8 @@ class MarkAsDoneService {  /// Determines if the lecture should be enabled based
         customSnackBar(
           context: context,
           message: isSkip 
-              ? '$category $subCategory $lectureNo skipped and rescheduled for $dateScheduled'
-              : '$category $subCategory $lectureNo done and scheduled for $dateScheduled',
+              ? '$category $subCategory $entryTitle skipped and rescheduled for $dateScheduled'
+              : '$category $subCategory $entryTitle done and scheduled for $dateScheduled',
         );
       }
     } catch (e) {

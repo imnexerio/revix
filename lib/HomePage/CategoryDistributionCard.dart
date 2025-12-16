@@ -7,7 +7,7 @@ Widget buildCategoryDistributionCard(Map<String,
     int> subjectDistribution,
     double cardPadding,
     BuildContext context,
-    {required Function() onTitleTap,required String selectedLectureType}) {
+    {required Function() onTitleTap,required String selectedEntryType}) {
   // Get the screen width to calculate responsive sizes
   final screenWidth = MediaQuery.of(context).size.width;
 
@@ -42,7 +42,7 @@ Widget buildCategoryDistributionCard(Map<String,
           child: Row(
             children: [
               Text(
-                'Subject Distribution: $selectedLectureType',
+                'Category Distribution: $selectedEntryType',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,

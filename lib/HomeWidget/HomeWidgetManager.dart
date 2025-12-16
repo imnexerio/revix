@@ -176,7 +176,7 @@ class HomeWidgetService {
               context: null, // Background processing - no UI context
               category: category,
               subCategory: subCategory,
-              lectureNo: recordTitle,
+              entryTitle: recordTitle,
               isSkip: isSkip,
               isWidget: true, // Indicate this is a widget request
             );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
-import 'LectureBar.dart';
+import 'EntryBar.dart';
 
 class SubCategoriesBar extends StatefulWidget {
   final String selectedCategory;
@@ -263,7 +263,7 @@ class _SubCategoriesBarState extends State<SubCategoriesBar> with SingleTickerPr
                   child: RepaintBoundary(
                     child: FadeTransition(
                       opacity: _slideAnimation,
-                      child: LectureBar(
+                      child: EntryBar(
                         selectedCategory: widget.selectedCategory,
                         selectedCategoryCode: _selectedCategoryCode!,
                       ),

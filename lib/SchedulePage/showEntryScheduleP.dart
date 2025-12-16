@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Utils/MarkAsDoneService.dart';
-import '../Utils/lecture_colors.dart';
-import 'RevisionGraph.dart';
+import '../Utils/entry_colors.dart';
+import 'RecurrenceGraph.dart';
 
 
-void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
+void showEntryScheduleP(BuildContext context, Map<String, dynamic> details) {
   String description = details['description'] ?? '';
 
   showModalBottomSheet(
@@ -42,7 +42,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                   ),
                 ),
 
-                // Header with category and lecture info
+                // Header with category and entry info
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Row(
@@ -92,7 +92,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                                   width: 12,
                                   height: 12,
                                   decoration: BoxDecoration(
-                                    color: LectureColors.generateColorFromString(details['entry_type']?.toString() ?? 'default'),
+                                    color: EntryColors.generateColorFromString(details['entry_type']?.toString() ?? 'default'),
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -101,7 +101,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                                   details['entry_type']?.toString() ?? 'N/A',
                                   style: TextStyle(
                                     fontSize: 16,
-                                    color: LectureColors.generateColorFromString(details['entry_type']?.toString() ?? 'default'),
+                                    color: EntryColors.generateColorFromString(details['entry_type']?.toString() ?? 'default'),
                                   ),
                                 ),
                                 Text(
@@ -146,10 +146,10 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                             ),
                             child: AspectRatio(
                               aspectRatio: 1.0, // Keep the chart perfectly circular
-                              child: RevisionRadarChart(
-                                dateLearnt: details['date_initiated'],
-                                datesMissedRevisions: List.from(details['dates_missed_revisions'] ?? []),
-                                datesRevised: List.from(details['dates_updated'] ?? []),
+                              child: RecurrenceRadarChart(
+                                dateInitiated: details['date_initiated'],
+                                datesMissedReviews: List.from(details['dates_missed_revisions'] ?? []),
+                                datesReviewed: List.from(details['dates_updated'] ?? []),
                                 datesSkipped: List.from(details['skipped_dates'] ?? []),
                               ),
                             ),
@@ -216,7 +216,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               context: context,
                               category: details['category'],
                               subCategory: details['sub_category'],
-                              lectureNo: details['record_title'],
+                              entryTitle: details['record_title'],
                               isSkip: true,
                             ),
                             style: ElevatedButton.styleFrom(
@@ -240,7 +240,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
                               context: context,
                               category: details['category'],
                               subCategory: details['sub_category'],
-                              lectureNo: details['record_title'],
+                              entryTitle: details['record_title'],
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -267,7 +267,7 @@ void showLectureScheduleP(BuildContext context, Map<String, dynamic> details) {
 }
 
 Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
-  String revisionFrequency = details['recurrence_frequency'];
+  String recurrenceFrequency = details['recurrence_frequency'];
   String completionValue = _getCompletionValue(details);
 
   return Container(
@@ -295,7 +295,7 @@ Widget _buildStatusCard(BuildContext context, Map<String, dynamic> details) {
         _buildStatusItem(
           context,
           "Frequency",
-          revisionFrequency,
+          recurrenceFrequency,
           Icons.refresh,
           Theme.of(context).colorScheme.primary,
         ),

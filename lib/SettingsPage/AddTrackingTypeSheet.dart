@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:revix/Utils/CustomSnackBar.dart';
 import 'package:revix/Utils/customSnackBar_error.dart';
 import '../Utils/FirebaseDatabaseService.dart';
-import '../Utils/lecture_colors.dart';
+import '../Utils/entry_colors.dart';
 
 // lib/SettingsPage/AddTrackingTypeSheet.dart
 void showAddtrackingTypeSheet(
@@ -150,7 +150,7 @@ class _AddTrackingTypeWidgetState extends State<AddTrackingTypeWidget> {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: LectureColors.generateColorFromString(_currentText.trim()),
+                                  color: EntryColors.generateColorFromString(_currentText.trim()),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -195,7 +195,7 @@ class _AddTrackingTypeWidgetState extends State<AddTrackingTypeWidget> {
                       await firebaseService.addCustomTrackingType(trackingTitle);
 
                       // Cache color for the new tracking type
-                      LectureColors.cacheColorForNewType(trackingTitle);
+                      EntryColors.cacheColorForNewType(trackingTitle);
 
                       widget.titleController.clear();
                       Navigator.pop(context);

@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:revix/AddLectureForm.dart';
+import 'package:revix/AddEntryForm.dart';
 import 'package:revix/DetailsPage/DetailsPage.dart';
 import 'package:revix/Utils/theme_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +17,7 @@ import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'Utils/ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
-import 'Utils/lecture_colors.dart';
+import 'Utils/entry_colors.dart';
 import 'Utils/platform_utils.dart';
 import 'Utils/VersionChecker.dart';
 
@@ -29,7 +29,7 @@ void main() async {
   
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
-  await LectureColors.initializeColors();
+  await EntryColors.initializeColors();
   // Initialize HomeWidget service for background callbacks
   if (PlatformUtils.instance.isAndroid) {
     await HomeWidgetService.initialize();
@@ -379,7 +379,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _addLecture() {
+  void _addEntry() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -393,7 +393,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           child: SizedBox(
             height: MediaQuery.of(context).size.height * 0.78,
-            child: AddLectureForm(),
+            child: AddEntryForm(),
           ),
         );
       },
@@ -563,7 +563,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _addLecture,
+                        onTap: _addEntry,
                         borderRadius: BorderRadius.circular(28),
                         child: Container(
                           width: 56,

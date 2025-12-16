@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'FirebaseDatabaseService.dart';
 import 'UnifiedDatabaseService.dart';
 
-class LectureColors {
+class EntryColors {
   // Permanent color cache - colors are cached forever once generated
   static Map<String, Color> _colorCache = {};
   static bool _isInitialized = false;
@@ -29,8 +29,8 @@ class LectureColors {
     }
   }
 
-  /// Get color for a lecture type - generates and caches if new
-  static Future<Color> getLectureTypeColor(BuildContext context, String type) async {
+  /// Get color for an entry type - generates and caches if new
+  static Future<Color> getEntryTypeColor(BuildContext context, String type) async {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     
     if (type.isEmpty) {
@@ -73,7 +73,7 @@ class LectureColors {
   }
 
   /// Get color synchronously if already cached, otherwise generate and cache
-  static Color getLectureTypeColorSync(BuildContext context, String type) {
+  static Color getEntryTypeColorSync(BuildContext context, String type) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     
     if (type.isEmpty) {

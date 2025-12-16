@@ -1,4 +1,4 @@
-int calculateMonthlyRevisions(List<Map<String, dynamic>> records) {
+int calculateMonthlyReviews(List<Map<String, dynamic>> records) {
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
   int count = 0;
@@ -6,8 +6,8 @@ int calculateMonthlyRevisions(List<Map<String, dynamic>> records) {
   for (var record in records) {
     if (record['details']['dates_updated'] == null) continue;
 
-    List<dynamic> revisionDates = record['details']['dates_updated'];
-    for (var dateStr in revisionDates) {
+    List<dynamic> reviewDates = record['details']['dates_updated'];
+    for (var dateStr in reviewDates) {
       DateTime date;
       try {
         date = DateTime.parse(dateStr);
@@ -22,7 +22,7 @@ int calculateMonthlyRevisions(List<Map<String, dynamic>> records) {
   return count;
 }
 
-int calculateWeeklyRevisions(List<Map<String, dynamic>> records) {
+int calculateWeeklyReviews(List<Map<String, dynamic>> records) {
   final now = DateTime.now();
   final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
   final startOfDay = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
@@ -31,8 +31,8 @@ int calculateWeeklyRevisions(List<Map<String, dynamic>> records) {
   for (var record in records) {
     if (record['details']['dates_updated'] == null) continue;
 
-    List<dynamic> revisionDates = record['details']['dates_updated'];
-    for (var dateStr in revisionDates) {
+    List<dynamic> reviewDates = record['details']['dates_updated'];
+    for (var dateStr in reviewDates) {
       DateTime date;
       try {
         date = DateTime.parse(dateStr);
@@ -47,7 +47,7 @@ int calculateWeeklyRevisions(List<Map<String, dynamic>> records) {
   return count;
 }
 
-int calculateDailyRevisions(List<Map<String, dynamic>> records) {
+int calculateDailyReviews(List<Map<String, dynamic>> records) {
   final now = DateTime.now();
   final startOfDay = DateTime(now.year, now.month, now.day);
 
@@ -55,8 +55,8 @@ int calculateDailyRevisions(List<Map<String, dynamic>> records) {
   for (var record in records) {
     if (record['details']['dates_updated'] == null) continue;
 
-    List<dynamic> revisionDates = record['details']['dates_updated'];
-    for (var dateStr in revisionDates) {
+    List<dynamic> reviewDates = record['details']['dates_updated'];
+    for (var dateStr in reviewDates) {
       DateTime date;
       try {
         date = DateTime.parse(dateStr);

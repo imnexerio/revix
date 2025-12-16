@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:revix/HomePage/revision_calculations.dart';
+import 'package:revix/HomePage/review_calculations.dart';
 import 'package:revix/Utils/customSnackBar_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
@@ -13,7 +13,7 @@ import 'CategoryDistributionCard.dart';
 import 'WeeklyProgressCard.dart';
 import 'calculation_utils.dart';
 import 'completion_utils.dart';
-import 'lecture_calculations.dart';
+import 'entry_calculations.dart';
 import 'missed_calculations.dart';
 
 class HomePage extends StatefulWidget {
@@ -25,22 +25,22 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
   Stream<Map<String, dynamic>>? _recordsStream;
 
-  String _lectureViewType = 'Total';
-  String _revisionViewType = 'Total';
+  String _entryViewType = 'Total';
+  String _reviewViewType = 'Total';
   String _completionViewType = 'Total';
   String _missedViewType = 'Total';
 
-  String _selectedLectureType = 'All'; // Changed default to 'All'
-  List<String> _availableLectureTypes = ['All']; // Added 'All' instead of 'Lectures'
+  String _selectedEntryType = 'All'; // Changed default to 'All'
+  List<String> _availableEntryTypes = ['All']; // Added 'All' instead of 'Lectures'
 
   Map<String, Set<String>> _selectedTrackingTypesMap = {
-    'lecture': {},
-    'revision': {},
+    'entry': {},
+    'review': {},
     'completion': {},
     'missed': {},
   };  Map<String, int> _completionTargets = {};
   int get _customCompletionTarget {
-    final target = _completionTargets[_selectedLectureType] ?? 200;
+    final target = _completionTargets[_selectedEntryType] ?? 200;
     return target;
   }
   
@@ -62,7 +62,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   Future<void> _initializeData() async {
     await _loadSavedPreferences();
     await _fetchTrackingTypesAndTargetFromFirebase();
-    await _loadAvailableLectureTypes();
+    await _loadAvailableEntryTypes();
     
     if (mounted) {
       setState(() {
@@ -75,11 +75,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
     if (mounted) {
       setState(() {
-        _lectureViewType = prefs.getString('lectureViewType') ?? 'Total';
-        _revisionViewType = prefs.getString('revisionViewType') ?? 'Total';
+        _entryViewType = prefs.getString('entryViewType') ?? 'Total';
+        _reviewViewType = prefs.getString('reviewViewType') ?? 'Total';
         _completionViewType = prefs.getString('completionViewType') ?? 'Total';
         _missedViewType = prefs.getString('missedViewType') ?? 'Total';
-        _selectedLectureType = prefs.getString('selectedLectureType') ?? 'All'; // Changed default to 'All'
+        _selectedEntryType = prefs.getString('selectedEntryType') ?? 'All'; // Changed default to 'All'
       });
     }
   }
@@ -88,15 +88,15 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString('lectureViewType', _lectureViewType);
-    await prefs.setString('revisionViewType', _revisionViewType);
+    await prefs.setString('entryViewType', _entryViewType);
+    await prefs.setString('reviewViewType', _reviewViewType);
     await prefs.setString('completionViewType', _completionViewType);
     await prefs.setString('missedViewType', _missedViewType);
-    await prefs.setString('selectedLectureType', _selectedLectureType);
+    await prefs.setString('selectedEntryType', _selectedEntryType);
   }
 
   // Modified method to load available lecture types
-  Future<void> _loadAvailableLectureTypes() async {
+  Future<void> _loadAvailableEntryTypes() async {
     try {
       final databaseService = FirebaseDatabaseService();
       final trackingTypes = await databaseService.fetchCustomTrackingTypes();
@@ -107,26 +107,26 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           // Add all types except 'All' if it already exists in trackingTypes
           types.addAll(trackingTypes.where((type) => type != 'All'));
         }
-        _availableLectureTypes = types;
+        _availableEntryTypes = types;
       });
     } catch (e) {
       // Handle error, keeping default with 'All'
       setState(() {
-        _availableLectureTypes = ['All'];
+        _availableEntryTypes = ['All'];
       });
     }
   }
 
-  // Cycle through available lecture types
-  void _cycleLectureType() {
-    if (_availableLectureTypes.isEmpty) return;
+  // Cycle through available entry types
+  void _cycleEntryType() {
+    if (_availableEntryTypes.isEmpty) return;
 
     setState(() {
-      int currentIndex = _availableLectureTypes.indexOf(_selectedLectureType);
-      int nextIndex = (currentIndex + 1) % _availableLectureTypes.length;
-      _selectedLectureType = _availableLectureTypes[nextIndex];
+      int currentIndex = _availableEntryTypes.indexOf(_selectedEntryType);
+      int nextIndex = (currentIndex + 1) % _availableEntryTypes.length;
+      _selectedEntryType = _availableEntryTypes[nextIndex];
     });
-    _savePreferences(); // Save when lecture type changes
+    _savePreferences(); // Save when entry type changes
   }  Future<void> _fetchTrackingTypesAndTargetFromFirebase() async {
     try {
       if (await GuestAuthService.isGuestMode()) {
@@ -265,10 +265,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
             List<Map<String, dynamic>> allRecords = snapshot.data!['allRecords']!;
 
-            List<Map<String, dynamic>> filteredRecords = _selectedLectureType == 'All'
+            List<Map<String, dynamic>> filteredRecords = _selectedEntryType == 'All'
                 ? allRecords
                 : allRecords.where((record) {
-              return record['details']['entry_type'] == _selectedLectureType;
+              return record['details']['entry_type'] == _selectedEntryType;
             }).toList();
 
             Map<String, int> subjectDistribution = calculateSubjectDistribution(filteredRecords);
@@ -302,11 +302,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                               children: [
                                 // Make the Overview title clickable
                                 GestureDetector(
-                                  onTap: _cycleLectureType,
+                                  onTap: _cycleEntryType,
                                   child: Row(
                                     children: [
                                       Text(
-                                        'Overview: $_selectedLectureType',
+                                        'Overview: $_selectedEntryType',
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
@@ -325,7 +325,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined),
                                   onPressed: () {
-                                    if (_selectedLectureType == 'All') {
+                                    if (_selectedEntryType == 'All') {
                                       customSnackBar_error(context: context, message: 'Cannot set target for combined view');
                                       return;
                                     }
@@ -340,7 +340,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                         return AlertDialog(
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                           title: Text(
-                                            'Set Target for $_selectedLectureType',
+                                            'Set Target for $_selectedEntryType',
                                             style: TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                           content: Column(
@@ -348,7 +348,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'Enter your completion target for $_selectedLectureType:',
+                                                'Enter your completion target for $_selectedEntryType:',
                                               ),
                                               const SizedBox(height: 16),
                                               TextField(
@@ -389,9 +389,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                                                   final int newTarget = int.parse(targetValue);
 
                                                   final firebaseService = FirebaseDatabaseService();
-                                                  await firebaseService.saveHomePageCompletionTarget(_selectedLectureType, targetValue);
+                                                  await firebaseService.saveHomePageCompletionTarget(_selectedEntryType, targetValue);
                                                   setState(() {
-                                                    _completionTargets[_selectedLectureType] = newTarget;
+                                                    _completionTargets[_selectedEntryType] = newTarget;
                                                   });
                                                 }
                                                 Navigator.of(context).pop();
@@ -493,9 +493,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 'Initiatives',
-                _getLectureValue(filteredRecords, _lectureViewType),
+                _getEntryValue(filteredRecords, _entryViewType),
                 const Color(0xFF6C63FF),
-                _lectureViewType,
+                _entryViewType,
                     () => _cycleViewType(),
               ),
             ),
@@ -503,9 +503,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
             Expanded(
               child: _buildStatCard(
                 'Reviewed',
-                _getRevisionValue(filteredRecords, _revisionViewType),
+                _getReviewValue(filteredRecords, _reviewViewType),
                 const Color(0xFFDA5656),
-                _revisionViewType,
+                _reviewViewType,
                     () => _cycleViewType(),
               ),
             ),
@@ -541,8 +541,8 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
   void _cycleViewType() {
     setState(() {
-      _lectureViewType = _getNextViewType(_lectureViewType);
-      _revisionViewType = _getNextViewType(_revisionViewType);
+      _entryViewType = _getNextViewType(_entryViewType);
+      _reviewViewType = _getNextViewType(_reviewViewType);
       _completionViewType = _getNextViewType(_completionViewType);
       _missedViewType = _getNextViewType(_missedViewType);
     });
@@ -564,38 +564,38 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-  String _getLectureValue(List<Map<String, dynamic>> records, String viewType) {
+  String _getEntryValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalLectures(records).toString();
+        return calculateTotalEntries(records).toString();
       case 'Monthly':
-        return calculateMonthlyLectures(records).toString();
+        return calculateMonthlyEntries(records).toString();
       case 'Weekly':
-        return calculateWeeklyLectures(records).toString();
+        return calculateWeeklyEntries(records).toString();
       case 'Daily':
-        return calculateDailyLectures(records).toString();
+        return calculateDailyEntries(records).toString();
       default:
-        return calculateTotalLectures(records).toString();
+        return calculateTotalEntries(records).toString();
     }
   }
 
-  String _getRevisionValue(List<Map<String, dynamic>> records, String viewType) {
+  String _getReviewValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateTotalRevisions(records).toString();
+        return calculateTotalReviews(records).toString();
       case 'Monthly':
-        return calculateMonthlyRevisions(records).toString();
+        return calculateMonthlyReviews(records).toString();
       case 'Weekly':
-        return calculateWeeklyRevisions(records).toString();
+        return calculateWeeklyReviews(records).toString();
       case 'Daily':
-        return calculateDailyRevisions(records).toString();
+        return calculateDailyReviews(records).toString();
       default:
-        return calculateTotalRevisions(records).toString();
+        return calculateTotalReviews(records).toString();
     }
   }
 
   String _getCompletionValue(List<Map<String, dynamic>> records, String viewType) {
-    int target = _selectedLectureType == 'All' ? _calculateAllCompletionPercentage(records) : _customCompletionTarget;
+    int target = _selectedEntryType == 'All' ? _calculateAllCompletionPercentage(records) : _customCompletionTarget;
 
     switch (viewType) {
       case 'Total':
@@ -627,7 +627,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   String _getMissedValue(List<Map<String, dynamic>> records, String viewType) {
     switch (viewType) {
       case 'Total':
-        return calculateMissedRevisions(records).toString();
+        return calculateMissedReviews(records).toString();
       case 'Monthly':
         return calculateMonthlyMissed(records).toString();
       case 'Weekly':
@@ -635,7 +635,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       case 'Daily':
         return calculateDailyMissed(records).toString();
       default:
-        return calculateMissedRevisions(records).toString();
+        return calculateMissedReviews(records).toString();
     }
   }
 
@@ -645,9 +645,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         Expanded(
           child: _buildStatCard(
             'Initiatives',
-            _getLectureValue(filteredRecords, _lectureViewType),
+            _getEntryValue(filteredRecords, _entryViewType),
             const Color(0xFF6C63FF),
-            _lectureViewType,
+            _entryViewType,
                 () => _cycleViewType(),
           ),
         ),
@@ -655,9 +655,9 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
         Expanded(
           child: _buildStatCard(
             'Reviewed',
-            _getRevisionValue(filteredRecords, _revisionViewType),
+            _getReviewValue(filteredRecords, _reviewViewType),
             const Color(0xFFDA5656),
-            _revisionViewType,
+            _reviewViewType,
                 () => _cycleViewType(),
           ),
         ),
@@ -667,7 +667,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
               "Completion Percentage",
               _getCompletionValue(filteredRecords, _completionViewType),
               getCompletionColor(calculatePercentageCompletion(filteredRecords,
-                  _selectedLectureType == 'All' ? _calculateAllCompletionPercentage(filteredRecords) : _customCompletionTarget)),
+                  _selectedEntryType == 'All' ? _calculateAllCompletionPercentage(filteredRecords) : _customCompletionTarget)),
               _completionViewType,
                   () => _cycleViewType()
           ),
@@ -712,16 +712,16 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 filteredRecords,
                 cardPadding,
                 context,
-                onTitleTap: _cycleLectureType,  // Pass the callback function
-                selectedLectureType: _selectedLectureType,  // Pass the selected type
+                onTitleTap: _cycleEntryType,  // Pass the callback function
+                selectedEntryType: _selectedEntryType,  // Pass the selected type
               ),
               const SizedBox(height: 32),
               buildCategoryDistributionCard(
                 subjectDistribution,
                 cardPadding,
                 context,
-                onTitleTap: _cycleLectureType,
-                selectedLectureType: _selectedLectureType,
+                onTitleTap: _cycleEntryType,
+                selectedEntryType: _selectedEntryType,
               ),
             ],
           ),
@@ -736,16 +736,16 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 filteredRecords,
                 cardPadding,
                 context,
-                onTitleTap: _cycleLectureType,
-                selectedLectureType: _selectedLectureType,
+                onTitleTap: _cycleEntryType,
+                selectedEntryType: _selectedEntryType,
               ),
               const SizedBox(height: 32),
               buildProgressCalendarCard(
                 filteredRecords,
                 cardPadding,
                 context,
-                onTitleTap: _cycleLectureType,
-                selectedLectureType: _selectedLectureType,
+                onTitleTap: _cycleEntryType,
+                selectedEntryType: _selectedEntryType,
               ),
             ],
           ),
@@ -764,32 +764,32 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           filteredRecords,
           cardPadding,
           context,
-          onTitleTap: _cycleLectureType,
-          selectedLectureType: _selectedLectureType,
+          onTitleTap: _cycleEntryType,
+          selectedEntryType: _selectedEntryType,
         ),
         const SizedBox(height: 24),
         buildWeeklyProgressCard(
           filteredRecords,
           cardPadding,
           context,
-          onTitleTap: _cycleLectureType,
-          selectedLectureType: _selectedLectureType,
+          onTitleTap: _cycleEntryType,
+          selectedEntryType: _selectedEntryType,
         ),
         const SizedBox(height: 24),
         buildProgressCalendarCard(
           filteredRecords,
           cardPadding,
           context,
-          onTitleTap: _cycleLectureType,
-          selectedLectureType: _selectedLectureType,
+          onTitleTap: _cycleEntryType,
+          selectedEntryType: _selectedEntryType,
         ),
         const SizedBox(height: 24),
         buildCategoryDistributionCard(
           subjectDistribution,
           cardPadding,
           context,
-          onTitleTap: _cycleLectureType,
-          selectedLectureType: _selectedLectureType,
+          onTitleTap: _cycleEntryType,
+          selectedEntryType: _selectedEntryType,
         ),
       ],
     );
