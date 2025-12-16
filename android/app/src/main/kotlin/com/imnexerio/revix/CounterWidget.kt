@@ -171,7 +171,7 @@ class CounterWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.category_text, "Category")
             views.setTextViewText(R.id.subcategory_text, "Subcategory")
             views.setTextViewText(R.id.record_title, "Record Title")
-            views.setInt(R.id.lecture_type_indicator, "setColorFilter", android.graphics.Color.parseColor("#666666"))
+            views.setInt(R.id.entry_type_indicator, "setColorFilter", android.graphics.Color.parseColor("#666666"))
         }
 
         private fun displayValidRecord(context: Context, views: RemoteViews, appWidgetId: Int, scheduledDate: String) {
@@ -207,8 +207,8 @@ class CounterWidget : AppWidgetProvider() {
             }
             
             // Apply entry_type color to stick indicator
-            val stickColor = LectureColors.getLectureTypeColorSync(context, entryType)
-            views.setInt(R.id.lecture_type_indicator, "setColorFilter", stickColor)
+            val stickColor = EntryColors.getEntryTypeColorSync(context, entryType)
+            views.setInt(R.id.entry_type_indicator, "setColorFilter", stickColor)
 
             // Set all text fields: Category / Subcategory / Record Title
             views.setTextViewText(R.id.category_text, category)
@@ -341,7 +341,7 @@ class CounterWidget : AppWidgetProvider() {
                 refreshIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.lecture_type_indicator, refreshPendingIntent)
+            views.setOnClickPendingIntent(R.id.entry_type_indicator, refreshPendingIntent)
             
             Log.d("CounterWidget", "Stick refresh listener setup completed for widget $appWidgetId")
         }

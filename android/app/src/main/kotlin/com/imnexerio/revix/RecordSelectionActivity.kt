@@ -350,7 +350,7 @@ class RecordSelectionActivity : AppCompatActivity() {
                 holder.dateText.text = "Scheduled: $scheduledDate"
 
                 // Set colored indicator based on entry_type
-                val color = LectureColors.getLectureTypeColorSync(holder.itemView.context, entryType)
+                val color = EntryColors.getEntryTypeColorSync(holder.itemView.context, entryType)
                 holder.indicator.setColorFilter(color)
 
                 // Visual distinction for disabled records (Option C3)
@@ -376,7 +376,7 @@ class RecordSelectionActivity : AppCompatActivity() {
         override fun getItemCount() = records.size
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val indicator: ImageView = view.findViewById(R.id.lecture_type_indicator)
+            val indicator: ImageView = view.findViewById(R.id.entry_type_indicator)
             val titleText: TextView = view.findViewById(R.id.record_title_text)
             val dateText: TextView = view.findViewById(R.id.scheduled_date_text)
         }

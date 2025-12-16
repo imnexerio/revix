@@ -5,10 +5,10 @@ import android.graphics.Color
 import android.content.SharedPreferences
 
 /**
- * Android/Kotlin version of LectureColors with permanent caching
- * Mirrors the simplified logic from Flutter's lecture_colors.dart
+ * Android/Kotlin version of EntryColors with permanent caching
+ * Mirrors the simplified logic from Flutter's entry_colors.dart
  */
-class LectureColors private constructor() {
+class EntryColors private constructor() {
     companion object {
         private const val PREF_COLOR_PREFIX = "lecture_color_"
         private const val PREF_INITIALIZED = "colors_initialized"
@@ -33,9 +33,9 @@ class LectureColors private constructor() {
         }
         
         /**
-         * Get color for a lecture type - generates and caches permanently if new
+         * Get color for an entry type - generates and caches permanently if new
          */
-        fun getLectureTypeColor(context: Context, entryType: String): Int {
+        fun getEntryTypeColor(context: Context, entryType: String): Int {
             if (entryType.isEmpty()) {
                 return getDefaultTextColor()
             }
@@ -79,10 +79,10 @@ class LectureColors private constructor() {
         }
         
         /**
-         * Get color synchronously - same as getLectureTypeColor for Android
+         * Get color synchronously - same as getEntryTypeColor for Android
          */
-        fun getLectureTypeColorSync(context: Context, entryType: String): Int {
-            return getLectureTypeColor(context, entryType)
+        fun getEntryTypeColorSync(context: Context, entryType: String): Int {
+            return getEntryTypeColor(context, entryType)
         }
         
         /**

@@ -8,8 +8,8 @@ import java.util.*
 
 /**
  * Utility object for frequency-related calculations
- * Consolidates frequency fetching and next revision date calculation logic
- * Used by AddLectureActivity and RecordUpdateService
+ * Consolidates frequency fetching and next recurrence date calculation logic
+ * Used by AddEntryActivity and RecordUpdateService
  */
 object FrequencyCalculationUtils {
 

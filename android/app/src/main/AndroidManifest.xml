@@ -143,7 +143,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>        <activity
-        android:name=".AddLectureActivity"
+        android:name=".AddEntryActivity"
         android:exported="false"
         android:label="Add New Record (revix)"
         android:excludeFromRecents="true"

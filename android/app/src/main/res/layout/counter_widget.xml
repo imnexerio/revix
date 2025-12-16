@@ -32,7 +32,7 @@
         <!-- Left: Colored stick indicator (50% hidden on left, 50% visible - coming out of wall) -->
         <!-- Now clickable to open CalendarViewActivity -->
         <ImageView
-            android:id="@+id/lecture_type_indicator"
+            android:id="@+id/entry_type_indicator"
             android:layout_width="14dp"
             android:layout_height="match_parent"
             android:src="@drawable/rounded_line_indicator"

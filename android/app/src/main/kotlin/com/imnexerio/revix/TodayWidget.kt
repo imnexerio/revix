@@ -275,7 +275,7 @@ class TodayWidget : AppWidgetProvider() {
                 }
             }
             ACTION_ADD_RECORD -> {
-                val addIntent = Intent(context, AddLectureActivity::class.java)
+                val addIntent = Intent(context, AddEntryActivity::class.java)
                 addIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(addIntent)
             }

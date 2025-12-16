@@ -78,7 +78,7 @@ class CalendarEventAdapter(
                 
                 // Set left bar color based on entry_type (dynamic color)
                 if (event.entryType.isNotEmpty()) {
-                    val color = LectureColors.getLectureTypeColorSync(context, event.entryType)
+                    val color = EntryColors.getEntryTypeColorSync(context, event.entryType)
                     holder.colorBar.setBackgroundColor(color)
                 }
                 

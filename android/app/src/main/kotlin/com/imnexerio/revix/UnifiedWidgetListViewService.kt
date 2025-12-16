@@ -170,9 +170,9 @@ class UnifiedWidgetListViewFactory(
     private fun createRecordView(record: Map<String, String>): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.widget_list_item)
 
-        // Apply lecture type color to the colored stick based on entry_type
+        // Apply entry type color to the colored stick based on entry_type
         val entryType = record["entry_type"] ?: ""
-        val indicatorColor = LectureColors.getLectureTypeColorSync(context, entryType)
+        val indicatorColor = EntryColors.getEntryTypeColorSync(context, entryType)
         
         // Debug log to check if colors are being generated
         Log.d("WidgetColors", "Entry Type: $entryType, Color: ${Integer.toHexString(indicatorColor)}")
