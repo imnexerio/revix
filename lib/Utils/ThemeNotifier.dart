@@ -40,15 +40,8 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     _selectedThemeIndex = themeIndex;
     _customThemeColor = customColor;
   }
-  // Initialize SharedPreferences and prepare for remote theme fetch
   Future<void> _initPreferences() async {
     _prefs = await SharedPreferences.getInstance();
-
-    // We don't need to load theme from SharedPreferences here
-    // since we already did that in main.dart and passed it to the constructor
-
-    // Always try to fetch remote theme (will fail silently if offline)
-    fetchRemoteTheme();
   }
   // Load theme from local storage - only used when needed
   // (not for initial app load, which is handled in main.dart)

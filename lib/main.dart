@@ -17,29 +17,117 @@ import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'Utils/ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
-import 'Utils/entry_colors.dart';
 import 'Utils/platform_utils.dart';
 import 'Utils/VersionChecker.dart';
 
 import 'firebase_options.dart';
 
+/// Data class to hold cached theme information
+class CachedThemeData {
+  final ThemeData theme;
+  final ThemeMode mode;
+  final int index;
+  final Color? customColor;
+  
+  CachedThemeData({
+    required this.theme,
+    required this.mode,
+    required this.index,
+    this.customColor,
+  });
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PlatformUtils.init();
   
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await Hive.initFlutter();
-  await EntryColors.initializeColors();
-  // Initialize HomeWidget service for background callbacks
-  if (PlatformUtils.instance.isAndroid) {
-    await HomeWidgetService.initialize();
-  }
+  final prefs = await SharedPreferences.getInstance();
+  final cachedTheme = _loadCachedTheme(prefs);
   
-  runApp(const MyApp());
+  runApp(MyApp(
+    initialTheme: cachedTheme.theme,
+    initialThemeMode: cachedTheme.mode,
+    initialThemeIndex: cachedTheme.index,
+    initialCustomColor: cachedTheme.customColor,
+    prefs: prefs,
+  ));
+}
+
+CachedThemeData _loadCachedTheme(SharedPreferences prefs) {
+  ThemeMode cachedThemeMode = ThemeMode.system;
+  int cachedThemeIndex = 0;
+  Color? cachedCustomColor;
+
+  final themeModeString = prefs.getString(ThemeNotifier.prefThemeMode);
+  if (themeModeString != null) {
+    cachedThemeMode = ThemeMode.values.firstWhere(
+      (e) => e.toString() == themeModeString,
+      orElse: () => ThemeMode.system,
+    );
+  }
+
+  cachedThemeIndex = prefs.getInt(ThemeNotifier.prefThemeIndex) ?? 0;
+  if (cachedThemeIndex < -1 || cachedThemeIndex >= AppThemes.themes.length ~/ 2) {
+    cachedThemeIndex = 0; // Reset to default if invalid
+  }
+
+  final customColorValue = prefs.getInt(ThemeNotifier.prefCustomThemeColor);
+  if (customColorValue != null) {
+    cachedCustomColor = Color(customColorValue);
+  }
+
+  ThemeData initialTheme = _buildTheme(cachedThemeIndex, cachedThemeMode, cachedCustomColor);
+
+  return CachedThemeData(
+    theme: initialTheme,
+    mode: cachedThemeMode,
+    index: cachedThemeIndex,
+    customColor: cachedCustomColor,
+  );
+}
+
+/// Build ThemeData based on index, mode, and optional custom color
+ThemeData _buildTheme(int themeIndex, ThemeMode mode, Color? customColor) {
+  if (themeIndex == ThemeNotifier.customThemeIndex && customColor != null) {
+    // Apply custom theme
+    if (mode == ThemeMode.system) {
+      final brightness = WidgetsBinding.instance.window.platformBrightness;
+      return brightness == Brightness.dark
+          ? CustomThemeGenerator.generateDarkTheme(customColor)
+          : CustomThemeGenerator.generateLightTheme(customColor);
+    } else {
+      return mode == ThemeMode.dark
+          ? CustomThemeGenerator.generateDarkTheme(customColor)
+          : CustomThemeGenerator.generateLightTheme(customColor);
+    }
+  } else {
+    // Apply predefined theme
+    // Ensure themeIndex is valid
+    final safeIndex = themeIndex.clamp(0, (AppThemes.themes.length ~/ 2) - 1);
+    if (mode == ThemeMode.system) {
+      final brightness = WidgetsBinding.instance.window.platformBrightness;
+      return AppThemes.themes[safeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
+    } else {
+      return AppThemes.themes[safeIndex * 2 + (mode == ThemeMode.dark ? 1 : 0)];
+    }
+  }
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final ThemeData initialTheme;
+  final ThemeMode initialThemeMode;
+  final int initialThemeIndex;
+  final Color? initialCustomColor;
+  final SharedPreferences prefs;
+
+  const MyApp({
+    required this.initialTheme,
+    required this.initialThemeMode,
+    required this.initialThemeIndex,
+    this.initialCustomColor,
+    required this.prefs,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -54,65 +142,30 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    _initializeInBackground();
   }
 
-  Future<void> _initializeApp() async {
+  Future<void> _initializeInBackground() async {
     try {
-            
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-      // Load cached theme data from SharedPreferences
-      ThemeMode cachedThemeMode = ThemeMode.system;
-      int cachedThemeIndex = 0;
-      Color? cachedCustomColor;
-
-      // Load saved theme mode
-      final themeModeString = prefs.getString(ThemeNotifier.prefThemeMode);
-      if (themeModeString != null) {
-        cachedThemeMode = ThemeMode.values.firstWhere(
-                (e) => e.toString() == themeModeString,
-            orElse: () => ThemeMode.system
-        );
+      await Future.wait([
+        Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+        Hive.initFlutter(),
+      ]);
+      
+      if (PlatformUtils.instance.isAndroid) {
+        HomeWidgetService.initialize(); // No await - runs in background
       }
-
-      // Load saved theme index
-      cachedThemeIndex = prefs.getInt(ThemeNotifier.prefThemeIndex) ?? 0;
-
-      // Load custom theme color if exists
-      final customColorValue = prefs.getInt(ThemeNotifier.prefCustomThemeColor);
-      if (customColorValue != null) {
-        cachedCustomColor = Color(customColorValue);
-      }
-
-      // Initialize the correct theme based on cached data
-      ThemeData initialTheme;
-      if (cachedThemeIndex == ThemeNotifier.customThemeIndex && cachedCustomColor != null) {
-        // Apply custom theme
-        if (cachedThemeMode == ThemeMode.system) {
-          final brightness = WidgetsBinding.instance.window.platformBrightness;
-          initialTheme = brightness == Brightness.dark
-              ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
-              : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
-        } else {
-          initialTheme = cachedThemeMode == ThemeMode.dark
-              ? CustomThemeGenerator.generateDarkTheme(cachedCustomColor)
-              : CustomThemeGenerator.generateLightTheme(cachedCustomColor);
-        }
-      } else {
-        // Apply predefined theme
-        if (cachedThemeMode == ThemeMode.system) {
-          final brightness = WidgetsBinding.instance.window.platformBrightness;
-          initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (brightness == Brightness.dark ? 1 : 0)];
-        } else {
-          initialTheme = AppThemes.themes[cachedThemeIndex * 2 + (cachedThemeMode == ThemeMode.dark ? 1 : 0)];
-        }
-      }
-
-      // Create ThemeNotifier with the cached theme data
-      ThemeNotifier themeNotifier = ThemeNotifier(initialTheme, cachedThemeMode);
-      themeNotifier.setInitialValues(cachedThemeIndex, cachedCustomColor);
+      
+      bool isLoggedIn = widget.prefs.getBool('isLoggedIn') ?? false;
+      
+      ThemeNotifier themeNotifier = ThemeNotifier(
+        widget.initialTheme,
+        widget.initialThemeMode,
+      );
+      themeNotifier.setInitialValues(
+        widget.initialThemeIndex,
+        widget.initialCustomColor,
+      );
 
       if (mounted) {
         setState(() {
@@ -135,19 +188,20 @@ class _MyAppState extends State<MyApp> {
       }
     }
   }
+
   @override
-  Widget build(BuildContext context) {    // Show splash screen with default theme while initializing
+  Widget build(BuildContext context) {
+    // Show splash screen with user's theme while initializing
     if (!_isInitialized || _themeNotifier == null || _profileProvider == null) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'revix',
-        theme: AppThemes.themes[0], // Default light theme
+        theme: widget.initialTheme, // Use cached theme immediately!
         home: SplashScreen(
           isLoggedIn: _isLoggedIn,
           isInitialized: _isInitialized,
         ),
         onUnknownRoute: (settings) {
-          // Handle unknown routes by redirecting to splash screen
           return MaterialPageRoute(
             builder: (context) => SplashScreen(
               isLoggedIn: _isLoggedIn,
@@ -177,7 +231,6 @@ class _MyAppState extends State<MyApp> {
               isInitialized: _isInitialized,
             ),
             onUnknownRoute: (settings) {
-              // Handle unknown routes by redirecting to splash screen
               return MaterialPageRoute(
                 builder: (context) => SplashScreen(
                   isLoggedIn: _isLoggedIn,
@@ -217,8 +270,8 @@ class _MyHomePageState extends State<MyHomePage> {
     ];
     Provider.of<ProfileProvider>(context, listen: false).loadProfileImage(context);
     
-    // Check for app updates after a short delay to ensure UI is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ThemeNotifier>(context, listen: false).fetchRemoteTheme();
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
           VersionChecker.checkForUpdates(context);

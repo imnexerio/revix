@@ -21,6 +21,9 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _subtitleController;
   late Animation<double> _subtitleAnimation;
+  bool _animationComplete = false;
+  bool _hasNavigated = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,9 +48,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     // Start subtitle animation after square animation completes
     _scheduleSubtitleAnimation();
     
-    // Set minimum splash screen duration and navigate after app is ready
-    _scheduleNavigation();
+    // Mark animation complete after full logo animation (4 seconds minimum)
+    _scheduleAnimationComplete();
   }
+
   void _scheduleSubtitleAnimation() {
     // Start subtitle animation after the square animation completes
     // Container animation (800ms) + Text animation (2000ms) = 2800ms total
@@ -56,31 +60,45 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         _subtitleController.forward();
       }
     });
-  }  void _scheduleNavigation() {
-    // Wait for both animations to complete AND app initialization
-    // Minimum splash duration: 4 seconds or until app is fully initialized
+  }
+
+  void _scheduleAnimationComplete() {
+    // Mark animation complete after 4 seconds (full logo animation)
     Future.delayed(const Duration(milliseconds: 4000), () {
-      _checkAndNavigate();
+      if (mounted) {
+        setState(() {
+          _animationComplete = true;
+        });
+        _tryNavigate();
+      }
     });
   }
 
-  void _checkAndNavigate() {
+  void _tryNavigate() {
+    // Navigate only when BOTH conditions are met:
+    // 1. Animation is complete (4 seconds minimum for full logo)
+    // 2. App is initialized (Firebase, Hive, etc. ready)
+    if (_hasNavigated) return; // Prevent double navigation
+    
+    if (_animationComplete && widget.isInitialized) {
+      _hasNavigated = true;
+      _navigateToNextScreen();
+    }
+  }
 
-    if (mounted) {
-      // Wait until app is fully initialized before navigating
-      if (widget.isInitialized) {
-        _navigateToNextScreen();
-      } else {
-        // If not initialized yet, check again after a short delay
-        Future.delayed(const Duration(milliseconds: 500), () {
-          _checkAndNavigate();
-        });
-      }
+  // React to widget updates (when parent calls setState with isInitialized = true)
+  @override
+  void didUpdateWidget(SplashScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isInitialized != oldWidget.isInitialized && widget.isInitialized) {
+      _tryNavigate();
     }
   }
 
   void _navigateToNextScreen() {
-    if (mounted) {
+    if (!mounted) return;
+    
+    try {
       Widget nextScreen = widget.isLoggedIn 
           ? const MyHomePage() 
           : LoginPage();
@@ -88,8 +106,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => nextScreen),
       );
+    } catch (e) {
+      print('Navigation error: $e');
     }
   }
+
   @override
   void dispose() {
     _subtitleController.dispose();
