@@ -350,7 +350,7 @@ class RecordSelectionActivity : AppCompatActivity() {
                 holder.dateText.text = "Scheduled: $scheduledDate"
 
                 // Set colored indicator based on entry_type
-                val color = EntryColors.getEntryTypeColorSync(holder.itemView.context, entryType)
+                val color = EntryColors.getEntryTypeColor(entryType)
                 holder.indicator.setColorFilter(color)
 
                 // Visual distinction for disabled records (Option C3)

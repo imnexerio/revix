@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class EntryColors {
+  static const Color _primaryColor = Color.fromARGB(255, 0, 255, 252);
 
   static Color generateColorFromString(String input) {
     if (input.isEmpty) {
-      return const Color(0x4D6496C8); // Default grey with opacity
+      return _primaryColor;
     }
     
     final int hash = _customHash(input);

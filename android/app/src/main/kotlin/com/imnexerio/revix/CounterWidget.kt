@@ -207,7 +207,7 @@ class CounterWidget : AppWidgetProvider() {
             }
             
             // Apply entry_type color to stick indicator
-            val stickColor = EntryColors.getEntryTypeColorSync(context, entryType)
+            val stickColor = EntryColors.getEntryTypeColor(entryType)
             views.setInt(R.id.entry_type_indicator, "setColorFilter", stickColor)
 
             // Set all text fields: Category / Subcategory / Record Title

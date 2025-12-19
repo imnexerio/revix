@@ -172,7 +172,7 @@ class UnifiedWidgetListViewFactory(
 
         // Apply entry type color to the colored stick based on entry_type
         val entryType = record["entry_type"] ?: ""
-        val indicatorColor = EntryColors.getEntryTypeColorSync(context, entryType)
+        val indicatorColor = EntryColors.getEntryTypeColor(entryType)
         
         // Debug log to check if colors are being generated
         Log.d("WidgetColors", "Entry Type: $entryType, Color: ${Integer.toHexString(indicatorColor)}")
