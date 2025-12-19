@@ -26,7 +26,9 @@ class HomeWidgetService {
   static const String categoriesDataKey = 'categoriesData';
   static bool _isInitialized = false;
   static bool _isBackgroundInitialized = false;
-  static final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();  static Future<void> initialize() async {
+  static final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();
+
+  static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
