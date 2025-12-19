@@ -182,10 +182,6 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   }
   // Fetch theme from Firebase (called when online) or from local storage for guest users
   Future<void> fetchRemoteTheme() async {
-    // Add a small delay to avoid slowing down the initial app render
-    // This ensures the app launches quickly with cached theme
-    await Future.delayed(const Duration(milliseconds: 100));
-
     try {
       // Check if user is in guest mode
       if (await GuestAuthService.isGuestMode()) {
