@@ -136,12 +136,26 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _isInitialized = false;
   bool _isLoggedIn = false;
-  ThemeNotifier? _themeNotifier;
-  ProfileProvider? _profileProvider;
+  
+  // Initialize providers immediately with cached values to avoid rebuilding MaterialApp
+  late final ThemeNotifier _themeNotifier;
+  late final ProfileProvider _profileProvider;
 
   @override
   void initState() {
     super.initState();
+    
+    // Create providers immediately with cached theme data
+    _themeNotifier = ThemeNotifier(
+      widget.initialTheme,
+      widget.initialThemeMode,
+    );
+    _themeNotifier.setInitialValues(
+      widget.initialThemeIndex,
+      widget.initialCustomColor,
+    );
+    _profileProvider = ProfileProvider();
+    
     _initializeInBackground();
   }
 
@@ -157,21 +171,10 @@ class _MyAppState extends State<MyApp> {
       }
       
       bool isLoggedIn = widget.prefs.getBool('isLoggedIn') ?? false;
-      
-      ThemeNotifier themeNotifier = ThemeNotifier(
-        widget.initialTheme,
-        widget.initialThemeMode,
-      );
-      themeNotifier.setInitialValues(
-        widget.initialThemeIndex,
-        widget.initialCustomColor,
-      );
 
       if (mounted) {
         setState(() {
           _isLoggedIn = isLoggedIn;
-          _themeNotifier = themeNotifier;
-          _profileProvider = ProfileProvider();
           _isInitialized = true;
         });
       }
@@ -181,8 +184,6 @@ class _MyAppState extends State<MyApp> {
       if (mounted) {
         setState(() {
           _isLoggedIn = false;
-          _themeNotifier = ThemeNotifier(AppThemes.themes[0], ThemeMode.system);
-          _profileProvider = ProfileProvider();
           _isInitialized = true;
         });
       }
@@ -191,32 +192,12 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Show splash screen with user's theme while initializing
-    if (!_isInitialized || _themeNotifier == null || _profileProvider == null) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'revix',
-        theme: widget.initialTheme, // Use cached theme immediately!
-        home: SplashScreen(
-          isLoggedIn: _isLoggedIn,
-          isInitialized: _isInitialized,
-        ),
-        onUnknownRoute: (settings) {
-          return MaterialPageRoute(
-            builder: (context) => SplashScreen(
-              isLoggedIn: _isLoggedIn,
-              isInitialized: _isInitialized,
-            ),
-          );
-        },
-      );
-    }
-
-    // Once initialized, show the app with proper providers and routing
+    // Single MaterialApp wrapped in MultiProvider from the start
+    // This prevents widget tree rebuild when initialization completes
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: _themeNotifier!),
-        ChangeNotifierProvider.value(value: _profileProvider!),
+        ChangeNotifierProvider.value(value: _themeNotifier),
+        ChangeNotifierProvider.value(value: _profileProvider),
       ],
       child: Consumer<ThemeNotifier>(
         builder: (context, themeNotifier, child) {
