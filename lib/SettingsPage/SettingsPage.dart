@@ -327,6 +327,9 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
   }
 
   PreferredSizeWidget _buildLargeScreenAppBar() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return AppBar(
       title: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -351,6 +354,11 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       centerTitle: true,
       elevation: 2, // Add shadow
       automaticallyImplyLeading: false, // This removes the back button
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: theme.colorScheme.primary,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      ),
     );
   }
 
@@ -550,8 +558,16 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
 
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 800;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: theme.colorScheme.primary,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshProfile,
         child: Stack(
@@ -634,6 +650,7 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
             _buildBackButton(),
           ],
         ),
+      ),
       ),
     );
   }
