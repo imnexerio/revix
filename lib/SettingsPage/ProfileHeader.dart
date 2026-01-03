@@ -176,37 +176,50 @@ class _ProfileHeaderState extends State<ProfileHeader> {
   }
 
   Widget _buildEmailVerificationSection(BuildContext context) {
+    // Fixed height container to prevent layout jumps
+    const double sectionHeight = 28;
+    
     if (_isLoading) {
       return const SizedBox(
-        height: 24,
+        height: sectionHeight,
         width: 24,
-        child: CircularProgressIndicator(strokeWidth: 2),
+        child: Center(
+          child: SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       );
     }
 
     if (_isGuestMode == true) {
       // For guest users, show guest mode indicator
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Guest Mode',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+      return SizedBox(
+        height: sectionHeight,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Guest Mode',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            Icons.person_off_outlined,
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Icon(
+              Icons.person_off_outlined,
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              size: 20,
+            ),
+          ],
+        ),
       );
     } else {
       // For authenticated users, show email verification status
       final isVerified = _isEmailVerified ?? false;
-      return Center(
-        key: ValueKey('email-$isVerified'),
+      return SizedBox(
+        height: sectionHeight,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -218,15 +231,15 @@ class _ProfileHeaderState extends State<ProfileHeader> {
             ),
             const SizedBox(width: 8),
             if (isVerified)
-              const Icon(Icons.verified_outlined, color: Colors.green)
+              const Icon(Icons.verified_outlined, color: Colors.green, size: 20)
             else
-              TextButton(
-                onPressed: () async {
+              GestureDetector(
+                onTap: () async {
                   await sendVerificationEmail(context);
                   // Refresh verification status after sending email
                   refreshEmailVerification();
                 },
-                child: const Icon(Icons.error, color: Colors.red),
+                child: const Icon(Icons.error, color: Colors.red, size: 20),
               )
           ],
         ),
