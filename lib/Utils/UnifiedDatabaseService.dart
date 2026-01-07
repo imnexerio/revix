@@ -848,8 +848,9 @@ class UnifiedDatabaseService {
     String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    String? endTimestamp,
+  }) async {
     // Generate unique title to prevent duplicates
     String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, entryTitle);
     
@@ -899,6 +900,11 @@ class UnifiedDatabaseService {
         'duration': durationData,
       };
 
+      // Add end_timestamp only if provided
+      if (endTimestamp != null) {
+        recordData['end_timestamp'] = endTimestamp;
+      }
+
       // Save record using unified service with unique title
       bool success = await saveRecord(selectedCategory, selectedCategoryCode, uniqueTitle, recordData);
       
@@ -928,8 +934,9 @@ class UnifiedDatabaseService {
     String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    String? endTimestamp,
+  }) async {
     try {
       String uniqueTitle = await _updateRecordsInternal(
         selectedCategory,
@@ -945,6 +952,7 @@ class UnifiedDatabaseService {
         durationData,
         customFrequencyParams,
         alarmType,
+        endTimestamp: endTimestamp,
       );
       
       // Show appropriate success message
@@ -975,8 +983,9 @@ class UnifiedDatabaseService {
     String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    String? endTimestamp,
+  }) async {
     await _updateRecordsInternal(
       selectedCategory,
       selectedCategoryCode,
@@ -991,6 +1000,7 @@ class UnifiedDatabaseService {
       durationData,
       customFrequencyParams,
       alarmType,
+      endTimestamp: endTimestamp,
     );
   }
 

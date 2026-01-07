@@ -20,6 +20,8 @@ class _AddEntryFormState extends State<AddEntryForm> {
   final TextEditingController _scheduleddateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+  final TextEditingController _endTimeController = TextEditingController();
   String _selectedCategory = 'DEFAULT_VALUE';
   String _selectedCategoryCode = '';
   String _entryType = 'DEFAULT_ENTRY_TYPE';
@@ -36,6 +38,11 @@ class _AddEntryFormState extends State<AddEntryForm> {
     "endDate": null
   };
   String start_timestamp = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
+  
+  // End timestamp fields
+  bool _hasEndTime = false;
+  String? end_timestamp; // null by default
+  
   // Alarm type field
   int _alarmType = 0; // 0: no reminder, 1: notification only, 2: vibration only, 3: sound, 4: sound + vibration, 5: loud alarm
   final List<String> _alarmOptions = ['No Reminder', 'Notification Only', 'Vibration Only', 'Sound', 'Sound + Vibration', 'Loud Alarm'];
@@ -54,6 +61,70 @@ class _AddEntryFormState extends State<AddEntryForm> {
     _setScheduledDate();
     _timeController.text = 'All Day';
     _alarmType = 0; // Initialize alarm type to no reminder
+    _hasEndTime = false;
+    end_timestamp = null;
+  }
+  
+  /// Sets default end time to +1 hour from start
+  void _setDefaultEndTime() {
+    if (_timeController.text == 'All Day') {
+      // For all day, default end date is same day
+      _endDateController.text = _initiationdateController.text;
+      _endTimeController.text = 'All Day';
+    } else {
+      // Parse start time and add 1 hour
+      final startTime = _timeController.text;
+      final parts = startTime.split(':');
+      if (parts.length == 2) {
+        int hour = int.parse(parts[0]);
+        int minute = int.parse(parts[1]);
+        hour = (hour + 1) % 24; // Add 1 hour, wrap at midnight
+        _endTimeController.text = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+        
+        // If wrapped to next day, update end date
+        if (hour < int.parse(parts[0])) {
+          final startDate = DateTime.parse(todayDate);
+          final nextDay = startDate.add(const Duration(days: 1));
+          _endDateController.text = nextDay.toIso8601String().split('T')[0];
+        } else {
+          _endDateController.text = todayDate;
+        }
+      }
+    }
+    _updateEndTimestamp();
+  }
+  
+  /// Updates end_timestamp from end date and time controllers
+  void _updateEndTimestamp() {
+    if (!_hasEndTime) {
+      end_timestamp = null;
+      return;
+    }
+    
+    if (_endDateController.text.isEmpty || _endDateController.text == 'Unspecified') {
+      end_timestamp = null;
+      return;
+    }
+    
+    if (_endTimeController.text == 'All Day') {
+      // All day: set to end of day (23:59)
+      end_timestamp = '${_endDateController.text}T23:59';
+    } else {
+      end_timestamp = '${_endDateController.text}T${_endTimeController.text}';
+    }
+  }
+  
+  /// Validates that end timestamp is after start timestamp
+  bool _validateEndTime() {
+    if (!_hasEndTime || end_timestamp == null) return true;
+    
+    try {
+      final start = DateTime.parse(start_timestamp);
+      final end = DateTime.parse(end_timestamp!);
+      return end.isAfter(start);
+    } catch (e) {
+      return false;
+    }
   }
   Future<void> _loadCategoriesAndSubCategories() async {
     try {
@@ -90,6 +161,15 @@ class _AddEntryFormState extends State<AddEntryForm> {
   }
   Future<void> UpdateRecords(BuildContext context) async {
     try {
+      // Validate end time if set
+      if (_hasEndTime && !_validateEndTime()) {
+        customSnackBar_error(
+          context: context,
+          message: 'End time must be after start time',
+        );
+        return;
+      }
+      
       final unifiedService = UnifiedDatabaseService();
       
       // Set alarm type to 0 if "All Day" is selected
@@ -110,6 +190,7 @@ class _AddEntryFormState extends State<AddEntryForm> {
         _durationData,
         _customFrequencyParams,
         finalAlarmType,
+        endTimestamp: end_timestamp,
       );
     } catch (e) {
       throw Exception('Failed to save entry: $e');
@@ -648,6 +729,244 @@ class _AddEntryFormState extends State<AddEntryForm> {
                                   ),
                                 );
                               }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // End Time Section (Optional)
+                    if (!_hasEndTime)
+                      // "+ Add End Time" button
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _hasEndTime = true;
+                              _setDefaultEndTime();
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                style: BorderStyle.solid,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Add End Time',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      // End Time Fields
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(context).cardColor,
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header with remove button
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'End',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.secondary,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.close,
+                                      size: 20,
+                                      color: Theme.of(context).colorScheme.error,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _hasEndTime = false;
+                                        end_timestamp = null;
+                                        _endDateController.clear();
+                                        _endTimeController.clear();
+                                      });
+                                    },
+                                    tooltip: 'Remove end time',
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Date and Time row
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                              child: Row(
+                                children: [
+                                  // End Date
+                                  Expanded(
+                                    flex: 3,
+                                    child: InkWell(
+                                      onTap: () async {
+                                        final initialDate = _endDateController.text.isNotEmpty && 
+                                                           _endDateController.text != 'Unspecified'
+                                            ? DateTime.parse(_endDateController.text)
+                                            : DateTime.parse(todayDate);
+                                        
+                                        DateTime? pickedDate = await showDatePicker(
+                                          context: context,
+                                          initialDate: initialDate,
+                                          firstDate: DateTime.parse(todayDate),
+                                          lastDate: DateTime(2101),
+                                        );
+                                        if (pickedDate != null) {
+                                          setState(() {
+                                            _endDateController.text = pickedDate.toIso8601String().split('T')[0];
+                                            _updateEndTimestamp();
+                                          });
+                                        }
+                                      },
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(8),
+                                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_today,
+                                              size: 18,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                _endDateController.text.isNotEmpty
+                                                    ? DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(_endDateController.text))
+                                                    : 'Select date',
+                                                style: TextStyle(
+                                                  color: _endDateController.text.isNotEmpty
+                                                      ? Theme.of(context).colorScheme.onSurface
+                                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // End Time (only if not All Day)
+                                  if (_timeController.text != 'All Day')
+                                    Expanded(
+                                      flex: 2,
+                                      child: InkWell(
+                                        onTap: () async {
+                                          TimeOfDay initialTime = TimeOfDay.now();
+                                          if (_endTimeController.text.isNotEmpty && _endTimeController.text != 'All Day') {
+                                            final parts = _endTimeController.text.split(':');
+                                            if (parts.length == 2) {
+                                              initialTime = TimeOfDay(
+                                                hour: int.parse(parts[0]),
+                                                minute: int.parse(parts[1]),
+                                              );
+                                            }
+                                          }
+                                          
+                                          TimeOfDay? pickedTime = await showTimePicker(
+                                            context: context,
+                                            initialTime: initialTime,
+                                            builder: (BuildContext context, Widget? child) {
+                                              return MediaQuery(
+                                                data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                                child: child!,
+                                              );
+                                            },
+                                          );
+                                          
+                                          if (pickedTime != null) {
+                                            setState(() {
+                                              _endTimeController.text = 
+                                                '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
+                                              
+                                              // Auto-adjust date if end time < start time on same day
+                                              if (_endDateController.text == todayDate) {
+                                                final startParts = _timeController.text.split(':');
+                                                if (startParts.length == 2) {
+                                                  final startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+                                                  final endMinutes = pickedTime.hour * 60 + pickedTime.minute;
+                                                  if (endMinutes <= startMinutes) {
+                                                    // Move to next day
+                                                    final nextDay = DateTime.parse(todayDate).add(const Duration(days: 1));
+                                                    _endDateController.text = nextDay.toIso8601String().split('T')[0];
+                                                  }
+                                                }
+                                              }
+                                              
+                                              _updateEndTimestamp();
+                                            });
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(8),
+                                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.access_time,
+                                                size: 18,
+                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                _endTimeController.text.isNotEmpty
+                                                    ? _endTimeController.text
+                                                    : 'Time',
+                                                style: TextStyle(
+                                                  color: _endTimeController.text.isNotEmpty
+                                                      ? Theme.of(context).colorScheme.onSurface
+                                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
