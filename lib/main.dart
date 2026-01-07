@@ -13,7 +13,7 @@ import 'AI/ChatPage.dart';
 import 'Utils/CustomThemeGenerator.dart';
 import 'HomePage/HomePage.dart';
 import 'HomeWidget/HomeWidgetManager.dart';
-import 'SchedulePage/TodayPage.dart';
+import 'SchedulePage/SchedulePageContainer.dart';
 import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'Utils/ThemeNotifier.dart';
@@ -246,7 +246,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _widgetOptions = <Widget>[
       HomePage(),
-      TodayPage(),
+      SchedulePageContainer(),
       DetailsPage(key: _detailsPageKey),
       ChatPage(key: _chatPageKey),
     ];
