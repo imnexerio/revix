@@ -756,23 +756,18 @@ class UnifiedDatabaseService {
         'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
       };
 
-      // Only update date arrays if trackDates is enabled
-      if (trackDates) {
-        updateData['dates_missed_reviews'] = datesMissedReviews;
-      }
+      // Always write date arrays - with data if tracking enabled, empty if disabled
+      // This ensures old data gets cleared when user turns off tracking
+      updateData['dates_missed_reviews'] = trackDates ? datesMissedReviews : [];
 
       // Add skip-specific data if this is a skip operation
       if (isSkip) {
-        if (trackDates) {
-          updateData['skipped_dates'] = skippedDates ?? [];
-        }
+        updateData['skipped_dates'] = trackDates ? (skippedDates ?? []) : [];
         updateData['skip_counts'] = skipCounts ?? 0;
       } else {
         // Add completion-specific data for mark as done
         updateData['date_updated'] = dateRevised;
-        if (trackDates) {
-          updateData['dates_updated'] = datesRevised;
-        }
+        updateData['dates_updated'] = trackDates ? datesRevised : [];
       }
       
       // Update the record using the existing updateRecord method
