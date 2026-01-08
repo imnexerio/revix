@@ -45,7 +45,7 @@ class _AddEntryFormState extends State<AddEntryForm> {
 
   bool _showAddNewCategory = false;
   bool _showAddNewCategoryCode_ = false;
-  bool _trackDates = true;
+  bool _trackDates = false;
 
   @override
   void initState() {
