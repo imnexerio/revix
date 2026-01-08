@@ -146,7 +146,7 @@ void showEntryScheduleP(BuildContext context, Map<String, dynamic> details) {
                             ),
                             child: AspectRatio(
                               aspectRatio: 1.0, // Keep the chart perfectly circular
-                              child: (details['track_dates'] ?? true)
+                              child: (details['track_dates'] ?? 'last_30') != 'off'
                                 ? RecurrenceRadarChart(
                                     dateInitiated: details['date_initiated'],
                                     datesMissedReviews: List.from(details['dates_missed_reviews'] ?? []),

@@ -45,7 +45,7 @@ class _AddEntryFormState extends State<AddEntryForm> {
 
   bool _showAddNewCategory = false;
   bool _showAddNewCategoryCode_ = false;
-  bool _trackDates = false;
+  String _trackDates = 'last_30'; // 'off', 'on', 'last_30'
 
   @override
   void initState() {
@@ -1083,41 +1083,56 @@ class _AddEntryFormState extends State<AddEntryForm> {
                     if(_recurrenceFrequency != 'No Repetition')
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(context).cardColor,
                           border: Border.all(color: Theme.of(context).dividerColor),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Track History',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Store completion dates for charts & analytics',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              'Track History',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            Switch(
-                              value: _trackDates,
-                              onChanged: (value) {
-                                setState(() {
-                                  _trackDates = value;
-                                });
-                              },
+                            const SizedBox(height: 2),
+                            Text(
+                              'Store completion dates for charts & analytics',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: SegmentedButton<String>(
+                                segments: const [
+                                  ButtonSegment<String>(
+                                    value: 'off',
+                                    label: Text('Off'),
+                                    icon: Icon(Icons.history_toggle_off, size: 18),
+                                  ),
+                                  ButtonSegment<String>(
+                                    value: 'last_30',
+                                    label: Text('Last 30'),
+                                    icon: Icon(Icons.filter_list, size: 18),
+                                  ),
+                                  ButtonSegment<String>(
+                                    value: 'on',
+                                    label: Text('Unlimited'),
+                                    icon: Icon(Icons.all_inclusive, size: 18),
+                                  ),
+                                ],
+                                selected: {_trackDates},
+                                onSelectionChanged: (Set<String> selection) {
+                                  setState(() {
+                                    _trackDates = selection.first;
+                                  });
+                                },
+                              ),
                             ),
                           ],
                         ),

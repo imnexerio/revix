@@ -120,7 +120,7 @@ class AnimatedCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
                             child: Center(
                               // Add a key to force rebuild of RecurrenceRadarChart when data changes
-                              child: (record['track_dates'] ?? true)
+                              child: (record['track_dates'] ?? 'last_30') != 'off'
                                 ? RecurrenceRadarChart(
                                     key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_reviews']?.length ?? 0}_${record['skipped_dates']?.length ?? 0}'),
                                     dateInitiated: record['date_initiated'],

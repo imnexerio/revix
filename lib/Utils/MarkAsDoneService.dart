@@ -173,39 +173,68 @@ class MarkAsDoneService {  /// Determines if the entry should be enabled based o
       String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
       int missedReviewCount = (details['missed_counts'] as num).toInt();
       DateTime scheduledDate = DateTime.parse(details['scheduled_date'].toString());
-      bool trackDates = details['track_dates'] ?? true;
+      String trackDatesMode = details['track_dates'] ?? 'last_30'; // 'off', 'on', 'last_30'
+      bool shouldTrackDates = trackDatesMode != 'off';
 
       // Check if review was missed (only for mark as done, not skip)
       if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
         missedReviewCount += 1;
       }
 
-      // Only track date arrays if trackDates is enabled
-      List<String> datesMissedReviews = trackDates 
+      // Only track date arrays if tracking is enabled
+      List<String> datesMissedReviews = shouldTrackDates 
           ? List<String>.from(details['dates_missed_reviews'] ?? []) 
           : [];
-      if (trackDates && !isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
+      if (shouldTrackDates && !isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
         datesMissedReviews.add(scheduledDate.toIso8601String().split('T')[0]);
       }
 
-      List<String> datesRevised = trackDates 
+      List<String> datesRevised = shouldTrackDates 
           ? List<String>.from(details['dates_updated'] ?? []) 
           : [];
-      if (trackDates && !isSkip) {
+      if (shouldTrackDates && !isSkip) {
         datesRevised.add(dateRevised);
       }
 
       // Handle skip-specific data
-      List<String> skippedDates = trackDates 
+      List<String> skippedDates = shouldTrackDates 
           ? List<String>.from(details['skipped_dates'] ?? []) 
           : [];
       int skipCounts = (details['skip_counts'] as num?)?.toInt() ?? 0;
       
       if (isSkip) {
-        if (trackDates) {
+        if (shouldTrackDates) {
           skippedDates.add(scheduledDate.toIso8601String().split('T')[0]);
         }
         skipCounts += 1;
+      }
+
+      // Apply 'last_30' trimming if needed
+      if (trackDatesMode == 'last_30') {
+        // Combine all dates with type tags
+        List<Map<String, String>> allDates = [];
+        for (var date in datesRevised) {
+          allDates.add({'date': date.split('T')[0], 'type': 'reviewed'});
+        }
+        for (var date in datesMissedReviews) {
+          allDates.add({'date': date, 'type': 'missed'});
+        }
+        for (var date in skippedDates) {
+          allDates.add({'date': date, 'type': 'skipped'});
+        }
+        
+        // Sort by date descending (newest first)
+        allDates.sort((a, b) => b['date']!.compareTo(a['date']!));
+        
+        // Keep only 30 most recent
+        if (allDates.length > 30) {
+          allDates = allDates.sublist(0, 30);
+        }
+        
+        // Split back into respective arrays
+        datesRevised = allDates.where((e) => e['type'] == 'reviewed').map((e) => e['date']!).toList();
+        datesMissedReviews = allDates.where((e) => e['type'] == 'missed').map((e) => e['date']!).toList();
+        skippedDates = allDates.where((e) => e['type'] == 'skipped').map((e) => e['date']!).toList();
       }
 
       // Handle 'No Repetition' case
@@ -274,16 +303,16 @@ class MarkAsDoneService {  /// Determines if the entry should be enabled based o
         'description': details['description'] ?? '',
         'status': newStatus,
         'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
-        'dates_missed_reviews': trackDates ? datesMissedReviews : [],
+        'dates_missed_reviews': shouldTrackDates ? datesMissedReviews : [],
       };
 
       // Add skip-specific or completion-specific fields
       if (isSkip) {
-        updateData['skipped_dates'] = trackDates ? skippedDates : [];
+        updateData['skipped_dates'] = shouldTrackDates ? skippedDates : [];
         updateData['skip_counts'] = skipCounts;
       } else {
         updateData['date_updated'] = dateRevised;
-        updateData['dates_updated'] = trackDates ? datesRevised : [];
+        updateData['dates_updated'] = shouldTrackDates ? datesRevised : [];
       }
 
       // Update the record directly

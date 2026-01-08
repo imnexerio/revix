@@ -274,7 +274,7 @@ class UnifiedDatabaseService {
             'duration': recordValue['duration'] ?? 0,
             'skip_counts': recordValue['skip_counts'] ?? 0,
             'skipped_dates': recordValue['skipped_dates'] ?? [],
-            'track_dates': recordValue['track_dates'] ?? true,
+            'track_dates': recordValue['track_dates'] ?? 'last_30',
           };
 
           if (recordValue['date_initiated'] == 'Unspecified') {
@@ -801,7 +801,7 @@ class UnifiedDatabaseService {
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
     int alarmType, {
-    bool trackDates = true,
+    String trackDates = 'last_30',
   }) async {
     // Generate unique title to prevent duplicates
     String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, entryTitle);
@@ -883,7 +883,7 @@ class UnifiedDatabaseService {
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
     int alarmType, {
-    bool trackDates = true,
+    String trackDates = 'last_30',
   }) async {
     try {
       String uniqueTitle = await _updateRecordsInternal(
@@ -932,7 +932,7 @@ class UnifiedDatabaseService {
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
     int alarmType, {
-    bool trackDates = true,
+    String trackDates = 'last_30',
   }) async {
     await _updateRecordsInternal(
       selectedCategory,

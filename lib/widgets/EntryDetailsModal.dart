@@ -54,7 +54,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
   
   // Track if frequency has been changed to show appropriate message
   bool frequencyChanged = false;
-  late bool trackDates;
+  late String trackDates; // 'off', 'on', 'last_30'
 
   @override
   void initState() {
@@ -66,7 +66,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
     dateScheduled = widget.details['scheduled_date']; // Initialize with current scheduled date
     entryType = widget.details['entry_type'] ?? '';
     alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
-    trackDates = widget.details['track_dates'] ?? true; // Initialize with default true for backward compatibility
+    trackDates = widget.details['track_dates'] ?? 'last_30'; // 'off', 'on', 'last_30'
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
@@ -287,7 +287,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                       ),
                       child: AspectRatio(
                         aspectRatio: 1.0,
-                        child: trackDates 
+                        child: trackDates != 'off' 
                           ? RecurrenceRadarChart(
                               dateInitiated: widget.details['date_initiated'],
                               datesMissedReviews: List.from(widget.details['dates_missed_reviews'] ?? []),
@@ -368,48 +368,74 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                           ),
                         ],
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.history,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Track History',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Store completion dates for charts & analytics',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
+                                child: Icon(
+                                  Icons.history,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Track History',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Store completion dates for charts & analytics',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment<String>(
+                                  value: 'off',
+                                  label: Text('Off'),
+                                  icon: Icon(Icons.history_toggle_off, size: 18),
+                                ),
+                                ButtonSegment<String>(
+                                  value: 'last_30',
+                                  label: Text('Last 30'),
+                                  icon: Icon(Icons.filter_list, size: 18),
+                                ),
+                                ButtonSegment<String>(
+                                  value: 'on',
+                                  label: Text('Unlimited'),
+                                  icon: Icon(Icons.all_inclusive, size: 18),
                                 ),
                               ],
+                              selected: {trackDates},
+                              onSelectionChanged: (Set<String> selection) {
+                                setState(() {
+                                  trackDates = selection.first;
+                                });
+                              },
                             ),
-                          ),
-                          Switch(
-                            value: trackDates,
-                            onChanged: (value) {
-                              setState(() {
-                                trackDates = value;
-                              });
-                            },
                           ),
                         ],
                       ),
