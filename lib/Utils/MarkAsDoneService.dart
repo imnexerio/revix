@@ -265,24 +265,33 @@ class MarkAsDoneService {  /// Determines if the entry should be enabled based o
         newStatus = determineEnabledStatus(updatedDetails) ? 'Enabled' : 'Disabled';
       }
 
-      // Use the dedicated updateRecordReview for partial update with status
-      bool updateSuccess = await dbService.updateRecordReview(
+      // Build the update data map with all fields
+      Map<String, dynamic> updateData = {
+        'reminder_time': details['reminder_time'] ?? '',
+        'completion_counts': isSkip ? details['completion_counts'] : details['completion_counts'] + 1,
+        'scheduled_date': dateScheduled,
+        'missed_counts': missedReviewCount,
+        'description': details['description'] ?? '',
+        'status': newStatus,
+        'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
+        'dates_missed_reviews': trackDates ? datesMissedReviews : [],
+      };
+
+      // Add skip-specific or completion-specific fields
+      if (isSkip) {
+        updateData['skipped_dates'] = trackDates ? skippedDates : [];
+        updateData['skip_counts'] = skipCounts;
+      } else {
+        updateData['date_updated'] = dateRevised;
+        updateData['dates_updated'] = trackDates ? datesRevised : [];
+      }
+
+      // Update the record directly
+      bool updateSuccess = await dbService.updateRecord(
         category,
         subCategory,
         entryTitle,
-        isSkip ? details['date_updated'] ?? '' : dateRevised, // Don't update date_updated for skip
-        details['description'] ?? '',
-        details['reminder_time'] ?? '',
-        isSkip ? details['completion_counts'] : details['completion_counts'] + 1, // Don't increment for skip
-        dateScheduled,
-        datesRevised,
-        missedReviewCount,
-        datesMissedReviews,
-        newStatus,
-        isSkip: isSkip,
-        skippedDates: skippedDates,
-        skipCounts: skipCounts,
-        trackDates: trackDates,
+        updateData,
       );
 
       if (!updateSuccess) {

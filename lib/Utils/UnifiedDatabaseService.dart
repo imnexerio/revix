@@ -725,59 +725,6 @@ class UnifiedDatabaseService {
     };
   }
   
-  // Add public method for updating record review data
-  Future<bool> updateRecordReview(
-    String category,
-    String subCategory,
-    String entryTitle,
-    String dateRevised,
-    String description,
-    String reminderTime,
-    int completionCount,
-    String dateScheduled,
-    List<String> datesRevised,
-    int missedReviewCount,
-    List<String> datesMissedReviews,
-    String status, {
-    bool isSkip = false,
-    List<String>? skippedDates,
-    int? skipCounts,
-    bool trackDates = true,
-  }) async {
-    try {
-      // Prepare update data
-      Map<String, dynamic> updateData = {
-        'reminder_time': reminderTime,
-        'completion_counts': completionCount,
-        'scheduled_date': dateScheduled,
-        'missed_counts': missedReviewCount,
-        'description': description,
-        'status': status,
-        'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
-      };
-
-      // Always write date arrays - with data if tracking enabled, empty if disabled
-      // This ensures old data gets cleared when user turns off tracking
-      updateData['dates_missed_reviews'] = trackDates ? datesMissedReviews : [];
-
-      // Add skip-specific data if this is a skip operation
-      if (isSkip) {
-        updateData['skipped_dates'] = trackDates ? (skippedDates ?? []) : [];
-        updateData['skip_counts'] = skipCounts ?? 0;
-      } else {
-        // Add completion-specific data for mark as done
-        updateData['date_updated'] = dateRevised;
-        updateData['dates_updated'] = trackDates ? datesRevised : [];
-      }
-      
-      // Update the record using the existing updateRecord method
-      return await updateRecord(category, subCategory, entryTitle, updateData);
-    } catch (e) {
-      _addErrorToAllControllers('Failed to update record review: $e');
-      return false;
-    }
-  }
-  
   // Add public method for getting data from a particular location
   Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String entryTitle) async {
     if (_isGuestMode) {
