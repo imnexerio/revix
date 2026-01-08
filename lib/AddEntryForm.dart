@@ -45,6 +45,7 @@ class _AddEntryFormState extends State<AddEntryForm> {
 
   bool _showAddNewCategory = false;
   bool _showAddNewCategoryCode_ = false;
+  bool _trackDates = true;
 
   @override
   void initState() {
@@ -110,6 +111,7 @@ class _AddEntryFormState extends State<AddEntryForm> {
         _durationData,
         _customFrequencyParams,
         finalAlarmType,
+        trackDates: _trackDates,
       );
     } catch (e) {
       throw Exception('Failed to save entry: $e');
@@ -1077,6 +1079,49 @@ class _AddEntryFormState extends State<AddEntryForm> {
                         ),
                       ),
 
+                    // Track Dates Toggle - Storage optimization option
+                    if(_recurrenceFrequency != 'No Repetition')
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(context).cardColor,
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Track History',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Store completion dates for charts & analytics',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: _trackDates,
+                              onChanged: (value) {
+                                setState(() {
+                                  _trackDates = value;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
 
                     // Description Field
                     Container(

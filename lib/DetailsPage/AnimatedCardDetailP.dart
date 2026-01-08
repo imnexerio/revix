@@ -148,16 +148,22 @@ class AnimatedCardDetailP extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
                             child: Center(
                               // Add a key to force rebuild of RecurrenceRadarChart when data changes
-                              child: RecurrenceRadarChart(
-                                key: ValueKey(
-                                    'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_reviews'] as List?)?.length ?? 0}_${(record['skipped_dates'] as List?)?.length ?? 0}'
-                                ),
-                                dateInitiated: record['date_initiated'],
-                                datesMissedReviews: _safeListConversion(record['dates_missed_reviews']),
-                                datesReviewed: _safeListConversion(record['dates_updated']),
-                                datesSkipped: _safeListConversion(record['skipped_dates']),
-                                showLabels: false,
-                              ),
+                              child: (record['track_dates'] ?? true)
+                                ? RecurrenceRadarChart(
+                                    key: ValueKey(
+                                        'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_reviews'] as List?)?.length ?? 0}_${(record['skipped_dates'] as List?)?.length ?? 0}'
+                                    ),
+                                    dateInitiated: record['date_initiated'],
+                                    datesMissedReviews: _safeListConversion(record['dates_missed_reviews']),
+                                    datesReviewed: _safeListConversion(record['dates_updated']),
+                                    datesSkipped: _safeListConversion(record['skipped_dates']),
+                                    showLabels: false,
+                                  )
+                                : Icon(
+                                    Icons.history_toggle_off,
+                                    size: 32,
+                                    color: Colors.grey.withOpacity(0.4),
+                                  ),
                             ),
                           ),
                         ),

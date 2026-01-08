@@ -173,28 +173,38 @@ class MarkAsDoneService {  /// Determines if the entry should be enabled based o
       String dateRevised = DateFormat('yyyy-MM-ddTHH:mm').format(DateTime.now());
       int missedReviewCount = (details['missed_counts'] as num).toInt();
       DateTime scheduledDate = DateTime.parse(details['scheduled_date'].toString());
+      bool trackDates = details['track_dates'] ?? true;
 
       // Check if review was missed (only for mark as done, not skip)
       if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
         missedReviewCount += 1;
       }
 
-      List<String> datesMissedReviews = List<String>.from(details['dates_missed_reviews'] ?? []);
-      if (!isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
+      // Only track date arrays if trackDates is enabled
+      List<String> datesMissedReviews = trackDates 
+          ? List<String>.from(details['dates_missed_reviews'] ?? []) 
+          : [];
+      if (trackDates && !isSkip && scheduledDate.toIso8601String().split('T')[0].compareTo(dateRevised.split('T')[0]) < 0) {
         datesMissedReviews.add(scheduledDate.toIso8601String().split('T')[0]);
       }
 
-      List<String> datesRevised = List<String>.from(details['dates_updated'] ?? []);
-      if (!isSkip) {
+      List<String> datesRevised = trackDates 
+          ? List<String>.from(details['dates_updated'] ?? []) 
+          : [];
+      if (trackDates && !isSkip) {
         datesRevised.add(dateRevised);
       }
 
       // Handle skip-specific data
-      List<String> skippedDates = List<String>.from(details['skipped_dates'] ?? []);
+      List<String> skippedDates = trackDates 
+          ? List<String>.from(details['skipped_dates'] ?? []) 
+          : [];
       int skipCounts = (details['skip_counts'] as num?)?.toInt() ?? 0;
       
       if (isSkip) {
-        skippedDates.add(scheduledDate.toIso8601String().split('T')[0]);
+        if (trackDates) {
+          skippedDates.add(scheduledDate.toIso8601String().split('T')[0]);
+        }
         skipCounts += 1;
       }
 
@@ -272,6 +282,7 @@ class MarkAsDoneService {  /// Determines if the entry should be enabled based o
         isSkip: isSkip,
         skippedDates: skippedDates,
         skipCounts: skipCounts,
+        trackDates: trackDates,
       );
 
       if (!updateSuccess) {

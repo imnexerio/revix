@@ -54,6 +54,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
   
   // Track if frequency has been changed to show appropriate message
   bool frequencyChanged = false;
+  late bool trackDates;
 
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
     dateScheduled = widget.details['scheduled_date']; // Initialize with current scheduled date
     entryType = widget.details['entry_type'] ?? '';
     alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
+    trackDates = widget.details['track_dates'] ?? true; // Initialize with default true for backward compatibility
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
@@ -285,12 +287,39 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                       ),
                       child: AspectRatio(
                         aspectRatio: 1.0,
-                        child: RecurrenceRadarChart(
-                          dateInitiated: widget.details['date_initiated'],
-                          datesMissedReviews: List.from(widget.details['dates_missed_reviews'] ?? []),
-                          datesReviewed: List.from(widget.details['dates_updated'] ?? []),
-                          datesSkipped: List.from(widget.details['skipped_dates'] ?? []),
-                        ),
+                        child: trackDates 
+                          ? RecurrenceRadarChart(
+                              dateInitiated: widget.details['date_initiated'],
+                              datesMissedReviews: List.from(widget.details['dates_missed_reviews'] ?? []),
+                              datesReviewed: List.from(widget.details['dates_updated'] ?? []),
+                              datesSkipped: List.from(widget.details['skipped_dates'] ?? []),
+                            )
+                          : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.history_toggle_off,
+                                    size: 48,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'History tracking disabled',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Enable to see future completion charts',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                       ),
                     ),
                   ),
@@ -322,6 +351,69 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                   ),
                   const SizedBox(height: 12),
                   _buildRecurrenceSettingsCard(context),
+
+                  // Track History Toggle
+                  if (recurrenceFrequency != 'No Repetition')
+                    Container(
+                      margin: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: Theme.of(context).colorScheme.surface,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.history,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Track History',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Store completion dates for charts & analytics',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: trackDates,
+                            onChanged: (value) {
+                              setState(() {
+                                trackDates = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
 
                   // const SizedBox(height: 12),
                   DescriptionCard(
@@ -431,6 +523,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                             'duration': durationData,
                             'alarm_type': finalAlarmType,
                             'entry_type': entryType,
+                            'track_dates': trackDates,
                           };
                           
                           // Update record using centralized service

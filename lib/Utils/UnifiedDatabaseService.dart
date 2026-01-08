@@ -274,6 +274,7 @@ class UnifiedDatabaseService {
             'duration': recordValue['duration'] ?? 0,
             'skip_counts': recordValue['skip_counts'] ?? 0,
             'skipped_dates': recordValue['skipped_dates'] ?? [],
+            'track_dates': recordValue['track_dates'] ?? true,
           };
 
           if (recordValue['date_initiated'] == 'Unspecified') {
@@ -741,6 +742,7 @@ class UnifiedDatabaseService {
     bool isSkip = false,
     List<String>? skippedDates,
     int? skipCounts,
+    bool trackDates = true,
   }) async {
     try {
       // Prepare update data
@@ -749,20 +751,28 @@ class UnifiedDatabaseService {
         'completion_counts': completionCount,
         'scheduled_date': dateScheduled,
         'missed_counts': missedReviewCount,
-        'dates_missed_reviews': datesMissedReviews,
         'description': description,
         'status': status,
         'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
       };
 
+      // Only update date arrays if trackDates is enabled
+      if (trackDates) {
+        updateData['dates_missed_reviews'] = datesMissedReviews;
+      }
+
       // Add skip-specific data if this is a skip operation
       if (isSkip) {
-        updateData['skipped_dates'] = skippedDates ?? [];
+        if (trackDates) {
+          updateData['skipped_dates'] = skippedDates ?? [];
+        }
         updateData['skip_counts'] = skipCounts ?? 0;
       } else {
         // Add completion-specific data for mark as done
         updateData['date_updated'] = dateRevised;
-        updateData['dates_updated'] = datesRevised;
+        if (trackDates) {
+          updateData['dates_updated'] = datesRevised;
+        }
       }
       
       // Update the record using the existing updateRecord method
@@ -848,8 +858,9 @@ class UnifiedDatabaseService {
     String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    bool trackDates = true,
+  }) async {
     // Generate unique title to prevent duplicates
     String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, entryTitle);
     
@@ -897,6 +908,7 @@ class UnifiedDatabaseService {
         'recurrence_data': recurrenceData,
         'status': 'Enabled',
         'duration': durationData,
+        'track_dates': trackDates,
       };
 
       // Save record using unified service with unique title
@@ -928,8 +940,9 @@ class UnifiedDatabaseService {
     String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    bool trackDates = true,
+  }) async {
     try {
       String uniqueTitle = await _updateRecordsInternal(
         selectedCategory,
@@ -945,6 +958,7 @@ class UnifiedDatabaseService {
         durationData,
         customFrequencyParams,
         alarmType,
+        trackDates: trackDates,
       );
       
       // Show appropriate success message
@@ -975,8 +989,9 @@ class UnifiedDatabaseService {
     String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    bool trackDates = true,
+  }) async {
     await _updateRecordsInternal(
       selectedCategory,
       selectedCategoryCode,
@@ -991,6 +1006,7 @@ class UnifiedDatabaseService {
       durationData,
       customFrequencyParams,
       alarmType,
+      trackDates: trackDates,
     );
   }
 

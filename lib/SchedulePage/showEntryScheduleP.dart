@@ -146,12 +146,32 @@ void showEntryScheduleP(BuildContext context, Map<String, dynamic> details) {
                             ),
                             child: AspectRatio(
                               aspectRatio: 1.0, // Keep the chart perfectly circular
-                              child: RecurrenceRadarChart(
-                                dateInitiated: details['date_initiated'],
-                                datesMissedReviews: List.from(details['dates_missed_reviews'] ?? []),
-                                datesReviewed: List.from(details['dates_updated'] ?? []),
-                                datesSkipped: List.from(details['skipped_dates'] ?? []),
-                              ),
+                              child: (details['track_dates'] ?? true)
+                                ? RecurrenceRadarChart(
+                                    dateInitiated: details['date_initiated'],
+                                    datesMissedReviews: List.from(details['dates_missed_reviews'] ?? []),
+                                    datesReviewed: List.from(details['dates_updated'] ?? []),
+                                    datesSkipped: List.from(details['skipped_dates'] ?? []),
+                                  )
+                                : Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.history_toggle_off,
+                                          size: 48,
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'History tracking disabled',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                             ),
                           ),
                         ),
