@@ -3,38 +3,38 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:revix/Utils/UnifiedDatabaseService.dart';
 import '../Utils/CustomFrequencySelector.dart';
-import '../SchedulePage/RevisionGraph.dart';
+import '../SchedulePage/RecurrenceGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/MarkAsDoneService.dart';
-import '../Utils/lecture_colors.dart';
+import '../Utils/entry_colors.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/CalculateCustomNextDate.dart';
 import '../Utils/date_utils.dart';
 import 'DescriptionCard.dart';
-import 'RevisionFrequencyDropdown.dart';
+import 'RecurrenceDropdown.dart';
 
-class LectureDetailsModal extends StatefulWidget {
-  final String lectureNo;
+class EntryDetailsModal extends StatefulWidget {
+  final String entryTitle;
   final Map<String, dynamic> details;
   final String selectedCategory;
   final String selectedCategoryCode;
 
-  LectureDetailsModal({
-    required this.lectureNo,
+  EntryDetailsModal({
+    required this.entryTitle,
     required this.details,
     required this.selectedCategory,
     required this.selectedCategoryCode,
   });
 
   @override
-  _LectureDetailsModalState createState() => _LectureDetailsModalState();
+  _EntryDetailsModalState createState() => _EntryDetailsModalState();
 }
 
-class _LectureDetailsModalState extends State<LectureDetailsModal> {
-  late String revisionFrequency;
+class _EntryDetailsModalState extends State<EntryDetailsModal> {
+  late String recurrenceFrequency;
   late bool isEnabled;
-  late int noRevision;
+  late int completionCount;
   late TextEditingController _descriptionController;
   late String formattedTime;
   late String dateScheduled;
@@ -54,17 +54,19 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   
   // Track if frequency has been changed to show appropriate message
   bool frequencyChanged = false;
+  late String trackDates; // 'off', 'on', 'last_30'
 
   @override
   void initState() {
     super.initState();
-    revisionFrequency = widget.details['recurrence_frequency'];
+    recurrenceFrequency = widget.details['recurrence_frequency'];
     isEnabled = widget.details['status'] == 'Enabled'; // Always initialize from widget details
-    noRevision = widget.details['completion_counts'];
+    completionCount = widget.details['completion_counts'];
     formattedTime = widget.details['reminder_time'];
     dateScheduled = widget.details['scheduled_date']; // Initialize with current scheduled date
     entryType = widget.details['entry_type'] ?? '';
     alarmType = widget.details['alarm_type'] ?? 0; // Initialize alarm type with default 0
+    trackDates = widget.details['track_dates'] ?? 'last_30'; // 'off', 'on', 'last_30'
     _descriptionController = TextEditingController(
       text: widget.details['description'] ?? 'No description available',
     );
@@ -145,7 +147,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
             ),
           ),
 
-          // Header with category and lecture info
+          // Header with category and entry info
           Container(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
             child: Row(
@@ -182,7 +184,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${widget.selectedCategory} · ${widget.selectedCategoryCode} · ${widget.lectureNo}',
+                        '${widget.selectedCategory} · ${widget.selectedCategoryCode} · ${widget.entryTitle}',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -209,7 +211,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                                           width: 12,
                                           height: 12,
                                           decoration: BoxDecoration(
-                                            color: LectureColors.generateColorFromString(type),
+                                            color: EntryColors.generateColorFromString(type),
                                             shape: BoxShape.circle,
                                           ),
                                         ),
@@ -236,7 +238,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: LectureColors.generateColorFromString(entryType),
+                                color: EntryColors.generateColorFromString(entryType),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -245,7 +247,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                               entryType,
                               style: TextStyle(
                                 fontSize: 16,
-                                color: LectureColors.generateColorFromString(entryType),
+                                color: EntryColors.generateColorFromString(entryType),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -285,12 +287,39 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                       ),
                       child: AspectRatio(
                         aspectRatio: 1.0,
-                        child: RevisionRadarChart(
-                          dateLearnt: widget.details['date_initiated'],
-                          datesMissedRevisions: List.from(widget.details['dates_missed_revisions'] ?? []),
-                          datesRevised: List.from(widget.details['dates_updated'] ?? []),
-                          datesSkipped: List.from(widget.details['skipped_dates'] ?? []),
-                        ),
+                        child: trackDates != 'off' 
+                          ? RecurrenceRadarChart(
+                              dateInitiated: widget.details['date_initiated'],
+                              datesMissedReviews: List.from(widget.details['dates_missed_reviews'] ?? []),
+                              datesReviewed: List.from(widget.details['dates_updated'] ?? []),
+                              datesSkipped: List.from(widget.details['skipped_dates'] ?? []),
+                            )
+                          : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.history_toggle_off,
+                                    size: 48,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'History tracking disabled',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Enable to see future completion charts',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                       ),
                     ),
                   ),
@@ -321,7 +350,96 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildRevisionSettingsCard(context),
+                  _buildRecurrenceSettingsCard(context),
+
+                  // Track History Toggle
+                  if (recurrenceFrequency != 'No Repetition')
+                    Container(
+                      margin: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: Theme.of(context).colorScheme.surface,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.history,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Track History',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Store completion dates for charts & analytics',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment<String>(
+                                  value: 'off',
+                                  label: Text('Off'),
+                                  icon: Icon(Icons.history_toggle_off, size: 18),
+                                ),
+                                ButtonSegment<String>(
+                                  value: 'last_30',
+                                  label: Text('Last 30'),
+                                  icon: Icon(Icons.filter_list, size: 18),
+                                ),
+                                ButtonSegment<String>(
+                                  value: 'on',
+                                  label: Text('Unlimited'),
+                                  icon: Icon(Icons.all_inclusive, size: 18),
+                                ),
+                              ],
+                              selected: {trackDates},
+                              onSelectionChanged: (Set<String> selection) {
+                                setState(() {
+                                  trackDates = selection.first;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   // const SizedBox(height: 12),
                   DescriptionCard(
@@ -350,7 +468,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         context: context,
                         category: widget.selectedCategory,
                         subCategory: widget.selectedCategoryCode,
-                        lectureNo: widget.lectureNo,
+                        entryTitle: widget.entryTitle,
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -397,16 +515,16 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                             },
                           );
 
-                          List<String> datesMissedRevisions = List<String>.from(widget.details['dates_missed_revisions'] ?? []);
-                          List<String> datesRevised = List<String>.from(widget.details['dates_updated'] ?? []);
+                          List<String> datesMissedReviews = List<String>.from(widget.details['dates_missed_reviews'] ?? []);
+                          List<String> datesReviewed = List<String>.from(widget.details['dates_updated'] ?? []);
                           
                           // Use the already calculated dateScheduled value (no need to recalculate)
                           String finalDateScheduled = dateScheduled;
-                          Map<String, dynamic> revisionData = {
-                            'frequency': revisionFrequency,
+                          Map<String, dynamic> recurrenceData = {
+                            'frequency': recurrenceFrequency,
                           };
                           if(customFrequencyParams.isNotEmpty) {
-                            revisionData['custom_params'] = customFrequencyParams;
+                            recurrenceData['custom_params'] = customFrequencyParams;
                           }
 
                           // Set alarm type to 0 if "All Day" is selected
@@ -419,25 +537,26 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                           Map<String, dynamic> updateData = {
                             'reminder_time': formattedTime,
                             'date_updated': widget.details['date_updated'],
-                            'completion_counts': noRevision,
+                            'completion_counts': completionCount,
                             'scheduled_date': finalDateScheduled,
                             'missed_counts': widget.details['missed_counts'],
-                            'dates_missed_revisions': datesMissedRevisions,
-                            'recurrence_frequency': revisionFrequency,
+                            'dates_missed_reviews': datesMissedReviews,
+                            'recurrence_frequency': recurrenceFrequency,
                             'status': isEnabled ? 'Enabled' : 'Disabled',
-                            'dates_updated': datesRevised,
+                            'dates_updated': datesReviewed,
                             'description': widget.details['description'],
-                            'recurrence_data': revisionData,
+                            'recurrence_data': recurrenceData,
                             'duration': durationData,
                             'alarm_type': finalAlarmType,
                             'entry_type': entryType,
+                            'track_dates': trackDates,
                           };
                           
                           // Update record using centralized service
                           bool success = await databaseService.updateRecord(
                             widget.selectedCategory, 
                             widget.selectedCategoryCode, 
-                            widget.lectureNo, 
+                            widget.entryTitle, 
                             updateData
                           );
                           
@@ -451,7 +570,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
 
                             customSnackBar(
                               context: context,
-                              message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.lectureNo}, updated. Next schedule is on $finalDateScheduled.',
+                              message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.entryTitle}, updated. Next schedule is on $finalDateScheduled.',
                           );
                         } catch (e) {
                           if (Navigator.canPop(context)) {
@@ -595,7 +714,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         ListTile(
                           leading: const Icon(Icons.all_inclusive),
                           title: const Text('Forever'),
-                          subtitle: const Text('Continue revisions indefinitely'),
+                          subtitle: const Text('Continue reviews indefinitely'),
                           onTap: () {
                             setState(() {
                               duration = 'Forever';
@@ -611,7 +730,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                         ListTile(
                           leading: const Icon(Icons.repeat),
                           title: const Text('Specific Number of Times'),
-                          subtitle: const Text('Set a target number of revisions'),
+                          subtitle: const Text('Set a target number of reviews'),
                           onTap: () {
                             Navigator.of(context).pop();
                             _showNumberOfTimesDialog();
@@ -843,7 +962,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   }
 
 
-  Widget _buildRevisionSettingsCard(BuildContext context) {
+  Widget _buildRecurrenceSettingsCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -863,24 +982,24 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
         children: [
           const SizedBox(height: 8),
           
-          // Wrap the RevisionFrequencyDropdown in a Container with styling
+          // Wrap the RecurrenceDropdown in a Container with styling
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               color: Theme.of(context).cardColor,
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
-            child: RevisionFrequencyDropdown(
-              revisionFrequency: revisionFrequency,
+            child: RecurrenceDropdown(
+              recurrenceFrequency: recurrenceFrequency,
               onChanged: (String? newValue) async {
                 if (newValue != null) {
                   setState(() {
-                    revisionFrequency = newValue;
+                    recurrenceFrequency = newValue;
                     frequencyChanged = true; // Mark that frequency has been changed
 
                     // If custom is selected, show custom options
                     if (newValue == 'Custom') {
-                      // print('extractRevisionData: ${extractRevisionData(widget.details)}');
+                      // print('extractRecurrenceData: ${extractRecurrenceData(widget.details)}');
                       showCustomFrequencySelector();
                     } else {
                       customFrequencyParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
@@ -897,7 +1016,7 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
           const SizedBox(height: 20),
 
           // Custom frequency description (if selected)
-          if (revisionFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
+          if (recurrenceFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
               // child: Text(              //   getCustomFrequencyDescription(),
@@ -967,8 +1086,8 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
               Expanded(
                 child: Text(
                   isEnabled
-                      ? "This lecture is enabled for future revisions"
-                      : "This lecture is disabled and won't appear in revisions",
+                      ? "This entry is enabled for future reviews"
+                      : "This entry is disabled and won't appear in reviews",
                   style: TextStyle(
                     fontSize: 14,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -982,15 +1101,15 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
                     // Don't update widget.details['status'] here - only update in local state
                     // The actual data will only be updated when user clicks "SAVE CHANGES"
                     
-                    // Mark frequency as changed when enabling a disabled lecture (triggers new date calculation)
+                    // Mark frequency as changed when enabling a disabled entry (triggers new date calculation)
                     if (newValue && widget.details['status'] == 'Disabled') {
                       frequencyChanged = true;
                     }
                   });
                   
-                  // Recalculate next review date when enabling a disabled lecture
+                  // Recalculate next review date when enabling a disabled entry
                   if (newValue && widget.details['status'] == 'Disabled') {
-                    await _calculateAndUpdateNextDate(revisionFrequency);
+                    await _calculateAndUpdateNextDate(recurrenceFrequency);
                   }
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
@@ -1020,31 +1139,31 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
   }
 
   String _getCompletionValue() {
-    int completionCount = noRevision;
+    int count = completionCount;
     
     String durationType = durationData['type'] ?? '';
     
     switch (durationType) {
       case 'specificTimes':
         int numberOfTimes = durationData['numberOfTimes'] ?? 0;
-        return "$completionCount/$numberOfTimes";
+        return "$count/$numberOfTimes";
         
       case 'until':
         String endDate = durationData['endDate'] ?? '';
         if (endDate.isNotEmpty) {
           try {
-            return "$completionCount/$endDate";
+            return "$count/$endDate";
           } catch (e) {
-            return "$completionCount/date";
+            return "$count/date";
           }
         }
-        return "$completionCount/date";
+        return "$count/date";
         
       case 'forever':
-        return "$completionCount/∞";
+        return "$count/∞";
         
       default:
-        return "$completionCount";
+        return "$count";
     }
   }
 
@@ -1163,17 +1282,17 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
       
       String newDateScheduled;
       if (frequency == 'Custom') {
-        Map<String, dynamic> revisionData = _extractRevisionData();
+        Map<String, dynamic> recurrenceData = _extractRecurrenceData();
         DateTime nextDateTime = CalculateCustomNextDate.calculateCustomNextDate(
           baseDate,
-          revisionData,
+          recurrenceData,
         );
         newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
       } else {
-        DateTime nextDateTime = await DateNextRevision.calculateNextRevisionDate(
+        DateTime nextDateTime = await DateNextRecurrence.calculateNextRecurrenceDate(
           baseDate,
           frequency,
-          noRevision,
+          completionCount,
         );
         newDateScheduled = nextDateTime.toIso8601String().split('T')[0];
       }
@@ -1235,16 +1354,16 @@ class _LectureDetailsModalState extends State<LectureDetailsModal> {
     }
   }
 
-  /// Extract revision data using current state variables (for frequency changes)
-  Map<String, dynamic> _extractRevisionData() {
-    Map<String, dynamic> revisionData = {
-      'frequency': revisionFrequency,
+  /// Extract recurrence data using current state variables (for frequency changes)
+  Map<String, dynamic> _extractRecurrenceData() {
+    Map<String, dynamic> recurrenceData = {
+      'frequency': recurrenceFrequency,
     };
     
     if (customFrequencyParams.isNotEmpty) {
-      revisionData['custom_params'] = customFrequencyParams;
+      recurrenceData['custom_params'] = customFrequencyParams;
     }
 
-    return revisionData;
+    return recurrenceData;
   }
 }

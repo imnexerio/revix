@@ -33,11 +33,11 @@ class RecordUpdateService : Service() {
         }
         val category = intent.getStringExtra("category") ?: ""
         val subCategory = intent.getStringExtra("sub_category") ?: ""
-        val lectureNo = intent.getStringExtra("record_title") ?: ""
+        val entryTitle = intent.getStringExtra("record_title") ?: ""
         val isSkip = intent.getBooleanExtra("is_skip", false) // Get skip flag
         val externalRequestId = intent.getStringExtra("request_id") // Get external request ID if provided
 
-        if (category.isEmpty() || subCategory.isEmpty() || lectureNo.isEmpty()) {
+        if (category.isEmpty() || subCategory.isEmpty() || entryTitle.isEmpty()) {
             Toast.makeText(this, "Invalid record information", Toast.LENGTH_SHORT).show()
             finishTask(startId)
             return START_NOT_STICKY
@@ -56,7 +56,7 @@ class RecordUpdateService : Service() {
             }
         }
 
-        handleRecordClick(category, subCategory, lectureNo, extras, externalRequestId, startId, isSkip)
+        handleRecordClick(category, subCategory, entryTitle, extras, externalRequestId, startId, isSkip)
         return START_STICKY
     }
 
@@ -95,14 +95,14 @@ class RecordUpdateService : Service() {
     private fun handleRecordClick(
         category: String,
         subCategory: String,
-        lectureNo: String,
+        entryTitle: String,
         extras: Map<String, String>,
         externalRequestId: String?,
         startId: Int,
         isSkip: Boolean = false
     ) {
         try {
-            updateRecord(emptyMap<String, Any>(), category, subCategory, lectureNo, extras, externalRequestId, startId, isSkip)
+            updateRecord(emptyMap<String, Any>(), category, subCategory, entryTitle, extras, externalRequestId, startId, isSkip)
         } catch (e: Exception) {
             Toast.makeText(applicationContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             e.printStackTrace()
@@ -114,7 +114,7 @@ class RecordUpdateService : Service() {
         details: Map<*, *>,
         category: String,
         subCategory: String,
-        lectureNo: String,
+        entryTitle: String,
         extras: Map<String, String>,
         externalRequestId: String?,
         startId: Int,
@@ -135,7 +135,7 @@ class RecordUpdateService : Service() {
                 .buildUpon()
                 .appendQueryParameter("category", category)
                 .appendQueryParameter("sub_category", subCategory)
-                .appendQueryParameter("record_title", lectureNo)
+                .appendQueryParameter("record_title", entryTitle)
                 .appendQueryParameter("requestId", requestId)
                 .appendQueryParameter("is_skip", isSkip.toString()) // Add skip parameter
                 .build()
@@ -192,7 +192,7 @@ class RecordUpdateService : Service() {
                                 if (isSkip) "Record skipped successfully!" else "Record updated successfully!",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showStatusNotification(category,subCategory,lectureNo, if (isSkip) "Skipped successfully!" else "Completed successfully!", true)
+                            showStatusNotification(category,subCategory,entryTitle, if (isSkip) "Skipped successfully!" else "Completed successfully!", true)
                         } else {
                             val displayError = if (errorMessage.isNotEmpty()) errorMessage else "Unknown error occurred"
                             Toast.makeText(
@@ -200,7 +200,7 @@ class RecordUpdateService : Service() {
                                 "Failed to update record: $displayError",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showStatusNotification(category,subCategory,lectureNo, "Failed: $displayError please launch app for more info", false)
+                            showStatusNotification(category,subCategory,entryTitle, "Failed: $displayError please launch app for more info", false)
                         }
                     } else {
                         // Timeout occurred
@@ -209,12 +209,12 @@ class RecordUpdateService : Service() {
                             "Update operation timed out. Please try again.",
                             Toast.LENGTH_SHORT
                         ).show()
-                        showStatusNotification(category,subCategory,lectureNo, "Operation timed out please launch app for more info.", false)
+                        showStatusNotification(category,subCategory,entryTitle, "Operation timed out please launch app for more info.", false)
                     }
                 }
 
                 // Clear processing state and trigger refresh
-                clearProcessingState(category, subCategory, lectureNo)
+                clearProcessingState(category, subCategory, entryTitle)
                 triggerWidgetRefresh(startId)
                 
             }.start()
@@ -222,16 +222,16 @@ class RecordUpdateService : Service() {
         } catch (e: Exception) {
             Toast.makeText(applicationContext, "Error updating record: ${e.message}", Toast.LENGTH_SHORT).show()
             Log.e("RecordUpdateService", "Error triggering background update: ${e.message}")
-            clearProcessingState(category, subCategory, lectureNo)
+            clearProcessingState(category, subCategory, entryTitle)
             triggerWidgetRefresh(startId)
             stopSelf(startId)
         }
     }
 
-    private fun clearProcessingState(category: String, subCategory: String, lectureNo: String) {
+    private fun clearProcessingState(category: String, subCategory: String, entryTitle: String) {
         val prefs = applicationContext.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
         val processingItems = prefs.getStringSet(TodayWidget.PREF_PROCESSING_ITEMS, mutableSetOf()) ?: mutableSetOf()
-        val itemKey = "${category}_${subCategory}_${lectureNo}"
+        val itemKey = "${category}_${subCategory}_${entryTitle}"
         val newProcessingItems = processingItems.toMutableSet()
         newProcessingItems.remove(itemKey)
         prefs.edit().putStringSet(TodayWidget.PREF_PROCESSING_ITEMS, newProcessingItems).apply()

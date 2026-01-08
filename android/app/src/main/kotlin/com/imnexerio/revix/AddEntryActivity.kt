@@ -17,30 +17,30 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.*
 
-class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
+class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequencySelectedListener {
     private lateinit var categorySpinner: Spinner
     private lateinit var addNewCategoryLayout: LinearLayout
     private lateinit var newCategoryEditText: EditText
     private lateinit var subCategorySpinner: Spinner
     private lateinit var addNewSubCategoryLayout: LinearLayout
     private lateinit var newSubCategoryEditText: EditText
-    private lateinit var lectureTypeSpinner: Spinner
+    private lateinit var entryTypeSpinner: Spinner
     private lateinit var titleEditText: EditText
     private lateinit var reminderTimeEditText: EditText
     private lateinit var allDayCheckBox: CheckBox
     private lateinit var initiationDateEditText: EditText
-    private lateinit var initiationDateCheckbox: CheckBox // New checkbox
-    private lateinit var revisionFrequencySpinner: Spinner
-    private lateinit var reviewFrequencyCheckbox: CheckBox // New checkbox
+    private lateinit var initiationDateCheckbox: CheckBox
+    private lateinit var recurrenceFrequencySpinner: Spinner
+    private lateinit var recurrenceFrequencyCheckbox: CheckBox
     private lateinit var scheduledDateEditText: EditText
     private lateinit var durationSpinner: Spinner
     private lateinit var descriptionEditText: EditText
     private lateinit var saveButton: Button
-    private lateinit var revisionFrequencyText: TextView
+    private lateinit var recurrenceFrequencyText: TextView
     private lateinit var firstReminderDate: TextView
     private lateinit var reminderDurationText: TextView
     private lateinit var cancelButton: Button
-    private lateinit var revision_FrequencyCard: CardView
+    private lateinit var recurrence_FrequencyCard: CardView
     private lateinit var alarmTypeSpinner: Spinner
 
     // Data
@@ -48,11 +48,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private var subCategories = mutableMapOf<String, List<String>>()
     private var selectedCategory = "DEFAULT_VALUE"
     private var selectedCategoryCode = ""
-    private var lectureType = "Lectures"
-    private var revisionFrequency = "Default"
+    private var entryType = "Lectures"
+    private var recurrenceFrequency = "Default"
     private var todayDate = ""
     private var dateScheduled = ""
-    private var noRevision = 0
+    private var completionCount = 0
 
     // Alarm type variables
     private var alarmType = 0 // 0: no reminder, 1: notification only, 2: vibration only, 3: sound, 4: sound + vibration, 5: loud alarm
@@ -70,12 +70,12 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     private var frequencies = mutableMapOf<String, List<Int>>()
     private var frequencyNames = mutableListOf<String>()
     private var customFrequencyData: HashMap<String, Any> = HashMap()
-    private var revisionData: MutableMap<String, Any?> = mutableMapOf()
+    private var recurrenceData: MutableMap<String, Any?> = mutableMapOf()
     val recordData = HashMap<String, Any>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_lecture)
+        setContentView(R.layout.activity_add_entry)
 
         // Initialize UI elements
         initializeViews()
@@ -94,23 +94,23 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         subCategorySpinner = findViewById(R.id.subcategory_spinner)
         addNewSubCategoryLayout = findViewById(R.id.add_new_subcategory_layout)
         newSubCategoryEditText = findViewById(R.id.new_subcategory_edit_text)
-        lectureTypeSpinner = findViewById(R.id.lecture_type_spinner)
+        entryTypeSpinner = findViewById(R.id.entry_type_spinner)
         titleEditText = findViewById(R.id.title_edit_text)
         reminderTimeEditText = findViewById(R.id.reminder_time_edit_text)
         allDayCheckBox = findViewById(R.id.all_day_checkbox)
         initiationDateEditText = findViewById(R.id.initiation_date_edit_text)
         initiationDateCheckbox = findViewById(R.id.initiation_date_checkbox)
-        revisionFrequencySpinner = findViewById(R.id.revision_frequency_spinner)
-        reviewFrequencyCheckbox = findViewById(R.id.review_frequency_checkbox)
+        recurrenceFrequencySpinner = findViewById(R.id.recurrence_frequency_spinner)
+        recurrenceFrequencyCheckbox = findViewById(R.id.recurrence_frequency_checkbox)
         scheduledDateEditText = findViewById(R.id.scheduled_date_edit_text)
         durationSpinner = findViewById(R.id.duration_spinner)
         descriptionEditText = findViewById(R.id.description_edit_text)
         saveButton = findViewById(R.id.save_button)
-        revisionFrequencyText = findViewById(R.id.revision_frequency_text)
+        recurrenceFrequencyText = findViewById(R.id.recurrence_frequency_text)
         firstReminderDate = findViewById(R.id.scheduled_date_text)
         reminderDurationText = findViewById(R.id.reminder_duration_text)
         cancelButton = findViewById(R.id.cancel_button)
-        revision_FrequencyCard = findViewById(R.id.revision_frequency_card)
+        recurrence_FrequencyCard = findViewById(R.id.recurrence_frequency_card)
         alarmTypeSpinner = findViewById(R.id.alarm_type_spinner)
         
         // Set up ONLY initial states - defer spinner setup to reduce blocking
@@ -124,7 +124,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
         // Set initial checkbox states
         initiationDateCheckbox.isChecked = false
-        reviewFrequencyCheckbox.isChecked = false
+        recurrenceFrequencyCheckbox.isChecked = false
     }
 
     private fun setupAlarmTypeSpinner() {
@@ -180,7 +180,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     // Update tracking types
                     trackingTypes.clear()
                     trackingTypes.addAll(trackingTypesResult)
-                    updateLectureTypeSpinner()
+                    updateEntryTypeSpinner()
                     
                     // Update frequencies
                     frequencies.clear()
@@ -189,7 +189,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     frequencyNames.addAll(FrequencyCalculationUtils.getFrequencyNames(frequenciesResult))
                     frequencyNames.add("Custom")
                     frequencyNames.add("No Repetition")
-                    updateRevisionFrequencySpinner()
+                    updateRecurrenceFrequencySpinner()
                     
                     // Update categories
                     subjects.clear()
@@ -207,9 +207,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     setupListeners()
                 }
             } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error loading custom data: ${e.message}", e)
+                Log.e("AddEntryActivity", "Error loading custom data: ${e.message}", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@AddLectureActivity, "Error loading data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AddEntryActivity, "Error loading data", Toast.LENGTH_SHORT).show()
                     // Still setup spinners and listeners even on error
                     setupDurationSpinner()
                     setupAlarmTypeSpinner()
@@ -219,7 +219,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    private fun updateLectureTypeSpinner() {
+    private fun updateEntryTypeSpinner() {
         runOnUiThread {
             val adapter = ArrayAdapter(
                 this,
@@ -227,12 +227,12 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 trackingTypes
             )
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            lectureTypeSpinner.adapter = adapter
+            entryTypeSpinner.adapter = adapter
 
             // Set up listener
-            lectureTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            entryTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    lectureType = parent?.getItemAtPosition(position).toString()
+                    entryType = parent?.getItemAtPosition(position).toString()
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -407,7 +407,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
     }
 
-    private fun updateRevisionFrequencySpinner() {
+    private fun updateRecurrenceFrequencySpinner() {
         runOnUiThread {
             val adapter = ArrayAdapter(
                 this,
@@ -415,14 +415,14 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 frequencyNames
             )
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            revisionFrequencySpinner.adapter = adapter
+            recurrenceFrequencySpinner.adapter = adapter
 
             // Set up listener
-            revisionFrequencySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            recurrenceFrequencySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    revisionFrequency = parent?.getItemAtPosition(position).toString()
+                    recurrenceFrequency = parent?.getItemAtPosition(position).toString()
 
-                    if (revisionFrequency == "Custom") {
+                    if (recurrenceFrequency == "Custom") {
                         openCustomFrequencySelector()
                     } else {
 //                        customFrequencyData = null // Reset custom data if not using custom frequency
@@ -434,10 +434,10 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     // Do nothing
                 }
             }
-            revisionFrequencySpinner.setOnTouchListener { _, event ->
+            recurrenceFrequencySpinner.setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_UP) {
-                    if (revisionFrequency == "Custom") {
-                        updateRevisionFrequencySpinner()
+                    if (recurrenceFrequency == "Custom") {
+                        updateRecurrenceFrequencySpinner()
                         return@setOnTouchListener true
                     }
                 }
@@ -473,8 +473,8 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
     override fun onFrequencySelected(customData: HashMap<String, Any>) {
         // Store the custom frequency data
         customFrequencyData = customData
-        if (customFrequencyData.isEmpty() && revisionFrequency == "Custom") {
-            updateRevisionFrequencySpinner()
+        if (customFrequencyData.isEmpty() && recurrenceFrequency == "Custom") {
+            updateRecurrenceFrequencySpinner()
         }
         updateScheduledDate()
     }
@@ -543,21 +543,21 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
             // Fix: When initiation date is unspecified, automatically check "No Repetition"
             if (isChecked) {
-                reviewFrequencyCheckbox.isChecked = true
+                recurrenceFrequencyCheckbox.isChecked = true
                 todayDate = "Unspecified"
             } else {
                 // Restore the date when unchecked
                 setInitialDates()
-                // Don't automatically uncheck review frequency
+                // Don't automatically uncheck recurrence frequency
             }
 
             // Update scheduled date based on new settings
             updateScheduledDate()
         }
 
-        // Review frequency checkbox
-        reviewFrequencyCheckbox.setOnCheckedChangeListener { _, isChecked ->
-            updateReviewFrequencyVisibility(isChecked)
+        // Recurrence frequency checkbox
+        recurrenceFrequencyCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            updateRecurrenceFrequencyVisibility(isChecked)
 
             // Update the scheduled date based on new frequency settings
             updateScheduledDate()
@@ -576,7 +576,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
         scheduledDateEditText.setOnClickListener {
             // Only show date picker if neither unspecified nor no repetition
-            if (!initiationDateCheckbox.isChecked && !reviewFrequencyCheckbox.isChecked) {
+            if (!initiationDateCheckbox.isChecked && !recurrenceFrequencyCheckbox.isChecked) {
                 showDatePicker(scheduledDateEditText) { date ->
                     dateScheduled = date
                 }
@@ -599,64 +599,64 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             initiationDateEditText.setText("Unspecified")
             todayDate = "Unspecified"
 
-            // Hide all revision-related fields
-            revisionFrequencyText.visibility = View.GONE
-            revisionFrequencySpinner.visibility = View.GONE
-            reviewFrequencyCheckbox.visibility = View.GONE
+            // Hide all recurrence-related fields
+            recurrenceFrequencyText.visibility = View.GONE
+            recurrenceFrequencySpinner.visibility = View.GONE
+            recurrenceFrequencyCheckbox.visibility = View.GONE
             firstReminderDate.visibility = View.GONE
             scheduledDateEditText.visibility = View.GONE
             reminderDurationText.visibility = View.GONE
             durationSpinner.visibility = View.GONE
-            revision_FrequencyCard.visibility = View.GONE
+            recurrence_FrequencyCard.visibility = View.GONE
 
             // Force "No Repetition" when unspecified
-            revisionFrequency = "No Repetition"
+            recurrenceFrequency = "No Repetition"
         } else {
             // Restore the date or set to current date
             setInitialDates() // This will update initiationDateEditText with today's date
 
-            // Show revision frequency field
-            revisionFrequencyText.visibility = View.VISIBLE
-            revisionFrequencySpinner.visibility = View.VISIBLE
-            reviewFrequencyCheckbox.visibility = View.VISIBLE
+            // Show recurrence frequency field
+            recurrenceFrequencyText.visibility = View.VISIBLE
+            recurrenceFrequencySpinner.visibility = View.VISIBLE
+            recurrenceFrequencyCheckbox.visibility = View.VISIBLE
 
-            // Update review frequency visibility based on its checkbox state
-            updateReviewFrequencyVisibility(reviewFrequencyCheckbox.isChecked)
-            revision_FrequencyCard.visibility = View.VISIBLE
+            // Update recurrence frequency visibility based on its checkbox state
+            updateRecurrenceFrequencyVisibility(recurrenceFrequencyCheckbox.isChecked)
+            recurrence_FrequencyCard.visibility = View.VISIBLE
         }
     }
 
-    private fun updateReviewFrequencyVisibility(isNoRepetition: Boolean) {
+    private fun updateRecurrenceFrequencyVisibility(isNoRepetition: Boolean) {
         if (isNoRepetition) {
             // Find the index of "No Repetition" in frequency names
             val noRepetitionIndex = frequencyNames.indexOf("No Repetition")
             if (noRepetitionIndex >= 0) {
-                revisionFrequencySpinner.setSelection(noRepetitionIndex)
+                recurrenceFrequencySpinner.setSelection(noRepetitionIndex)
             } else {
                 // Fallback to last item if not found
-                revisionFrequencySpinner.setSelection(frequencyNames.size - 1)
+                recurrenceFrequencySpinner.setSelection(frequencyNames.size - 1)
             }
 
-            // Set the revision frequency directly
-            revisionFrequency = "No Repetition"
+            // Set the recurrence frequency directly
+            recurrenceFrequency = "No Repetition"
 
-            // Hide revision-related fields but keep the frequency spinner
+            // Hide recurrence-related fields but keep the frequency spinner
             firstReminderDate.visibility = View.GONE
             scheduledDateEditText.visibility = View.GONE
             reminderDurationText.visibility = View.GONE
             durationSpinner.visibility = View.GONE
         } else {
             // Restore normal text
-            revisionFrequencyText.text = "Revision Frequency"
+            recurrenceFrequencyText.text = "Recurrence Frequency"
 
-            // Show all revision-related fields
+            // Show all recurrence-related fields
             firstReminderDate.visibility = View.VISIBLE
             scheduledDateEditText.visibility = View.VISIBLE
             reminderDurationText.visibility = View.VISIBLE
             durationSpinner.visibility = View.VISIBLE
 
             // Let the spinner selection determine the frequency
-            revisionFrequency = revisionFrequencySpinner.selectedItem.toString()
+            recurrenceFrequency = recurrenceFrequencySpinner.selectedItem.toString()
         }
     }
 
@@ -697,19 +697,19 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                                 subCategoriesMap[key] = subCategoryList
                             }
                             else -> {
-                                Log.w("AddLectureActivity", "Unexpected value type for subcategory $key: $value")
+                                Log.w("AddEntryActivity", "Unexpected value type for subcategory $key: $value")
                                 subCategoriesMap[key] = emptyList()
                             }
                         }
                     }
                 }
                 
-                Log.d("AddLectureActivity", "Fetched categories - Subjects: $subjectsList, SubCategories: $subCategoriesMap")
+                Log.d("AddEntryActivity", "Fetched categories - Subjects: $subjectsList, SubCategories: $subCategoriesMap")
             } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error parsing categories JSON: $e")
+                Log.e("AddEntryActivity", "Error parsing categories JSON: $e")
             }
         } else {
-            Log.d("AddLectureActivity", "No categories data found in SharedPreferences")
+            Log.d("AddEntryActivity", "No categories data found in SharedPreferences")
         }
         
         return Pair(subjectsList, subCategoriesMap)
@@ -760,34 +760,33 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         }
 
         // Check if no repetition is selected
-        if (revisionFrequency == "No Repetition" || reviewFrequencyCheckbox.isChecked) {
+        if (recurrenceFrequency == "No Repetition" || recurrenceFrequencyCheckbox.isChecked) {
             scheduledDateEditText.setText(todayDate) // Use initiation date for no repetition
             dateScheduled = todayDate
             return
         }
 
-        // Set up revision data for different frequencies
-        if (revisionFrequency == "Custom" && customFrequencyData.isNotEmpty()) {
-            revisionData["frequency"] = "Custom"
-            revisionData["custom_params"] = customFrequencyData
-            recordData["recurrence_data"] = revisionData
+        // Set up recurrence data for different frequencies
+        if (recurrenceFrequency == "Custom" && customFrequencyData.isNotEmpty()) {
+            recurrenceData["frequency"] = "Custom"
+            recurrenceData["custom_params"] = customFrequencyData
+            recordData["recurrence_data"] = recurrenceData
             try {
                 val dateScheduled_ = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayDate)
                 val scheduledCalendar_ = Calendar.getInstance()
                 scheduledCalendar_.time = dateScheduled_ ?: Date()
-                val nextDate = CalculateCustomNextDate.calculateCustomNextDate(scheduledCalendar_, revisionData)
+                val nextDate = CalculateCustomNextDate.calculateCustomNextDate(scheduledCalendar_, recurrenceData)
                 dateScheduled = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(nextDate.time)
                 scheduledDateEditText.setText(dateScheduled)
             } catch (e: Exception) {
-//                Log.e("AddLectureActivity", "Error calculating custom date: ${e.message}")
                 // Fallback to today's date if calculation fails
                 dateScheduled = todayDate
                 scheduledDateEditText.setText(dateScheduled)
             }
         } else {
             // For standard frequencies
-            revisionData["frequency"] = revisionFrequency
-            recordData["recurrence_data"] = revisionData
+            recurrenceData["frequency"] = recurrenceFrequency
+            recordData["recurrence_data"] = recurrenceData
 
             try {
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -795,10 +794,10 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
                 val currentCalendar = Calendar.getInstance()
                 val currentDate = dateFormat.parse(dateFormat.format(currentCalendar.time))
-                FrequencyCalculationUtils.calculateNextRevisionDate(
+                FrequencyCalculationUtils.calculateNextRecurrenceDate(
                     this,
-                    revisionFrequency,
-                    0, // Initial revision
+                    recurrenceFrequency,
+                    0, // Initial recurrence
                     initialDate
                 ) { calculatedDate ->
                     try {
@@ -812,11 +811,9 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     } catch (e: Exception) {
                         dateScheduled = calculatedDate
                         scheduledDateEditText.setText(dateScheduled)
-//                        e.printStackTrace()
                     }
                 }
             } catch (e: Exception) {
-                // Log.e("AddLectureActivity", "Error setting date: ${e.message}")
                 Toast.makeText(this, "Error setting date: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
@@ -843,7 +840,6 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
         timePickerDialog.show()
     }
 
-    // Replace your current showDatePicker method with this improved version
     private fun showDatePicker(editText: EditText, onDateSelected: (String) -> Unit) {
         val calendar = Calendar.getInstance()
 
@@ -925,18 +921,18 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
             // Handle date values based on checkboxes
             val isUnspecifiedInitiationDate = initiationDateCheckbox.isChecked
-            val isNoRepetition = reviewFrequencyCheckbox.isChecked
+            val isNoRepetition = recurrenceFrequencyCheckbox.isChecked
 
-            // Fix 2: Set correct values based on checkbox states
+            // Set correct values based on checkbox states
             if (isUnspecifiedInitiationDate) {
                 todayDate = "Unspecified"
                 dateScheduled = "Unspecified"
-                noRevision = -1
-                revisionFrequency = "No Repetition"
+                completionCount = -1
+                recurrenceFrequency = "No Repetition"
             } else if (isNoRepetition) {
                 dateScheduled = todayDate // Use initiation date as scheduled date for no repetition
-                noRevision = -1
-                revisionFrequency = "No Repetition"
+                completionCount = -1
+                recurrenceFrequency = "No Repetition"
             } else {
                 // If not unspecified or no repetition, check dates for validity
                 try {
@@ -949,47 +945,49 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
 
                     if (initiatedDate != null) {
                         if (initiatedDate.before(currentDate)) {
-                            // If initiated date is not today, disable revision
-                            noRevision = -1
+                            // If initiated date is not today, disable recurrence
+                            completionCount = -1
                         } else {
-                            // It's today, enable revision
-                            noRevision = 0
+                            // It's today, enable recurrence
+                            completionCount = 0
                         }
                     }
                 } catch (e: Exception) {
-//                    Log.e("AddLectureActivity", "Date parsing error: ${e.message}")
-                    noRevision = 0 // Default fallback
+                    completionCount = 0 // Default fallback
                 }
             }
 
-            // Fix 3: Set recordData values based on the current state
+            // Set recordData values based on the current state
             recordData["start_timestamp"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Calendar.getInstance().time)
             recordData["reminder_time"] = reminderTime
-            recordData["entry_type"] = lectureType
+            recordData["entry_type"] = entryType
             recordData["date_initiated"] = todayDate
             recordData["date_updated"] = todayDate
             recordData["scheduled_date"] = dateScheduled
             recordData["description"] = description
             recordData["missed_counts"] = 0
-            recordData["completion_counts"] = noRevision
-            recordData["recurrence_frequency"] = revisionFrequency
+            recordData["completion_counts"] = completionCount
+            recordData["recurrence_frequency"] = recurrenceFrequency
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
             recordData["alarm_type"] = alarmType
 
             // If we have custom frequency data and it's not "Unspecified" or "No Repetition"
-            if (revisionFrequency == "Custom" && !isUnspecifiedInitiationDate && !isNoRepetition) {
-                revisionData["frequency"] = "Custom"
-                revisionData["custom_params"] = customFrequencyData
-                recordData["recurrence_data"] = revisionData
+            if (recurrenceFrequency == "Custom" && !isUnspecifiedInitiationDate && !isNoRepetition) {
+                recurrenceData["frequency"] = "Custom"
+                recurrenceData["custom_params"] = customFrequencyData
+                recordData["recurrence_data"] = recurrenceData
             } else if (!isUnspecifiedInitiationDate && !isNoRepetition) {
                 // For standard frequencies
-                revisionData["frequency"] = revisionFrequency
-                recordData["recurrence_data"] = revisionData
+                recurrenceData["frequency"] = recurrenceFrequency
+                recordData["recurrence_data"] = recurrenceData
             } else {
-                // For "Unspecified" or "No Repetition", set minimal revision data
-                revisionData["frequency"] = "No Repetition"
-                recordData["recurrence_data"] = revisionData            }            // Use HomeWidget background callback to save record via Dart
+                // For "Unspecified" or "No Repetition", set minimal recurrence data
+                recurrenceData["frequency"] = "No Repetition"
+                recordData["recurrence_data"] = recurrenceData
+            }
+
+            // Use HomeWidget background callback to save record via Dart
             try {
                 // Show processing message first
                 Toast.makeText(this, "Saving record...", Toast.LENGTH_SHORT).show()
@@ -999,7 +997,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 
                 // Create URI with all record data as query parameters
                 val durationDataJson = org.json.JSONObject(recordData["duration"] as Map<String, Any?>).toString()
-                val customFrequencyParamsJson = if (revisionFrequency == "Custom") {
+                val customFrequencyParamsJson = if (recurrenceFrequency == "Custom") {
                     org.json.JSONObject(customFrequencyData as Map<String, Any>).toString()
                 } else {
                     "{}"
@@ -1011,11 +1009,11 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     .appendQueryParameter("title", title)
                     .appendQueryParameter("startTimestamp", recordData["start_timestamp"]?.toString() ?: "")
                     .appendQueryParameter("reminderTime", reminderTime)
-                    .appendQueryParameter("lectureType", lectureType)
+                    .appendQueryParameter("entryType", entryType)
                     .appendQueryParameter("todayDate", todayDate)
                     .appendQueryParameter("dateScheduled", dateScheduled)
                     .appendQueryParameter("description", description)
-                    .appendQueryParameter("revisionFrequency", revisionFrequency)
+                    .appendQueryParameter("recurrenceFrequency", recurrenceFrequency)
                     .appendQueryParameter("durationData", durationDataJson)
                     .appendQueryParameter("customFrequencyParams", customFrequencyParamsJson)
                     .appendQueryParameter("alarmType", alarmType.toString())
@@ -1033,7 +1031,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 waitForSaveResult(requestId, isUnspecifiedInitiationDate, isNoRepetition, dateScheduled)
                 
             } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error triggering background record creation: ${e.message}")
+                Log.e("AddEntryActivity", "Error triggering background record creation: ${e.message}")
                 Toast.makeText(this, "Error saving record: ${e.message}", Toast.LENGTH_SHORT).show()
             }
 
@@ -1081,7 +1079,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                     
                     retryCount++
                 } catch (e: InterruptedException) {
-                    Log.e("AddLectureActivity", "Save result waiting interrupted: ${e.message}")
+                    Log.e("AddEntryActivity", "Save result waiting interrupted: ${e.message}")
                     break
                 }
             }
@@ -1129,14 +1127,14 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                 for (i in 0 until jsonArray.length()) {
                     data.add(jsonArray.getString(i))
                 }
-                Log.d("AddLectureActivity", "Parsed tracking types: $data")
+                Log.d("AddEntryActivity", "Parsed tracking types: $data")
             } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error parsing tracking types: $e")
+                Log.e("AddEntryActivity", "Error parsing tracking types: $e")
             }
         }
         
         if (data.isEmpty()) {
-            Log.d("AddLectureActivity", "No tracking types found, using empty list")
+            Log.d("AddEntryActivity", "No tracking types found, using empty list")
         }
         
         return data
@@ -1165,17 +1163,17 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
                             frequencies[key] = frequencyList
                         }
                         else -> {
-                            Log.w("AddLectureActivity", "Unexpected value type for frequency $key: $value")
+                            Log.w("AddEntryActivity", "Unexpected value type for frequency $key: $value")
                         }
                     }
                 }
                 
-                Log.d("AddLectureActivity", "Fetched frequencies: $frequencies")
+                Log.d("AddEntryActivity", "Fetched frequencies: $frequencies")
             } catch (e: Exception) {
-                Log.e("AddLectureActivity", "Error parsing frequencies JSON: $e")
+                Log.e("AddEntryActivity", "Error parsing frequencies JSON: $e")
             }
         } else {
-            Log.d("AddLectureActivity", "No frequency data found in SharedPreferences")
+            Log.d("AddEntryActivity", "No frequency data found in SharedPreferences")
         }
         
         return frequencies
@@ -1215,7 +1213,7 @@ class AddLectureActivity : AppCompatActivity(), CustomFrequencySelector.OnFreque
             }
             editor.apply()
         } catch (e: Exception) {
-            Log.e("AddLectureActivity", "Error cleaning up old save results: ${e.message}")
+            Log.e("AddEntryActivity", "Error cleaning up old save results: ${e.message}")
         }
     }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'RevisionGraph.dart';
-import '../Utils/lecture_colors.dart';
+import 'RecurrenceGraph.dart';
+import '../Utils/entry_colors.dart';
 
 class AnimatedCard extends StatelessWidget {
   final Animation<double> animation;
@@ -78,7 +78,7 @@ class AnimatedCard extends StatelessWidget {
                                       TextSpan(
                                         text: '${record['entry_type']}',
                                         style: TextStyle(
-                                          color: LectureColors.generateColorFromString(record['entry_type']?.toString() ?? 'default'),
+                                          color: EntryColors.generateColorFromString(record['entry_type']?.toString() ?? 'default'),
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -113,21 +113,27 @@ class AnimatedCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Right side with the revision graph
+                        // Right side with the recurrence graph
                         Expanded(
                           flex: 2,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
                             child: Center(
-                              // Add a key to force rebuild of RevisionRadarChart when data changes
-                              child: RevisionRadarChart(
-                                key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_revisions']?.length ?? 0}_${record['skipped_dates']?.length ?? 0}'),
-                                dateLearnt: record['date_initiated'],
-                                datesMissedRevisions: List<String>.from(record['dates_missed_revisions'] ?? []),
-                                datesRevised: List<String>.from(record['dates_updated'] ?? []),
-                                datesSkipped: List<String>.from(record['skipped_dates'] ?? []),
-                                showLabels: false,
-                              ),
+                              // Add a key to force rebuild of RecurrenceRadarChart when data changes
+                              child: (record['track_dates'] ?? 'last_30') != 'off'
+                                ? RecurrenceRadarChart(
+                                    key: ValueKey('chart_${record['category']}_${record['record_title']}_${record['dates_updated']?.length ?? 0}_${record['dates_missed_reviews']?.length ?? 0}_${record['skipped_dates']?.length ?? 0}'),
+                                    dateInitiated: record['date_initiated'],
+                                    datesMissedReviews: List<String>.from(record['dates_missed_reviews'] ?? []),
+                                    datesReviewed: List<String>.from(record['dates_updated'] ?? []),
+                                    datesSkipped: List<String>.from(record['skipped_dates'] ?? []),
+                                    showLabels: false,
+                                  )
+                                : Icon(
+                                    Icons.history_toggle_off,
+                                    size: 32,
+                                    color: Colors.grey.withOpacity(0.4),
+                                  ),
                             ),
                           ),
                         ),
@@ -145,7 +151,7 @@ class AnimatedCard extends StatelessWidget {
 
   // Build status indicator line - solid line
   Widget _buildStatusIndicatorLine() {
-    final Color lineColor = LectureColors.generateColorFromString(
+    final Color lineColor = EntryColors.generateColorFromString(
         record['entry_type']?.toString() ?? 'default'
     );
 

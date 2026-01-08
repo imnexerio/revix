@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../SchedulePage/LegendItem.dart';
 import '../SchedulePage/ProportionalRingPainter.dart';
-import '../Utils/lecture_colors.dart';
+import '../Utils/entry_colors.dart';
 
 class StudyCalendar extends StatefulWidget {
   final List<Map<String, dynamic>> records;
@@ -68,7 +68,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
         });
       }
 
-      // Add revision dates
+      // Add recurrence dates
       if (details.containsKey('dates_updated') && details['dates_updated'] is List) {
         for (var dateStr in (details['dates_updated'] as List)) {
           final dateRevised = DateTime.parse(dateStr.toString());
@@ -90,9 +90,9 @@ class _StudyCalendarState extends State<StudyCalendar> {
         }
       }
 
-      // Add missed revision dates
-      if (details.containsKey('dates_missed_revisions') && details['dates_missed_revisions'] is List) {
-        for (var dateStr in (details['dates_missed_revisions'] as List)) {
+      // Add missed review dates
+      if (details.containsKey('dates_missed_reviews') && details['dates_missed_reviews'] is List) {
+        for (var dateStr in (details['dates_missed_reviews'] as List)) {
           final dateMissed = DateTime.parse(dateStr.toString());
           final key = DateTime(dateMissed.year, dateMissed.month, dateMissed.day);
 
@@ -423,7 +423,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: LectureColors.generateColorFromString(event['entry_type']?.toString() ?? 'default'),
+                          backgroundColor: EntryColors.generateColorFromString(event['entry_type']?.toString() ?? 'default'),
                           radius: 20,
                           child: Icon(
                             _getEventTypeIcon(event['type']),
@@ -472,7 +472,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
   Widget _buildStatusIndicatorLine(Map<String, dynamic> event, {int dashCount = 3}) {
     final bool isEnabled = event['status'] == 'Enabled';
     // Generate color based on the event's category like in AnimatedCardDetailP
-    final Color lineColor = LectureColors.generateColorFromString(event['entry_type']?.toString() ?? 'default');
+    final Color lineColor = EntryColors.generateColorFromString(event['entry_type']?.toString() ?? 'default');
 
     if (isEnabled) {
       // Solid line for enabled status

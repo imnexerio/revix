@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import 'ScheduleTable.dart';
-import 'showLectureScheduleP.dart';
+import 'showEntryScheduleP.dart';
 
 class TodayPage extends StatefulWidget {
   @override
@@ -118,42 +118,42 @@ class _TodayPageState extends State<TodayPage> {
               initialRecords: data['missed']!,
               title: 'Missed (${data['missed']!.length})',
               tableId: 'missed',
-              onSelect: (context, record) => showLectureScheduleP(context, record),
+              onSelect: (context, record) => showEntryScheduleP(context, record),
             ),
           if (data['today']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['today']!,
               title: 'Today\'s (${data['today']!.length})',
               tableId: 'today',
-              onSelect: (context, record) => showLectureScheduleP(context, record),
+              onSelect: (context, record) => showEntryScheduleP(context, record),
             ),
           if (data['todayAdded']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['todayAdded']!,
               title: 'Today\'s Added Records (${data['todayAdded']!.length})',
               tableId: 'todayAdded',
-              onSelect: (context, record) => showLectureScheduleP(context, record),
+              onSelect: (context, record) => showEntryScheduleP(context, record),
             ),
           if (data['nextDay']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['nextDay']!,
               title: 'Next Day (${data['nextDay']!.length})',
               tableId: 'nextDay',
-              onSelect: (context, record) => showLectureScheduleP(context, record),
+              onSelect: (context, record) => showEntryScheduleP(context, record),
             ),
           if (data['next7Days']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['next7Days']!,
               title: 'Next Week (${data['next7Days']!.length})',
               tableId: 'next7Days',
-              onSelect: (context, record) => showLectureScheduleP(context, record),
+              onSelect: (context, record) => showEntryScheduleP(context, record),
             ),
           if (data['noreminderdate']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['noreminderdate']!,
               title: 'Unspecified Date (${data['noreminderdate']!.length})',
               tableId: 'noreminderdate',
-              onSelect: (context, record) => showLectureScheduleP(context, record),
+              onSelect: (context, record) => showEntryScheduleP(context, record),
             ),
           // Extra scrollable space for bottom navigation
           const SizedBox(height: 88.0),

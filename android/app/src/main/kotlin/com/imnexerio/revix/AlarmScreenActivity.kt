@@ -200,7 +200,7 @@ class AlarmScreenActivity : Activity() {
 
         // Get dynamic accent color based on entry_type, fallback to default if empty
         val accentColor = if (entryType.isNotEmpty()) {
-            LectureColors.getLectureTypeColorSync(this, entryType)
+            EntryColors.getEntryTypeColor(entryType)
         } else {
             ContextCompat.getColor(this, R.color.colorOnPrimary)
         }

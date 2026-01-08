@@ -286,8 +286,8 @@ class CalendarViewActivity : AppCompatActivity() {
             }
         }
         
-        // Parse dates_missed_revisions
-        val datesMissed = recordObject.optJSONArray("dates_missed_revisions")
+        // Parse dates_missed_reviews
+        val datesMissed = recordObject.optJSONArray("dates_missed_reviews")
         if (datesMissed != null) {
             for (i in 0 until datesMissed.length()) {
                 try {
@@ -305,7 +305,7 @@ class CalendarViewActivity : AppCompatActivity() {
                         ))
                     }
                 } catch (e: Exception) {
-                    Log.e("CalendarViewActivity", "Error parsing dates_missed_revisions: ${e.message}")
+                    Log.e("CalendarViewActivity", "Error parsing dates_missed_reviews: ${e.message}")
                 }
             }
         }

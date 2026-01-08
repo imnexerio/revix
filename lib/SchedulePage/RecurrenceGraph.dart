@@ -1,51 +1,51 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-class RevisionRadarChart extends StatefulWidget {
-  final String dateLearnt;
-  final List<String> datesMissedRevisions;
-  final List<String> datesRevised;
+class RecurrenceRadarChart extends StatefulWidget {
+  final String dateInitiated;
+  final List<String> datesMissedReviews;
+  final List<String> datesReviewed;
   final List<String> datesSkipped;
   final Duration animationDuration;
   final Color missedColor;
-  final Color revisedColor;
-  final Color learntColor;
+  final Color reviewedColor;
+  final Color initiatedColor;
   final Color skippedColor;
   final bool showLabels;
   final int maxPoints; // New parameter to control the number of points
 
-  const RevisionRadarChart({
+  const RecurrenceRadarChart({
     Key? key,
-    required this.dateLearnt,
-    required this.datesMissedRevisions,
-    required this.datesRevised,
+    required this.dateInitiated,
+    required this.datesMissedReviews,
+    required this.datesReviewed,
     this.datesSkipped = const [],
     this.animationDuration = const Duration(milliseconds: 1800),
     this.missedColor = Colors.redAccent,
-    this.revisedColor = Colors.greenAccent,
-    this.learntColor = Colors.blueAccent,
+    this.reviewedColor = Colors.greenAccent,
+    this.initiatedColor = Colors.blueAccent,
     this.skippedColor = Colors.orangeAccent,
     this.showLabels = true,
-    this.maxPoints = 18, // Default to showing 15 points
+    this.maxPoints = 18, // Default to showing 18 points
   }) : super(key: key);
 
   @override
-  State<RevisionRadarChart> createState() => _RevisionRadarChartState();
+  State<RecurrenceRadarChart> createState() => _RecurrenceRadarChartState();
 }
 
-class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTickerProviderStateMixin {
+class _RecurrenceRadarChartState extends State<RecurrenceRadarChart> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
-  late List<RevisionEvent> allRevisions;
-  late List<RevisionEvent> displayRevisions; // The filtered list to display
+  late List<RecurrenceEvent> allEvents;
+  late List<RecurrenceEvent> displayEvents; // The filtered list to display
 
   // Track statistics
-  late int totalRevisions;
-  late int completedRevisions;
-  late int missedRevisions;
-  late int skippedRevisions;
+  late int totalReviews;
+  late int completedReviews;
+  late int missedReviews;
+  late int skippedReviews;
   late Duration totalSpan;
-  late double revisionRatio;
+  late double reviewRatio;
 
   @override
   void initState() {
@@ -59,129 +59,129 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
       curve: Curves.easeOutQuart,
     );
 
-    _processRevisionData();
+    _processEventData();
     _calculateStatistics();
 
     _animationController.forward();
   }
 
-  void _processRevisionData() {
-    allRevisions = <RevisionEvent>[];
-    RevisionEvent? learnedEvent;
+  void _processEventData() {
+    allEvents = <RecurrenceEvent>[];
+    RecurrenceEvent? initiatedEvent;
 
-    // Add "date learned" as the first event
+    // Add "date initiated" as the first event
     try {
-      if (widget.dateLearnt.isNotEmpty) {
-        final learnedDate = DateTime.parse(widget.dateLearnt);
-        learnedEvent = RevisionEvent(
-            date: learnedDate,
-            dateString: widget.dateLearnt,
+      if (widget.dateInitiated.isNotEmpty) {
+        final initiatedDate = DateTime.parse(widget.dateInitiated);
+        initiatedEvent = RecurrenceEvent(
+            date: initiatedDate,
+            dateString: widget.dateInitiated,
             isMissed: false,
-            isLearned: true,
+            isInitiated: true,
             isSkipped: false
         );
-        allRevisions.add(learnedEvent);
+        allEvents.add(initiatedEvent);
       }
     } catch (e) {
-      // print('Error parsing date learned: $e');
+      // print('Error parsing date initiated: $e');
     }
 
-    // Add missed revisions
-    for (final dateStr in widget.datesMissedRevisions) {
+    // Add missed reviews
+    for (final dateStr in widget.datesMissedReviews) {
       if (dateStr.isNotEmpty) {
         try {
           final date = DateTime.parse(dateStr);
-          allRevisions.add(RevisionEvent(
+          allEvents.add(RecurrenceEvent(
               date: date,
               dateString: dateStr,
               isMissed: true,
-              isLearned: false,
+              isInitiated: false,
               isSkipped: false
           ));
         } catch (e) {
-          // print('Error parsing missed revision date: $e');
+          // print('Error parsing missed review date: $e');
         }
       }
     }
 
-    // Add completed revisions
-    for (final dateStr in widget.datesRevised) {
+    // Add completed reviews
+    for (final dateStr in widget.datesReviewed) {
       if (dateStr.isNotEmpty) {
         try {
           final date = DateTime.parse(dateStr);
-          allRevisions.add(RevisionEvent(
+          allEvents.add(RecurrenceEvent(
               date: date,
               dateString: dateStr,
               isMissed: false,
-              isLearned: false,
+              isInitiated: false,
               isSkipped: false
           ));
         } catch (e) {
-          print('Error parsing completed revision date: $e');
+          print('Error parsing completed review date: $e');
         }
       }
     }
 
-    // Add skipped revisions
+    // Add skipped events
     for (final dateStr in widget.datesSkipped) {
       if (dateStr.isNotEmpty) {
         try {
           final date = DateTime.parse(dateStr);
-          allRevisions.add(RevisionEvent(
+          allEvents.add(RecurrenceEvent(
               date: date,
               dateString: dateStr,
               isMissed: false,
-              isLearned: false,
+              isInitiated: false,
               isSkipped: true
           ));
         } catch (e) {
-          print('Error parsing skipped revision date: $e');
+          print('Error parsing skipped date: $e');
         }
       }
     }
 
-    // Sort all revisions by date
-    allRevisions.sort((a, b) => a.date.compareTo(b.date));
+    // Sort all events by date
+    allEvents.sort((a, b) => a.date.compareTo(b.date));
 
-    // Filter to keep only the learned event and the last maxPoints events
-    displayRevisions = <RevisionEvent>[];
+    // Filter to keep only the initiated event and the last maxPoints events
+    displayEvents = <RecurrenceEvent>[];
 
-    // Always include the learned event if it exists
-    if (learnedEvent != null) {
-      displayRevisions.add(learnedEvent);
+    // Always include the initiated event if it exists
+    if (initiatedEvent != null) {
+      displayEvents.add(initiatedEvent);
     }
 
-    // Get non-learned events
-    final nonLearnedEvents = allRevisions.where((event) => !event.isLearned).toList();
+    // Get non-initiated events
+    final nonInitiatedEvents = allEvents.where((event) => !event.isInitiated).toList();
 
-    // Take the last maxPoints non-learned events
-    if (nonLearnedEvents.length > widget.maxPoints) {
-      displayRevisions.addAll(nonLearnedEvents.sublist(nonLearnedEvents.length - widget.maxPoints));
+    // Take the last maxPoints non-initiated events
+    if (nonInitiatedEvents.length > widget.maxPoints) {
+      displayEvents.addAll(nonInitiatedEvents.sublist(nonInitiatedEvents.length - widget.maxPoints));
     } else {
-      displayRevisions.addAll(nonLearnedEvents);
+      displayEvents.addAll(nonInitiatedEvents);
     }
 
-    // Re-sort the display revisions by date
-    displayRevisions.sort((a, b) => a.date.compareTo(b.date));
+    // Re-sort the display events by date
+    displayEvents.sort((a, b) => a.date.compareTo(b.date));
   }
 
   void _calculateStatistics() {
-    totalRevisions = allRevisions.where((e) => !e.isLearned).length;
-    completedRevisions = allRevisions.where((e) => !e.isLearned && !e.isMissed && !e.isSkipped).length;
-    missedRevisions = allRevisions.where((e) => e.isMissed).length;
-    skippedRevisions = allRevisions.where((e) => e.isSkipped).length;
+    totalReviews = allEvents.where((e) => !e.isInitiated).length;
+    completedReviews = allEvents.where((e) => !e.isInitiated && !e.isMissed && !e.isSkipped).length;
+    missedReviews = allEvents.where((e) => e.isMissed).length;
+    skippedReviews = allEvents.where((e) => e.isSkipped).length;
 
     // Calculate time span from first to last date
-    if (allRevisions.isNotEmpty) {
-      DateTime firstDate = allRevisions.first.date;
-      DateTime lastDate = allRevisions.last.date;
+    if (allEvents.isNotEmpty) {
+      DateTime firstDate = allEvents.first.date;
+      DateTime lastDate = allEvents.last.date;
       totalSpan = lastDate.difference(firstDate);
     } else {
       totalSpan = Duration.zero;
     }
 
     // Calculate completion ratio
-    revisionRatio = totalRevisions > 0 ? completedRevisions / totalRevisions : 0;
+    reviewRatio = totalReviews > 0 ? completedReviews / totalReviews : 0;
   }
 
   @override
@@ -209,7 +209,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    if (displayRevisions.isEmpty) {
+    if (displayEvents.isEmpty) {
       return LayoutBuilder(
         builder: (context, constraints) {
           final availableSize = min(constraints.maxWidth, constraints.maxHeight);
@@ -218,7 +218,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
             height: availableSize,
             child: Center(
               child: Text(
-                'No revision data',
+                'No review data',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
@@ -259,9 +259,9 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                         size: Size(availableSize, availableSize),
                         painter: RadarChartPainter(
                           animationValue: _animation.value,
-                          revisions: displayRevisions, // Use filtered revisions here
-                          learntColor: widget.learntColor,
-                          revisedColor: widget.revisedColor,
+                          events: displayEvents, // Use filtered events here
+                          initiatedColor: widget.initiatedColor,
+                          reviewedColor: widget.reviewedColor,
                           missedColor: widget.missedColor,
                           skippedColor: widget.skippedColor,
                         ),
@@ -270,10 +270,10 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                       // Labels
                       if (widget.showLabels)
                         ...List.generate(
-                          displayRevisions.length, // Use filtered revisions for labels too
+                          displayEvents.length, // Use filtered events for labels too
                               (index) {
-                            final revision = displayRevisions[index];
-                            final totalEvents = displayRevisions.length;
+                            final event = displayEvents[index];
+                            final totalEvents = displayEvents.length;
 
                             // Changed from 3π/2 (top) to π/2 (bottom)
                             final angle = pi / 2 + (index / totalEvents) * 2 * pi;
@@ -283,7 +283,7 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
 
                             final labelX = availableSize / 2 + labelRadius * cos(angle);
                             final labelY = availableSize / 2 + labelRadius * sin(angle);
-                            final dateLabel = _formatDate(revision.date);
+                            final dateLabel = _formatDate(event.date);
 
                             // Calculate a font size proportional to the available size
                             final fontSize = max(8.0, availableSize / 30);
@@ -311,13 +311,13 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
                                       color: Colors.white.withOpacity(0.8),
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
-                                        color: revision.isLearned
-                                            ? widget.learntColor
-                                            : (revision.isMissed
+                                        color: event.isInitiated
+                                            ? widget.initiatedColor
+                                            : (event.isMissed
                                             ? widget.missedColor
-                                            : (revision.isSkipped
+                                            : (event.isSkipped
                                             ? widget.skippedColor
-                                            : widget.revisedColor)),
+                                            : widget.reviewedColor)),
                                         width: 1,
                                       ),
                                     ),
@@ -366,19 +366,19 @@ class _RevisionRadarChartState extends State<RevisionRadarChart> with SingleTick
   }
 }
 
-// Data model for revision events
-class RevisionEvent {
+// Data model for recurrence events
+class RecurrenceEvent {
   final DateTime date;
   final String dateString;
   final bool isMissed;
-  final bool isLearned;
+  final bool isInitiated;
   final bool isSkipped;
 
-  RevisionEvent({
+  RecurrenceEvent({
     required this.date,
     required this.dateString,
     required this.isMissed,
-    this.isLearned = false,
+    this.isInitiated = false,
     this.isSkipped = false,
   });
 }
@@ -411,7 +411,7 @@ class RadarWebPainter extends CustomPainter {
       canvas.drawCircle(center, levelRadius, webPaint);
     }
 
-    // Calculate the number of spokes based on the revision data in the parent widget
+    // Calculate the number of spokes based on the event data in the parent widget
     const totalSpokes = 12; // Default to 12 (monthly)
 
     // Draw the spokes
@@ -432,47 +432,47 @@ class RadarWebPainter extends CustomPainter {
 // Painter for the radar chart data
 class RadarChartPainter extends CustomPainter {
   final double animationValue;
-  final List<RevisionEvent> revisions;
-  final Color learntColor;
-  final Color revisedColor;
+  final List<RecurrenceEvent> events;
+  final Color initiatedColor;
+  final Color reviewedColor;
   final Color missedColor;
   final Color skippedColor;
 
   RadarChartPainter({
     required this.animationValue,
-    required this.revisions,
-    required this.learntColor,
-    required this.revisedColor,
+    required this.events,
+    required this.initiatedColor,
+    required this.reviewedColor,
     required this.missedColor,
     required this.skippedColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (revisions.isEmpty) return;
+    if (events.isEmpty) return;
 
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 * 0.70; // Use 70% of the available space
 
     // Create paths for different types of events
-    final learnedPath = Path();
-    final revisedPath = Path();
+    final initiatedPath = Path();
+    final reviewedPath = Path();
     final missedPath = Path();
     final skippedPath = Path();
 
     // Variables to track if we've moved to first points
-    bool learnedMoved = false;
-    bool revisedMoved = false;
+    bool initiatedMoved = false;
+    bool reviewedMoved = false;
     bool missedMoved = false;
     bool skippedMoved = false;
 
     // Calculate point size based on the widget size
     final pointSize = max(3.0, size.width / 60);
 
-    // Draw points for each revision
-    for (int i = 0; i < revisions.length; i++) {
-      final revision = revisions[i];
-      final totalEvents = revisions.length;
+    // Draw points for each event
+    for (int i = 0; i < events.length; i++) {
+      final event = events[i];
+      final totalEvents = events.length;
 
       // Calculate angle and radiusRatio based on animation
       final angle = pi/2 + (i / totalEvents) * 2 * pi;
@@ -484,21 +484,21 @@ class RadarChartPainter extends CustomPainter {
       final point = Offset(x, y);
 
       // Add point to appropriate path
-      if (revision.isLearned) {
-        if (!learnedMoved) {
-          learnedPath.moveTo(point.dx, point.dy);
-          learnedMoved = true;
+      if (event.isInitiated) {
+        if (!initiatedMoved) {
+          initiatedPath.moveTo(point.dx, point.dy);
+          initiatedMoved = true;
         } else {
-          learnedPath.lineTo(point.dx, point.dy);
+          initiatedPath.lineTo(point.dx, point.dy);
         }
 
-        // Draw the learned point
+        // Draw the initiated point
         canvas.drawCircle(
           point,
-          pointSize * 1.2, // Make learned points slightly larger
-          Paint()..color = learntColor,
+          pointSize * 1.2, // Make initiated points slightly larger
+          Paint()..color = initiatedColor,
         );
-      } else if (revision.isMissed) {
+      } else if (event.isMissed) {
         if (!missedMoved) {
           missedPath.moveTo(point.dx, point.dy);
           missedMoved = true;
@@ -512,7 +512,7 @@ class RadarChartPainter extends CustomPainter {
           pointSize,
           Paint()..color = missedColor,
         );
-      } else if (revision.isSkipped) {
+      } else if (event.isSkipped) {
         if (!skippedMoved) {
           skippedPath.moveTo(point.dx, point.dy);
           skippedMoved = true;
@@ -527,18 +527,18 @@ class RadarChartPainter extends CustomPainter {
           Paint()..color = skippedColor,
         );
       } else {
-        if (!revisedMoved) {
-          revisedPath.moveTo(point.dx, point.dy);
-          revisedMoved = true;
+        if (!reviewedMoved) {
+          reviewedPath.moveTo(point.dx, point.dy);
+          reviewedMoved = true;
         } else {
-          revisedPath.lineTo(point.dx, point.dy);
+          reviewedPath.lineTo(point.dx, point.dy);
         }
 
-        // Draw the revised point
+        // Draw the reviewed point
         canvas.drawCircle(
           point,
           pointSize,
-          Paint()..color = revisedColor,
+          Paint()..color = reviewedColor,
         );
       }
     }
@@ -547,37 +547,37 @@ class RadarChartPainter extends CustomPainter {
     final strokeWidth = max(1.0, size.width / 150);
 
     // Close and fill the paths
-    if (learnedMoved) {
+    if (initiatedMoved) {
       canvas.drawPath(
-        learnedPath,
+        initiatedPath,
         Paint()
-          ..color = learntColor.withOpacity(0.2)
+          ..color = initiatedColor.withOpacity(0.2)
           ..style = PaintingStyle.fill,
       );
 
       // Also draw the stroke
       canvas.drawPath(
-        learnedPath,
+        initiatedPath,
         Paint()
-          ..color = learntColor
+          ..color = initiatedColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth,
       );
     }
 
-    if (revisedMoved) {
+    if (reviewedMoved) {
       canvas.drawPath(
-        revisedPath,
+        reviewedPath,
         Paint()
-          ..color = revisedColor.withOpacity(0.2)
+          ..color = reviewedColor.withOpacity(0.2)
           ..style = PaintingStyle.fill,
       );
 
       // Also draw the stroke
       canvas.drawPath(
-        revisedPath,
+        reviewedPath,
         Paint()
-          ..color = revisedColor
+          ..color = reviewedColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth,
       );
@@ -623,5 +623,5 @@ class RadarChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant RadarChartPainter oldDelegate) =>
       oldDelegate.animationValue != animationValue ||
-          oldDelegate.revisions.length != revisions.length;
+          oldDelegate.events.length != events.length;
 }

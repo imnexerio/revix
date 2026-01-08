@@ -7,7 +7,7 @@ Widget buildWeeklyProgressCard(List<Map<String,
     dynamic>> allRecords,
     double cardPadding,
     BuildContext context,
-    {required Function() onTitleTap, required String selectedLectureType}) {
+    {required Function() onTitleTap, required String selectedEntryType}) {
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
@@ -31,7 +31,7 @@ Widget buildWeeklyProgressCard(List<Map<String,
           child: Row(
             children: [
               Text(
-                'Weekly Progress: $selectedLectureType',
+                'Weekly Progress: $selectedEntryType',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,

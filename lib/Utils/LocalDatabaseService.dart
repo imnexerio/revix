@@ -229,7 +229,7 @@ class LocalDatabaseService {
       _rawDataController.add({});
     }
   }  // CRUD operations for records - Firebase-compatible structure
-  Future<bool> saveRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
+  Future<bool> saveRecord(String category, String subCategory, String entryTitle, Map<String, dynamic> recordData) async {
     try {
       final usersData = await getUsersData();
       final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
@@ -242,7 +242,7 @@ class LocalDatabaseService {
         currentData[category][subCategory] = <String, dynamic>{};
       }
       
-      currentData[category][subCategory][lectureNo] = recordData;
+      currentData[category][subCategory][entryTitle] = recordData;
       
       userData['user_data'] = currentData;
       usersData[_currentUserId] = userData;
@@ -256,16 +256,16 @@ class LocalDatabaseService {
     }
   }
 
-  Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
+  Future<bool> updateRecord(String category, String subCategory, String entryTitle, Map<String, dynamic> updates) async {
     try {
       final usersData = await getUsersData();
       final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
       final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
       
-      if (currentData[category]?[subCategory]?[lectureNo] != null) {
-        final existingRecord = Map<String, dynamic>.from(currentData[category][subCategory][lectureNo]);
+      if (currentData[category]?[subCategory]?[entryTitle] != null) {
+        final existingRecord = Map<String, dynamic>.from(currentData[category][subCategory][entryTitle]);
         existingRecord.addAll(updates);
-        currentData[category][subCategory][lectureNo] = existingRecord;
+        currentData[category][subCategory][entryTitle] = existingRecord;
         
         userData['user_data'] = currentData;
         usersData[_currentUserId] = userData;
@@ -281,14 +281,14 @@ class LocalDatabaseService {
     }
   }
 
-  Future<bool> deleteRecord(String category, String subCategory, String lectureNo) async {
+  Future<bool> deleteRecord(String category, String subCategory, String entryTitle) async {
     try {
       final usersData = await getUsersData();
       final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
       final currentData = (userData['user_data'] ?? {}).cast<String, dynamic>();
       
-      if (currentData[category]?[subCategory]?[lectureNo] != null) {
-        currentData[category][subCategory].remove(lectureNo);
+      if (currentData[category]?[subCategory]?[entryTitle] != null) {
+        currentData[category][subCategory].remove(entryTitle);
         
         // Clean up empty sub categories and subjects
         if (currentData[category][subCategory].isEmpty) {
@@ -561,7 +561,7 @@ class LocalDatabaseService {
   }
 
   // Get a specific record
-  Future<Map<String, dynamic>?> getRecord(String category, String subCategory, String lectureNo) async {
+  Future<Map<String, dynamic>?> getRecord(String category, String subCategory, String entryTitle) async {
     try {
       final usersData = await getUsersData();
       final userData = (usersData[_currentUserId] ?? {}).cast<String, dynamic>();
@@ -569,8 +569,8 @@ class LocalDatabaseService {
       
       if (currentData[category] != null && 
           currentData[category][subCategory] != null && 
-          currentData[category][subCategory][lectureNo] != null) {
-        final record = currentData[category][subCategory][lectureNo];
+          currentData[category][subCategory][entryTitle] != null) {
+        final record = currentData[category][subCategory][entryTitle];
         if (record is Map) {
           return Map<String, dynamic>.from(record);
         }

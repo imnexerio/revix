@@ -265,7 +265,7 @@ class UnifiedDatabaseService {
             'date_updated': recordValue['date_updated'],
             'description': recordValue['description'],
             'missed_counts': recordValue['missed_counts'],
-            'dates_missed_revisions': recordValue['dates_missed_revisions'] ?? [],
+            'dates_missed_reviews': recordValue['dates_missed_reviews'] ?? [],
             'dates_updated': recordValue['dates_updated'] ?? [],
             'completion_counts': recordValue['completion_counts'],
             'recurrence_frequency': recordValue['recurrence_frequency'],
@@ -274,6 +274,7 @@ class UnifiedDatabaseService {
             'duration': recordValue['duration'] ?? 0,
             'skip_counts': recordValue['skip_counts'] ?? 0,
             'skipped_dates': recordValue['skipped_dates'] ?? [],
+            'track_dates': recordValue['track_dates'] ?? 'last_30',
           };
 
           if (recordValue['date_initiated'] == 'Unspecified') {
@@ -479,15 +480,15 @@ class UnifiedDatabaseService {
   }
   
   // Add public method for saving records that works in both guest mode and Firebase mode
-  Future<bool> saveRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> recordData) async {
+  Future<bool> saveRecord(String category, String subCategory, String entryTitle, Map<String, dynamic> recordData) async {
     if (_isGuestMode) {
-      return await _localDatabase.saveRecord(category, subCategory, lectureNo, recordData);
+      return await _localDatabase.saveRecord(category, subCategory, entryTitle, recordData);
     } else {
       try {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
-        await _databaseRef!.child(category).child(subCategory).child(lectureNo).set(recordData);
+        await _databaseRef!.child(category).child(subCategory).child(entryTitle).set(recordData);
         return true;
       } catch (e) {
         _addErrorToAllControllers('Failed to save record: $e');
@@ -497,15 +498,15 @@ class UnifiedDatabaseService {
   }
   
   // Add public method for updating records
-  Future<bool> updateRecord(String category, String subCategory, String lectureNo, Map<String, dynamic> updates) async {
+  Future<bool> updateRecord(String category, String subCategory, String entryTitle, Map<String, dynamic> updates) async {
     if (_isGuestMode) {
-      return await _localDatabase.updateRecord(category, subCategory, lectureNo, updates);
+      return await _localDatabase.updateRecord(category, subCategory, entryTitle, updates);
     } else {
       try {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
-        await _databaseRef!.child(category).child(subCategory).child(lectureNo).update(updates);
+        await _databaseRef!.child(category).child(subCategory).child(entryTitle).update(updates);
         return true;
       } catch (e) {
         _addErrorToAllControllers('Failed to update record: $e');
@@ -515,15 +516,15 @@ class UnifiedDatabaseService {
   }
   
   // Add public method for deleting records
-  Future<bool> deleteRecord(String category, String subCategory, String lectureNo) async {
+  Future<bool> deleteRecord(String category, String subCategory, String entryTitle) async {
     if (_isGuestMode) {
-      return await _localDatabase.deleteRecord(category, subCategory, lectureNo);
+      return await _localDatabase.deleteRecord(category, subCategory, entryTitle);
     } else {
       try {
         if (_databaseRef == null) {
           throw Exception('Database reference not initialized');
         }
-        await _databaseRef!.child(category).child(subCategory).child(lectureNo).remove();
+        await _databaseRef!.child(category).child(subCategory).child(entryTitle).remove();
         return true;
       } catch (e) {
         _addErrorToAllControllers('Failed to delete record: $e');
@@ -724,60 +725,11 @@ class UnifiedDatabaseService {
     };
   }
   
-  // Add public method for updating record revision data
-  Future<bool> updateRecordRevision(
-    String category,
-    String subCategory,
-    String lectureNo,
-    String dateRevised,
-    String description,
-    String reminderTime,
-    int noRevision,
-    String dateScheduled,
-    List<String> datesRevised,
-    int missedRevision,
-    List<String> datesMissedRevisions,
-    String status, {
-    bool isSkip = false,
-    List<String>? skippedDates,
-    int? skipCounts,
-  }) async {
-    try {
-      // Prepare update data
-      Map<String, dynamic> updateData = {
-        'reminder_time': reminderTime,
-        'completion_counts': noRevision,
-        'scheduled_date': dateScheduled,
-        'missed_counts': missedRevision,
-        'dates_missed_revisions': datesMissedRevisions,
-        'description': description,
-        'status': status,
-        'last_mark_done': DateTime.now().toIso8601String().split('T')[0],
-      };
-
-      // Add skip-specific data if this is a skip operation
-      if (isSkip) {
-        updateData['skipped_dates'] = skippedDates ?? [];
-        updateData['skip_counts'] = skipCounts ?? 0;
-      } else {
-        // Add completion-specific data for mark as done
-        updateData['date_updated'] = dateRevised;
-        updateData['dates_updated'] = datesRevised;
-      }
-      
-      // Update the record using the existing updateRecord method
-      return await updateRecord(category, subCategory, lectureNo, updateData);
-    } catch (e) {
-      _addErrorToAllControllers('Failed to update record revision: $e');
-      return false;
-    }
-  }
-  
   // Add public method for getting data from a particular location
-  Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String lectureNo) async {
+  Future<Map<String, dynamic>?> getDataAtLocation(String category, String subCategory, String entryTitle) async {
     if (_isGuestMode) {
       try {
-        return await _localDatabase.getRecord(category, subCategory, lectureNo);
+        return await _localDatabase.getRecord(category, subCategory, entryTitle);
       } catch (e) {
         _addErrorToAllControllers('Failed to get local record: $e');
         return null;
@@ -788,7 +740,7 @@ class UnifiedDatabaseService {
           throw Exception('Database reference not initialized');
         }
         
-        DatabaseEvent event = await _databaseRef!.child(category).child(subCategory).child(lectureNo).once();
+        DatabaseEvent event = await _databaseRef!.child(category).child(subCategory).child(entryTitle).once();
         
         if (!event.snapshot.exists) {
           return null;
@@ -838,27 +790,28 @@ class UnifiedDatabaseService {
   Future<String> _updateRecordsInternal(
     String selectedCategory,
     String selectedCategoryCode,
-    String lectureNo,
+    String entryTitle,
     String startTimestamp,
     String timeController,
-    String lectureType,
+    String entryType,
     String todayDate,
     String dateScheduled,
     String description,
-    String revisionFrequency,
+    String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    String trackDates = 'last_30',
+  }) async {
     // Generate unique title to prevent duplicates
-    String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, lectureNo);
+    String uniqueTitle = await _generateUniqueTitle(selectedCategory, selectedCategoryCode, entryTitle);
     
     try {
       int completionCounts = 0;
       
       if (todayDate == 'Unspecified') {
         completionCounts = -1;
-        revisionFrequency = 'No Repetition';
+        recurrenceFrequency = 'No Repetition';
         dateScheduled = 'Unspecified';
         durationData = {
           "type": "forever",
@@ -866,19 +819,19 @@ class UnifiedDatabaseService {
           "endDate": null
         };
       } else {
-        if (DateTime.parse(startTimestamp).isBefore(DateTime.parse(todayDate)) || revisionFrequency == 'No Repetition') {
+        if (DateTime.parse(startTimestamp).isBefore(DateTime.parse(todayDate)) || recurrenceFrequency == 'No Repetition') {
           completionCounts = -1;
         }
       }
 
-      // Create a map to store all revision parameters including custom ones
-      Map<String, dynamic> revisionData = {
-        'frequency': revisionFrequency,
+      // Create a map to store all recurrence parameters including custom ones
+      Map<String, dynamic> recurrenceData = {
+        'frequency': recurrenceFrequency,
       };
 
       // Add custom frequency parameters if present
       if (customFrequencyParams.isNotEmpty) {
-        revisionData['custom_params'] = customFrequencyParams;
+        recurrenceData['custom_params'] = customFrequencyParams;
       }
 
       // Prepare record data for storage
@@ -886,17 +839,18 @@ class UnifiedDatabaseService {
         'start_timestamp': startTimestamp,
         'reminder_time': timeController,
         'alarm_type': alarmType,
-        'entry_type': lectureType,
+        'entry_type': entryType,
         'date_initiated': todayDate,
         'date_updated': todayDate,
         'scheduled_date': dateScheduled,
         'description': description,
         'missed_counts': 0,
         'completion_counts': completionCounts,
-        'recurrence_frequency': revisionFrequency,
-        'recurrence_data': revisionData,
+        'recurrence_frequency': recurrenceFrequency,
+        'recurrence_data': recurrenceData,
         'status': 'Enabled',
         'duration': durationData,
+        'track_dates': trackDates,
       };
 
       // Save record using unified service with unique title
@@ -909,7 +863,7 @@ class UnifiedDatabaseService {
       // Return the unique title that was used
       return uniqueTitle;
     } catch (e) {
-      throw Exception('Failed to save lecture: $e');
+      throw Exception('Failed to save entry: $e');
     }
   }
 
@@ -918,37 +872,39 @@ class UnifiedDatabaseService {
     BuildContext context,
     String selectedCategory,
     String selectedCategoryCode,
-    String lectureNo,
+    String entryTitle,
     String startTimestamp,
     String timeController,
-    String lectureType,
+    String entryType,
     String todayDate,
     String dateScheduled,
     String description,
-    String revisionFrequency,
+    String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    String trackDates = 'last_30',
+  }) async {
     try {
       String uniqueTitle = await _updateRecordsInternal(
         selectedCategory,
         selectedCategoryCode,
-        lectureNo,
+        entryTitle,
         startTimestamp,
         timeController,
-        lectureType,
+        entryType,
         todayDate,
         dateScheduled,
         description,
-        revisionFrequency,
+        recurrenceFrequency,
         durationData,
         customFrequencyParams,
         alarmType,
+        trackDates: trackDates,
       );
       
       // Show appropriate success message
-      final message = uniqueTitle != lectureNo 
+      final message = uniqueTitle != entryTitle 
           ? 'Record saved as "$uniqueTitle"'
           : 'Record added successfully';
           
@@ -965,32 +921,34 @@ class UnifiedDatabaseService {
   Future<void> updateRecordsWithoutContext(
     String selectedCategory,
     String selectedCategoryCode,
-    String lectureNo,
+    String entryTitle,
     String startTimestamp,
     String timeController,
-    String lectureType,
+    String entryType,
     String todayDate,
     String dateScheduled,
     String description,
-    String revisionFrequency,
+    String recurrenceFrequency,
     Map<String, dynamic> durationData,
     Map<String, dynamic> customFrequencyParams,
-    int alarmType,
-  ) async {
+    int alarmType, {
+    String trackDates = 'last_30',
+  }) async {
     await _updateRecordsInternal(
       selectedCategory,
       selectedCategoryCode,
-      lectureNo,
+      entryTitle,
       startTimestamp,
       timeController,
-      lectureType,
+      entryType,
       todayDate,
       dateScheduled,
       description,
-      revisionFrequency,
+      recurrenceFrequency,
       durationData,
       customFrequencyParams,
       alarmType,
+      trackDates: trackDates,
     );
   }
 

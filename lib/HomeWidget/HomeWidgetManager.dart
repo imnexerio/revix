@@ -26,7 +26,9 @@ class HomeWidgetService {
   static const String categoriesDataKey = 'categoriesData';
   static bool _isInitialized = false;
   static bool _isBackgroundInitialized = false;
-  static final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();  static Future<void> initialize() async {
+  static final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();
+
+  static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
@@ -176,7 +178,7 @@ class HomeWidgetService {
               context: null, // Background processing - no UI context
               category: category,
               subCategory: subCategory,
-              lectureNo: recordTitle,
+              entryTitle: recordTitle,
               isSkip: isSkip,
               isWidget: true, // Indicate this is a widget request
             );
@@ -217,11 +219,11 @@ class HomeWidgetService {
         final title = uri?.queryParameters['title'] ?? '';
         final startTimestamp = uri?.queryParameters['startTimestamp'] ?? '';
         final reminderTime = uri?.queryParameters['reminderTime'] ?? '';
-        final lectureType = uri?.queryParameters['lectureType'] ?? '';
+        final entryType = uri?.queryParameters['entryType'] ?? '';
         final todayDate = uri?.queryParameters['todayDate'] ?? '';
         final dateScheduled = uri?.queryParameters['dateScheduled'] ?? '';
         final description = uri?.queryParameters['description'] ?? '';
-        final revisionFrequency = uri?.queryParameters['revisionFrequency'] ?? '';
+        final recurrenceFrequency = uri?.queryParameters['recurrenceFrequency'] ?? '';
         final durationDataStr = uri?.queryParameters['durationData'] ?? '{}';
         final customFrequencyParamsStr = uri?.queryParameters['customFrequencyParams'] ?? '{}';
         final alarmTypeStr = uri?.queryParameters['alarmType'] ?? '0';
@@ -264,11 +266,11 @@ class HomeWidgetService {
                 title,
                 startTimestamp,
                 reminderTime,
-                lectureType,
+                entryType,
                 todayDate,
                 dateScheduled,
                 description,
-                revisionFrequency,
+                recurrenceFrequency,
                 durationData,
                 customFrequencyParams,
                 alarmType,

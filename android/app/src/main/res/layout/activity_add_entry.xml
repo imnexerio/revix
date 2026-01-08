@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".AddLectureActivity">
+    tools:context=".AddEntryActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -147,7 +147,7 @@
                     </androidx.cardview.widget.CardView>
                 </LinearLayout>
 
-                <!-- Lecture Type -->
+                <!-- Entry Type -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -165,7 +165,7 @@
                     app:contentPadding="0dp">
 
                     <Spinner
-                        android:id="@+id/lecture_type_spinner"
+                        android:id="@+id/entry_type_spinner"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:paddingHorizontal="12dp"
@@ -313,17 +313,17 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- Revision Frequency -->
+                <!-- Recurrence Frequency -->
                 <TextView
-                    android:id="@+id/revision_frequency_text"
+                    android:id="@+id/recurrence_frequency_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Revision Frequency"
+                    android:text="Recurrence Frequency"
                     android:textSize="14sp"
                     android:layout_marginBottom="4dp"/>
 
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/revision_frequency_card"
+                    android:id="@+id/recurrence_frequency_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
@@ -340,7 +340,7 @@
                         android:gravity="center_vertical">
 
                         <Spinner
-                            android:id="@+id/revision_frequency_spinner"
+                            android:id="@+id/recurrence_frequency_spinner"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_weight="1"
@@ -349,7 +349,7 @@
                             android:spinnerMode="dropdown" />
 
                         <CheckBox
-                            android:id="@+id/review_frequency_checkbox"
+                            android:id="@+id/recurrence_frequency_checkbox"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="No Repetition"

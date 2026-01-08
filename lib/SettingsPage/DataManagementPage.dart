@@ -28,6 +28,10 @@ class _DataManagementPageState extends State<DataManagementPage> {
   bool _isCreatingAccount = false;
   final TextEditingController _importController = TextEditingController();
   
+  // Cache guest mode status to avoid repeated FutureBuilder calls
+  bool? _isGuestMode;
+  bool _isLoadingGuestMode = true;
+  
   // Public Holidays state
   final PublicHolidayFetcher _holidayFetcher = PublicHolidayFetcher();
   bool _isLoadingCountries = false;
@@ -44,8 +48,29 @@ class _DataManagementPageState extends State<DataManagementPage> {
   @override
   void initState() {
     super.initState();
+    _loadGuestModeStatus();
     _loadCountries();
     _loadHolidayFetchHistory();
+  }
+
+  Future<void> _loadGuestModeStatus() async {
+    try {
+      final isGuest = await GuestAuthService.isGuestMode();
+      if (mounted) {
+        setState(() {
+          _isGuestMode = isGuest;
+          _isLoadingGuestMode = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading guest mode status: $e');
+      if (mounted) {
+        setState(() {
+          _isGuestMode = false;
+          _isLoadingGuestMode = false;
+        });
+      }
+    }
   }
 
   @override
@@ -738,212 +763,212 @@ class _DataManagementPageState extends State<DataManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: GuestAuthService.isGuestMode(),
-      builder: (context, snapshot) {
-        final isGuestMode = snapshot.data ?? false;
-        
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              // Data Management Card
-              Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    // Use cached guest mode status instead of FutureBuilder
+    if (_isLoadingGuestMode) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    final isGuestMode = _isGuestMode ?? false;
+    
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Data Management Card
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.storage,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Data Management',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
+                      Icon(
+                        Icons.storage,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      const SizedBox(height: 16),
-                      
-                      // Different descriptions based on user type
+                      const SizedBox(width: 8),
                       Text(
-                        isGuestMode
-                            ? 'In guest mode, all your data is stored locally on this device. '
-                              'Create an account to sync your data to the cloud, or export your data as a file for backup.'
-                            : 'Backup and restore your data. Export your data as a file for safekeeping, '
-                              'or import data from a previous backup.',
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Create Account Button (Only for guest users)
-                      if (isGuestMode) ...[
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _isCreatingAccount ? null : _createAccountAndMigrate,
-                            icon: _isCreatingAccount
-                                ? SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                    ),
-                                  )
-                                : const Icon(Icons.person_add),
-                            label: const Text('Create Account & Upload Data'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                        'Data Management',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        
-                        // Divider with text
-                        Row(
-                          children: [
-                            Expanded(child: Divider()),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'OR',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                ),
-                              ),
-                            ),
-                            Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      
-                      // Export/Import Buttons (Available for all users)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _isExporting ? null : _exportUserData,
-                              icon: _isExporting
-                                  ? SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                    )
-                                  : const Icon(Icons.download),
-                              label: const Text('Export Data'),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _isImporting ? null : _pickAndImportFile,
-                              icon: _isImporting
-                                  ? SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                    )
-                                  : const Icon(Icons.upload),
-                              label: const Text('Import Data'),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
-                ),
-              ),
-              
-              // Public Holidays Section
-              Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.celebration,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Public Holidays',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Fetch public holidays from around the world. Holidays will automatically appear in your calendar and schedule.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  const SizedBox(height: 16),
+                  
+                  // Different descriptions based on user type
+                  Text(
+                    isGuestMode
+                        ? 'In guest mode, all your data is stored locally on this device. '
+                          'Create an account to sync your data to the cloud, or export your data as a file for backup.'
+                        : 'Backup and restore your data. Export your data as a file for safekeeping, '
+                          'or import data from a previous backup.',
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Create Account Button (Only for guest users)
+                  if (isGuestMode) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isCreatingAccount ? null : _createAccountAndMigrate,
+                        icon: _isCreatingAccount
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              )
+                            : const Icon(Icons.person_add),
+                        label: const Text('Create Account & Upload Data'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      
-                      if (_showHolidayPreview)
-                        _buildHolidayPreviewSection()
-                      else
-                        _buildHolidayFetchSection(),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Holiday Import History Section
-              if (_holidayFetchHistory.isNotEmpty)
-                Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Divider with text
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.history,
-                              color: Theme.of(context).colorScheme.primary,
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'OR',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Holiday Import History',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        ..._buildHistoryList(),
+                        Expanded(child: Divider()),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                  ],
+                  
+                  // Export/Import Buttons (Available for all users)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isExporting ? null : _exportUserData,
+                          icon: _isExporting
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                )
+                              : const Icon(Icons.download),
+                          label: const Text('Export Data'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isImporting ? null : _pickAndImportFile,
+                          icon: _isImporting
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                )
+                              : const Icon(Icons.upload),
+                          label: const Text('Import Data'),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        );
-      },
+          
+          // Public Holidays Section
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.celebration,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Public Holidays',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Fetch public holidays from around the world. Holidays will automatically appear in your calendar and schedule.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  if (_showHolidayPreview)
+                    _buildHolidayPreviewSection()
+                  else
+                    _buildHolidayFetchSection(),
+                ],
+              ),
+            ),
+          ),
+          
+          // Holiday Import History Section
+          if (_holidayFetchHistory.isNotEmpty)
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.history,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Holiday Import History',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ..._buildHistoryList(),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
   

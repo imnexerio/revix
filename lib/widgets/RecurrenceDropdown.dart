@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../SettingsPage/FrequencyPageSheet.dart';
 
-class RevisionFrequencyDropdown extends StatefulWidget {
-  final String revisionFrequency;
+class RecurrenceDropdown extends StatefulWidget {
+  final String recurrenceFrequency;
   final ValueChanged<String?> onChanged;
 
-  const RevisionFrequencyDropdown({
-    required this.revisionFrequency,
+  const RecurrenceDropdown({
+    required this.recurrenceFrequency,
     required this.onChanged,
   });
 
   @override
-  _RevisionFrequencyDropdownState createState() => _RevisionFrequencyDropdownState();
+  _RecurrenceDropdownState createState() => _RecurrenceDropdownState();
 }
 
-class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
+class _RecurrenceDropdownState extends State<RecurrenceDropdown> {
   List<DropdownMenuItem<String>> _dropdownItems = [];
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
@@ -135,7 +135,7 @@ class _RevisionFrequencyDropdownState extends State<RevisionFrequencyDropdown> {
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
-              value: widget.revisionFrequency,
+              value: widget.recurrenceFrequency,
               onChanged: (String? newValue) {
                 if (newValue == 'Add New') {
                   showAddFrequencySheet(

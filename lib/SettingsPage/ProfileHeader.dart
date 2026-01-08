@@ -7,15 +7,74 @@ import 'ProfileProvider.dart';
 import 'SendVerificationMail.dart';
 import 'VerifiedMail.dart';
 
-class ProfileHeader extends StatelessWidget {
+class ProfileHeader extends StatefulWidget {
   final bool isSmallScreen;
   final void Function(BuildContext) showEditProfilePage;
-  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
 
-  ProfileHeader({
+  const ProfileHeader({
+    Key? key,
     required this.isSmallScreen,
     required this.showEditProfilePage,
-  });
+  }) : super(key: key);
+
+  @override
+  State<ProfileHeader> createState() => _ProfileHeaderState();
+}
+
+class _ProfileHeaderState extends State<ProfileHeader> {
+  final FirebaseDatabaseService _databaseService = FirebaseDatabaseService();
+  
+  // Cached future results to prevent recreation on rebuild
+  bool? _isGuestMode;
+  bool? _isEmailVerified;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserStatus();
+  }
+
+  Future<void> _loadUserStatus() async {
+    try {
+      final isGuest = await GuestAuthService.isGuestMode();
+      bool? emailVerified;
+      
+      if (!isGuest) {
+        emailVerified = await isEmailVerified();
+      }
+      
+      if (mounted) {
+        setState(() {
+          _isGuestMode = isGuest;
+          _isEmailVerified = emailVerified;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading user status: $e');
+      if (mounted) {
+        setState(() {
+          _isGuestMode = false;
+          _isEmailVerified = false;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Call this to refresh email verification status after sending verification email
+  Future<void> refreshEmailVerification() async {
+    if (_isGuestMode == true) return;
+    
+    invalidateEmailVerificationCache();
+    final verified = await isEmailVerified(forceRefresh: true);
+    if (mounted) {
+      setState(() {
+        _isEmailVerified = verified;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +83,8 @@ class ProfileHeader extends StatelessWidget {
       curve: Curves.easeOutQuart,
       width: double.infinity,
       constraints: BoxConstraints(
-        minHeight: isSmallScreen ? 220 : 280,
-        maxHeight: isSmallScreen ? 280 : 350,
+        minHeight: widget.isSmallScreen ? 220 : 280,
+        maxHeight: widget.isSmallScreen ? 280 : 350,
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -60,10 +119,10 @@ class ProfileHeader extends StatelessWidget {
                   Hero(
                     tag: 'profile-image',
                     child: InkWell(
-                      onTap: () => showEditProfilePage(context),
+                      onTap: () => widget.showEditProfilePage(context),
                       child: Container(
-                        width: isSmallScreen ? 90 : 110,
-                        height: isSmallScreen ? 90 : 110,
+                        width: widget.isSmallScreen ? 90 : 110,
+                        height: widget.isSmallScreen ? 90 : 110,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -105,86 +164,86 @@ class ProfileHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            // Check if user is in guest mode before showing email verification status
+            // Email verification status - now uses cached state
             Flexible(
-              child: FutureBuilder<bool>(
-              future: GuestAuthService.isGuestMode(),
-              builder: (context, guestSnapshot) {
-                if (guestSnapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  );
-                }
-                
-                bool isGuest = guestSnapshot.data ?? false;
-                
-                if (isGuest) {
-                  // For guest users, show guest mode indicator
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Guest Mode',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.person_off_outlined, 
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                      ),
-                    ],
-                  );
-                } else {
-                  // For authenticated users, show email verification status
-                  return FutureBuilder<bool>(
-                    future: isEmailVerified(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        );
-                      } else if (snapshot.hasError) {
-                        return const Text('Error loading verification status');
-                      } else {
-                        bool isVerified = snapshot.data!;
-                        return Center(
-                          key: ValueKey('email-${isVerified}'),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,                            children: [
-                              Text(
-                                '${_databaseService.currentUserEmail ?? 'imnexerio@gmail.com'}',
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              if (isVerified)
-                                const Icon(Icons.verified_outlined, color: Colors.green)
-                              else
-                                TextButton(
-                                  onPressed: () => sendVerificationEmail(context),
-                                  child: const Icon(Icons.error, color: Colors.red),
-                                )
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                  );
-                }
-              },
-              ),
+              child: _buildEmailVerificationSection(context),
             ),
             const SizedBox(height: 8),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildEmailVerificationSection(BuildContext context) {
+    // Fixed height container to prevent layout jumps
+    const double sectionHeight = 28;
+    
+    if (_isLoading) {
+      return const SizedBox(
+        height: sectionHeight,
+        width: 24,
+        child: Center(
+          child: SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (_isGuestMode == true) {
+      // For guest users, show guest mode indicator
+      return SizedBox(
+        height: sectionHeight,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Guest Mode',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.person_off_outlined,
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              size: 20,
+            ),
+          ],
+        ),
+      );
+    } else {
+      // For authenticated users, show email verification status
+      final isVerified = _isEmailVerified ?? false;
+      return SizedBox(
+        height: sectionHeight,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${_databaseService.currentUserEmail ?? 'imnexerio@gmail.com'}',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (isVerified)
+              const Icon(Icons.verified_outlined, color: Colors.green, size: 20)
+            else
+              GestureDetector(
+                onTap: () async {
+                  await sendVerificationEmail(context);
+                  // Refresh verification status after sending email
+                  refreshEmailVerification();
+                },
+                child: const Icon(Icons.error, color: Colors.red, size: 20),
+              )
+          ],
+        ),
+      );
+    }
   }
 }

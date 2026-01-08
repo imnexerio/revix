@@ -1,13 +1,12 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'PieChartLegend.dart';
-import 'SubjectDistributionPlot.dart';
+import 'package:revix/Utils/entry_colors.dart';
 
 Widget buildCategoryDistributionCard(Map<String,
     int> subjectDistribution,
     double cardPadding,
     BuildContext context,
-    {required Function() onTitleTap,required String selectedLectureType}) {
+    {required Function() onTitleTap,required String selectedEntryType}) {
   // Get the screen width to calculate responsive sizes
   final screenWidth = MediaQuery.of(context).size.width;
 
@@ -42,7 +41,7 @@ Widget buildCategoryDistributionCard(Map<String,
           child: Row(
             children: [
               Text(
-                'Subject Distribution: $selectedLectureType',
+                'Category Distribution: $selectedEntryType',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -66,7 +65,7 @@ Widget buildCategoryDistributionCard(Map<String,
                   height: 550,
                   child: PieChart(
                     PieChartData(
-                      sections: createPieChartSections(
+                      sections: _createPieChartSections(
                         subjectDistribution,
                         chartRadius,
                         Theme.of(context),
@@ -111,9 +110,130 @@ Widget buildCategoryDistributionCard(Map<String,
         // Only show legend if we have data
         if (hasValidData)
           Center(
-            child: buildPieChartLegend(subjectDistribution, context),
+            child: _buildPieChartLegend(subjectDistribution, context),
           ),
       ],
+    ),
+  );
+}
+// ============================================================================
+// PIE CHART SECTIONS HELPER
+// ============================================================================
+
+List<PieChartSectionData> _createPieChartSections(
+    Map<String, int> subjectCounts,
+    double radius,
+    ThemeData theme,
+    ) {
+  List<PieChartSectionData> sections = [];
+  int totalEntries = subjectCounts.values.fold(0, (sum, count) => sum + count);
+
+  // If there's no data, return an empty chart
+  if (totalEntries == 0) {
+    return [
+      PieChartSectionData(
+        color: Colors.grey.withOpacity(0.2),
+        value: 100,
+        title: 'No Data',
+        radius: radius,
+        titleStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: theme.textTheme.bodyLarge?.color ?? Colors.grey,
+        ),
+      )
+    ];
+  }
+
+  var sortedEntries = subjectCounts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+
+  for (var entry in sortedEntries) {
+    int count = entry.value;
+    double percentage = (count / totalEntries) * 100;
+    Color sectionColor = EntryColors.generateColorFromString(entry.key);
+
+    sections.add(
+      PieChartSectionData(
+        color: sectionColor,
+        value: percentage,
+        title: '',
+        radius: radius,
+        titleStyle: const TextStyle(fontSize: 0),
+        badgeWidget: null,
+      ),
+    );
+  }
+
+  return sections;
+}
+
+// ============================================================================
+// PIE CHART LEGEND HELPER
+// ============================================================================
+
+String _trimText(String text, int maxLength) {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return '${text.substring(0, maxLength)}...';
+}
+
+Widget _buildPieChartLegend(Map<String, int> subjectCounts, BuildContext context) {
+  int totalCount = subjectCounts.values.fold(0, (sum, count) => sum + count);
+
+  var sortedEntries = subjectCounts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+    decoration: BoxDecoration(
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.03),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      alignment: WrapAlignment.center,
+      children: sortedEntries.map((entry) {
+        double percentage = totalCount > 0 ? (entry.value / totalCount * 100) : 0;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: EntryColors.generateColorFromString(entry.key),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '${_trimText(entry.key, 15)} (${percentage.toStringAsFixed(1)}%)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     ),
   );
 }

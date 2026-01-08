@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Utils/FirebaseDatabaseService.dart';
-import '../Utils/lecture_colors.dart';
+import '../Utils/entry_colors.dart';
 import 'AddTrackingTypeSheet.dart';
 
 class TrackingTypePage extends StatefulWidget {
@@ -80,7 +80,7 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
                               width: 16,
                               height: 16,
                               decoration: BoxDecoration(
-                                color: LectureColors.generateColorFromString(tracking['trackingTitle']!),
+                                color: EntryColors.generateColorFromString(tracking['trackingTitle']!),
                                 shape: BoxShape.circle,
                               ),
                             ),

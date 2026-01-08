@@ -7,7 +7,7 @@ Widget buildDailyProgressCard(
     List<Map<String, dynamic>> allRecords,
     double cardPadding,
     BuildContext context,
-    {required Function() onTitleTap, required String selectedLectureType}  // Add these parameters
+    {required Function() onTitleTap, required String selectedEntryType}  // Add these parameters
     ) {
   return Container(
     width: double.infinity,
@@ -32,7 +32,7 @@ Widget buildDailyProgressCard(
           child: Row(
             children: [
               Text(
-                'Daily Progress: $selectedLectureType',  // Include the selected lecture type
+                'Daily Progress: $selectedEntryType',  // Include the selected entry type
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,

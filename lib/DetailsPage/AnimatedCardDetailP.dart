@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../SchedulePage/RevisionGraph.dart';
-import '../Utils/lecture_colors.dart';
+import '../SchedulePage/RecurrenceGraph.dart';
+import '../Utils/entry_colors.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
 
 class AnimatedCardDetailP extends StatelessWidget {
@@ -92,7 +92,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                                       TextSpan(
                                         text: '${record['entry_type'] ?? 'Unknown'}',
                                         style: TextStyle(
-                                          color: LectureColors.generateColorFromString(
+                                          color: EntryColors.generateColorFromString(
                                               record['entry_type']?.toString() ?? 'default'
                                           ),
                                           fontWeight: FontWeight.bold,
@@ -141,23 +141,29 @@ class AnimatedCardDetailP extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Right side with the revision graph
+                        // Right side with the recurrence graph
                         Expanded(
                           flex: 2,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
                             child: Center(
-                              // Add a key to force rebuild of RevisionRadarChart when data changes
-                              child: RevisionRadarChart(
-                                key: ValueKey(
-                                    'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_revisions'] as List?)?.length ?? 0}_${(record['skipped_dates'] as List?)?.length ?? 0}'
-                                ),
-                                dateLearnt: record['date_initiated'],
-                                datesMissedRevisions: _safeListConversion(record['dates_missed_revisions']),
-                                datesRevised: _safeListConversion(record['dates_updated']),
-                                datesSkipped: _safeListConversion(record['skipped_dates']),
-                                showLabels: false,
-                              ),
+                              // Add a key to force rebuild of RecurrenceRadarChart when data changes
+                              child: (record['track_dates'] ?? 'last_30') != 'off'
+                                ? RecurrenceRadarChart(
+                                    key: ValueKey(
+                                        'chart_${record['category'] ?? ''}_${record['record_title'] ?? ''}_${(record['dates_updated'] as List?)?.length ?? 0}_${(record['dates_missed_reviews'] as List?)?.length ?? 0}_${(record['skipped_dates'] as List?)?.length ?? 0}'
+                                    ),
+                                    dateInitiated: record['date_initiated'],
+                                    datesMissedReviews: _safeListConversion(record['dates_missed_reviews']),
+                                    datesReviewed: _safeListConversion(record['dates_updated']),
+                                    datesSkipped: _safeListConversion(record['skipped_dates']),
+                                    showLabels: false,
+                                  )
+                                : Icon(
+                                    Icons.history_toggle_off,
+                                    size: 32,
+                                    color: Colors.grey.withOpacity(0.4),
+                                  ),
                             ),
                           ),
                         ),
@@ -185,7 +191,7 @@ class AnimatedCardDetailP extends StatelessWidget {
   // Build status indicator line - solid if enabled, dashed if disabled
   Widget _buildStatusIndicatorLine() {
     final bool isEnabled = record['status']?.toString().toLowerCase() == 'enabled';
-    final Color lineColor = LectureColors.generateColorFromString(
+    final Color lineColor = EntryColors.generateColorFromString(
         record['entry_type']?.toString() ?? 'default'
     );
 

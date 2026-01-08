@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:revix/Utils/date_utils.dart';
-import 'package:revix/widgets/LectureTypeDropdown.dart';
-import 'package:revix/widgets/RevisionFrequencyDropdown.dart';
+import 'package:revix/widgets/EntryTypeDropdown.dart';
+import 'package:revix/widgets/RecurrenceDropdown.dart';
 import 'Utils/CustomFrequencySelector.dart';
 import 'Utils/CalculateCustomNextDate.dart';
 import 'Utils/UnifiedDatabaseService.dart';
 import 'Utils/customSnackBar_error.dart';
 
-class AddLectureForm extends StatefulWidget {
+class AddEntryForm extends StatefulWidget {
   @override
-  _AddLectureFormState createState() => _AddLectureFormState();
+  _AddEntryFormState createState() => _AddEntryFormState();
 }
 
-class _AddLectureFormState extends State<AddLectureForm> {
+class _AddEntryFormState extends State<AddEntryForm> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _initiationdateController = TextEditingController();
   final TextEditingController _scheduleddateController = TextEditingController();
@@ -22,11 +22,11 @@ class _AddLectureFormState extends State<AddLectureForm> {
   final TextEditingController _descriptionController = TextEditingController();
   String _selectedCategory = 'DEFAULT_VALUE';
   String _selectedCategoryCode = '';
-  String _lectureType = 'DEFAULT_LECTURE_TYPE';
-  String _lectureNo = '';
+  String _entryType = 'DEFAULT_ENTRY_TYPE';
+  String _title = '';
   String _description = '';
-  String _revisionFrequency = 'Default';  String _duration = 'Forever';
-  List<String> _subjects = [];
+  String _recurrenceFrequency = 'Default';  String _duration = 'Forever';
+  List<String> _categories = [];
   Map<String, List<String>> _subCategories = {};
   String dateScheduled = '';
   String todayDate = '';
@@ -45,6 +45,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
   bool _showAddNewCategory = false;
   bool _showAddNewCategoryCode_ = false;
+  String _trackDates = 'last_30'; // 'off', 'on', 'last_30'
 
   @override
   void initState() {
@@ -63,15 +64,15 @@ class _AddLectureFormState extends State<AddLectureForm> {
 
       // Update state with the retrieved data
       setState(() {
-        _subjects = data['subjects'];
+        _categories = data['subjects'];
         _subCategories = data['subCategories'];
 
         // Set appropriate selection
-        if (_subjects.isNotEmpty) {
-          _selectedCategory = _subjects[0];
+        if (_categories.isNotEmpty) {
+          _selectedCategory = _categories[0];
           // Set default sub-category for the selected category
-          if (_subCategories[_subjects[0]]?.isNotEmpty == true) {
-            _selectedCategoryCode = _subCategories[_subjects[0]]![0];
+          if (_subCategories[_categories[0]]?.isNotEmpty == true) {
+            _selectedCategoryCode = _subCategories[_categories[0]]![0];
           }
         } else {
           _selectedCategory = 'DEFAULT_VALUE';
@@ -99,20 +100,21 @@ class _AddLectureFormState extends State<AddLectureForm> {
         context,
         _selectedCategory,
         _selectedCategoryCode,
-        _lectureNo,
+        _title,
         start_timestamp,
         _timeController.text,
-        _lectureType,
+        _entryType,
         todayDate,
         dateScheduled,
         _description,
-        _revisionFrequency,
+        _recurrenceFrequency,
         _durationData,
         _customFrequencyParams,
         finalAlarmType,
+        trackDates: _trackDates,
       );
     } catch (e) {
-      throw Exception('Failed to save lecture: $e');
+      throw Exception('Failed to save entry: $e');
     }
   }
 
@@ -133,7 +135,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
     }
     else {
       // If it's no repetition, don't calculate next date
-      if (_revisionFrequency == 'No Repetition') {
+      if (_recurrenceFrequency == 'No Repetition') {
         setState(() {
           dateScheduled = todayDate;
           _scheduleddateController.text = dateScheduled;
@@ -142,7 +144,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       }
 
       // For custom frequency, add the custom parameters
-      if (_revisionFrequency == 'Custom' && _customFrequencyParams.isNotEmpty) {
+      if (_recurrenceFrequency == 'Custom' && _customFrequencyParams.isNotEmpty) {
         // Use custom parameters to calculate the next date
         DateTime initialDate = DateTime.parse(todayDate);
         DateTime nextDate = CalculateCustomNextDate.calculateCustomNextDate(
@@ -155,9 +157,9 @@ class _AddLectureFormState extends State<AddLectureForm> {
       }
 
       // For standard frequencies
-      DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
+      DateTime initialDate = await DateNextRecurrence.calculateNextRecurrenceDate(
         DateTime.parse(todayDate),
-        _revisionFrequency,
+        _recurrenceFrequency,
         0,
       );
 
@@ -251,7 +253,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
       });
     } else {
       setState(() { // Added setState here to update the UI
-        _revisionFrequency = 'Default';
+        _recurrenceFrequency = 'Default';
         _setScheduledDate(); // Update scheduled date based on the default frequency
       });
     }
@@ -304,8 +306,8 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: DropdownButtonFormField<String>(
-                        value: _selectedCategory == 'DEFAULT_VALUE' && _subjects.isNotEmpty ? _subjects[0] :
-                        (_subjects.contains(_selectedCategory) ? _selectedCategory : null),
+                        value: _selectedCategory == 'DEFAULT_VALUE' && _categories.isNotEmpty ? _categories[0] :
+                        (_categories.contains(_selectedCategory) ? _selectedCategory : null),
                         decoration: const InputDecoration(
                           labelText: 'Category',
                           border: InputBorder.none,
@@ -313,7 +315,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ),
                         isExpanded: true,
                         items: [
-                          ..._subjects.map((category) => DropdownMenuItem(
+                          ..._categories.map((category) => DropdownMenuItem(
                             value: category,
                             child: Text(category),
                           )).toList(),
@@ -464,19 +466,19 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ),
                       ),
 
-                    // Lecture Type Dropdown
-                    LectureTypeDropdown(
-                      lectureType: _lectureType,
+                    // Entry Type Dropdown
+                    EntryTypeDropdown(
+                      entryType: _entryType,
                       onChanged: (String? newValue) {
                         setState(() {
-                          _lectureType = newValue!;
+                          _entryType = newValue!;
                         });
                       },
-                      onLectureTypesLoaded: (String firstLectureType) {
-                        // Set default lecture type when lecture types are loaded
-                        if (_lectureType == 'DEFAULT_LECTURE_TYPE') {
+                      onEntryTypesLoaded: (String firstEntryType) {
+                        // Set default entry type when entry types are loaded
+                        if (_entryType == 'DEFAULT_ENTRY_TYPE') {
                           setState(() {
-                            _lectureType = firstLectureType;
+                            _entryType = firstEntryType;
                           });
                         }
                       },
@@ -497,7 +499,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
                         onSaved: (value) {
-                          _lectureNo = value!;
+                          _title = value!;
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -707,12 +709,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                     final now = DateTime.now();
                                     todayDate = now.toIso8601String().split('T')[0];
                                     _initiationdateController.text = todayDate;
-                                    _revisionFrequency =  'Default'; // Reset revision frequency
+                                    _recurrenceFrequency =  'Default'; // Reset recurrence frequency
                                   } else {
                                     // Set to "Unspecified"
                                     _initiationdateController.text = 'Unspecified';
                                     todayDate = 'Unspecified'; // Clear the actual date
-                                    _revisionFrequency= 'No Repetition'; // Reset revision frequency
+                                    _recurrenceFrequency= 'No Repetition'; // Reset recurrence frequency
                                   }
                                   _setScheduledDate(); // Update the scheduled date
                                 });
@@ -739,7 +741,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
                     ),
 
-                    // Revision Frequency options
+                    // Recurrence Frequency options
                     if(todayDate != 'Unspecified')
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -753,12 +755,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: RevisionFrequencyDropdown(
-                                    revisionFrequency: _revisionFrequency,
+                                  child: RecurrenceDropdown(
+                                    recurrenceFrequency: _recurrenceFrequency,
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         setState(() {
-                                          _revisionFrequency = newValue;
+                                          _recurrenceFrequency = newValue;
 
                                           // If custom is selected, show custom options
                                           if (newValue == 'Custom') {
@@ -782,12 +784,12 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                     borderRadius: BorderRadius.circular(12),
                                     onTap: () {
                                       setState(() {
-                                        if (_revisionFrequency == 'No Repetition') {
+                                        if (_recurrenceFrequency == 'No Repetition') {
                                           // If already "No Repetition", set back to default
-                                          _revisionFrequency = 'Default';
+                                          _recurrenceFrequency = 'Default';
                                         } else {
                                           // Set to "No Repetition"
-                                          _revisionFrequency = 'No Repetition';
+                                          _recurrenceFrequency = 'No Repetition';
                                         }
                                         _setScheduledDate();
                                       });
@@ -798,7 +800,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            _revisionFrequency == 'No Repetition'
+                                            _recurrenceFrequency == 'No Repetition'
                                                 ? Icons.check_box
                                                 : Icons.check_box_outline_blank,
                                             color: Theme.of(context).primaryColor,
@@ -813,7 +815,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                               ],
                             ),
                             // Custom frequency description (if selected)
-                            if (_revisionFrequency == 'Custom' && _customFrequencyParams.isNotEmpty)
+                            if (_recurrenceFrequency == 'Custom' && _customFrequencyParams.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Text(
@@ -829,7 +831,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                       ),
 
                     // First Reminder Date Field (conditionally shown)
-                    if (_revisionFrequency != 'No Repetition')
+                    if (_recurrenceFrequency != 'No Repetition')
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -846,20 +848,20 @@ class _AddLectureFormState extends State<AddLectureForm> {
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
                           onTap: () async {
-                            // Create revision data map with all parameters
-                            Map<String, dynamic> revisionData = {
-                              'frequency': _revisionFrequency,
+                            // Create recurrence data map with all parameters
+                            Map<String, dynamic> recurrenceData = {
+                              'frequency': _recurrenceFrequency,
                             };
 
                             // Add custom parameters if present
-                            if (_revisionFrequency == 'Custom') {
-                              revisionData['custom_params'] = _customFrequencyParams;
+                            if (_recurrenceFrequency == 'Custom') {
+                              recurrenceData['custom_params'] = _customFrequencyParams;
                             }
 
                             // Use unified method for all frequency types
-                            DateTime initialDate = await DateNextRevision.calculateNextRevisionDate(
+                            DateTime initialDate = await DateNextRecurrence.calculateNextRecurrenceDate(
                               DateTime.parse(todayDate),
-                              _revisionFrequency,
+                              _recurrenceFrequency,
                               0,
                             );
 
@@ -879,7 +881,7 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ),
                       ),
 
-                    if(_revisionFrequency != 'No Repetition')
+                    if(_recurrenceFrequency != 'No Repetition')
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         width: double.infinity,
@@ -1077,6 +1079,64 @@ class _AddLectureFormState extends State<AddLectureForm> {
                         ),
                       ),
 
+                    // Track Dates Toggle - Storage optimization option
+                    if(_recurrenceFrequency != 'No Repetition')
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(context).cardColor,
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Track History',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Store completion dates for charts & analytics',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: SegmentedButton<String>(
+                                segments: const [
+                                  ButtonSegment<String>(
+                                    value: 'off',
+                                    label: Text('Off'),
+                                    icon: Icon(Icons.history_toggle_off, size: 18),
+                                  ),
+                                  ButtonSegment<String>(
+                                    value: 'last_30',
+                                    label: Text('Last 30'),
+                                    icon: Icon(Icons.filter_list, size: 18),
+                                  ),
+                                  ButtonSegment<String>(
+                                    value: 'on',
+                                    label: Text('Unlimited'),
+                                    icon: Icon(Icons.all_inclusive, size: 18),
+                                  ),
+                                ],
+                                selected: {_trackDates},
+                                onSelectionChanged: (Set<String> selection) {
+                                  setState(() {
+                                    _trackDates = selection.first;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                     // Description Field
                     Container(

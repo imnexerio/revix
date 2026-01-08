@@ -8,12 +8,19 @@ import 'DisplayName.dart';
 import 'DecodeProfilePic.dart';
 
 class ProfileProvider with ChangeNotifier {
+  Uint8List? _profileImageBytes;  // Cache bytes instead of Image widget
   Image? _profileImage;
   String? _displayName;
   bool _isLoadingImage = false;
   bool _isLoadingName = false;
 
-  Image? get profileImage => _profileImage;
+  Image? get profileImage {
+    // Create Image widget from cached bytes on demand
+    if (_profileImage == null && _profileImageBytes != null) {
+      _profileImage = Image.memory(_profileImageBytes!);
+    }
+    return _profileImage;
+  }
   String? get displayName => _displayName;
   bool get isLoadingImage => _isLoadingImage;
   bool get isLoadingName => _isLoadingName;
@@ -22,11 +29,11 @@ class ProfileProvider with ChangeNotifier {
   Future<void> loadProfileImage(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? imageData = prefs.getString('profile_image');
-    String? imageUpdateTime = prefs.getString('profile_image_updated_at');
 
-    if (imageData != null) {
-      // Load cached image immediately
-      _profileImage = Image.memory(base64Decode(imageData));
+    if (imageData != null && _profileImageBytes == null) {
+      // Load cached image immediately only if not already loaded
+      _profileImageBytes = base64Decode(imageData);
+      _profileImage = Image.memory(_profileImageBytes!);
       notifyListeners();
     }
 
@@ -38,10 +45,9 @@ class ProfileProvider with ChangeNotifier {
   Future<void> loadDisplayName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? nameData = prefs.getString('display_name');
-    String? nameUpdateTime = prefs.getString('display_name_updated_at');
 
-    if (nameData != null) {
-      // Load cached name immediately
+    if (nameData != null && _displayName == null) {
+      // Load cached name immediately only if not already loaded
       _displayName = nameData;
       notifyListeners();
     }
@@ -54,23 +60,28 @@ class ProfileProvider with ChangeNotifier {
   Future<void> fetchAndUpdateProfileImage(BuildContext context, {bool forceUpdate = true}) async {
     if (_isLoadingImage) return; // Prevent multiple simultaneous updates
 
+    final wasLoading = _isLoadingImage;
     _isLoadingImage = true;
-    if (forceUpdate) notifyListeners();
+    if (forceUpdate && !wasLoading) notifyListeners();
 
     try {
       final newImage = await decodeProfileImage(context);
 
       // Check if image has changed before updating
-      if (forceUpdate || await _hasImageChanged(newImage!)) {
+      if (newImage != null && (forceUpdate || await _hasImageChanged(newImage))) {
         _profileImage = newImage;
-        await _saveProfileImageLocally(newImage!);
+        await _saveProfileImageLocally(newImage);
         notifyListeners();
       }
     } catch (e) {
       print('Error fetching profile image: $e');
     } finally {
+      final wasLoadingBefore = _isLoadingImage;
       _isLoadingImage = false;
-      notifyListeners();
+      // Only notify if loading state actually changed and we haven't notified already
+      if (wasLoadingBefore && forceUpdate) {
+        // Already notified above when data changed, no need to notify again
+      }
     }
   }
 
@@ -78,14 +89,15 @@ class ProfileProvider with ChangeNotifier {
   Future<void> fetchAndUpdateDisplayName({bool forceUpdate = true}) async {
     if (_isLoadingName) return; // Prevent multiple simultaneous updates
 
+    final wasLoading = _isLoadingName;
     _isLoadingName = true;
-    if (forceUpdate) notifyListeners();
+    if (forceUpdate && !wasLoading) notifyListeners();
 
     try {
       final newName = await getDisplayName();
 
-      // Only update if name has changed or force update is requested
-      if (forceUpdate || newName != _displayName) {
+      // Only update if name has changed
+      if (newName != _displayName) {
         _displayName = newName;
         await _saveDisplayNameLocally(newName);
         notifyListeners();
@@ -93,8 +105,12 @@ class ProfileProvider with ChangeNotifier {
     } catch (e) {
       print('Error fetching display name: $e');
     } finally {
+      final wasLoadingBefore = _isLoadingName;
       _isLoadingName = false;
-      notifyListeners();
+      // Only notify if loading state actually changed and we haven't notified already
+      if (wasLoadingBefore && forceUpdate) {
+        // Already notified above when data changed, no need to notify again
+      }
     }
   }
 
