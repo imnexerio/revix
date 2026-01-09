@@ -22,7 +22,7 @@ object EntryColors {
             return PRIMARY_COLOR
         }
         
-        val hash1 = customHash(input, 2166136261L)
+        val hash1 = customHash(input, 1836311903L)
         val hash2 = customHash(input, 1952879633L)
         
         // Use golden ratio to spread hue values maximally
@@ -39,16 +39,22 @@ object EntryColors {
         return hslToRgb(hue, saturation, lightness)
     }
 
+    /**
+     * Cross-platform hash - matches Dart implementation exactly
+     * Uses only operations that work identically on all platforms
+     */
     private fun customHash(input: String, seed: Long): Int {
-        var hash = seed.toInt()  // Safe: all seeds are < 2^31
+        var hash = seed.toInt()
         for (char in input) {
-            hash = hash xor char.code
-            hash = ((hash.toLong() * 16777619L) and 0x7FFFFFFF).toInt()
+            // Classic DJB2-style hash with safe multiplier
+            hash = ((hash shl 5) - hash + char.code) and 0x7FFFFFFF
         }
-        // Extra mixing for better distribution
-        hash = hash xor (hash shr 15)
-        hash = ((hash.toLong() * 2246822519L) and 0x7FFFFFFF).toInt()
+        // Simple mixing using only bit operations (no large multiplies)
+        hash = hash xor (hash shr 11)
+        hash = ((hash shl 5) - hash) and 0x7FFFFFFF  // Same as hash * 31
         hash = hash xor (hash shr 13)
+        hash = ((hash shl 5) - hash) and 0x7FFFFFFF
+        hash = hash xor (hash shr 7)
         return hash
     }
 

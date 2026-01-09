@@ -11,7 +11,7 @@ class EntryColors {
       return _primaryColor;
     }
     
-    final int hash1 = _customHash(input, 2166136261);
+    final int hash1 = _customHash(input, 1836311903);
     final int hash2 = _customHash(input, 1952879633);
     
     final double hueRaw = (hash1 * _goldenRatioConjugate) % 1.0;
@@ -27,16 +27,20 @@ class EntryColors {
     return _hslToRgb(hue, saturation, lightness);
   }
 
+  /// Cross-platform hash - works identically on Web, Android, iOS, Desktop
+  /// Uses only operations that stay within JavaScript's safe integer range
   static int _customHash(String input, int seed) {
     int hash = seed;
     for (int i = 0; i < input.length; i++) {
-      hash ^= input.codeUnitAt(i);
-      hash = (hash * 16777619) & 0x7FFFFFFF;
+      // Classic DJB2-style hash with safe multiplier
+      hash = ((hash << 5) - hash + input.codeUnitAt(i)) & 0x7FFFFFFF;
     }
-    // Extra mixing for better distribution
-    hash ^= hash >> 15;
-    hash = (hash * 2246822519) & 0x7FFFFFFF;
-    hash ^= hash >> 13;
+    // Simple mixing using only bit operations (no large multiplies)
+    hash ^= (hash >> 11);
+    hash = ((hash << 5) - hash) & 0x7FFFFFFF;  // Same as hash * 31
+    hash ^= (hash >> 13);
+    hash = ((hash << 5) - hash) & 0x7FFFFFFF;
+    hash ^= (hash >> 7);
     return hash;
   }
 
