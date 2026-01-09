@@ -31,8 +31,8 @@ object EntryColors {
         
         // Use second hash for saturation and lightness variation
         val satIndex = hash2 % 5
-        val lightIndex = (hash2 shr 8) % 5
-        
+        val lightIndex = (hash2 shr 10) % 5 // Use higher bits for better distribution
+
         val saturation = SATURATIONS[satIndex]
         val lightness = LIGHTNESSES[lightIndex]
         

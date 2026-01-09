@@ -18,7 +18,7 @@ class EntryColors {
     final double hue = hueRaw * 360.0;
     
     final int satIndex = hash2 % 5;  // 5 saturation levels
-    final int lightIndex = (hash2 >> 8) % 5;  // 5 lightness levels
+    final int lightIndex = (hash2 >> 10) % 5;  // 5 lightness levels, use higher bits for better distribution
     
     final double saturation = _saturations[satIndex];
     final double lightness = _lightnesses[lightIndex];
