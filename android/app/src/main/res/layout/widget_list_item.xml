@@ -7,24 +7,15 @@
     android:padding="4dp"
     android:gravity="center_vertical">
 
-    <!-- Colored stick indicator -->
+    <!-- Colored stick indicator - tap to mark as done -->
     <ImageView
         android:id="@+id/calendar_record_stick"
-        android:layout_width="4dp"
+        android:layout_width="12dp"
         android:layout_height="20dp"
         android:src="@drawable/rounded_line_indicator"
+        android:layout_marginStart="-6dp"
         android:layout_marginEnd="8dp"
-        android:contentDescription="Record type indicator" />
-
-    <!-- Mark as done circle button (only shown in TodayWidget) -->
-    <ImageButton
-        android:id="@+id/mark_as_done_circle"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_marginEnd="8dp"
-        android:src="@drawable/baseline_radio_button_unchecked_24"
-        android:contentDescription="Mark as done"
-        android:visibility="gone" />
+        android:contentDescription="Tap to mark as done" />
 
     <!-- Record text: Time · Category · Subcategory · Title -->
     <TextView
