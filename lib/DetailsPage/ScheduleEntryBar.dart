@@ -27,7 +27,6 @@ class _ScheduleEntryBarState extends State<ScheduleEntryBar> {
   void initState() {
     super.initState();
     _databaseService.initialize();
-    _loadInitialData();
     _subscribeToStream();
   }
 
@@ -35,23 +34,14 @@ class _ScheduleEntryBarState extends State<ScheduleEntryBar> {
   void didUpdateWidget(ScheduleEntryBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.scheduleType != widget.scheduleType) {
-      // Schedule type changed, update records from cache first
-      _loadInitialData();
-    }
-  }
-
-  /// Load initial data from cache (broadcast streams don't replay)
-  void _loadInitialData() {
-    final cachedData = _databaseService.currentCategorizedData;
-    if (cachedData != null) {
-      setState(() {
-        _records = List<Map<String, dynamic>>.from(cachedData[widget.scheduleType] ?? []);
-      });
+      // Schedule type changed, re-subscribe to get correct data
+      _subscribeToStream();
     }
   }
 
   void _subscribeToStream() {
     _subscription?.cancel();
+    // BehaviorSubject automatically replays the last value to new subscribers
     _subscription = _databaseService.categorizedRecordsStream.listen((data) {
       setState(() {
         _records = List<Map<String, dynamic>>.from(data[widget.scheduleType] ?? []);

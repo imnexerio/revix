@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Provides simple local database functionality using Hive for guest mode.
 /// This service handles data storage and retrieval in Firebase-compatible structure.
@@ -15,9 +16,9 @@ class LocalDatabaseService {
   // Current user ID for guest mode
   static String _currentUserId = 'guest_user_local';
   
-  // Stream controller for raw data changes - simplified to just notify when data changes
-  final StreamController<dynamic> _rawDataController =
-      StreamController<dynamic>.broadcast();
+  // Stream controller for raw data changes - BehaviorSubject replays last value to new subscribers
+  final BehaviorSubject<dynamic> _rawDataController =
+      BehaviorSubject<dynamic>();
 
   // Stream getter for raw data
   Stream<dynamic> get rawDataStream => _rawDataController.stream;

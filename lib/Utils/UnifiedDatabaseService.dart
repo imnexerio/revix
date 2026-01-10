@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:revix/Utils/platform_utils.dart';
@@ -35,17 +36,17 @@ class UnifiedDatabaseService {
   StreamSubscription? _dataSubscription;
   bool _isGuestMode = false;
 
-  final StreamController<Map<String, List<Map<String, dynamic>>>> _categorizedRecordsController =
-  StreamController<Map<String, List<Map<String, dynamic>>>>.broadcast();
+  final BehaviorSubject<Map<String, List<Map<String, dynamic>>>> _categorizedRecordsController =
+  BehaviorSubject<Map<String, List<Map<String, dynamic>>>>();
 
-  final StreamController<Map<String, dynamic>> _allRecordsController =
-  StreamController<Map<String, dynamic>>.broadcast();
+  final BehaviorSubject<Map<String, dynamic>> _allRecordsController =
+  BehaviorSubject<Map<String, dynamic>>();
 
-  final StreamController<Map<String, dynamic>> _categoriesController =
-  StreamController<Map<String, dynamic>>.broadcast();
+  final BehaviorSubject<Map<String, dynamic>> _categoriesController =
+  BehaviorSubject<Map<String, dynamic>>();
 
-  final StreamController<dynamic> _rawDataController =
-  StreamController<dynamic>.broadcast();
+  final BehaviorSubject<dynamic> _rawDataController =
+  BehaviorSubject<dynamic>();
   Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
       _categorizedRecordsController.stream;
 
@@ -418,11 +419,11 @@ class UnifiedDatabaseService {
   }
 
   DatabaseReference? get databaseRef => _databaseRef;
-  Map<String, dynamic>? get currentSubjectsData => _cachedCategoriesData;
+  Map<String, dynamic>? get currentSubjectsData => _categoriesController.valueOrNull;
       
-  dynamic get currentRawData => _cachedRawData;
+  dynamic get currentRawData => _rawDataController.valueOrNull;
       
-  Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _cachedCategorizedData;
+  Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _categorizedRecordsController.valueOrNull;
   String getScheduleData() {
     if (_cachedRawData != null) {
       return _cachedRawData.toString();
