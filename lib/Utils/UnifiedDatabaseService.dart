@@ -59,9 +59,7 @@ class UnifiedDatabaseService {
   Stream<dynamic> get rawDataStream =>
       _isGuestMode ? _localDatabase.rawDataStream : _rawDataController.stream;
 
-  Map<String, dynamic>? _cachedCategoriesData;
-  dynamic _cachedRawData;
-  Map<String, List<Map<String, dynamic>>>? _cachedCategorizedData;  Future<void> initialize() async {
+  Future<void> initialize() async {
     try {
       await _checkGuestMode();
       if (_isGuestMode) {
@@ -164,7 +162,6 @@ class UnifiedDatabaseService {
       Map<String, List<Map<String, dynamic>>> emptyData = {
         'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': [], 'noreminderdate': []
       };
-      _cachedCategorizedData = emptyData;
       _categorizedRecordsController.add(emptyData);
       _allRecordsController.add({'allRecords': []});
       _categoriesController.add({'subjects': [], 'subCategories': {}});
@@ -180,11 +177,9 @@ class UnifiedDatabaseService {
         ? rawData
         : Map<Object?, Object?>.from(rawData as Map);
 
-    _cachedRawData = processedRawData;
-    _rawDataController.add(_cachedRawData);
+    _rawDataController.add(processedRawData);
 
     Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(processedRawData);
-    _cachedCategorizedData = categorizedData;
     _categorizedRecordsController.add(categorizedData);
 
     List<Map<String, dynamic>> allRecords = _processAllRecords(processedRawData);
@@ -196,7 +191,7 @@ class UnifiedDatabaseService {
           categorizedData['missed'] ?? [],
           categorizedData['noreminderdate'] ?? [],
           processedRawData);
-      HomeWidget.saveWidgetData('categoriesData', jsonEncode(_cachedCategoriesData));
+      HomeWidget.saveWidgetData('categoriesData', jsonEncode(_categoriesController.valueOrNull));
     }
   }
 
@@ -218,11 +213,11 @@ class UnifiedDatabaseService {
       }
     });
 
-    _cachedCategoriesData = {
+    final categoriesData = {
       'subjects': subjects,
       'subCategories': subCategories,
     };
-    _categoriesController.add(_cachedCategoriesData!);
+    _categoriesController.add(categoriesData);
   }
 
   Map<String, List<Map<String, dynamic>>> _processCategorizedData(Map<Object?, Object?> rawData) {
@@ -344,17 +339,15 @@ class UnifiedDatabaseService {
       await _localDatabase.forceDataReprocessing();
       final rawData = await _localDatabase.getRawData();
       if (rawData != null) {
-        _cachedRawData = rawData;
-        _rawDataController.add(_cachedRawData);
+        _rawDataController.add(rawData);
         
         // Process the data
-        _processCategoriesData(_cachedRawData);
+        _processCategoriesData(rawData);
         
-        Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(_cachedRawData);
-        _cachedCategorizedData = categorizedData;
+        Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(rawData);
         _categorizedRecordsController.add(categorizedData);
 
-        List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
+        List<Map<String, dynamic>> allRecords = _processAllRecords(rawData);
         _allRecordsController.add({'allRecords': allRecords});
 
         if (PlatformUtils.instance.isAndroid ) {
@@ -362,8 +355,8 @@ class UnifiedDatabaseService {
               categorizedData['nextDay'] ?? [],  // NEW - pass tomorrow data
               categorizedData['missed'] ?? [],
               categorizedData['noreminderdate'] ?? [],
-              _cachedRawData);
-          HomeWidget.saveWidgetData('categoriesData', jsonEncode(_cachedCategoriesData));
+              rawData);
+          HomeWidget.saveWidgetData('categoriesData', jsonEncode(_categoriesController.valueOrNull));
         }
 
       }
@@ -392,9 +385,6 @@ class UnifiedDatabaseService {
   }
 
   void _resetState() {
-    _cachedCategoriesData = null;
-    _cachedRawData = null;
-    _cachedCategorizedData = null;
     _databaseRef = null;
   }  void _cleanupCurrentListener() {
     _dataSubscription?.cancel();
@@ -425,15 +415,17 @@ class UnifiedDatabaseService {
       
   Map<String, List<Map<String, dynamic>>>? get currentCategorizedData => _categorizedRecordsController.valueOrNull;
   String getScheduleData() {
-    if (_cachedRawData != null) {
-      return _cachedRawData.toString();
+    final rawData = _rawDataController.valueOrNull;
+    if (rawData != null) {
+      return rawData.toString();
     }
     return 'No schedule data available';
   }
 
   Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
-    if (_cachedCategoriesData != null) {
-      return _cachedCategoriesData!;
+    final cachedData = _categoriesController.valueOrNull;
+    if (cachedData != null) {
+      return cachedData;
     }
 
     if (_isGuestMode) {
@@ -441,10 +433,12 @@ class UnifiedDatabaseService {
       final rawData = await _localDatabase.getRawData();
       if (rawData != null) {
         _processCategoriesData(rawData);
-        if (_cachedCategoriesData != null) {
-          return _cachedCategoriesData!;
+        final processedData = _categoriesController.valueOrNull;
+        if (processedData != null) {
+          return processedData;
         }
-      }    } else {
+      }
+    } else {
       User? user = _auth.currentUser;
       if (user == null) {
         // User is not authenticated (logged out), return default data instead of throwing exception
@@ -454,16 +448,13 @@ class UnifiedDatabaseService {
       await forceDataReprocessing();
     }
 
-    if (_cachedCategoriesData == null) {
-      return {'subjects': [], 'subCategories': {}};
-    }
-
-    return _cachedCategoriesData!;
+    return _categoriesController.valueOrNull ?? {'subjects': [], 'subCategories': {}};
   }
 
   Future<dynamic> fetchRawData() async {
-    if (_cachedRawData != null) {
-      return _cachedRawData;
+    final cachedRawData = _rawDataController.valueOrNull;
+    if (cachedRawData != null) {
+      return cachedRawData;
     }
 
     if (_isGuestMode) {
@@ -477,7 +468,7 @@ class UnifiedDatabaseService {
 
     await forceDataReprocessing();
 
-    return _cachedRawData;
+    return _rawDataController.valueOrNull;
   }
   
   // Add public method for saving records that works in both guest mode and Firebase mode

@@ -36,8 +36,7 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   String? _selectedItem;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  Stream<Map<String, dynamic>>? _dataStream;
-  Map<String, dynamic>? _currentData;
+  final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();
 
   /// Whether this is the top level (categories) or nested level (subcategories)
   bool get _isTopLevel => widget.parentSelection == null;
@@ -56,8 +55,8 @@ class _NavigationSidebarState extends State<NavigationSidebar>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
+    _databaseService.initialize();
     _initializeSelectedItem();
-    _dataStream = UnifiedDatabaseService().subjectsStream;
     _controller.forward();
   }
 
@@ -69,10 +68,11 @@ class _NavigationSidebarState extends State<NavigationSidebar>
     if (!_isTopLevel && oldWidget.parentSelection != widget.parentSelection) {
       _selectedItem = null;
 
-      if (_currentData != null &&
-          _currentData!['subCategories'] != null &&
-          _currentData!['subCategories'][widget.parentSelection] != null) {
-        final items = _currentData!['subCategories'][widget.parentSelection] as List<dynamic>;
+      final currentData = _databaseService.currentSubjectsData;
+      if (currentData != null &&
+          currentData['subCategories'] != null &&
+          currentData['subCategories'][widget.parentSelection] != null) {
+        final items = currentData['subCategories'][widget.parentSelection] as List<dynamic>;
         if (items.isNotEmpty) {
           _selectedItem = items.first.toString();
           _controller.reset();
@@ -90,13 +90,12 @@ class _NavigationSidebarState extends State<NavigationSidebar>
 
   Future<void> _initializeSelectedItem() async {
     try {
-      final data = await UnifiedDatabaseService().fetchCategoriesAndSubCategories();
+      final data = await _databaseService.fetchCategoriesAndSubCategories();
       final items = _extractItems(data);
       
-      if (items.isNotEmpty) {
+      if (items.isNotEmpty && mounted) {
         setState(() {
           _selectedItem = items.first.toString();
-          _currentData = data;
         });
       }
     } catch (e) {
@@ -183,8 +182,8 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<Map<String, dynamic>>(
-        stream: _dataStream,
-        initialData: _currentData,
+        stream: _databaseService.subjectsStream,
+        initialData: _databaseService.currentSubjectsData,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting &&
               !snapshot.hasData) {
@@ -235,11 +234,6 @@ class _NavigationSidebarState extends State<NavigationSidebar>
                 ],
               ),
             );
-          }
-
-          // Update current data cache
-          if (snapshot.hasData) {
-            _currentData = snapshot.data;
           }
 
           // Auto-select first item if none selected
