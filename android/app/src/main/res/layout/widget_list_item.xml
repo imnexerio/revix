@@ -11,7 +11,7 @@
     <ImageView
         android:id="@+id/calendar_record_stick"
         android:layout_width="12dp"
-        android:layout_height="20dp"
+        android:layout_height="match_parent"
         android:src="@drawable/rounded_line_indicator"
         android:layout_marginStart="-6dp"
         android:layout_marginEnd="8dp"
