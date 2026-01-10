@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
 import 'EntryBar.dart';
+import 'ScheduleEntryBar.dart';
+
+/// Hardcoded schedule category name
+const String scheduleCategory = '📅 Schedule';
+
+/// Hardcoded schedule subcategories with their stream keys
+const Map<String, String> scheduleSubCategories = {
+  'Missed': 'missed',
+  'Today': 'today',
+  'Today Added': 'todayAdded',
+  'Tomorrow': 'nextDay',
+  'Next Week': 'next7Days',
+  'Unspecified': 'noreminderdate',
+};
 
 class NavigationSidebar extends StatefulWidget {
   final bool isSidebarVisible;
@@ -27,6 +41,9 @@ class _NavigationSidebarState extends State<NavigationSidebar>
 
   /// Whether this is the top level (categories) or nested level (subcategories)
   bool get _isTopLevel => widget.parentSelection == null;
+
+  /// Whether the current selection is the Schedule category
+  bool get _isScheduleCategory => widget.parentSelection == scheduleCategory;
 
   @override
   void initState() {
@@ -90,7 +107,12 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   /// Extracts the list of items based on the level
   List<dynamic> _extractItems(Map<String, dynamic> data) {
     if (_isTopLevel) {
-      return data['subjects'] ?? [];
+      // Add Schedule as first category, then dynamic categories
+      final subjects = data['subjects'] ?? [];
+      return [scheduleCategory, ...subjects];
+    } else if (_isScheduleCategory) {
+      // Return hardcoded schedule subcategories
+      return scheduleSubCategories.keys.toList();
     } else {
       final subCategories = data['subCategories'] ?? {};
       return subCategories[widget.parentSelection] ?? [];
@@ -101,6 +123,8 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   String get _emptyMessage {
     if (_isTopLevel) {
       return 'No categories found';
+    } else if (_isScheduleCategory) {
+      return 'No schedule categories available';
     } else {
       return 'No sub category found for ${widget.parentSelection}';
     }
@@ -108,6 +132,11 @@ class _NavigationSidebarState extends State<NavigationSidebar>
 
   /// Handles long press delete action based on level
   void _handleDelete(String item) {
+    // Don't allow deleting Schedule category or its subcategories
+    if (item == scheduleCategory || scheduleSubCategories.containsKey(item)) {
+      return;
+    }
+    
     if (_isTopLevel) {
       DeleteConfirmationDialog.showDeleteCategory(
         context: context,
@@ -130,8 +159,19 @@ class _NavigationSidebarState extends State<NavigationSidebar>
         parentSelection: _selectedItem!,
         isSidebarVisible: widget.isSidebarVisible,
       );
+    } else if (_isScheduleCategory) {
+      // Schedule category → directly show ScheduleEntryBar for selected subcategory
+      final streamKey = scheduleSubCategories[_selectedItem];
+      if (streamKey != null) {
+        return ScheduleEntryBar(
+          scheduleType: streamKey,
+          title: _selectedItem!,
+        );
+      }
+      // Fallback if subcategory not found
+      return const Center(child: Text('Invalid schedule subcategory'));
     } else {
-      // SubCategories level → show EntryBar
+      // Regular SubCategories level → show EntryBar
       return EntryBar(
         selectedCategory: widget.parentSelection!,
         selectedCategoryCode: _selectedItem!,
