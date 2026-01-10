@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'RecurrenceGraph.dart';
+import '../DetailsPage/RecurrenceGraph.dart';
 import '../Utils/entry_colors.dart';
 
 class AnimatedCard extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../SchedulePage/LegendItem.dart';
-import '../SchedulePage/ProportionalRingPainter.dart';
+import 'LegendItem.dart';
+import 'ProportionalRingPainter.dart';
 import '../Utils/entry_colors.dart';
 
 class StudyCalendar extends StatefulWidget {

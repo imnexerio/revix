@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Utils/MarkAsDoneService.dart';
 import '../Utils/entry_colors.dart';
-import '../SchedulePage/RecurrenceGraph.dart';
+import 'RecurrenceGraph.dart';
 
 
 void showEntryScheduleP(BuildContext context, Map<String, dynamic> details) {

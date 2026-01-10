@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../SchedulePage/LegendItem.dart';
+import 'LegendItem.dart';
 import 'WeeklyProgress.dart';
 
 Widget buildWeeklyProgressCard(List<Map<String,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../SchedulePage/RecurrenceGraph.dart';
+import 'RecurrenceGraph.dart';
 import '../Utils/entry_colors.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
 

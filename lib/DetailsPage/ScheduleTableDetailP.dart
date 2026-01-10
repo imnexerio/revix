@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'AnimatedCardDetailP.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../SchedulePage/shared_components/FilterButton.dart';
-import '../SchedulePage/shared_components/SortingBottomSheet.dart';
-import '../SchedulePage/shared_components/RecordSortingUtils.dart';
-import '../SchedulePage/shared_components/GridLayoutUtils.dart';
+import 'FilterButton.dart';
+import 'SortingBottomSheet.dart';
+import 'RecordSortingUtils.dart';
+import 'GridLayoutUtils.dart';
 
 class ScheduleTableDetailP extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecords;

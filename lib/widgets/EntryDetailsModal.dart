@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:revix/Utils/UnifiedDatabaseService.dart';
 import '../Utils/CustomFrequencySelector.dart';
-import '../SchedulePage/RecurrenceGraph.dart';
+import '../DetailsPage/RecurrenceGraph.dart';
 import '../Utils/CustomSnackBar.dart';
 import '../Utils/customSnackBar_error.dart';
 import '../Utils/MarkAsDoneService.dart';
