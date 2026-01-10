@@ -227,6 +227,7 @@ class HomeWidgetService {
         final durationDataStr = uri?.queryParameters['durationData'] ?? '{}';
         final customFrequencyParamsStr = uri?.queryParameters['customFrequencyParams'] ?? '{}';
         final alarmTypeStr = uri?.queryParameters['alarmType'] ?? '0';
+        final trackDates = uri?.queryParameters['trackDates'] ?? 'last_30';
         final requestId = uri?.queryParameters['requestId'] ?? '';
 
         print('Creating record: $selectedCategory - $selectedCategoryCode - $title (RequestID: $requestId)');
@@ -274,6 +275,7 @@ class HomeWidgetService {
                 durationData,
                 customFrequencyParams,
                 alarmType,
+                trackDates: trackDates,
               );
 
               print('Record creation completed successfully');
