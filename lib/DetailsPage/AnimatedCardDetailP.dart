@@ -115,21 +115,66 @@ class AnimatedCardDetailP extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
-                                // Usage info with null safety
-                                Text(
-                                  '${formatDate(record['start_timestamp']?.toString() ?? '')} · ${record['completion_counts']?.toString() ?? '0'} · ${record['missed_counts']?.toString() ?? '0'}',
-                                  style: TextStyle(
-                                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                                    fontSize: 13,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                // Usage info: date_initiated · completion · missed
+                                Row(
+                                  children: [
+                                    Text(
+                                      formatDateOnly(record['date_initiated']?.toString() ?? ''),
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' · ',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.check,
+                                      size: 12,
+                                      color: Colors.green,
+                                    ),
+                                    Text(
+                                      '${record['completion_counts']?.toString() ?? '0'}',
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' · ',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.close,
+                                      size: 12,
+                                      color: Colors.red,
+                                    ),
+                                    Text(
+                                      '${record['missed_counts']?.toString() ?? '0'}',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 _buildDateInfo(
                                   context,
                                   'Scheduled',
-                                  record['scheduled_date']?.toString() ?? '',
+                                  _combineDateTime(
+                                    record['scheduled_date']?.toString() ?? '',
+                                    record['reminder_time']?.toString() ?? '',
+                                  ),
                                   Icons.calendar_today,
                                 ),
                                 _buildFrequencyInfo(context),
@@ -240,6 +285,26 @@ class AnimatedCardDetailP extends StatelessWidget {
     }
   }
 
+  /// Combines scheduled date with reminder time
+  String _combineDateTime(String scheduledDate, String reminderTime) {
+    if (scheduledDate.isEmpty) return '';
+    
+    try {
+      final DateTime parsedDate = DateTime.parse(scheduledDate);
+      final String dateOnly = DateFormat('yyyy-MM-dd').format(parsedDate);
+      
+      if (reminderTime.isNotEmpty) {
+        return '$dateOnly $reminderTime';
+      }
+      return dateOnly;
+    } catch (e) {
+      if (reminderTime.isNotEmpty) {
+        return '$scheduledDate $reminderTime';
+      }
+      return scheduledDate;
+    }
+  }
+
   /// Builds the frequency info display widget
   Widget _buildFrequencyInfo(BuildContext context) {
     if (!FrequencyFormatter.hasFrequency(record)) return const SizedBox.shrink();
@@ -328,6 +393,18 @@ class AnimatedCardDetailP extends StatelessWidget {
     try {
       final DateTime parsedDate = DateTime.parse(date);
       final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+      return formatter.format(parsedDate);
+    } catch (e) {
+      return date; // Return original string if parsing fails
+    }
+  }
+
+  String formatDateOnly(String date) {
+    if (date.isEmpty) return '';
+
+    try {
+      final DateTime parsedDate = DateTime.parse(date);
+      final DateFormat formatter = DateFormat('yyyy-MM-dd');
       return formatter.format(parsedDate);
     } catch (e) {
       return date; // Return original string if parsing fails
