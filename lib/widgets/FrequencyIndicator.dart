@@ -3,7 +3,7 @@ import '../Utils/FrequencyFormatter.dart';
 
 /// A compact visual widget for displaying recurrence frequency.
 /// 
-/// Shows day/month letters with dots below selected ones for week/year frequencies.
+/// Shows day/month letters with color distinction for week/year frequencies.
 /// Falls back to text display for day/month frequencies.
 class FrequencyIndicator extends StatelessWidget {
   final Map<String, dynamic> record;
@@ -19,27 +19,103 @@ class FrequencyIndicator extends StatelessWidget {
   static const List<String> _dayLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const List<String> _monthLetters = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
+  /// Gets just the interval prefix (e.g., "1w", "2y", "Daily") for display next to label
+  static String getPrefix(Map<String, dynamic> record) {
+    final String frequency = record['recurrence_frequency']?.toString() ?? '';
+    
+    if (frequency.isEmpty) return '';
+    
+    // Handle predefined frequencies
+    if (frequency != 'Custom') {
+      return FrequencyFormatter.format(record);
+    }
+    
+    // Handle Custom frequency
+    final rawRecurrenceData = record['recurrence_data'];
+    if (rawRecurrenceData == null) return 'Custom';
+    
+    final Map<String, dynamic> recurrenceData = _safeMapCastStatic(rawRecurrenceData);
+    final rawCustomParams = recurrenceData['custom_params'];
+    if (rawCustomParams == null) return 'Custom';
+    
+    final Map<String, dynamic> customParams = _safeMapCastStatic(rawCustomParams);
+    final String frequencyType = customParams['frequencyType']?.toString().toLowerCase() ?? 'day';
+    final int value = _safeIntParseStatic(customParams['value'], 1);
+    
+    switch (frequencyType) {
+      case 'day':
+        return value == 1 ? 'Daily' : '${value}d';
+      case 'week':
+        return '${value}w';
+      case 'month':
+        return '${value}m';
+      case 'year':
+        return '${value}y';
+      default:
+        return 'Custom';
+    }
+  }
+
+  /// Returns true if the frequency has a visual indicator (week/year/month-dates)
+  static bool hasVisualIndicator(Map<String, dynamic> record) {
+    final String frequency = record['recurrence_frequency']?.toString() ?? '';
+    if (frequency != 'Custom') return false;
+    
+    final rawRecurrenceData = record['recurrence_data'];
+    if (rawRecurrenceData == null) return false;
+    
+    final Map<String, dynamic> recurrenceData = _safeMapCastStatic(rawRecurrenceData);
+    final rawCustomParams = recurrenceData['custom_params'];
+    if (rawCustomParams == null) return false;
+    
+    final Map<String, dynamic> customParams = _safeMapCastStatic(rawCustomParams);
+    final String frequencyType = customParams['frequencyType']?.toString().toLowerCase() ?? 'day';
+    
+    if (frequencyType == 'week' || frequencyType == 'year') return true;
+    if (frequencyType == 'month') {
+      final String monthlyOption = customParams['monthlyOption']?.toString() ?? 'day';
+      if (monthlyOption == 'dates') {
+        final selectedDates = customParams['selectedDates'];
+        return selectedDates is List && selectedDates.length > 1;
+      }
+    }
+    return false;
+  }
+
+  static Map<String, dynamic> _safeMapCastStatic(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return {};
+  }
+
+  static int _safeIntParseStatic(dynamic value, int defaultValue) {
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
   @override
   Widget build(BuildContext context) {
     final String frequency = record['recurrence_frequency']?.toString() ?? '';
     
     if (frequency.isEmpty) return const SizedBox.shrink();
     
-    // Handle predefined frequencies with text
+    // Handle predefined frequencies - no visual, just empty (prefix shown in label)
     if (frequency != 'Custom') {
-      return _buildTextDisplay(context, FrequencyFormatter.format(record));
+      return const SizedBox.shrink();
     }
     
     // Handle Custom frequency
     final rawRecurrenceData = record['recurrence_data'];
     if (rawRecurrenceData == null) {
-      return _buildTextDisplay(context, 'Custom');
+      return const SizedBox.shrink();
     }
     
     final Map<String, dynamic> recurrenceData = _safeMapCast(rawRecurrenceData);
     final rawCustomParams = recurrenceData['custom_params'];
     if (rawCustomParams == null) {
-      return _buildTextDisplay(context, 'Custom');
+      return const SizedBox.shrink();
     }
     
     final Map<String, dynamic> customParams = _safeMapCast(rawCustomParams);
@@ -55,11 +131,11 @@ class FrequencyIndicator extends StatelessWidget {
         return _buildMonthIndicator(context, customParams, value);
       case 'day':
       default:
-        return _buildTextDisplay(context, FrequencyFormatter.format(record));
+        return const SizedBox.shrink();
     }
   }
 
-  /// Builds the week frequency indicator with S M T W T F S letters
+  /// Builds the week frequency indicator with S M T W T F S letters (no prefix)
   Widget _buildWeekIndicator(BuildContext context, Map<String, dynamic> customParams, int value) {
     final daysOfWeek = customParams['daysOfWeek'];
     List<bool> selectedDays = List.filled(7, false);
@@ -75,32 +151,20 @@ class FrequencyIndicator extends StatelessWidget {
     
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        // Interval prefix
-        Text(
-          '${value}w ',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).textTheme.bodyMedium?.color,
-          ),
-        ),
-        // Day letters
-        ...List.generate(7, (index) {
-          final isSelected = selectedDays[index];
-          return _buildLetter(
-            context,
-            _dayLetters[index],
-            isSelected,
-            primaryColor,
-            mutedColor,
-          );
-        }),
-      ],
+      children: List.generate(7, (index) {
+        final isSelected = selectedDays[index];
+        return _buildLetter(
+          context,
+          _dayLetters[index],
+          isSelected,
+          primaryColor,
+          mutedColor,
+        );
+      }),
     );
   }
 
-  /// Builds the year frequency indicator with month letters
+  /// Builds the year frequency indicator with month letters (no prefix)
   Widget _buildYearIndicator(BuildContext context, Map<String, dynamic> customParams, int value) {
     final selectedMonths = customParams['selectedMonths'];
     List<bool> selectedMonthList = List.filled(12, false);
@@ -116,28 +180,16 @@ class FrequencyIndicator extends StatelessWidget {
     
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        // Interval prefix
-        Text(
-          '${value}y ',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).textTheme.bodyMedium?.color,
-          ),
-        ),
-        // Month letters
-        ...List.generate(12, (index) {
-          final isSelected = selectedMonthList[index];
-          return _buildLetter(
-            context,
-            _monthLetters[index],
-            isSelected,
-            primaryColor,
-            mutedColor,
-          );
-        }),
-      ],
+      children: List.generate(12, (index) {
+        final isSelected = selectedMonthList[index];
+        return _buildLetter(
+          context,
+          _monthLetters[index],
+          isSelected,
+          primaryColor,
+          mutedColor,
+        );
+      }),
     );
   }
 
@@ -153,34 +205,26 @@ class FrequencyIndicator extends StatelessWidget {
       }
     }
     
-    // For other cases, use text display
-    return _buildTextDisplay(context, FrequencyFormatter.format(record));
+    // For other cases, no visual indicator
+    return const SizedBox.shrink();
   }
 
-  /// Builds indicator for specific dates in a month
+  /// Builds indicator for specific dates in a month (no prefix)
   Widget _buildDatesIndicator(BuildContext context, List<dynamic> selectedDates, int value) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final mutedColor = Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.3) ?? Colors.grey;
     
-    // Convert to set of integers for quick lookup
-    final Set<int> dateSet = selectedDates
+    // Convert to sorted list of integers
+    final List<int> dateList = selectedDates
         .map((d) => d is int ? d : int.tryParse(d.toString()) ?? 0)
         .where((d) => d > 0 && d <= 31)
-        .toSet();
+        .toList()
+      ..sort();
     
-    // Show compact view: just the selected dates with dots
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          '${value}m ',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).textTheme.bodyMedium?.color,
-          ),
-        ),
-        ...dateSet.take(7).map((date) => Padding(
+        ...dateList.take(5).map((date) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           child: Text(
             '$date',
@@ -191,9 +235,9 @@ class FrequencyIndicator extends StatelessWidget {
             ),
           ),
         )),
-        if (dateSet.length > 7)
+        if (dateList.length > 5)
           Text(
-            '+${dateSet.length - 7}',
+            '+${dateList.length - 5}',
             style: TextStyle(
               fontSize: fontSize - 2,
               color: mutedColor,
@@ -203,7 +247,7 @@ class FrequencyIndicator extends StatelessWidget {
     );
   }
 
-  /// Builds a single letter with color distinction only
+  /// Builds a single letter with color distinction
   Widget _buildLetter(
     BuildContext context,
     String letter,
@@ -220,18 +264,6 @@ class FrequencyIndicator extends StatelessWidget {
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           color: isSelected ? primaryColor : mutedColor,
         ),
-      ),
-    );
-  }
-
-  /// Builds simple text display
-  Widget _buildTextDisplay(BuildContext context, String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: fontSize + 2,
-        fontWeight: FontWeight.w500,
-        color: Theme.of(context).textTheme.bodyMedium?.color,
       ),
     );
   }

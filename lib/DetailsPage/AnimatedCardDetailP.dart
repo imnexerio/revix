@@ -323,6 +323,9 @@ class AnimatedCardDetailP extends StatelessWidget {
   Widget _buildFrequencyInfo(BuildContext context) {
     if (!FrequencyFormatter.hasFrequency(record)) return const SizedBox.shrink();
     
+    final String prefix = FrequencyIndicator.getPrefix(record);
+    final bool hasVisual = FrequencyIndicator.hasVisualIndicator(record);
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 2.0),
       child: Row(
@@ -339,17 +342,32 @@ class AnimatedCardDetailP extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Frequency',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Frequency',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      prefix,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (hasVisual)
+                  FrequencyIndicator(
+                    record: record,
+                    fontSize: 13,
                   ),
-                ),
-                FrequencyIndicator(
-                  record: record,
-                  fontSize: 13,
-                ),
               ],
             ),
           ),
