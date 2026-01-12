@@ -55,6 +55,20 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
   // Track if frequency has been changed to show appropriate message
   bool frequencyChanged = false;
   late String trackDates; // 'off', 'on', 'last_30'
+  
+  // Track if any changes have been made (for dynamic button switching)
+  bool hasChanges = false;
+  
+  // Store original values to detect changes
+  late String _originalRecurrenceFrequency;
+  late bool _originalIsEnabled;
+  late String _originalFormattedTime;
+  late String _originalEntryType;
+  late int _originalAlarmType;
+  late String _originalTrackDates;
+  late String _originalDescription;
+  late Map<String, dynamic> _originalDurationData;
+  late Map<String, dynamic> _originalCustomFrequencyParams;
 
   @override
   void initState() {
@@ -88,8 +102,51 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
       duration = "Until";
     }
     
+    // Store original values for change detection
+    _originalRecurrenceFrequency = recurrenceFrequency;
+    _originalIsEnabled = isEnabled;
+    _originalFormattedTime = formattedTime;
+    _originalEntryType = entryType;
+    _originalAlarmType = alarmType;
+    _originalTrackDates = trackDates;
+    _originalDescription = widget.details['description'] ?? 'No description available';
+    _originalDurationData = Map<String, dynamic>.from(durationData);
+    _originalCustomFrequencyParams = Map<String, dynamic>.from(customFrequencyParams);
+    
     // Load available entry types
     _loadEntryTypes();
+  }
+  
+  /// Check if any field has changed from original values
+  void _checkForChanges() {
+    bool changed = recurrenceFrequency != _originalRecurrenceFrequency ||
+        isEnabled != _originalIsEnabled ||
+        formattedTime != _originalFormattedTime ||
+        entryType != _originalEntryType ||
+        alarmType != _originalAlarmType ||
+        trackDates != _originalTrackDates ||
+        widget.details['description'] != _originalDescription ||
+        durationData['type'] != _originalDurationData['type'] ||
+        durationData['numberOfTimes'] != _originalDurationData['numberOfTimes'] ||
+        durationData['endDate'] != _originalDurationData['endDate'] ||
+        _hasCustomParamsChanged();
+    
+    if (changed != hasChanges) {
+      setState(() {
+        hasChanges = changed;
+      });
+    }
+  }
+  
+  /// Check if custom frequency params have changed
+  bool _hasCustomParamsChanged() {
+    if (customFrequencyParams.length != _originalCustomFrequencyParams.length) return true;
+    for (var key in customFrequencyParams.keys) {
+      if (customFrequencyParams[key]?.toString() != _originalCustomFrequencyParams[key]?.toString()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -222,6 +279,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                                             entryType = type;
                                             widget.details['entry_type'] = type;
                                           });
+                                          _checkForChanges();
                                           Navigator.of(context).pop();
                                         },
                                       );
@@ -434,6 +492,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                                 setState(() {
                                   trackDates = selection.first;
                                 });
+                                _checkForChanges();
                               },
                             ),
                           ),
@@ -448,158 +507,227 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                       setState(() {
                         widget.details['description'] = text;
                       });
+                      _checkForChanges();
                     },
                   ),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
-          ),          // Action buttons
+          ),          // Action buttons - dynamic based on hasChanges
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('MARK AS DONE'),
-                      onPressed: () => MarkAsDoneService.markAsDone(
-                        context: context,
-                        category: widget.selectedCategory,
-                        subCategory: widget.selectedCategoryCode,
-                        entryTitle: widget.entryTitle,
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('SAVE CHANGES'),
-                      onPressed: () async {
-                        try {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (BuildContext context) {
-                              return Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: const Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircularProgressIndicator(),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        "Saving...",
-                                        style: TextStyle(fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-
-                          List<String> datesMissedReviews = List<String>.from(widget.details['dates_missed_reviews'] ?? []);
-                          List<String> datesReviewed = List<String>.from(widget.details['dates_updated'] ?? []);
-                          
-                          // Use the already calculated dateScheduled value (no need to recalculate)
-                          String finalDateScheduled = dateScheduled;
-                          Map<String, dynamic> recurrenceData = {
-                            'frequency': recurrenceFrequency,
-                          };
-                          if(customFrequencyParams.isNotEmpty) {
-                            recurrenceData['custom_params'] = customFrequencyParams;
-                          }
-
-                          // Set alarm type to 0 if "All Day" is selected
-                          int finalAlarmType = formattedTime == 'All Day' ? 0 : alarmType;
-
-                          // Use FirebaseDatabaseService directly instead of wrapper
-                          final databaseService = UnifiedDatabaseService();
-                          
-                          // Prepare update data
-                          Map<String, dynamic> updateData = {
-                            'reminder_time': formattedTime,
-                            'date_updated': widget.details['date_updated'],
-                            'completion_counts': completionCount,
-                            'scheduled_date': finalDateScheduled,
-                            'missed_counts': widget.details['missed_counts'],
-                            'dates_missed_reviews': datesMissedReviews,
-                            'recurrence_frequency': recurrenceFrequency,
-                            'status': isEnabled ? 'Enabled' : 'Disabled',
-                            'dates_updated': datesReviewed,
-                            'description': widget.details['description'],
-                            'recurrence_data': recurrenceData,
-                            'duration': durationData,
-                            'alarm_type': finalAlarmType,
-                            'entry_type': entryType,
-                            'track_dates': trackDates,
-                          };
-                          
-                          // Update record using centralized service
-                          bool success = await databaseService.updateRecord(
-                            widget.selectedCategory, 
-                            widget.selectedCategoryCode, 
-                            widget.entryTitle, 
-                            updateData
-                          );
-                          
-                          if (!success) {
-                            throw Exception('Failed to update record');
-                          }
-
-                          Navigator.pop(context);
-                          Navigator.pop(context);
-
-
-                            customSnackBar(
-                              context: context,
-                              message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.entryTitle}, updated. Next schedule is on $finalDateScheduled.',
-                          );
-                        } catch (e) {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
-
-                            customSnackBar_error(
-                              context: context,
-                              message: 'Update Failed: ${e.toString()}',
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.secondary,
-                        foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: hasChanges 
+                ? _buildSaveButtons(context)
+                : _buildActionButtons(context),
             ),
           ),
         ],
       ),
+    );
+  }
+  
+  /// Build SKIP + MARK AS DONE buttons (when no changes)
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      children: [
+        // Skip button
+        Expanded(
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.skip_next),
+            label: const Text('SKIP'),
+            onPressed: () => MarkAsDoneService.markAsDone(
+              context: context,
+              category: widget.selectedCategory,
+              subCategory: widget.selectedCategoryCode,
+              entryTitle: widget.entryTitle,
+              isSkip: true,
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Mark as done button
+        Expanded(
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('MARK AS DONE'),
+            onPressed: () => MarkAsDoneService.markAsDone(
+              context: context,
+              category: widget.selectedCategory,
+              subCategory: widget.selectedCategoryCode,
+              entryTitle: widget.entryTitle,
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// Build DISCARD + SAVE CHANGES buttons (when changes made)
+  Widget _buildSaveButtons(BuildContext context) {
+    return Row(
+      children: [
+        // Discard button
+        Expanded(
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.close),
+            label: const Text('DISCARD'),
+            onPressed: () {
+              // Reset all values to original
+              setState(() {
+                recurrenceFrequency = _originalRecurrenceFrequency;
+                isEnabled = _originalIsEnabled;
+                formattedTime = _originalFormattedTime;
+                entryType = _originalEntryType;
+                alarmType = _originalAlarmType;
+                trackDates = _originalTrackDates;
+                widget.details['description'] = _originalDescription;
+                durationData = Map<String, dynamic>.from(_originalDurationData);
+                customFrequencyParams = Map<String, dynamic>.from(_originalCustomFrequencyParams);
+                hasChanges = false;
+                frequencyChanged = false;
+                dateScheduled = widget.details['scheduled_date'];
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Save changes button
+        Expanded(
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.save),
+            label: const Text('SAVE CHANGES'),
+            onPressed: () async {
+              try {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) {
+                    return Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text(
+                              "Saving...",
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+
+                List<String> datesMissedReviews = List<String>.from(widget.details['dates_missed_reviews'] ?? []);
+                List<String> datesReviewed = List<String>.from(widget.details['dates_updated'] ?? []);
+                
+                String finalDateScheduled = dateScheduled;
+                Map<String, dynamic> recurrenceData = {
+                  'frequency': recurrenceFrequency,
+                };
+                if(customFrequencyParams.isNotEmpty) {
+                  recurrenceData['custom_params'] = customFrequencyParams;
+                }
+
+                int finalAlarmType = formattedTime == 'All Day' ? 0 : alarmType;
+
+                final databaseService = UnifiedDatabaseService();
+                
+                Map<String, dynamic> updateData = {
+                  'reminder_time': formattedTime,
+                  'date_updated': widget.details['date_updated'],
+                  'completion_counts': completionCount,
+                  'scheduled_date': finalDateScheduled,
+                  'missed_counts': widget.details['missed_counts'],
+                  'dates_missed_reviews': datesMissedReviews,
+                  'recurrence_frequency': recurrenceFrequency,
+                  'status': isEnabled ? 'Enabled' : 'Disabled',
+                  'dates_updated': datesReviewed,
+                  'description': widget.details['description'],
+                  'recurrence_data': recurrenceData,
+                  'duration': durationData,
+                  'alarm_type': finalAlarmType,
+                  'entry_type': entryType,
+                  'track_dates': trackDates,
+                };
+                
+                bool success = await databaseService.updateRecord(
+                  widget.selectedCategory, 
+                  widget.selectedCategoryCode, 
+                  widget.entryTitle, 
+                  updateData
+                );
+                
+                if (!success) {
+                  throw Exception('Failed to update record');
+                }
+
+                Navigator.pop(context);
+                Navigator.pop(context);
+
+                customSnackBar(
+                  context: context,
+                  message: '${widget.selectedCategory} ${widget.selectedCategoryCode} ${widget.entryTitle}, updated. Next schedule is on $finalDateScheduled.',
+                );
+              } catch (e) {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+
+                customSnackBar_error(
+                  context: context,
+                  message: 'Update Failed: ${e.toString()}',
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -668,6 +796,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                                 // Reset alarm type to "No Reminder" when switching from "All Day" to a specific time
                                 // The alarm type dropdown will now be visible for user selection
                               });
+                              _checkForChanges();
                             }
                           },
                         ),
@@ -679,6 +808,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                               formattedTime = 'All Day';
                               alarmType = 0; // Reset alarm type to "No Reminder" when "All Day" is selected
                             });
+                            _checkForChanges();
                             Navigator.of(context).pop();
                           },
                         ),
@@ -724,6 +854,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                                 "endDate": null
                               };
                             });
+                            _checkForChanges();
                             Navigator.of(context).pop();
                           },
                         ),
@@ -1065,6 +1196,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                   setState(() {
                     alarmType = newValue!;
                   });
+                  _checkForChanges();
                 },
               ),
             ),
@@ -1106,6 +1238,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                       frequencyChanged = true;
                     }
                   });
+                  _checkForChanges();
                   
                   // Recalculate next review date when enabling a disabled entry
                   if (newValue && widget.details['status'] == 'Disabled') {
@@ -1219,6 +1352,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                       "endDate": null
                     };
                   });
+                  _checkForChanges();
                   Navigator.of(context).pop();
                 } else {
                   customSnackBar_error(
@@ -1254,6 +1388,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
             "endDate": pickedDate.toIso8601String().split('T')[0]
           };
         });
+        _checkForChanges();
       }
     });
   }
@@ -1348,6 +1483,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
         customFrequencyParams = result;
         frequencyChanged = true; // Mark that frequency has been changed
       });
+      _checkForChanges();
       
       // Recalculate next review date with new custom parameters
       await _calculateAndUpdateNextDate('Custom');

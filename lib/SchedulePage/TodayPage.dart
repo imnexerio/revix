@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
+import '../widgets/EntryDetailsModal.dart';
 import 'ScheduleTable.dart';
-import 'showEntryScheduleP.dart';
 
 class TodayPage extends StatefulWidget {
   @override
@@ -15,6 +15,24 @@ class _TodayPageState extends State<TodayPage> {
   void initState() {
     super.initState();
     _databaseService.initialize();
+  }
+
+  void _showEntryDetails(BuildContext context, Map<String, dynamic> record) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return EntryDetailsModal(
+          entryTitle: record['record_title'],
+          details: record,
+          selectedCategory: record['category'],
+          selectedCategoryCode: record['sub_category'],
+        );
+      },
+    );
   }
 
   @override
@@ -100,42 +118,42 @@ class _TodayPageState extends State<TodayPage> {
               initialRecords: data['missed']!,
               title: 'Missed (${data['missed']!.length})',
               tableId: 'missed',
-              onSelect: (context, record) => showEntryScheduleP(context, record),
+              onSelect: (context, record) => _showEntryDetails(context, record),
             ),
           if (data['today']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['today']!,
               title: 'Today\'s (${data['today']!.length})',
               tableId: 'today',
-              onSelect: (context, record) => showEntryScheduleP(context, record),
+              onSelect: (context, record) => _showEntryDetails(context, record),
             ),
           if (data['todayAdded']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['todayAdded']!,
               title: 'Today\'s Added Records (${data['todayAdded']!.length})',
               tableId: 'todayAdded',
-              onSelect: (context, record) => showEntryScheduleP(context, record),
+              onSelect: (context, record) => _showEntryDetails(context, record),
             ),
           if (data['nextDay']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['nextDay']!,
               title: 'Next Day (${data['nextDay']!.length})',
               tableId: 'nextDay',
-              onSelect: (context, record) => showEntryScheduleP(context, record),
+              onSelect: (context, record) => _showEntryDetails(context, record),
             ),
           if (data['next7Days']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['next7Days']!,
               title: 'Next Week (${data['next7Days']!.length})',
               tableId: 'next7Days',
-              onSelect: (context, record) => showEntryScheduleP(context, record),
+              onSelect: (context, record) => _showEntryDetails(context, record),
             ),
           if (data['noreminderdate']!.isNotEmpty)
             ScheduleTable(
               initialRecords: data['noreminderdate']!,
               title: 'Unspecified Date (${data['noreminderdate']!.length})',
               tableId: 'noreminderdate',
-              onSelect: (context, record) => showEntryScheduleP(context, record),
+              onSelect: (context, record) => _showEntryDetails(context, record),
             ),
           // Extra scrollable space for bottom navigation
           const SizedBox(height: 88.0),
