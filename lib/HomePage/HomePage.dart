@@ -23,7 +23,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
   final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
-  Stream<Map<String, dynamic>>? _recordsStream;
 
   String _entryViewType = 'Total';
   String _reviewViewType = 'Total';
@@ -54,7 +53,6 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   void initState() {
     super.initState();
     _recordService.initialize();
-    _recordsStream = _recordService.allRecordsStream;
     _initializeData();
   }
 
@@ -252,10 +250,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0.0),
-        child: StreamBuilder(
-          stream: _recordsStream,
+        child: StreamBuilder<Map<String, dynamic>>(
+          stream: _recordService.allRecordsStream,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError) {
               return _buildErrorWidget();
