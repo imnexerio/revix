@@ -11,8 +11,10 @@ import '../Utils/entry_colors.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/CalculateCustomNextDate.dart';
 import '../Utils/date_utils.dart';
+import '../Utils/FrequencyFormatter.dart';
 import 'DescriptionCard.dart';
 import 'RecurrenceDropdown.dart';
+import 'FrequencyIndicator.dart';
 
 class EntryDetailsModal extends StatefulWidget {
   final String entryTitle;
@@ -997,101 +999,155 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          _buildTimelineItem(
-            context,
-            "Initiated on",
-            widget.details['date_initiated'],
-            Icons.school_outlined,
-            isFirst: true,
+          Expanded(
+            child: _buildCompactTimelineItem(
+              context,
+              "Initiated",
+              widget.details['date_initiated'],
+              Icons.school_outlined,
+            ),
           ),
-          _buildTimelineItem(
-            context,
-            "Last Reviewed",
-            widget.details['date_updated'] != null ? formatDate(widget.details['date_updated']) : 'NA',
-            Icons.history,
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.grey.withOpacity(0.3),
           ),
-          _buildTimelineItem(
-            context,
-            "Next Review",
-            frequencyChanged ? "Updated to $dateScheduled" : widget.details['scheduled_date'],
-            Icons.event_outlined,
-            isLast: true,
-            isHighlighted: true,
+          Expanded(
+            child: _buildCompactTimelineItem(
+              context,
+              "Last Review",
+              widget.details['date_updated'] != null && widget.details['date_updated'] != 'Unspecified'
+                  ? formatDateCompact(widget.details['date_updated'])
+                  : 'NA',
+              Icons.history,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.grey.withOpacity(0.3),
+          ),
+          Expanded(
+            child: _buildCompactTimelineItem(
+              context,
+              "Next Review",
+              frequencyChanged ? dateScheduled : widget.details['scheduled_date'],
+              Icons.event_outlined,
+              isHighlighted: true,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTimelineItem(
+  Widget _buildCompactTimelineItem(
       BuildContext context, String label, String date, IconData icon,
-      {bool isFirst = false, bool isLast = false, bool isHighlighted = false}) {
+      {bool isHighlighted = false}) {
     final color = isHighlighted
         ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.onSurface;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Column(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isHighlighted
-                    ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
-            ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 40,
-                color: Colors.grey.withOpacity(0.3),
-              ),
-          ],
+        Icon(
+          icon,
+          color: color,
+          size: 20,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  date,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
-                    color: color,
-                  ),
-                ),
-                SizedBox(height: isLast ? 0 : 20),
-              ],
-            ),
+        const SizedBox(height: 4),
+        Text(
+          date ?? 'NA',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
+            color: color,
           ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
+  String formatDateCompact(String date) {
+    if (date == null || date == "Unspecified" || date.isEmpty) {
+      return "NA";
+    }
+    try {
+      final DateTime parsedDate = DateTime.parse(date);
+      return DateFormat('yyyy-MM-dd').format(parsedDate);
+    } catch (e) {
+      return date;
+    }
+  }
+
+  /// Builds frequency visual indicator showing the pattern
+  Widget _buildFrequencyVisual(BuildContext context) {
+    // Create a temporary record map for FrequencyIndicator
+    final Map<String, dynamic> tempRecord = {
+      'recurrence_frequency': recurrenceFrequency,
+      'recurrence_data': {
+        'frequency': recurrenceFrequency,
+        'custom_params': customFrequencyParams,
+      },
+    };
+    
+    final String prefix = FrequencyIndicator.getPrefix(tempRecord);
+    final bool hasVisual = FrequencyIndicator.hasVisualIndicator(tempRecord);
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 12.0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.repeat,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              prefix,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            if (hasVisual) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: FrequencyIndicator(
+                  record: tempRecord,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildRecurrenceSettingsCard(BuildContext context) {
     return Container(
@@ -1136,6 +1192,7 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
                       customFrequencyParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
                     }
                   });
+                  _checkForChanges();
                   
                   // Calculate and update the next review date immediately
                   await _calculateAndUpdateNextDate(newValue);
@@ -1144,19 +1201,9 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
             ),
           ),
 
-          const SizedBox(height: 20),
-
-          // Custom frequency description (if selected)
+          // Frequency visual indicator (like AnimatedCardDetailP)
           if (recurrenceFrequency == 'Custom' && customFrequencyParams.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              // child: Text(              //   getCustomFrequencyDescription(),
-              //   style: TextStyle(
-              //     fontStyle: FontStyle.italic,
-              //     color: Theme.of(context).colorScheme.secondary,
-              //   ),
-              // ),
-            ),
+            _buildFrequencyVisual(context),
 
           const SizedBox(height: 20),
 
