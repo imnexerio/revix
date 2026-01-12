@@ -88,7 +88,7 @@ class FrequencyIndicator extends StatelessWidget {
         // Day letters
         ...List.generate(7, (index) {
           final isSelected = selectedDays[index];
-          return _buildLetterWithDot(
+          return _buildLetter(
             context,
             _dayLetters[index],
             isSelected,
@@ -129,7 +129,7 @@ class FrequencyIndicator extends StatelessWidget {
         // Month letters
         ...List.generate(12, (index) {
           final isSelected = selectedMonthList[index];
-          return _buildLetterWithDot(
+          return _buildLetter(
             context,
             _monthLetters[index],
             isSelected,
@@ -181,27 +181,14 @@ class FrequencyIndicator extends StatelessWidget {
           ),
         ),
         ...dateSet.take(7).map((date) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 1),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$date',
-                style: TextStyle(
-                  fontSize: fontSize - 1,
-                  fontWeight: FontWeight.w600,
-                  color: primaryColor,
-                ),
-              ),
-              Container(
-                width: 3,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Text(
+            '$date',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w600,
+              color: primaryColor,
+            ),
           ),
         )),
         if (dateSet.length > 7)
@@ -216,8 +203,8 @@ class FrequencyIndicator extends StatelessWidget {
     );
   }
 
-  /// Builds a single letter with optional dot below
-  Widget _buildLetterWithDot(
+  /// Builds a single letter with color distinction only
+  Widget _buildLetter(
     BuildContext context,
     String letter,
     bool isSelected,
@@ -226,27 +213,13 @@ class FrequencyIndicator extends StatelessWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            letter,
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? primaryColor : mutedColor,
-            ),
-          ),
-          const SizedBox(height: 1),
-          Container(
-            width: 3,
-            height: 3,
-            decoration: BoxDecoration(
-              color: isSelected ? primaryColor : Colors.transparent,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          color: isSelected ? primaryColor : mutedColor,
+        ),
       ),
     );
   }
