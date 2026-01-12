@@ -13,6 +13,7 @@ class AnimatedCardDetailP extends StatelessWidget {
   final Function(BuildContext, Map<String, dynamic>) onSelect;
   final String? category;
   final String? subCategory;
+  final bool showCategoryPath;
 
   const AnimatedCardDetailP({
     Key? key,
@@ -22,6 +23,7 @@ class AnimatedCardDetailP extends StatelessWidget {
     required this.onSelect,
     this.category,
     this.subCategory,
+    this.showCategoryPath = false,
   }) : super(key: key);
 
   @override
@@ -88,32 +90,43 @@ class AnimatedCardDetailP extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                RichText(
-                                  text: TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: '${record['entry_type'] ?? 'Unknown'}',
-                                        style: TextStyle(
-                                          color: EntryColors.generateColorFromString(
-                                              record['entry_type']?.toString() ?? 'default'
-                                          ),
+                                // Line 1: Category path OR Entry type + Title
+                                showCategoryPath
+                                    ? Text(
+                                        '${record['category'] ?? ''} · ${record['sub_category'] ?? ''} · ${record['record_title'] ?? 'Untitled'}',
+                                        style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
-                                      ),
-                                      TextSpan(
-                                        text: ' · ${record['record_title'] ?? 'Untitled'}',
-                                        style: TextStyle(
-                                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: '${record['entry_type'] ?? 'Unknown'}',
+                                              style: TextStyle(
+                                                color: EntryColors.generateColorFromString(
+                                                    record['entry_type']?.toString() ?? 'default'
+                                                ),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: ' · ${record['record_title'] ?? 'Untitled'}',
+                                              style: TextStyle(
+                                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
                                 const SizedBox(height: 2),
                                 // Usage info: date_initiated · completion · missed
                                 Row(

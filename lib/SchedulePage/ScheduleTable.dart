@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'AnimatedCard.dart';
+import '../DetailsPage/AnimatedCardDetailP.dart';
 import 'shared_components/RecordSortingUtils.dart';
 import 'shared_components/SortingBottomSheet.dart';
 import 'shared_components/FilterButton.dart';
@@ -381,11 +381,12 @@ class _ScheduleTable extends State<ScheduleTable>
                         ),
                       );
 
-                      return AnimatedCard(
+                      return AnimatedCardDetailP(
                         animation: animation,
                         record: record,
                         isCompleted: isCompleted,
                         onSelect: widget.onSelect,
+                        showCategoryPath: true,
                       );
                     },
                   );
