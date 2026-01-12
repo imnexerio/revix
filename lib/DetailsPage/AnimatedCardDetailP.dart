@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../SchedulePage/RecurrenceGraph.dart';
 import '../Utils/entry_colors.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
+import '../Utils/FrequencyFormatter.dart';
+import '../widgets/FrequencyIndicator.dart';
 
 class AnimatedCardDetailP extends StatelessWidget {
   final Animation<double> animation;
@@ -130,13 +132,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                                   record['scheduled_date']?.toString() ?? '',
                                   Icons.calendar_today,
                                 ),
-                                if (isCompleted)
-                                  _buildDateInfo(
-                                    context,
-                                    'Initiated',
-                                    record['date_initiated']?.toString() ?? '',
-                                    Icons.check_circle_outline,
-                                  ),
+                                _buildFrequencyInfo(context),
                               ],
                             ),
                           ),
@@ -242,6 +238,32 @@ class AnimatedCardDetailP extends StatelessWidget {
         ),
       );
     }
+  }
+
+  /// Builds the frequency info display widget
+  Widget _buildFrequencyInfo(BuildContext context) {
+    if (!FrequencyFormatter.hasFrequency(record)) return const SizedBox.shrink();
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2.0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.repeat,
+            size: 14,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: FrequencyIndicator(
+              record: record,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon) {
