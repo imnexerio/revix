@@ -189,6 +189,7 @@ class AnimatedCardDetailP extends StatelessWidget {
                                     record['reminder_time']?.toString() ?? '',
                                   ),
                                   Icons.calendar_today,
+                                  showDaysIndicator: true,
                                 ),
                                 _buildFrequencyInfo(context),
                               ],
@@ -357,8 +358,14 @@ class AnimatedCardDetailP extends StatelessWidget {
     );
   }
 
-  Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon) {
+  Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon, {bool showDaysIndicator = false}) {
     if (date.isEmpty) return const SizedBox.shrink();
+
+    // Calculate days difference for scheduled date
+    Widget? daysIndicator;
+    if (showDaysIndicator) {
+      daysIndicator = _buildDaysIndicator(context, date);
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 2.0),
@@ -376,12 +383,21 @@ class AnimatedCardDetailP extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      ),
+                    ),
+                    if (daysIndicator != null) ...[
+                      const SizedBox(width: 6),
+                      daysIndicator,
+                    ],
+                  ],
                 ),
                 Text(
                   formatDate(date),
@@ -421,6 +437,55 @@ class AnimatedCardDetailP extends StatelessWidget {
       return formatter.format(parsedDate);
     } catch (e) {
       return date; // Return original string if parsing fails
+    }
+  }
+
+  /// Builds the days left/overdue indicator
+  Widget _buildDaysIndicator(BuildContext context, String dateString) {
+    try {
+      // Parse the date (handle both date-only and datetime formats)
+      final DateTime scheduledDate = DateTime.parse(dateString.split(' ').first);
+      final DateTime today = DateTime.now();
+      
+      // Calculate difference in days (ignoring time)
+      final DateTime scheduledDateOnly = DateTime(scheduledDate.year, scheduledDate.month, scheduledDate.day);
+      final DateTime todayOnly = DateTime(today.year, today.month, today.day);
+      final int daysDiff = scheduledDateOnly.difference(todayOnly).inDays;
+      
+      String text;
+      Color color;
+      
+      if (daysDiff > 0) {
+        // Future
+        text = 'in ${daysDiff}d';
+        color = Colors.green;
+      } else if (daysDiff == 0) {
+        // Today
+        text = 'Today';
+        color = Colors.orange;
+      } else {
+        // Overdue
+        text = '${-daysDiff}d ago';
+        color = Colors.red;
+      }
+      
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      );
+    } catch (e) {
+      return const SizedBox.shrink();
     }
   }
 }
