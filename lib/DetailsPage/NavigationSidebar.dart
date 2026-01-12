@@ -1,30 +1,57 @@
 import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
+import '../SchedulePage/shared_components/SortingBottomSheet.dart';
 import 'EntryBar.dart';
 
 class NavigationSidebar extends StatefulWidget {
   final bool isSidebarVisible;
   final String? parentSelection;
+  final Function(String sortField, bool isAscending)? onSortingChanged;
 
   const NavigationSidebar({
     Key? key,
     required this.isSidebarVisible,
     this.parentSelection,
+    this.onSortingChanged,
   }) : super(key: key);
 
   @override
-  _NavigationSidebarState createState() => _NavigationSidebarState();
+  NavigationSidebarState createState() => NavigationSidebarState();
 }
 
-class _NavigationSidebarState extends State<NavigationSidebar>
+class NavigationSidebarState extends State<NavigationSidebar>
     with SingleTickerProviderStateMixin {
   String? _selectedItem;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  
+  // Sorting state (received from EntryBar)
+  String _currentSortField = 'reminder_time';
+  bool _isAscending = true;
+  
+  // Key to access EntryBar state
+  final GlobalKey<EntryBarState> _entryBarKey = GlobalKey<EntryBarState>();
+  // Key to access nested NavigationSidebar state
+  final GlobalKey<NavigationSidebarState> _nestedSidebarKey = GlobalKey<NavigationSidebarState>();
 
   /// Whether this is the top level (categories) or nested level (subcategories)
   bool get _isTopLevel => widget.parentSelection == null;
+  
+  // Expose sorting info for AppBar
+  String get sortField => _currentSortField;
+  bool get sortAscending => _isAscending;
+  
+  // Method to show sorting bottom sheet (called from AppBar)
+  void showSortingSheet(BuildContext context) {
+    if (_isTopLevel) {
+      // If top level, delegate to nested sidebar
+      _nestedSidebarKey.currentState?.showSortingSheet(context);
+    } else {
+      // If at subcategory level, delegate to EntryBar
+      _entryBarKey.currentState?.showSortingSheet(context);
+    }
+  }
 
   @override
   void initState() {
@@ -98,16 +125,28 @@ class _NavigationSidebarState extends State<NavigationSidebar>
     if (_isTopLevel) {
       // Categories level → show SubCategories (another NavigationSidebar)
       return NavigationSidebar(
+        key: _nestedSidebarKey,
         parentSelection: _selectedItem!,
         isSidebarVisible: widget.isSidebarVisible,
+        onSortingChanged: _onSortingChanged,
       );
     } else {
       // SubCategories level → show EntryBar
       return EntryBar(
+        key: _entryBarKey,
         selectedCategory: widget.parentSelection!,
         selectedCategoryCode: _selectedItem!,
+        onSortingChanged: _onSortingChanged,
       );
     }
+  }
+
+  void _onSortingChanged(String sortField, bool isAscending) {
+    setState(() {
+      _currentSortField = sortField;
+      _isAscending = isAscending;
+    });
+    widget.onSortingChanged?.call(sortField, isAscending);
   }
 
   @override

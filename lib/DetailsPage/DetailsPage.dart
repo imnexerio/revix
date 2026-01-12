@@ -14,6 +14,14 @@ class DetailsPageState extends State<DetailsPage> {
   static const String _sidebarVisibilityKey = 'detailsPageSidebarVisible';
   bool _isSidebarVisible = true;
   SharedPreferences? _prefs;
+  
+  // Key to access sidebar state
+  final GlobalKey<NavigationSidebarState> _sidebarKey = 
+      GlobalKey<NavigationSidebarState>();
+  
+  // Sorting state for AppBar display
+  String _currentSortField = 'reminder_time';
+  bool _isAscending = true;
 
   @override
   void initState() {
@@ -39,11 +47,29 @@ class DetailsPageState extends State<DetailsPage> {
     _prefs?.setBool(_sidebarVisibilityKey, _isSidebarVisible);
   }
 
+  // Expose sorting info for AppBar
+  String get sortField => _currentSortField;
+  bool get sortAscending => _isAscending;
+  
+  // Method to show sorting bottom sheet (called from AppBar)
+  void showSortingSheet(BuildContext context) {
+    _sidebarKey.currentState?.showSortingSheet(context);
+  }
+
+  void _onSortingChanged(String sortField, bool isAscending) {
+    setState(() {
+      _currentSortField = sortField;
+      _isAscending = isAscending;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: NavigationSidebar(
+        key: _sidebarKey,
         isSidebarVisible: _isSidebarVisible,
+        onSortingChanged: _onSortingChanged,
       ),
     );
   }
