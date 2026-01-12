@@ -48,15 +48,59 @@ class FrequencyIndicator extends StatelessWidget {
       case 'week':
         return '${value}w';
       case 'month':
+        // For day option, include day number in prefix
+        final String monthlyOption = customParams['monthlyOption']?.toString() ?? 'day';
+        if (monthlyOption == 'day') {
+          final int dayOfMonth = _safeIntParseStatic(customParams['dayOfMonth'], 1);
+          return '${value}m·${_ordinalStatic(dayOfMonth)}';
+        }
         return '${value}m';
       case 'year':
+        // For weekday option, include week+day in prefix
+        final String yearlyOption = customParams['yearlyOption']?.toString() ?? 'day';
+        if (yearlyOption == 'weekday') {
+          final int weekOfYear = _safeIntParseStatic(customParams['weekOfYear'], 1);
+          final String dayOfWeekForYear = customParams['dayOfWeekForYear']?.toString() ?? 'Monday';
+          final String dayAbbr = _getDayAbbreviationStatic(dayOfWeekForYear);
+          return '${value}y·${_ordinalStatic(weekOfYear)}$dayAbbr';
+        }
+        // For day option, include day number in prefix
+        if (yearlyOption == 'day') {
+          final int monthDay = _safeIntParseStatic(customParams['monthDay'], 1);
+          return '${value}y·${_ordinalStatic(monthDay)}';
+        }
         return '${value}y';
       default:
         return 'Custom';
     }
   }
 
-  /// Returns true if the frequency has a visual indicator (week/year/month-dates)
+  /// Gets day abbreviation (e.g., "Monday" -> "Mon")
+  static String _getDayAbbreviationStatic(String dayName) {
+    const Map<String, String> dayMap = {
+      'sunday': 'Sun', 'sun': 'Sun',
+      'monday': 'Mon', 'mon': 'Mon',
+      'tuesday': 'Tue', 'tue': 'Tue',
+      'wednesday': 'Wed', 'wed': 'Wed',
+      'thursday': 'Thu', 'thu': 'Thu',
+      'friday': 'Fri', 'fri': 'Fri',
+      'saturday': 'Sat', 'sat': 'Sat',
+    };
+    return dayMap[dayName.toLowerCase()] ?? dayName.substring(0, 3);
+  }
+
+  /// Converts number to ordinal (1 -> "1st", 2 -> "2nd", etc.)
+  static String _ordinalStatic(int number) {
+    if (number >= 11 && number <= 13) return '${number}th';
+    switch (number % 10) {
+      case 1: return '${number}st';
+      case 2: return '${number}nd';
+      case 3: return '${number}rd';
+      default: return '${number}th';
+    }
+  }
+
+  /// Returns true if the frequency has a visual indicator (week/year/month-dates/month-weekday)
   static bool hasVisualIndicator(Map<String, dynamic> record) {
     final String frequency = record['recurrence_frequency']?.toString() ?? '';
     if (frequency != 'Custom') return false;
@@ -74,6 +118,8 @@ class FrequencyIndicator extends StatelessWidget {
     if (frequencyType == 'week' || frequencyType == 'year') return true;
     if (frequencyType == 'month') {
       final String monthlyOption = customParams['monthlyOption']?.toString() ?? 'day';
+      // Show visual for 'weekday' and 'dates' options
+      if (monthlyOption == 'weekday') return true;
       if (monthlyOption == 'dates') {
         final selectedDates = customParams['selectedDates'];
         return selectedDates is List && selectedDates.length > 1;
@@ -164,7 +210,8 @@ class FrequencyIndicator extends StatelessWidget {
     );
   }
 
-  /// Builds the year frequency indicator with month letters (no prefix)
+  /// Builds the year frequency indicator with month letters only
+  /// Week+day info is shown in prefix for 'weekday' option
   Widget _buildYearIndicator(BuildContext context, Map<String, dynamic> customParams, int value) {
     final selectedMonths = customParams['selectedMonths'];
     List<bool> selectedMonthList = List.filled(12, false);
@@ -178,6 +225,7 @@ class FrequencyIndicator extends StatelessWidget {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final mutedColor = Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.3) ?? Colors.grey;
     
+    // Show only month letters (week+day is in prefix for weekday option)
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(12, (index) {
@@ -197,6 +245,11 @@ class FrequencyIndicator extends StatelessWidget {
   Widget _buildMonthIndicator(BuildContext context, Map<String, dynamic> customParams, int value) {
     final String monthlyOption = customParams['monthlyOption']?.toString() ?? 'day';
     
+    // For 'weekday' option, show week numbers + day letters
+    if (monthlyOption == 'weekday') {
+      return _buildMonthWeekdayIndicator(context, customParams);
+    }
+    
     // For 'dates' option with multiple dates, show visual
     if (monthlyOption == 'dates') {
       final selectedDates = customParams['selectedDates'];
@@ -207,6 +260,49 @@ class FrequencyIndicator extends StatelessWidget {
     
     // For other cases, no visual indicator
     return const SizedBox.shrink();
+  }
+
+  /// Builds weekday indicator for monthly frequency (e.g., 2nd Monday)
+  /// Shows: [1 2 3 4 5] [S M T W T F S] with selected week and day highlighted
+  Widget _buildMonthWeekdayIndicator(BuildContext context, Map<String, dynamic> customParams) {
+    final int weekOfMonth = _safeIntParse(customParams['weekOfMonth'], 1);
+    final String dayOfWeek = customParams['dayOfWeek']?.toString() ?? 'Monday';
+    final int selectedDayIndex = _getDayIndex(dayOfWeek);
+    
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final mutedColor = Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.3) ?? Colors.grey;
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Week numbers (1-5)
+        ...List.generate(5, (index) {
+          final weekNum = index + 1;
+          final isSelected = weekNum == weekOfMonth;
+          return _buildLetter(context, '$weekNum', isSelected, primaryColor, mutedColor);
+        }),
+        const SizedBox(width: 4),
+        // Day letters (S M T W T F S)
+        ...List.generate(7, (index) {
+          final isSelected = index == selectedDayIndex;
+          return _buildLetter(context, _dayLetters[index], isSelected, primaryColor, mutedColor);
+        }),
+      ],
+    );
+  }
+
+  /// Converts day name to index (Sunday = 0, Monday = 1, etc.)
+  int _getDayIndex(String dayName) {
+    const Map<String, int> dayMap = {
+      'sunday': 0, 'sun': 0,
+      'monday': 1, 'mon': 1,
+      'tuesday': 2, 'tue': 2,
+      'wednesday': 3, 'wed': 3,
+      'thursday': 4, 'thu': 4,
+      'friday': 5, 'fri': 5,
+      'saturday': 6, 'sat': 6,
+    };
+    return dayMap[dayName.toLowerCase()] ?? 1;
   }
 
   /// Builds indicator for specific dates in a month (no prefix)
