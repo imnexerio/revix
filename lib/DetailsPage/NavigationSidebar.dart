@@ -22,8 +22,6 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   String? _selectedItem;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  Stream<Map<String, dynamic>>? _dataStream;
-  Map<String, dynamic>? _currentData;
 
   /// Whether this is the top level (categories) or nested level (subcategories)
   bool get _isTopLevel => widget.parentSelection == null;
@@ -38,9 +36,6 @@ class _NavigationSidebarState extends State<NavigationSidebar>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
-
-    _initializeSelectedItem();
-    _dataStream = UnifiedDatabaseService().subjectsStream;
     _controller.forward();
   }
 
@@ -49,19 +44,11 @@ class _NavigationSidebarState extends State<NavigationSidebar>
     super.didUpdateWidget(oldWidget);
 
     // If parent selection changed (only relevant for nested level)
+    // Reset selected item - the StreamBuilder will auto-select first item
     if (!_isTopLevel && oldWidget.parentSelection != widget.parentSelection) {
       _selectedItem = null;
-
-      if (_currentData != null &&
-          _currentData!['subCategories'] != null &&
-          _currentData!['subCategories'][widget.parentSelection] != null) {
-        final items = _currentData!['subCategories'][widget.parentSelection] as List<dynamic>;
-        if (items.isNotEmpty) {
-          _selectedItem = items.first.toString();
-          _controller.reset();
-          _controller.forward();
-        }
-      }
+      _controller.reset();
+      _controller.forward();
     }
   }
 
@@ -69,22 +56,6 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _initializeSelectedItem() async {
-    try {
-      final data = await UnifiedDatabaseService().fetchCategoriesAndSubCategories();
-      final items = _extractItems(data);
-      
-      if (items.isNotEmpty) {
-        setState(() {
-          _selectedItem = items.first.toString();
-          _currentData = data;
-        });
-      }
-    } catch (e) {
-      // Handle error silently
-    }
   }
 
   /// Extracts the list of items based on the level
@@ -143,8 +114,7 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<Map<String, dynamic>>(
-        stream: _dataStream,
-        initialData: _currentData,
+        stream: UnifiedDatabaseService().subjectsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting &&
               !snapshot.hasData) {
@@ -195,11 +165,6 @@ class _NavigationSidebarState extends State<NavigationSidebar>
                 ],
               ),
             );
-          }
-
-          // Update current data cache
-          if (snapshot.hasData) {
-            _currentData = snapshot.data;
           }
 
           // Auto-select first item if none selected

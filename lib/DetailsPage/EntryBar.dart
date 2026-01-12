@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../widgets/EntryDetailsModal.dart';
 import 'ScheduleTableDetailP.dart';
@@ -18,66 +17,26 @@ class EntryBar extends StatefulWidget {
 }
 
 class _EntryBarState extends State<EntryBar> {
-  List<dynamic> _allRecords = [];
-  List<MapEntry<String, dynamic>> _filteredEntryData = [];
   final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
-  Stream<Map<String, dynamic>>? _recordsStream;
-  StreamSubscription? _subscription;
 
   @override
   void initState() {
     super.initState();
     _recordService.initialize();
-    _recordsStream = _recordService.allRecordsStream;
-    _subscribeToStream();
   }
 
-  @override
-  void didUpdateWidget(EntryBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedCategory != widget.selectedCategory ||
-        oldWidget.selectedCategoryCode != widget.selectedCategoryCode) {
-      // Reapply filter on the already-cached records.
-      _applyFilter();
-    }
-  }
-
-  void _subscribeToStream() {
-    // Cancel any previous subscription to avoid duplicates.
-    _subscription?.cancel();
-    _subscription = _recordsStream?.listen((data) {
-      // Extract the list of records from the data.
-      if (data.containsKey('allRecords')) {
-        setState(() {
-          _allRecords = (data['allRecords'] as List<dynamic>);
-          _applyFilter();
-        });
-      }
-    }, onError: (e) {
-      // print('Failed to set up listener: $e');
-    });
-  }
-
-  void _applyFilter() {
-    List<MapEntry<String, dynamic>> filteredData = _allRecords
+  /// Filters records for the current category and subcategory
+  List<Map<String, dynamic>> _filterRecords(List<dynamic> allRecords) {
+    return allRecords
         .where((record) =>
-    record['category'] == widget.selectedCategory &&
-        record['sub_category'] == widget.selectedCategoryCode)
-        .map<MapEntry<String, dynamic>>((record) =>
-        MapEntry(record['record_title'] as String, record['details']))
+            record['category'] == widget.selectedCategory &&
+            record['sub_category'] == widget.selectedCategoryCode)
+        .map<Map<String, dynamic>>((record) {
+          Map<String, dynamic> formattedRecord = Map<String, dynamic>.from(record['details']);
+          formattedRecord['record_title'] = record['record_title'];
+          return formattedRecord;
+        })
         .toList();
-
-    // Debug print for verification
-    // print('Filtered Data: $filteredData');
-
-    _filteredEntryData = filteredData;
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    _recordService.dispose();
-    super.dispose();
   }
 
   void _showEntryDetails(BuildContext context, String entryTitle, dynamic details) {
@@ -104,23 +63,33 @@ class _EntryBarState extends State<EntryBar> {
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> formattedRecords = _filteredEntryData.map((entry) {
-      Map<String, dynamic> record = Map<String, dynamic>.from(entry.value);
-      record['record_title'] = entry.key;
-      return record;
-    }).toList();
-
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return ScheduleTableDetailP(
-            initialRecords: formattedRecords,
-            title: '${widget.selectedCategory} - ${widget.selectedCategoryCode}',
-            category: widget.selectedCategory,
-            subCategory: widget.selectedCategoryCode,
-            onSelect: (context, record) {
-              String entryTitle = record['record_title'];
-              _showEntryDetails(context, entryTitle, record);
+      body: StreamBuilder<Map<String, dynamic>>(
+        stream: _recordService.allRecordsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            );
+          }
+
+          final allRecords = snapshot.data?['allRecords'] as List<dynamic>? ?? [];
+          final formattedRecords = _filterRecords(allRecords);
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return ScheduleTableDetailP(
+                initialRecords: formattedRecords,
+                title: '${widget.selectedCategory} - ${widget.selectedCategoryCode}',
+                category: widget.selectedCategory,
+                subCategory: widget.selectedCategoryCode,
+                onSelect: (context, record) {
+                  String entryTitle = record['record_title'];
+                  _showEntryDetails(context, entryTitle, record);
+                },
+              );
             },
           );
         },

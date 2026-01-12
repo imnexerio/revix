@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import 'ScheduleTable.dart';
@@ -10,28 +9,12 @@ class TodayPage extends StatefulWidget {
 }
 
 class _TodayPageState extends State<TodayPage> {
-  late StreamController<Map<String, List<Map<String, dynamic>>>> _recordsController;
-  late Stream<Map<String, List<Map<String, dynamic>>>> _recordsStream;
-  late UnifiedDatabaseService _databaseListener;
+  final UnifiedDatabaseService _databaseService = UnifiedDatabaseService();
 
   @override
   void initState() {
     super.initState();
-    _recordsController = StreamController<Map<String, List<Map<String, dynamic>>>>();
-    _recordsStream = _recordsController.stream;
-    _databaseListener = UnifiedDatabaseService();
-    _databaseListener.initialize();
-    _databaseListener.categorizedRecordsStream.listen((data) {
-      _recordsController.add(data);
-    }, onError: (error) {
-      _recordsController.addError(error);
-    });
-  }
-
-  @override
-  void dispose() {
-    _recordsController.close();
-    super.dispose();
+    _databaseService.initialize();
   }
 
   @override
@@ -40,13 +23,12 @@ class _TodayPageState extends State<TodayPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: () async {
-          _databaseListener.forceDataReprocessing();
-          // return Future.delayed(const Duration(milliseconds: 300));
+          _databaseService.forceDataReprocessing();
         },
         child: StreamBuilder<Map<String, List<Map<String, dynamic>>>>(
-          stream: _recordsStream,
+          stream: _databaseService.categorizedRecordsStream,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
             } else if (snapshot.hasError) {
               return Center(
