@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provides simple local database functionality using Hive for guest mode.
@@ -15,12 +16,13 @@ class LocalDatabaseService {
   // Current user ID for guest mode
   static String _currentUserId = 'guest_user_local';
   
-  // Stream controller for raw data changes - simplified to just notify when data changes
-  final StreamController<dynamic> _rawDataController =
-      StreamController<dynamic>.broadcast();
+  // Using BehaviorSubject to cache last value and replay to new subscribers
+  // This prevents race conditions where late subscribers miss initial data
+  final BehaviorSubject<dynamic> _rawDataSubject =
+      BehaviorSubject<dynamic>();
 
   // Stream getter for raw data
-  Stream<dynamic> get rawDataStream => _rawDataController.stream;
+  Stream<dynamic> get rawDataStream => _rawDataSubject.stream;
   
   static final LocalDatabaseService _instance = LocalDatabaseService._internal();
   
@@ -223,10 +225,10 @@ class LocalDatabaseService {
     try {
       final userData = await getCurrentUserData();
       final rawData = userData['user_data'] ?? {};
-      _rawDataController.add(rawData);
+      _rawDataSubject.add(rawData);
     } catch (e) {
       _logError('Error notifying data change: $e');
-      _rawDataController.add({});
+      _rawDataSubject.add({});
     }
   }  // CRUD operations for records - Firebase-compatible structure
   Future<bool> saveRecord(String category, String subCategory, String entryTitle, Map<String, dynamic> recordData) async {
@@ -557,7 +559,7 @@ class LocalDatabaseService {
     // Local database doesn't need to stop listening as it's not streaming from external source
   }  
   void dispose() {
-    _rawDataController.close();
+    _rawDataSubject.close();
   }
 
   // Get a specific record
