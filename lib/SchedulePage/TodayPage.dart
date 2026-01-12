@@ -253,12 +253,12 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOut,
-                  width: _isSidebarVisible ? 40.0 : 0.0,
+                  width: _isSidebarVisible ? 32.0 : 0.0,
                   decoration: BoxDecoration(color: colorScheme.surface),
                   child: _isSidebarVisible
                       ? RepaintBoundary(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 16.0),
                             child: ScrollConfiguration(
                               behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
                               child: ListView.builder(
@@ -363,7 +363,7 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
             final crossAxisCount = _calculateColumns(constraints.maxWidth);
 
             return GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
                 childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,

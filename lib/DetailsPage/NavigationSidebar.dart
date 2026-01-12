@@ -225,7 +225,7 @@ class NavigationSidebarState extends State<NavigationSidebar>
               AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
-                width: widget.isSidebarVisible ? 40.0 : 0.0,
+                width: widget.isSidebarVisible ? 32.0 : 0.0,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                 ),
@@ -233,7 +233,7 @@ class NavigationSidebarState extends State<NavigationSidebar>
                     ? RepaintBoundary(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 4.0, vertical: 16.0),
+                              horizontal: 2.0, vertical: 16.0),
                           child: ScrollConfiguration(
                             behavior: ScrollConfiguration.of(context).copyWith(
                               scrollbars: false,
