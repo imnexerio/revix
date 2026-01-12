@@ -256,9 +256,22 @@ class AnimatedCardDetailP extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Flexible(
-            child: FrequencyIndicator(
-              record: record,
-              fontSize: 10,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Frequency',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                  ),
+                ),
+                FrequencyIndicator(
+                  record: record,
+                  fontSize: 13,
+                ),
+              ],
             ),
           ),
         ],
