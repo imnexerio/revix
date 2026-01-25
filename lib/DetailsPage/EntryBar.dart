@@ -1,83 +1,104 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
 import '../widgets/EntryDetailsModal.dart';
-import 'ScheduleTableDetailP.dart';
+import '../SchedulePage/shared_components/RecordSortingUtils.dart';
+import '../SchedulePage/shared_components/SortingBottomSheet.dart';
+import '../SchedulePage/shared_components/GridLayoutUtils.dart';
+import 'AnimatedCardDetailP.dart';
 
 class EntryBar extends StatefulWidget {
   final String selectedCategory;
   final String selectedCategoryCode;
+  final Function(String sortField, bool isAscending)? onSortingChanged;
 
-  EntryBar({
+  const EntryBar({
+    Key? key,
     required this.selectedCategory,
     required this.selectedCategoryCode,
-  });
+    this.onSortingChanged,
+  }) : super(key: key);
 
   @override
-  _EntryBarState createState() => _EntryBarState();
+  EntryBarState createState() => EntryBarState();
 }
 
-class _EntryBarState extends State<EntryBar> {
-  List<dynamic> _allRecords = [];
-  List<MapEntry<String, dynamic>> _filteredEntryData = [];
+class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin {
   final UnifiedDatabaseService _recordService = UnifiedDatabaseService();
-  Stream<Map<String, dynamic>>? _recordsStream;
-  StreamSubscription? _subscription;
+
+  // Sorting state
+  String currentSortField = 'reminder_time';
+  bool isAscending = true;
+
+  // Animation controller for grid
+  late AnimationController _gridAnimationController;
 
   @override
   void initState() {
     super.initState();
     _recordService.initialize();
-    _recordsStream = _recordService.allRecordsStream;
-    _subscribeToStream();
+
+    _gridAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _gridAnimationController.value = 1.0;
+
+    _loadSortPreferences();
   }
 
-  @override
-  void didUpdateWidget(EntryBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedCategory != widget.selectedCategory ||
-        oldWidget.selectedCategoryCode != widget.selectedCategoryCode) {
-      // Reapply filter on the already-cached records.
-      _applyFilter();
-    }
-  }
-
-  void _subscribeToStream() {
-    // Cancel any previous subscription to avoid duplicates.
-    _subscription?.cancel();
-    _subscription = _recordsStream?.listen((data) {
-      // Extract the list of records from the data.
-      if (data.containsKey('allRecords')) {
-        setState(() {
-          _allRecords = (data['allRecords'] as List<dynamic>);
-          _applyFilter();
-        });
-      }
-    }, onError: (e) {
-      // print('Failed to set up listener: $e');
+  Future<void> _loadSortPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      currentSortField = prefs.getString('details_sortField') ?? 'reminder_time';
+      isAscending = prefs.getBool('details_isAscending') ?? true;
     });
+    widget.onSortingChanged?.call(currentSortField, isAscending);
   }
 
-  void _applyFilter() {
-    List<MapEntry<String, dynamic>> filteredData = _allRecords
-        .where((record) =>
-    record['category'] == widget.selectedCategory &&
-        record['sub_category'] == widget.selectedCategoryCode)
-        .map<MapEntry<String, dynamic>>((record) =>
-        MapEntry(record['record_title'] as String, record['details']))
-        .toList();
+  Future<void> _saveSortPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('details_sortField', currentSortField);
+    await prefs.setBool('details_isAscending', isAscending);
+  }
 
-    // Debug print for verification
-    // print('Filtered Data: $filteredData');
+  // Expose sorting info for AppBar
+  String get sortField => currentSortField;
+  bool get sortAscending => isAscending;
 
-    _filteredEntryData = filteredData;
+  // Method to show sorting bottom sheet (called from AppBar)
+  void showSortingSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SortingBottomSheet(
+        currentSortField: currentSortField,
+        isAscending: isAscending,
+        onSortApplied: _applySorting,
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
-    _recordService.dispose();
+    _gridAnimationController.dispose();
     super.dispose();
+  }
+
+  /// Filters records for the current category and subcategory
+  List<Map<String, dynamic>> _filterRecords(List<dynamic> allRecords) {
+    return allRecords
+        .where((record) =>
+            record['category'] == widget.selectedCategory &&
+            record['sub_category'] == widget.selectedCategoryCode)
+        .map<Map<String, dynamic>>((record) {
+          Map<String, dynamic> formattedRecord = Map<String, dynamic>.from(record['details']);
+          formattedRecord['record_title'] = record['record_title'];
+          return formattedRecord;
+        })
+        .toList();
   }
 
   void _showEntryDetails(BuildContext context, String entryTitle, dynamic details) {
@@ -102,29 +123,128 @@ class _EntryBarState extends State<EntryBar> {
     );
   }
 
+  void _applySorting(String field, bool ascending) {
+    _gridAnimationController.reset();
+
+    setState(() {
+      currentSortField = field;
+      isAscending = ascending;
+    });
+
+    _saveSortPreferences();
+    _gridAnimationController.forward();
+    widget.onSortingChanged?.call(field, ascending);
+  }
+
+  int _calculateColumns(double width) {
+    return GridLayoutUtils.calculateColumns(width);
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> formattedRecords = _filteredEntryData.map((entry) {
-      Map<String, dynamic> record = Map<String, dynamic>.from(entry.value);
-      record['record_title'] = entry.key;
-      return record;
-    }).toList();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return ScheduleTableDetailP(
-            initialRecords: formattedRecords,
-            title: '${widget.selectedCategory} - ${widget.selectedCategoryCode}',
-            category: widget.selectedCategory,
-            subCategory: widget.selectedCategoryCode,
-            onSelect: (context, record) {
-              String entryTitle = record['record_title'];
-              _showEntryDetails(context, entryTitle, record);
-            },
+      body: StreamBuilder<Map<String, dynamic>>(
+        stream: _recordService.allRecordsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: colorScheme.primary,
+              ),
+            );
+          }
+
+          final allRecords = snapshot.data?['allRecords'] as List<dynamic>? ?? [];
+          final formattedRecords = _filterRecords(allRecords);
+
+          // Sort records
+          final sortedRecords = RecordSortingUtils.sortRecords(
+            records: List.from(formattedRecords),
+            field: currentSortField,
+            ascending: isAscending,
           );
+
+          return _buildRecordsGrid(sortedRecords, colorScheme);
         },
       ),
+    );
+  }
+
+  Widget _buildRecordsGrid(List<Map<String, dynamic>> records, ColorScheme colorScheme) {
+    if (records.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No records found',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _gridAnimationController,
+      builder: (context, child) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = _calculateColumns(constraints.maxWidth);
+
+            return GridView.builder(
+              padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 100),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                mainAxisExtent: 160,
+              ),
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                final record = records[index];
+                final bool isCompleted = record['date_initiated'] != null &&
+                    record['date_initiated'].toString().isNotEmpty;
+
+                final Animation<double> animation = Tween<double>(
+                  begin: 0.0,
+                  end: 1.0,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _gridAnimationController,
+                    curve: Interval(
+                      (index / records.length) * 0.5,
+                      (index / records.length) * 0.5 + 0.5,
+                      curve: Curves.easeInOut,
+                    ),
+                  ),
+                );
+
+                return AnimatedCardDetailP(
+                  animation: animation,
+                  record: record,
+                  isCompleted: isCompleted,
+                  onSelect: (context, record) {
+                    String entryTitle = record['record_title'];
+                    _showEntryDetails(context, entryTitle, record);
+                  },
+                  category: widget.selectedCategory,
+                  subCategory: widget.selectedCategoryCode,
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

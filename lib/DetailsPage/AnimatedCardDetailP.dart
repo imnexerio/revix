@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../SchedulePage/RecurrenceGraph.dart';
 import '../Utils/entry_colors.dart';
 import '../Utils/DeleteConfirmationDialog.dart';
+import '../Utils/FrequencyFormatter.dart';
+import '../widgets/FrequencyIndicator.dart';
 
 class AnimatedCardDetailP extends StatelessWidget {
   final Animation<double> animation;
@@ -11,6 +13,7 @@ class AnimatedCardDetailP extends StatelessWidget {
   final Function(BuildContext, Map<String, dynamic>) onSelect;
   final String? category;
   final String? subCategory;
+  final bool showCategoryPath;
 
   const AnimatedCardDetailP({
     Key? key,
@@ -20,6 +23,7 @@ class AnimatedCardDetailP extends StatelessWidget {
     required this.onSelect,
     this.category,
     this.subCategory,
+    this.showCategoryPath = false,
   }) : super(key: key);
 
   @override
@@ -86,57 +90,108 @@ class AnimatedCardDetailP extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                RichText(
-                                  text: TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: '${record['entry_type'] ?? 'Unknown'}',
-                                        style: TextStyle(
-                                          color: EntryColors.generateColorFromString(
-                                              record['entry_type']?.toString() ?? 'default'
-                                          ),
+                                // Line 1: Category path OR Entry type + Title
+                                showCategoryPath
+                                    ? Text(
+                                        '${record['category'] ?? ''} · ${record['sub_category'] ?? ''} · ${record['record_title'] ?? 'Untitled'}',
+                                        style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
-                                      ),
-                                      TextSpan(
-                                        text: ' · ${record['record_title'] ?? 'Untitled'}',
-                                        style: TextStyle(
-                                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: '${record['entry_type'] ?? 'Unknown'}',
+                                              style: TextStyle(
+                                                color: EntryColors.generateColorFromString(
+                                                    record['entry_type']?.toString() ?? 'default'
+                                                ),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: ' · ${record['record_title'] ?? 'Untitled'}',
+                                              style: TextStyle(
+                                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
                                 const SizedBox(height: 2),
-                                // Usage info with null safety
-                                Text(
-                                  '${formatDate(record['start_timestamp']?.toString() ?? '')} · ${record['completion_counts']?.toString() ?? '0'} · ${record['missed_counts']?.toString() ?? '0'}',
-                                  style: TextStyle(
-                                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                                    fontSize: 13,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                // Usage info: date_initiated · completion · missed
+                                Row(
+                                  children: [
+                                    Text(
+                                      formatDateOnly(record['date_initiated']?.toString() ?? ''),
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' · ',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.check,
+                                      size: 12,
+                                      color: Colors.green,
+                                    ),
+                                    Text(
+                                      '${record['completion_counts']?.toString() ?? '0'}',
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' · ',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.close,
+                                      size: 12,
+                                      color: Colors.red,
+                                    ),
+                                    Text(
+                                      '${record['missed_counts']?.toString() ?? '0'}',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 _buildDateInfo(
                                   context,
                                   'Scheduled',
-                                  record['scheduled_date']?.toString() ?? '',
-                                  Icons.calendar_today,
-                                ),
-                                if (isCompleted)
-                                  _buildDateInfo(
-                                    context,
-                                    'Initiated',
-                                    record['date_initiated']?.toString() ?? '',
-                                    Icons.check_circle_outline,
+                                  _combineDateTime(
+                                    record['scheduled_date']?.toString() ?? '',
+                                    record['reminder_time']?.toString() ?? '',
                                   ),
+                                  Icons.calendar_today,
+                                  showDaysIndicator: true,
+                                ),
+                                _buildFrequencyInfo(context),
                               ],
                             ),
                           ),
@@ -244,8 +299,91 @@ class AnimatedCardDetailP extends StatelessWidget {
     }
   }
 
-  Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon) {
+  /// Combines scheduled date with reminder time
+  String _combineDateTime(String scheduledDate, String reminderTime) {
+    if (scheduledDate.isEmpty) return '';
+    
+    try {
+      final DateTime parsedDate = DateTime.parse(scheduledDate);
+      final String dateOnly = DateFormat('yyyy-MM-dd').format(parsedDate);
+      
+      if (reminderTime.isNotEmpty) {
+        return '$dateOnly $reminderTime';
+      }
+      return dateOnly;
+    } catch (e) {
+      if (reminderTime.isNotEmpty) {
+        return '$scheduledDate $reminderTime';
+      }
+      return scheduledDate;
+    }
+  }
+
+  /// Builds the frequency info display widget
+  Widget _buildFrequencyInfo(BuildContext context) {
+    if (!FrequencyFormatter.hasFrequency(record)) return const SizedBox.shrink();
+    
+    final String prefix = FrequencyIndicator.getPrefix(record);
+    final bool hasVisual = FrequencyIndicator.hasVisualIndicator(record);
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2.0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.repeat,
+            size: 14,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Frequency',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      prefix,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (hasVisual)
+                  FrequencyIndicator(
+                    record: record,
+                    fontSize: 13,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateInfo(BuildContext context, String label, String date, IconData icon, {bool showDaysIndicator = false}) {
     if (date.isEmpty) return const SizedBox.shrink();
+
+    // Calculate days difference for scheduled date
+    Widget? daysIndicator;
+    if (showDaysIndicator) {
+      daysIndicator = _buildDaysIndicator(context, date);
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 2.0),
@@ -263,12 +401,21 @@ class AnimatedCardDetailP extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      ),
+                    ),
+                    if (daysIndicator != null) ...[
+                      const SizedBox(width: 6),
+                      daysIndicator,
+                    ],
+                  ],
                 ),
                 Text(
                   formatDate(date),
@@ -296,6 +443,67 @@ class AnimatedCardDetailP extends StatelessWidget {
       return formatter.format(parsedDate);
     } catch (e) {
       return date; // Return original string if parsing fails
+    }
+  }
+
+  String formatDateOnly(String date) {
+    if (date.isEmpty) return '';
+
+    try {
+      final DateTime parsedDate = DateTime.parse(date);
+      final DateFormat formatter = DateFormat('yyyy-MM-dd');
+      return formatter.format(parsedDate);
+    } catch (e) {
+      return date; // Return original string if parsing fails
+    }
+  }
+
+  /// Builds the days left/overdue indicator
+  Widget _buildDaysIndicator(BuildContext context, String dateString) {
+    try {
+      // Parse the date (handle both date-only and datetime formats)
+      final DateTime scheduledDate = DateTime.parse(dateString.split(' ').first);
+      final DateTime today = DateTime.now();
+      
+      // Calculate difference in days (ignoring time)
+      final DateTime scheduledDateOnly = DateTime(scheduledDate.year, scheduledDate.month, scheduledDate.day);
+      final DateTime todayOnly = DateTime(today.year, today.month, today.day);
+      final int daysDiff = scheduledDateOnly.difference(todayOnly).inDays;
+      
+      String text;
+      Color color;
+      
+      if (daysDiff > 0) {
+        // Future
+        text = 'in ${daysDiff}d';
+        color = Colors.green;
+      } else if (daysDiff == 0) {
+        // Today
+        text = 'Today';
+        color = Colors.orange;
+      } else {
+        // Overdue
+        text = '${-daysDiff}d ago';
+        color = Colors.red;
+      }
+      
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      );
+    } catch (e) {
+      return const SizedBox.shrink();
     }
   }
 }

@@ -239,6 +239,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ChatPageState> _chatPageKey = GlobalKey<ChatPageState>();
   final GlobalKey<DetailsPageState> _detailsPageKey = GlobalKey<DetailsPageState>();
+  final GlobalKey<TodayPageState> _schedulePageKey = GlobalKey<TodayPageState>();
   late final List<Widget> _widgetOptions;
 
   @override
@@ -246,7 +247,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _widgetOptions = <Widget>[
       HomePage(),
-      TodayPage(),
+      TodayPage(key: _schedulePageKey),
       DetailsPage(key: _detailsPageKey),
       ChatPage(key: _chatPageKey),
     ];
@@ -490,6 +491,131 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // Build hamburger menu button for Schedule tab
+  Widget _buildScheduleMenuButton(ThemeData theme) {
+    return IconButton(
+      icon: Icon(
+        Icons.menu,
+        color: theme.colorScheme.onSurface,
+      ),
+      onPressed: () {
+        // Toggle the sidebar visibility in SchedulePage
+        _schedulePageKey.currentState?.toggleSidebar();
+      },
+      tooltip: 'Toggle Time Categories',
+    );
+  }
+
+  // Build sorting action button for Schedule tab
+  List<Widget> _buildScheduleActions(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    final scheduleState = _schedulePageKey.currentState;
+    final sortField = scheduleState?.sortField ?? 'reminder_time';
+    final isAscending = scheduleState?.sortAscending ?? true;
+    
+    String getSortDisplayName(String field) {
+      switch (field) {
+        case 'reminder_time': return 'Reminder';
+        case 'date_initiated': return 'Initiated';
+        case 'date_updated': return 'Updated';
+        case 'missed_counts': return 'Overdue';
+        case 'completion_counts': return 'Reviews';
+        case 'recurrence_frequency': return 'Frequency';
+        default: return 'Sort';
+      }
+    }
+    
+    return [
+      Material(
+        borderRadius: BorderRadius.circular(20),
+        color: colorScheme.primaryContainer.withOpacity(0.8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            _schedulePageKey.currentState?.showSortingSheet(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.sort,
+                  size: 16,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${getSortDisplayName(sortField)} ${isAscending ? '↑' : '↓'}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+    ];
+  }
+
+  // Build sorting action button for Details tab
+  List<Widget> _buildDetailsActions(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    final detailsState = _detailsPageKey.currentState;
+    final sortField = detailsState?.sortField ?? 'reminder_time';
+    final isAscending = detailsState?.sortAscending ?? true;
+    
+    String getSortDisplayName(String field) {
+      switch (field) {
+        case 'reminder_time': return 'Reminder';
+        case 'date_initiated': return 'Initiated';
+        case 'date_updated': return 'Updated';
+        case 'missed_counts': return 'Overdue';
+        case 'completion_counts': return 'Reviews';
+        case 'recurrence_frequency': return 'Frequency';
+        default: return 'Sort';
+      }
+    }
+    
+    return [
+      Material(
+        borderRadius: BorderRadius.circular(20),
+        color: colorScheme.primaryContainer.withOpacity(0.8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            _detailsPageKey.currentState?.showSortingSheet(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.sort,
+                  size: 16,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${getSortDisplayName(sortField)} ${isAscending ? '↑' : '↓'}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -505,7 +631,7 @@ class _MyHomePageState extends State<MyHomePage> {
             statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
             statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           ),
-          title: (_selectedIndex == 3 || _selectedIndex == 2) ? null : Text(
+          title: (_selectedIndex == 3 || _selectedIndex == 2 || _selectedIndex == 1) ? null : Text(
             _pageTitles[_selectedIndex],
             style: TextStyle(
               color: theme.colorScheme.primary,
@@ -517,9 +643,13 @@ class _MyHomePageState extends State<MyHomePage> {
               ? _buildChatMenuButton(theme) 
               : _selectedIndex == 2 
                   ? _buildDetailsMenuButton(theme)
-                  : null,
+                  : _selectedIndex == 1
+                      ? _buildScheduleMenuButton(theme)
+                      : null,
           actions: [
             if (_selectedIndex == 3) ..._buildChatActions(theme),
+            if (_selectedIndex == 2) ..._buildDetailsActions(theme),
+            if (_selectedIndex == 1) ..._buildScheduleActions(theme),
             _buildProfileButton(theme),
           ],
         ),

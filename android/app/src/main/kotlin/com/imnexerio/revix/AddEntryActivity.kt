@@ -13,6 +13,7 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import androidx.lifecycle.lifecycleScope
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.*
@@ -42,6 +43,9 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
     private lateinit var cancelButton: Button
     private lateinit var recurrence_FrequencyCard: CardView
     private lateinit var alarmTypeSpinner: Spinner
+    private lateinit var trackHistoryText: TextView
+    private lateinit var trackHistorySpinner: Spinner
+    private lateinit var trackHistoryCard: CardView
 
     // Data
     private var subjects = mutableListOf<String>()
@@ -69,6 +73,9 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
     private var trackingTypes = mutableListOf<String>()
     private var frequencies = mutableMapOf<String, List<Int>>()
     private var frequencyNames = mutableListOf<String>()
+    
+    // Track History - stores completion dates for charts & analytics
+    private var trackDates = "last_30" // 'off', 'last_30', 'on'
     private var customFrequencyData: HashMap<String, Any> = HashMap()
     private var recurrenceData: MutableMap<String, Any?> = mutableMapOf()
     val recordData = HashMap<String, Any>()
@@ -112,6 +119,9 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
         cancelButton = findViewById(R.id.cancel_button)
         recurrence_FrequencyCard = findViewById(R.id.recurrence_frequency_card)
         alarmTypeSpinner = findViewById(R.id.alarm_type_spinner)
+        trackHistoryText = findViewById(R.id.track_history_text)
+        trackHistorySpinner = findViewById(R.id.track_history_spinner)
+        trackHistoryCard = findViewById(R.id.track_history_card)
         
         // Set up ONLY initial states - defer spinner setup to reduce blocking
         addNewCategoryLayout.visibility = View.GONE
@@ -161,8 +171,53 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
         }
     }
 
+    private val trackHistoryOptions = listOf("Off", "Last 30", "Unlimited")
+    private val trackHistoryValues = listOf("off", "last_30", "on")
+
+    private fun setupTrackHistorySpinner() {
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            trackHistoryOptions
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        trackHistorySpinner.adapter = adapter
+
+        // Set default selection
+        val defaultIndex = trackHistoryValues.indexOf(trackDates)
+        if (defaultIndex >= 0) {
+            trackHistorySpinner.setSelection(defaultIndex)
+        } else {
+            trackHistorySpinner.setSelection(1) // Default to "Last 30"
+        }
+
+        trackHistorySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                trackDates = trackHistoryValues[position]
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
+            }
+        }
+        
+        // Update initial visibility
+        updateTrackHistoryVisibility()
+    }
+
+    private fun updateTrackHistoryVisibility() {
+        val isNoRepetition = recurrenceFrequencyCheckbox.isChecked || recurrenceFrequency == "No Repetition"
+        if (isNoRepetition) {
+            trackHistoryText.visibility = View.GONE
+            trackHistoryCard.visibility = View.GONE
+        } else {
+            trackHistoryText.visibility = View.VISIBLE
+            trackHistoryCard.visibility = View.VISIBLE
+        }
+    }
+
     private fun loadCustomDataAsync() {
-        GlobalScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val trackingTypesDeferred = async { fetchTrackingTypesSync() }
                 val frequenciesDeferred = async { fetchFrequenciesSync() }
@@ -176,6 +231,7 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
                     // Setup deferred spinners first
                     setupDurationSpinner()
                     setupAlarmTypeSpinner()
+                    setupTrackHistorySpinner()
                     
                     // Update tracking types
                     trackingTypes.clear()
@@ -213,6 +269,7 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
                     // Still setup spinners and listeners even on error
                     setupDurationSpinner()
                     setupAlarmTypeSpinner()
+                    setupTrackHistorySpinner()
                     setupListeners()
                 }
             }
@@ -645,6 +702,8 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
             scheduledDateEditText.visibility = View.GONE
             reminderDurationText.visibility = View.GONE
             durationSpinner.visibility = View.GONE
+            trackHistoryText.visibility = View.GONE
+            trackHistoryCard.visibility = View.GONE
         } else {
             // Restore normal text
             recurrenceFrequencyText.text = "Recurrence Frequency"
@@ -654,6 +713,8 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
             scheduledDateEditText.visibility = View.VISIBLE
             reminderDurationText.visibility = View.VISIBLE
             durationSpinner.visibility = View.VISIBLE
+            trackHistoryText.visibility = View.VISIBLE
+            trackHistoryCard.visibility = View.VISIBLE
 
             // Let the spinner selection determine the frequency
             recurrenceFrequency = recurrenceFrequencySpinner.selectedItem.toString()
@@ -971,6 +1032,7 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
             recordData["status"] = "Enabled"
             recordData["duration"] = durationData
             recordData["alarm_type"] = alarmType
+            recordData["track_dates"] = trackDates
 
             // If we have custom frequency data and it's not "Unspecified" or "No Repetition"
             if (recurrenceFrequency == "Custom" && !isUnspecifiedInitiationDate && !isNoRepetition) {
@@ -1017,6 +1079,7 @@ class AddEntryActivity : AppCompatActivity(), CustomFrequencySelector.OnFrequenc
                     .appendQueryParameter("durationData", durationDataJson)
                     .appendQueryParameter("customFrequencyParams", customFrequencyParamsJson)
                     .appendQueryParameter("alarmType", alarmType.toString())
+                    .appendQueryParameter("trackDates", trackDates)
                     .appendQueryParameter("requestId", requestId) // Add request ID for tracking
                     .build()
                 

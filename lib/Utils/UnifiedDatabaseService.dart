@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:revix/Utils/platform_utils.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
@@ -35,28 +36,31 @@ class UnifiedDatabaseService {
   StreamSubscription? _dataSubscription;
   bool _isGuestMode = false;
 
-  final StreamController<Map<String, List<Map<String, dynamic>>>> _categorizedRecordsController =
-  StreamController<Map<String, List<Map<String, dynamic>>>>.broadcast();
+  // Using BehaviorSubject instead of broadcast StreamController
+  // BehaviorSubject caches the last emitted value and replays it to new subscribers
+  // This prevents race conditions where late subscribers miss the initial emission
+  final BehaviorSubject<Map<String, List<Map<String, dynamic>>>> _categorizedRecordsSubject =
+  BehaviorSubject<Map<String, List<Map<String, dynamic>>>>();
 
-  final StreamController<Map<String, dynamic>> _allRecordsController =
-  StreamController<Map<String, dynamic>>.broadcast();
+  final BehaviorSubject<Map<String, dynamic>> _allRecordsSubject =
+  BehaviorSubject<Map<String, dynamic>>();
 
-  final StreamController<Map<String, dynamic>> _categoriesController =
-  StreamController<Map<String, dynamic>>.broadcast();
+  final BehaviorSubject<Map<String, dynamic>> _categoriesSubject =
+  BehaviorSubject<Map<String, dynamic>>();
 
-  final StreamController<dynamic> _rawDataController =
-  StreamController<dynamic>.broadcast();
+  final BehaviorSubject<dynamic> _rawDataSubject =
+  BehaviorSubject<dynamic>();
   Stream<Map<String, List<Map<String, dynamic>>>> get categorizedRecordsStream =>
-      _categorizedRecordsController.stream;
+      _categorizedRecordsSubject.stream;
 
   Stream<Map<String, dynamic>> get allRecordsStream =>
-      _allRecordsController.stream;
+      _allRecordsSubject.stream;
 
   Stream<Map<String, dynamic>> get subjectsStream =>
-      _categoriesController.stream;
+      _categoriesSubject.stream;
 
   Stream<dynamic> get rawDataStream =>
-      _isGuestMode ? _localDatabase.rawDataStream : _rawDataController.stream;
+      _isGuestMode ? _localDatabase.rawDataStream : _rawDataSubject.stream;
 
   Map<String, dynamic>? _cachedCategoriesData;
   dynamic _cachedRawData;
@@ -164,10 +168,10 @@ class UnifiedDatabaseService {
         'today': [], 'missed': [], 'nextDay': [], 'next7Days': [], 'todayAdded': [], 'noreminderdate': []
       };
       _cachedCategorizedData = emptyData;
-      _categorizedRecordsController.add(emptyData);
-      _allRecordsController.add({'allRecords': []});
-      _categoriesController.add({'subjects': [], 'subCategories': {}});
-      _rawDataController.add(null);
+      _categorizedRecordsSubject.add(emptyData);
+      _allRecordsSubject.add({'allRecords': []});
+      _categoriesSubject.add({'subjects': [], 'subCategories': {}});
+      _rawDataSubject.add(null);
 
       if (PlatformUtils.instance.isAndroid ) {
         _updateHomeWidget([], [], [], [], <Object?, Object?>{});
@@ -180,14 +184,14 @@ class UnifiedDatabaseService {
         : Map<Object?, Object?>.from(rawData as Map);
 
     _cachedRawData = processedRawData;
-    _rawDataController.add(_cachedRawData);
+    _rawDataSubject.add(_cachedRawData);
 
     Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(processedRawData);
     _cachedCategorizedData = categorizedData;
-    _categorizedRecordsController.add(categorizedData);
+    _categorizedRecordsSubject.add(categorizedData);
 
     List<Map<String, dynamic>> allRecords = _processAllRecords(processedRawData);
-    _allRecordsController.add({'allRecords': allRecords});
+    _allRecordsSubject.add({'allRecords': allRecords});
     _processCategoriesData(processedRawData);
     if (PlatformUtils.instance.isAndroid ) {
       _updateHomeWidget(categorizedData['today'] ?? [],
@@ -221,7 +225,7 @@ class UnifiedDatabaseService {
       'subjects': subjects,
       'subCategories': subCategories,
     };
-    _categoriesController.add(_cachedCategoriesData!);
+    _categoriesSubject.add(_cachedCategoriesData!);
   }
 
   Map<String, List<Map<String, dynamic>>> _processCategorizedData(Map<Object?, Object?> rawData) {
@@ -344,17 +348,17 @@ class UnifiedDatabaseService {
       final rawData = await _localDatabase.getRawData();
       if (rawData != null) {
         _cachedRawData = rawData;
-        _rawDataController.add(_cachedRawData);
+        _rawDataSubject.add(_cachedRawData);
         
         // Process the data
         _processCategoriesData(_cachedRawData);
         
         Map<String, List<Map<String, dynamic>>> categorizedData = _processCategorizedData(_cachedRawData);
         _cachedCategorizedData = categorizedData;
-        _categorizedRecordsController.add(categorizedData);
+        _categorizedRecordsSubject.add(categorizedData);
 
         List<Map<String, dynamic>> allRecords = _processAllRecords(_cachedRawData);
-        _allRecordsController.add({'allRecords': allRecords});
+        _allRecordsSubject.add({'allRecords': allRecords});
 
         if (PlatformUtils.instance.isAndroid ) {
           _updateHomeWidget(categorizedData['today'] ?? [],
@@ -384,10 +388,10 @@ class UnifiedDatabaseService {
 
 
   void _addErrorToAllControllers(String errorMsg) {
-    _categorizedRecordsController.addError(errorMsg);
-    _allRecordsController.addError(errorMsg);
-    _categoriesController.addError(errorMsg);
-    _rawDataController.addError(errorMsg);
+    _categorizedRecordsSubject.addError(errorMsg);
+    _allRecordsSubject.addError(errorMsg);
+    _categoriesSubject.addError(errorMsg);
+    _rawDataSubject.addError(errorMsg);
   }
 
   void _resetState() {
@@ -407,10 +411,10 @@ class UnifiedDatabaseService {
 
   void dispose() {
     stopListening();
-    _categorizedRecordsController.close();
-    _allRecordsController.close();
-    _categoriesController.close();
-    _rawDataController.close();
+    _categorizedRecordsSubject.close();
+    _allRecordsSubject.close();
+    _categoriesSubject.close();
+    _rawDataSubject.close();
     
     if (_isGuestMode) {
       _localDatabase.dispose();

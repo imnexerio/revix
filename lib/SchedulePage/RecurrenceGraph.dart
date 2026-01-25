@@ -38,6 +38,9 @@ class _RecurrenceRadarChartState extends State<RecurrenceRadarChart> with Single
   late Animation<double> _animation;
   late List<RecurrenceEvent> allEvents;
   late List<RecurrenceEvent> displayEvents; // The filtered list to display
+  
+  // Static set to track which charts have already animated (persists across rebuilds)
+  static final Set<String> _animatedCharts = {};
 
   // Track statistics
   late int totalReviews;
@@ -46,6 +49,9 @@ class _RecurrenceRadarChartState extends State<RecurrenceRadarChart> with Single
   late int skippedReviews;
   late Duration totalSpan;
   late double reviewRatio;
+
+  // Unique key to identify this chart instance
+  String get _chartKey => '${widget.dateInitiated}_${widget.datesReviewed.length}_${widget.datesMissedReviews.length}';
 
   @override
   void initState() {
@@ -62,7 +68,15 @@ class _RecurrenceRadarChartState extends State<RecurrenceRadarChart> with Single
     _processEventData();
     _calculateStatistics();
 
-    _animationController.forward();
+    // Only animate if this chart hasn't been shown before
+    if (_animatedCharts.contains(_chartKey)) {
+      // Skip to end - no animation
+      _animationController.value = 1.0;
+    } else {
+      // First time showing - animate and mark as shown
+      _animatedCharts.add(_chartKey);
+      _animationController.forward();
+    }
   }
 
   void _processEventData() {

@@ -204,22 +204,14 @@ class UnifiedWidgetListViewFactory(
         // Set the paint flags based on whether the item is being processed
         rv.setInt(R.id.calendar_record_text, "setPaintFlags", if (isProcessing) strikethroughFlags else normalFlags)
 
-        // Show mark as done button only for TodayWidget (viewType = "combined")
-        if (viewType == "combined") {
-            rv.setViewVisibility(R.id.mark_as_done_circle, android.view.View.VISIBLE)
-            
-            // Create and fill the intent with all record data for mark as done
-            val markAsDoneIntent = Intent()
-            for ((key, value) in record) {
-                markAsDoneIntent.putExtra(key, value)
-            }
-            // Set click intent on the mark as done button
-            rv.setOnClickFillInIntent(R.id.mark_as_done_circle, markAsDoneIntent)
-        } else {
-            rv.setViewVisibility(R.id.mark_as_done_circle, android.view.View.GONE)
+        // Set click intent on stick for mark as done (works on all widgets)
+        val markAsDoneIntent = Intent()
+        for ((key, value) in record) {
+            markAsDoneIntent.putExtra(key, value)
         }
+        rv.setOnClickFillInIntent(R.id.calendar_record_stick, markAsDoneIntent)
 
-        // Set the click intent on the container for details view
+        // Set the click intent on the text for details view
         val detailsIntent = Intent()
         for ((key, value) in record) {
             detailsIntent.putExtra(key, value)
