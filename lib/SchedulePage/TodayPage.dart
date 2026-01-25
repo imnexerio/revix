@@ -363,7 +363,7 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
             final crossAxisCount = _calculateColumns(constraints.maxWidth);
 
             return GridView.builder(
-              padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
+              padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 100),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
                 childAspectRatio: MediaQuery.of(context).size.width > 300 ? 3 : 2,
