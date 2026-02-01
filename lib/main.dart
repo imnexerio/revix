@@ -512,6 +512,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final scheduleState = _schedulePageKey.currentState;
     final sortField = scheduleState?.sortField ?? 'reminder_time';
     final isAscending = scheduleState?.sortAscending ?? true;
+    final filterCount = scheduleState?.activeFilterCount ?? 0;
     
     String getSortDisplayName(String field) {
       switch (field) {
@@ -528,7 +529,9 @@ class _MyHomePageState extends State<MyHomePage> {
     return [
       Material(
         borderRadius: BorderRadius.circular(20),
-        color: colorScheme.primaryContainer.withOpacity(0.8),
+        color: filterCount > 0 
+            ? colorScheme.tertiaryContainer.withOpacity(0.9)
+            : colorScheme.primaryContainer.withOpacity(0.8),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () {
@@ -540,15 +543,21 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.sort,
+                  filterCount > 0 ? Icons.filter_alt : Icons.sort,
                   size: 16,
-                  color: colorScheme.onPrimaryContainer,
+                  color: filterCount > 0 
+                      ? colorScheme.onTertiaryContainer
+                      : colorScheme.onPrimaryContainer,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${getSortDisplayName(sortField)} ${isAscending ? '↑' : '↓'}',
+                  filterCount > 0 
+                      ? 'Filter ($filterCount)'
+                      : '${getSortDisplayName(sortField)} ${isAscending ? '↑' : '↓'}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
+                    color: filterCount > 0 
+                        ? colorScheme.onTertiaryContainer
+                        : colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
