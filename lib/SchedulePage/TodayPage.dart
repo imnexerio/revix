@@ -127,8 +127,8 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
       _filterCategories.length + _filterSubCategories.length + _filterEntryTypes.length;
 
   // Method to show sorting bottom sheet (called from AppBar)
-  void showSortingSheet(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> showSortingSheet(BuildContext context) async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(

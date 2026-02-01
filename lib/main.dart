@@ -534,8 +534,9 @@ class _MyHomePageState extends State<MyHomePage> {
             : colorScheme.primaryContainer.withOpacity(0.8),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            _schedulePageKey.currentState?.showSortingSheet(context);
+          onTap: () async {
+            await _schedulePageKey.currentState?.showSortingSheet(context);
+            if (mounted) setState(() {});  // Rebuild AppBar after sheet closes
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

@@ -137,10 +137,12 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               // Handle indicator
               Container(
                 width: 40,
@@ -240,7 +242,12 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                 Divider(color: colorScheme.outlineVariant),
                 const SizedBox(height: 12),
                 
-                Row(
+                Builder(
+                  builder: (context) {
+                    final totalFilters = selectedCategories.length + 
+                        selectedSubCategories.length + 
+                        selectedEntryTypes.length;
+                    return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
@@ -249,7 +256,7 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                           'Filters',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        if (_totalSelectedFilters > 0) ...[
+                        if (totalFilters > 0) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -258,7 +265,7 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              '$_totalSelectedFilters',
+                              '$totalFilters',
                               style: TextStyle(
                                 color: colorScheme.onPrimaryContainer,
                                 fontSize: 12,
@@ -269,7 +276,7 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                         ],
                       ],
                     ),
-                    if (_totalSelectedFilters > 0)
+                    if (totalFilters > 0)
                       TextButton(
                         onPressed: _clearAllFilters,
                         child: Text(
@@ -281,6 +288,8 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                         ),
                       ),
                   ],
+                );
+                  },
                 ),
                 const SizedBox(height: 8),
                 
@@ -308,6 +317,7 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -386,16 +396,17 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
           children: [
             Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurfaceVariant,
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             if (hasSelections) ...[
-              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
@@ -408,6 +419,22 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                     color: colorScheme.onPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onSelectionChanged({}),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: colorScheme.error,
+                    ),
                   ),
                 ),
               ),
@@ -610,16 +637,17 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
           children: [
             Icon(Icons.folder_outlined, size: 18, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 8),
-            Text(
-              'Filter by Category',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurfaceVariant,
+            Expanded(
+              child: Text(
+                'Filter by Category',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             if (selectedCategories.isNotEmpty) ...[
-              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
@@ -632,6 +660,27 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                     color: colorScheme.onPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      selectedCategories.clear();
+                    });
+                    _applyFilterLive();
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: colorScheme.error,
+                    ),
                   ),
                 ),
               ),
