@@ -25,8 +25,11 @@ class ModelSelectionManager {
   static const String cachedModelsPrefKey = 'cached_gemini_models';
   static const String defaultModel = 'gemini-2.5-flash';
 
-  // Cached models fetched from API (in-memory)
+  // Cached instances for performance
+  static SharedPreferences? _prefs;
   static Map<String, Map<String, String>>? _cachedApiModels;
+  static String? _cachedSelectedModel;
+  static bool _initialized = false;
 
   // Get available models from cache
   static Map<String, Map<String, String>> get availableModels {
@@ -35,12 +38,22 @@ class ModelSelectionManager {
 
   // Check if models have been loaded from API
   static bool get hasModels => _cachedApiModels != null && _cachedApiModels!.isNotEmpty;
+  
+  // Get selected model sync (if initialized)
+  static String get selectedModelSync => _cachedSelectedModel ?? defaultModel;
 
-  // Initialize - load cached models from storage
+  static Future<SharedPreferences> get _instance async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+
+  // Initialize - load cached models and selected model from storage
   static Future<void> initialize() async {
-    if (_cachedApiModels == null) {
-      _cachedApiModels = await _loadCachedModels();
-    }
+    if (_initialized) return;
+    _prefs ??= await SharedPreferences.getInstance();
+    _cachedApiModels = await _loadCachedModels();
+    _cachedSelectedModel = _prefs!.getString(selectedModelPrefKey) ?? defaultModel;
+    _initialized = true;
   }
 
   // Fetch available models from Gemini API (force refresh)
@@ -180,7 +193,7 @@ class ModelSelectionManager {
   // Load cached models from SharedPreferences (permanent cache)
   static Future<Map<String, Map<String, String>>?> _loadCachedModels() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _instance;
       final cachedJson = prefs.getString(cachedModelsPrefKey);
       if (cachedJson != null) {
         final decoded = json.decode(cachedJson) as Map<String, dynamic>;
@@ -198,7 +211,7 @@ class ModelSelectionManager {
   // Save models to cache (permanent until manual refresh)
   static Future<void> _saveCachedModels(Map<String, Map<String, String>> models) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _instance;
       await prefs.setString(cachedModelsPrefKey, json.encode(models));
     } catch (e) {
       print('Error saving cached models: $e');
@@ -209,31 +222,30 @@ class ModelSelectionManager {
   static Future<void> clearCache() async {
     try {
       _cachedApiModels = null;
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _instance;
       await prefs.remove(cachedModelsPrefKey);
     } catch (e) {
       print('Error clearing model cache: $e');
     }
   }
 
-  // Get the saved model with validation
+  // Get the saved model with validation (uses cache if available)
   static Future<String> getSelectedModel() async {
+    if (_initialized && _cachedSelectedModel != null) {
+      return _cachedSelectedModel!;
+    }
+    
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _instance;
       final savedModel = prefs.getString(selectedModelPrefKey);
-      
-      // If no models cached, return saved model or default
-      if (!hasModels) {
-        return savedModel ?? defaultModel;
-      }
+      _cachedSelectedModel = savedModel ?? defaultModel;
       
       // Validate saved model exists in available models
-      if (savedModel != null && isValidModel(savedModel)) {
-        return savedModel;
+      if (hasModels && !isValidModel(_cachedSelectedModel!)) {
+        _cachedSelectedModel = defaultModel;
       }
       
-      // Fallback to default if saved model is invalid
-      return defaultModel;
+      return _cachedSelectedModel!;
     } catch (e) {
       print('Error getting selected model: $e');
       return defaultModel;
@@ -243,8 +255,9 @@ class ModelSelectionManager {
   // Save the selected model (allows any model string)
   static Future<bool> saveSelectedModel(String model) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _instance;
       await prefs.setString(selectedModelPrefKey, model);
+      _cachedSelectedModel = model; // Update cache immediately
       return true;
     } catch (e) {
       print('Error saving selected model: $e');

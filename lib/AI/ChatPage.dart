@@ -24,12 +24,15 @@ class ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  late GeminiService _geminiService;
+  GeminiService? _geminiService;
   bool _isLoading = false;
   String _currentConversationId = '';
   bool _isInitialized = false;
   bool _aiEnabled = false;
-  bool _isViewingOldConversation = false; // Track if viewing old history
+  bool _isViewingOldConversation = false;
+  
+  // Cached conversation list for drawer (avoids rebuild delays)
+  List<Map<String, dynamic>> _cachedConversations = [];
 
   // Get schedule data directly from service (always fresh)
   String get _scheduleData => UnifiedDatabaseService().getScheduleDataJson();
@@ -76,13 +79,67 @@ class ChatPageState extends State<ChatPage> {
     }
   }
 
+  // Initialize all caches in parallel for fast startup
+  Future<void> _initializeApp() async {
+    try {
+      // PARALLEL: Initialize all caches at once
+      await Future.wait([
+        ApiKeyManager.initialize(),
+        ModelSelectionManager.initialize(),
+        ChatStorage.initialize(),
+      ]);
+
+      // Now use cached values (instant, no I/O)
+      final apiKey = ApiKeyManager.apiKeySync;
+      final selectedModel = ModelSelectionManager.selectedModelSync;
+
+      // Create GeminiService with cached values
+      if (apiKey != null && apiKey.isNotEmpty) {
+        _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
+        _aiEnabled = _geminiService!.isAvailable;
+      }
+
+      // Pre-load conversation list for drawer (cached, fast)
+      _cachedConversations = ChatStorage.cachedConversations;
+
+      // Load conversation if ID provided, else start fresh
+      if (widget.conversationId != null) {
+        await _loadConversation(widget.conversationId!);
+      } else {
+        // Generate a new conversation ID but don't save it yet
+        final uuid = const Uuid();
+        _currentConversationId = uuid.v4();
+
+        // Add welcome message to UI but don't save to storage yet
+        _messages.add(ChatMessage(
+          text: _aiEnabled
+              ? "Hi there! I can help you understand your schedule. What would you like to know?"
+              : "Welcome to your revAIx. AI features are currently disabled. You can enable them by setting your Gemini API key.",
+          isUser: false,
+        ));
+      }
+
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      // If initialization fails, still show the UI with error state
+      setState(() {
+        _isInitialized = true;
+        _messages.add(ChatMessage(
+          text: "There was an error initializing the app. Please try again or check your connection.",
+          isUser: false,
+        ));
+      });
+    }
+  }
 
   Future<void> _initializeGeminiService() async {
-    final apiKey = await ApiKeyManager.getApiKey();
-    final selectedModel = await ModelSelectionManager.getSelectedModel();
+    final apiKey = ApiKeyManager.apiKeySync ?? await ApiKeyManager.getApiKey();
+    final selectedModel = ModelSelectionManager.selectedModelSync;
     if (apiKey != null && apiKey.isNotEmpty) {
       _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
-      _aiEnabled = _geminiService.isAvailable;
+      _aiEnabled = _geminiService!.isAvailable;
     }
   }
   Future<void> _showApiKeyDialog() async {
@@ -90,22 +147,22 @@ class ChatPageState extends State<ChatPage> {
     if (apiKey != null && apiKey.isNotEmpty) {
       await ApiKeyManager.saveApiKey(apiKey);
       
-      // Auto-fetch models when API key is first set
+      // Fetch models in background (non-blocking)
       if (!ModelSelectionManager.hasModels) {
         ModelSelectionManager.fetchAvailableModels(apiKey, forceRefresh: true);
       }
       
       // Reinitialize the service with the new API key and selected model
-      final selectedModel = await ModelSelectionManager.getSelectedModel();
-      setState(() {
-        _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
-        _aiEnabled = _geminiService.isAvailable;
-      });
+      final selectedModel = ModelSelectionManager.selectedModelSync;
+      _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
+      _aiEnabled = _geminiService!.isAvailable;
       
       // ✅ API KEY SET - Start fresh conversation with data
       if (_aiEnabled) {
-        await _startNewConversation(); // This will send data
+        await _startNewConversation();
       }
+      
+      setState(() {});
       
       customSnackBar(
         context: context,
@@ -120,17 +177,16 @@ class ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _showModelSelectionDialog() async {
-    final apiKey = await ApiKeyManager.getApiKey();
+    final apiKey = ApiKeyManager.apiKeySync;
     final selectedModel = await ModelSelectionManager.showModelSelectionDialog(context, apiKey: apiKey);
     if (selectedModel != null) {
       await ModelSelectionManager.saveSelectedModel(selectedModel);
       
       // Reinitialize the service with the new model if API key exists
       if (apiKey != null && apiKey.isNotEmpty) {
-        setState(() {
-          _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
-          _aiEnabled = _geminiService.isAvailable;
-        });
+        _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
+        _aiEnabled = _geminiService!.isAvailable;
+        setState(() {});
         customSnackBar(
           context: context,
           message: 'Model changed to ${ModelSelectionManager.getModelDisplayName(selectedModel)}\n${ModelSelectionManager.getModelDescription(selectedModel)}',
@@ -200,9 +256,9 @@ class ChatPageState extends State<ChatPage> {
       _isViewingOldConversation = true;
 
       // Load the messages into the Gemini chat session if AI is enabled
-      if (_aiEnabled) {
+      if (_aiEnabled && _geminiService != null) {
         try {
-          await _geminiService.loadChatHistory(_messages);
+          await _geminiService!.loadChatHistory(_messages);
           print('Chat history loaded into Gemini service');
         } catch (e) {
           print('Error loading chat history into Gemini: $e');
@@ -238,54 +294,11 @@ class ChatPageState extends State<ChatPage> {
       }
     }
   }
-  // In _ChatPageState class, modify the _initializeApp method
-  Future<void> _initializeApp() async {
-    try {
-      // Initialize with null API key first (model doesn't matter yet)
-      _geminiService = GeminiService(apiKey: null);
-
-      // Check if API key exists and initialize Gemini if it does
-      await _initializeGeminiService();
-
-      // Load conversation if ID provided
-      if (widget.conversationId != null) {
-        await _loadConversation(widget.conversationId!);
-      } else {
-        // If no conversation ID provided, start fresh
-        // Data is always fresh from UnifiedDatabaseService
-
-        // Generate a new conversation ID but don't save it yet
-        final uuid = const Uuid();
-        _currentConversationId = uuid.v4();
-
-        // Add welcome message to UI but don't save to storage yet
-        _messages.add(ChatMessage(
-          text: _aiEnabled
-              ? "Hi there! I can help you understand your schedule. What would you like to know?"
-              : "Welcome to your revAIx. AI features are currently disabled. You can enable them by setting your Gemini API key.",
-          isUser: false,
-        ));
-      }
-
-      setState(() {
-        _isInitialized = true;
-      });
-    } catch (e) {
-      // If initialization fails, still show the UI with error state
-      setState(() {
-        _isInitialized = true;
-        _messages.add(ChatMessage(
-          text: "There was an error initializing the app. Please try again or check your connection.",
-          isUser: false,
-        ));
-      });
-    }
-  }
 
 // Modify _sendMessage to use streaming for real-time responses
   void _sendMessage(String text) async {
     // Prevent multiple simultaneous sends
-    if (text.trim().isEmpty || !_aiEnabled || _isLoading) return;
+    if (text.trim().isEmpty || !_aiEnabled || _isLoading || _geminiService == null) return;
 
     final userMessage = text.trim();
     _controller.clear();
@@ -297,9 +310,6 @@ class ChatPageState extends State<ChatPage> {
 
     _scrollToBottom();
 
-    // Check if this is the first message in a new conversation
-    bool isFirstMessageInNewConversation = !await ChatStorage.conversationExists(_currentConversationId);
-
     // Save the conversation with the user message
     await _saveConversation();
 
@@ -308,11 +318,10 @@ class ChatPageState extends State<ChatPage> {
 
     try {
       // Use streaming for real-time response
-      // Schedule data is already sent when conversation started
       StringBuffer fullResponse = StringBuffer();
       bool hasReceivedChunk = false;
       
-      await for (final chunk in _geminiService.askAboutScheduleStream(userMessage)) {
+      await for (final chunk in _geminiService!.askAboutScheduleStream(userMessage)) {
         if (!mounted) return; // Safety check
         
         hasReceivedChunk = true;
@@ -401,14 +410,14 @@ class ChatPageState extends State<ChatPage> {
       _isViewingOldConversation = false;
 
       // Reset the Gemini chat session if AI is enabled
-      if (_aiEnabled) {
+      if (_aiEnabled && _geminiService != null) {
         try {
-          _geminiService.resetChat();
+          _geminiService!.resetChat();
 
           // ✅ SEND SCHEDULE DATA - This is a new chat
           final scheduleJson = _scheduleData;
           if (scheduleJson.isNotEmpty && scheduleJson != '{}') {
-            await _geminiService.setScheduleData(scheduleJson);
+            await _geminiService!.setScheduleData(scheduleJson);
           }
         } catch (e) {
           print('Error resetting chat or setting schedule data: $e');
@@ -430,8 +439,6 @@ class ChatPageState extends State<ChatPage> {
       if (mounted) {
         setState(() {});
       }
-
-      // No _saveConversation() call here - we'll save only when user interacts
     } catch (e) {
       print('Error starting new conversation: $e');
       
@@ -445,6 +452,12 @@ class ChatPageState extends State<ChatPage> {
         setState(() {});
       }
     }
+  }
+
+  // Refresh cached conversations for drawer
+  Future<void> _refreshConversationCache() async {
+    _cachedConversations = await ChatStorage.getAllConversations();
+    if (mounted) setState(() {});
   }
 
   Future<void> _saveConversation() async {
@@ -465,7 +478,10 @@ class ChatPageState extends State<ChatPage> {
       // Save to storage
       final success = await ChatStorage.saveConversation(_currentConversationId, messagesData);
       
-      if (!success) {
+      if (success) {
+        // Refresh cache for drawer (non-blocking)
+        _cachedConversations = ChatStorage.cachedConversations;
+      } else {
         print('Failed to save conversation ${_currentConversationId}');
       }
     } catch (e) {
@@ -487,15 +503,57 @@ class ChatPageState extends State<ChatPage> {
 
     if (!_isInitialized) {
       return Scaffold(
+        backgroundColor: colorScheme.surface,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
+              // Animated icon with subtle pulse
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.8, end: 1.0),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeInOut,
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withOpacity(0.2),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: 40,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
               Text(
-                'Loading your assistant...',
-                style: theme.textTheme.bodyLarge,
+                'Preparing your assistant...',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: 120,
+                child: LinearProgressIndicator(
+                  borderRadius: BorderRadius.circular(4),
+                  backgroundColor: colorScheme.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation(colorScheme.primary),
+                ),
               ),
             ],
           ),
@@ -511,28 +569,69 @@ class ChatPageState extends State<ChatPage> {
         width: MediaQuery.of(context).size.width > 600 ? 350 : 280,
         child: _buildChatHistoryDrawer(context, theme, colorScheme),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (!_aiEnabled)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withOpacity(0.2),
+      body: AnimatedOpacity(
+        opacity: _isInitialized ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: SafeArea(
+          child: Column(
+            children: [
+              if (!_aiEnabled)
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showApiKeyDialog(),
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: colorScheme.error),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'AI chat features are disabled. Tap the key icon to set your Gemini API key.',
-                        style: TextStyle(color: colorScheme.onErrorContainer),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.3),
+                        width: 1,
                       ),
                     ),
-                  ],
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.key_rounded, color: colorScheme.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Set up AI Assistant',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Add your Gemini API key to enable chat',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: colorScheme.primary,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
 
@@ -561,16 +660,7 @@ class ChatPageState extends State<ChatPage> {
                               bottomLeft: Radius.circular(4),
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _AnimatedDot(delay: 0),
-                              const SizedBox(width: 4),
-                              _AnimatedDot(delay: 200),
-                              const SizedBox(width: 4),
-                              _AnimatedDot(delay: 400),
-                            ],
-                          ),
+                          child: const _LoadingDots(),
                         ),
                       );
                     }
@@ -643,10 +733,10 @@ class ChatPageState extends State<ChatPage> {
                       controller: _controller,
                       decoration: InputDecoration(
                         hintText: _isViewingOldConversation
-                            ? 'Start a new chat to continue...'
+                            ? 'Viewing history - tap + to continue chatting'
                             : (_aiEnabled
                                 ? 'Ask about your schedule...'
-                                : 'AI is disabled. Set API key to chat...'),
+                                : 'Set up API key to start chatting'),
                         hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(25),
@@ -703,7 +793,7 @@ class ChatPageState extends State<ChatPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   // Build chat history drawer
@@ -786,17 +876,10 @@ class ChatPageState extends State<ChatPage> {
             color: colorScheme.outlineVariant,
           ),
           
-          // Chat history list
+          // Chat history list (uses cached data - instant)
           Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: ChatStorage.getAllConversations(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
+            child: _cachedConversations.isEmpty
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -821,166 +904,153 @@ class ChatPageState extends State<ChatPage> {
                         ),
                       ],
                     ),
-                  );
-                }
-                
-                final conversations = snapshot.data!;
-                
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: conversations.length,
-                  itemBuilder: (context, index) {
-                    final conversation = conversations[index];
-                    final conversationId = conversation['id'] as String;
-                    final messages = conversation['messages'] as List;
-                    final timestamp = conversation['timestamp'] as int;
-                    
-                    // Get first user message for title
-                    String title = 'New Conversation';
-                    if (messages.isNotEmpty) {
-                      for (var msg in messages) {
-                        if (msg['isUser'] == true) {
-                          title = msg['text'].toString();
-                          if (title.length > 40) {
-                            title = '${title.substring(0, 40)}...';
-                          }
-                          break;
-                        }
-                      }
-                    }
-                    
-                    final isCurrentConversation = conversationId == _currentConversationId;
-                    
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isCurrentConversation
-                            ? colorScheme.primaryContainer.withOpacity(0.5)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isCurrentConversation
-                                ? colorScheme.primary.withOpacity(0.2)
-                                : colorScheme.surfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.chat_bubble_outline,
-                            size: 20,
-                            color: isCurrentConversation
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
-                          ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _cachedConversations.length,
+                    itemBuilder: (context, index) {
+                      final conversation = _cachedConversations[index];
+                      final conversationId = conversation['id'] as String;
+                      final title = conversation['title'] as String? ?? 'New Conversation';
+                      final timestamp = conversation['timestamp'] as int? ?? 0;
+                      
+                      final isCurrentConversation = conversationId == _currentConversationId;
+                      
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isCurrentConversation
+                              ? colorScheme.primaryContainer.withOpacity(0.5)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        title: Text(
-                          title,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: isCurrentConversation ? FontWeight.w600 : FontWeight.normal,
-                            color: isCurrentConversation
-                                ? colorScheme.primary
-                                : colorScheme.onSurface,
+                        child: ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isCurrentConversation
+                                  ? colorScheme.primary.withOpacity(0.2)
+                                  : colorScheme.surfaceVariant,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.chat_bubble_outline,
+                              size: 20,
+                              color: isCurrentConversation
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          _formatTimestamp(timestamp),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                          title: Text(
+                            title,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: isCurrentConversation ? FontWeight.w600 : FontWeight.normal,
+                              color: isCurrentConversation
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurface,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(
-                            Icons.delete_outline,
-                            color: colorScheme.error,
-                            size: 20,
+                          subtitle: Text(
+                            _formatTimestamp(timestamp),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete Conversation'),
-                                content: const Text('Are you sure you want to delete this conversation?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: const Text('CANCEL'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: colorScheme.error,
-                                    ),
-                                    child: const Text('DELETE'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            
-                            if (confirm == true) {
-                              final deletedId = conversationId;
-                              final success = await ChatStorage.deleteConversation(deletedId);
-                              
-                              if (success && mounted) {
-                                // Refresh drawer immediately
-                                setState(() {});
-                                
-                                // If deleted current conversation, start new one
-                                if (deletedId == _currentConversationId) {
-                                  await _startNewConversation();
-                                }
-                                
-                                // Show confirmation
-                                customSnackBar(
-                                  context: context,
-                                  message: 'Conversation deleted',
-                                );
-                              }
-                            }
-                          },
+                          trailing: IconButton(
+                            icon: Icon(
+                              Icons.delete_outline,
+                              color: colorScheme.error,
+                              size: 20,
+                            ),
+                            onPressed: () => _deleteConversation(context, conversationId),
+                          ),
+                          onTap: () => _selectConversation(context, conversationId),
                         ),
-                        onTap: () async {
-                          // Don't reload if already viewing this conversation
-                          if (conversationId == _currentConversationId) {
-                            Navigator.pop(context); // Just close drawer
-                            return;
-                          }
-                          
-                          Navigator.pop(context); // Close drawer first
-                          
-                          // Show loading indicator
-                          if (mounted) {
-                            setState(() {
-                              _isLoading = true;
-                            });
-                          }
-                          
-                          try {
-                            await _loadConversation(conversationId);
-                          } catch (e) {
-                            print('Error in onTap loadConversation: $e');
-                          } finally {
-                            if (mounted) {
-                              setState(() {
-                                _isLoading = false;
-                              });
-                            }
-                          }
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
     );
+  }
+
+  // Delete conversation with confirmation
+  Future<void> _deleteConversation(BuildContext context, String conversationId) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Conversation'),
+        content: const Text('Are you sure you want to delete this conversation?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.error,
+            ),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      final deletedId = conversationId;
+      final success = await ChatStorage.deleteConversation(deletedId);
+      
+      if (success && mounted) {
+        // Refresh cache and UI
+        _cachedConversations = ChatStorage.cachedConversations;
+        setState(() {});
+        
+        // If deleted current conversation, start new one
+        if (deletedId == _currentConversationId) {
+          await _startNewConversation();
+        }
+        
+        customSnackBar(
+          context: context,
+          message: 'Conversation deleted',
+        );
+      }
+    }
+  }
+
+  // Select a conversation from drawer
+  Future<void> _selectConversation(BuildContext context, String conversationId) async {
+    // Don't reload if already viewing this conversation
+    if (conversationId == _currentConversationId) {
+      Navigator.pop(context); // Just close drawer
+      return;
+    }
+    
+    Navigator.pop(context); // Close drawer first
+    
+    // Show loading indicator
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+    
+    try {
+      await _loadConversation(conversationId);
+    } catch (e) {
+      print('Error in selectConversation: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
   
   // Format timestamp for history items
@@ -1005,42 +1075,25 @@ class ChatPageState extends State<ChatPage> {
   }
 }
 
-// Animated Dot Widget for loading indicator
-class _AnimatedDot extends StatefulWidget {
-  final int delay;
-
-  const _AnimatedDot({required this.delay});
+// Efficient animated loading dots widget (single controller for all dots)
+class _LoadingDots extends StatefulWidget {
+  const _LoadingDots();
 
   @override
-  State<_AnimatedDot> createState() => _AnimatedDotState();
+  State<_LoadingDots> createState() => _LoadingDotsState();
 }
 
-class _AnimatedDotState extends State<_AnimatedDot>
+class _LoadingDotsState extends State<_LoadingDots>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
-    );
-
-    _animation = Tween<double>(begin: 0, end: -8).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    // Start animation with delay
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) {
-        _controller.repeat(reverse: true);
-      }
-    });
+    )..repeat();
   }
 
   @override
@@ -1054,18 +1107,31 @@ class _AnimatedDotState extends State<_AnimatedDot>
     final colorScheme = Theme.of(context).colorScheme;
     
     return AnimatedBuilder(
-      animation: _animation,
+      animation: _controller,
       builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _animation.value),
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
-          ),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            // Stagger the animation for each dot
+            final delay = index * 0.2;
+            final progress = (_controller.value + delay) % 1.0;
+            final bounce = (progress < 0.5 ? progress : 1.0 - progress) * 2.0;
+            
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Transform.translate(
+                offset: Offset(0, -6 * bounce),
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.6 + 0.4 * bounce),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
         );
       },
     );

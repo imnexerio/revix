@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Utils/CustomSnackBar.dart';
 import 'ChatStorage.dart';
-import 'ChatMessage.dart';
 
 class ChatHistoryPage extends StatefulWidget {
   const ChatHistoryPage({Key? key}) : super(key: key);
@@ -12,8 +11,7 @@ class ChatHistoryPage extends StatefulWidget {
 }
 
 class _ChatHistoryPageState extends State<ChatHistoryPage> {
-  List<String> _conversationIds = [];
-  Map<String, List<ChatMessage>> _conversationPreviews = {};
+  List<Map<String, dynamic>> _conversations = [];
   bool _isLoading = true;
   String? _activeConversationId;
 
@@ -29,29 +27,24 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
     });
 
     try {
+      // Ensure storage is initialized
+      await ChatStorage.initialize();
+      
       // Get active conversation ID
       _activeConversationId = await ChatStorage.getActiveConversationId();
 
-      // Get all conversation IDs
-      _conversationIds = await ChatStorage.getConversationIds();
-
-      // Sort newest first (assuming IDs are UUID v4, we'll replace with timestamp data)
-      _conversationIds.sort((a, b) => b.compareTo(a));
-
-      // Load preview of each conversation (just first few messages)
-      for (final id in _conversationIds) {
-        final messagesData = await ChatStorage.loadConversation(id);
-        final messages = messagesData.map((m) => ChatMessage.fromMap(m)).toList();
-
-        // Store just the first few messages as a preview
-        _conversationPreviews[id] = messages.take(3).toList();
+      // Use cached conversations (fast)
+      _conversations = ChatStorage.cachedConversations;
+      
+      // If cache is empty, do full load once
+      if (_conversations.isEmpty) {
+        _conversations = await ChatStorage.getAllConversations();
       }
 
       setState(() {
         _isLoading = false;
       });
     } catch (e) {
-      // print('Error loading conversations: $e');
       setState(() {
         _isLoading = false;
       });
@@ -59,34 +52,24 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
   }
 
   String _getConversationPreview(String conversationId) {
-    final messages = _conversationPreviews[conversationId];
-    if (messages == null || messages.isEmpty) {
-      return 'Empty conversation';
-    }
-
-    // Find the first user message
-    final userMessage = messages.firstWhere(
-            (msg) => msg.isUser,
-        orElse: () => messages.first
+    final conversation = _conversations.firstWhere(
+      (c) => c['id'] == conversationId,
+      orElse: () => {},
     );
-
-    return userMessage.text.length > 50
-        ? '${userMessage.text.substring(0, 50)}...'
-        : userMessage.text;
+    return conversation['title'] as String? ?? 'New Conversation';
   }
 
   String _getConversationDate(String conversationId) {
-    final messages = _conversationPreviews[conversationId];
-    if (messages == null || messages.isEmpty) {
-      return '';
-    }
-
-    // Sort to get the most recent message
-    final latestMessage = List.of(messages)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
+    final conversation = _conversations.firstWhere(
+      (c) => c['id'] == conversationId,
+      orElse: () => {},
+    );
+    final timestamp = conversation['timestamp'] as int? ?? 0;
+    if (timestamp == 0) return '';
+    
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
     final formatter = DateFormat('MMM d, h:mm a');
-    return formatter.format(latestMessage.first.timestamp);
+    return formatter.format(date);
   }
 
   @override
@@ -162,7 +145,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                   ],
                 ),
               )
-                  : _conversationIds.isEmpty
+                  : _conversations.isEmpty
                   ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -190,10 +173,11 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                 ),
               )
                   : ListView.builder(
-                itemCount: _conversationIds.length,
+                itemCount: _conversations.length,
                 padding: const EdgeInsets.all(16),
                 itemBuilder: (context, index) {
-                  final id = _conversationIds[index];
+                  final conversation = _conversations[index];
+                  final id = conversation['id'] as String;
                   final isActive = id == _activeConversationId;
 
                   return Dismissible(
@@ -235,8 +219,7 @@ class _ChatHistoryPageState extends State<ChatHistoryPage> {
                     onDismissed: (direction) async {
                       await ChatStorage.deleteConversation(id);
                       setState(() {
-                        _conversationIds.removeAt(index);
-                        _conversationPreviews.remove(id);
+                        _conversations.removeAt(index);
                       });
                       customSnackBar(
                         context: context,
