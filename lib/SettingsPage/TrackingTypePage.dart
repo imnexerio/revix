@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/entry_colors.dart';
@@ -12,6 +13,7 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
   List<Map<String, String>> trackingtype = [];
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _customTitleController = TextEditingController();
+  StreamSubscription? _entryTypesSubscription;
 
   @override
   void initState() {
@@ -19,20 +21,47 @@ class _TrackingTypePageState extends State<TrackingTypePage> {
     fetchtrackingType();
   }
 
+  @override
+  void dispose() {
+    _entryTypesSubscription?.cancel();
+    _customTitleController.dispose();
+    super.dispose();
+  }
+
   void fetchtrackingType() async {
     try {
       final databaseService = FirebaseDatabaseService();
-      List<String> data = await databaseService.fetchCustomTrackingTypes();
-      setState(() {
-        trackingtype = data.map((trackingTitle) {
-          return {
-            'trackingTitle': trackingTitle
-          };
-        }).toList();
+      
+      // Step 1: Show cached data immediately
+      final cachedData = databaseService.currentEntryTypes;
+      if (cachedData.isNotEmpty) {
+        _updateTrackingTypes(cachedData);
+      }
+      
+      // Step 2: Subscribe to stream for live updates
+      _entryTypesSubscription?.cancel();
+      _entryTypesSubscription = databaseService.entryTypesStream.listen((types) {
+        if (mounted) {
+          _updateTrackingTypes(types);
+        }
       });
+      
+      // Step 3: Trigger background refresh
+      databaseService.fetchCustomTrackingTypes();
     } catch (e) {
       // Handle error appropriately
     }
+  }
+  
+  void _updateTrackingTypes(List<String> data) {
+    if (!mounted) return;
+    setState(() {
+      trackingtype = data.map((trackingTitle) {
+        return {
+          'trackingTitle': trackingTitle
+        };
+      }).toList();
+    });
   }
 
   @override

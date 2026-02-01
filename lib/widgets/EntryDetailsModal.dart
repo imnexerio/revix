@@ -160,20 +160,33 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
   Future<void> _loadEntryTypes() async {
     try {
       final databaseService = FirebaseDatabaseService();
+      
+      // Step 1: Show cached data immediately
+      final cachedTypes = databaseService.currentEntryTypes;
+      if (cachedTypes.isNotEmpty) {
+        _updateEntryTypes(cachedTypes);
+      }
+      
+      // Step 2: Fetch fresh data
       final types = await databaseService.fetchCustomTrackingTypes();
-      setState(() {
-        availableEntryTypes = types;
-        // Ensure current entry type is in the list if not already
-        if (entryType.isNotEmpty && !availableEntryTypes.contains(entryType)) {
-          availableEntryTypes.add(entryType);
-        }
-      });
+      _updateEntryTypes(types);
     } catch (e) {
       // Handle error - maybe show a snackbar or use default types
       setState(() {
         availableEntryTypes = [entryType]; // At least include current type
       });
     }
+  }
+  
+  void _updateEntryTypes(List<String> types) {
+    if (!mounted) return;
+    setState(() {
+      availableEntryTypes = List.from(types);
+      // Ensure current entry type is in the list if not already
+      if (entryType.isNotEmpty && !availableEntryTypes.contains(entryType)) {
+        availableEntryTypes.add(entryType);
+      }
+    });
   }
 
 

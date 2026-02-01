@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../Utils/FirebaseDatabaseService.dart'; // Adjust the import path as necessary
 import '../Utils/entry_colors.dart'; // Add this import for colors
@@ -21,6 +22,7 @@ class EntryTypeDropdown extends StatefulWidget {
 class _EntryTypeDropdownState extends State<EntryTypeDropdown> {
   List<String> _entryTypes = [];
   bool _isLoading = true;
+  StreamSubscription? _entryTypesSubscription;
 
   @override
   void initState() {
@@ -28,11 +30,35 @@ class _EntryTypeDropdownState extends State<EntryTypeDropdown> {
     _fetchEntryTypes();
   }
 
+  @override
+  void dispose() {
+    _entryTypesSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _fetchEntryTypes() async {
     final databaseService = FirebaseDatabaseService();
-    List<String> types = await databaseService.fetchCustomTrackingTypes();
+    
+    // Step 1: Show cached data immediately
+    final cachedTypes = databaseService.currentEntryTypes;
+    if (cachedTypes.isNotEmpty) {
+      _updateEntryTypes(cachedTypes);
+    }
+    
+    // Step 2: Subscribe to stream for live updates
+    _entryTypesSubscription = databaseService.entryTypesStream.listen((types) {
+      if (mounted) {
+        _updateEntryTypes(types);
+      }
+    });
+    
+    // Step 3: Trigger background refresh
+    databaseService.fetchCustomTrackingTypes();
+  }
+  
+  void _updateEntryTypes(List<String> types) {
     setState(() {
-      _entryTypes = types;
+      _entryTypes = List.from(types);
       _entryTypes.add('Add new'); // Add the 'Add new' option
       _isLoading = false;
     });
