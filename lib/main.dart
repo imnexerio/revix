@@ -748,7 +748,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
         bottomNavigationBar: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(8.0),
           child: Row(
             children: [
               // Search button
@@ -788,7 +788,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
               // Custom navigation bar with rounded corners - takes remaining space
               Expanded(
                 child: ClipRRect(
@@ -831,7 +831,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
               // Add entry button
               ClipRRect(
                 borderRadius: BorderRadius.circular(28),
