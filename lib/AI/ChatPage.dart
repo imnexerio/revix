@@ -31,8 +31,8 @@ class ChatPageState extends State<ChatPage> {
   bool _aiEnabled = false;
   bool _isViewingOldConversation = false; // Track if viewing old history
 
-  // Store schedule data directly
-  String? _scheduleData;
+  // Get schedule data directly from service (always fresh)
+  String get _scheduleData => UnifiedDatabaseService().getScheduleDataJson();
 
   // Expose AI enabled status for parent widget
   bool get isAiEnabled => _aiEnabled;
@@ -64,24 +64,6 @@ class ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-
-  Future<void> _fetchScheduleData() async {
-    try {
-      // UnifiedDatabaseService keeps data updated via listeners
-      // Just get the latest cached data
-      final service = UnifiedDatabaseService();
-      _scheduleData = service.getScheduleData();
-
-      // If no cached data, try to fetch once
-      if (_scheduleData == 'No schedule data available') {
-        await service.fetchRawData();
-        _scheduleData = service.getScheduleData();
-      }
-    } catch (e) {
-      _scheduleData = 'No schedule data available';
-    }
-  }
-
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -107,6 +89,12 @@ class ChatPageState extends State<ChatPage> {
     final apiKey = await ApiKeyManager.showApiKeyDialog(context);
     if (apiKey != null && apiKey.isNotEmpty) {
       await ApiKeyManager.saveApiKey(apiKey);
+      
+      // Auto-fetch models when API key is first set
+      if (!ModelSelectionManager.hasModels) {
+        ModelSelectionManager.fetchAvailableModels(apiKey, forceRefresh: true);
+      }
+      
       // Reinitialize the service with the new API key and selected model
       final selectedModel = await ModelSelectionManager.getSelectedModel();
       setState(() {
@@ -116,7 +104,6 @@ class ChatPageState extends State<ChatPage> {
       
       // ✅ API KEY SET - Start fresh conversation with data
       if (_aiEnabled) {
-        await _fetchScheduleData(); // Get latest data
         await _startNewConversation(); // This will send data
       }
       
@@ -133,12 +120,12 @@ class ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _showModelSelectionDialog() async {
-    final selectedModel = await ModelSelectionManager.showModelSelectionDialog(context);
+    final apiKey = await ApiKeyManager.getApiKey();
+    final selectedModel = await ModelSelectionManager.showModelSelectionDialog(context, apiKey: apiKey);
     if (selectedModel != null) {
       await ModelSelectionManager.saveSelectedModel(selectedModel);
       
       // Reinitialize the service with the new model if API key exists
-      final apiKey = await ApiKeyManager.getApiKey();
       if (apiKey != null && apiKey.isNotEmpty) {
         setState(() {
           _geminiService = GeminiService(apiKey: apiKey, modelName: selectedModel);
@@ -264,9 +251,8 @@ class ChatPageState extends State<ChatPage> {
       if (widget.conversationId != null) {
         await _loadConversation(widget.conversationId!);
       } else {
-        // If no conversation ID provided, just fetch fresh data
-        // but don't save a new conversation yet
-        await _fetchScheduleData();
+        // If no conversation ID provided, start fresh
+        // Data is always fresh from UnifiedDatabaseService
 
         // Generate a new conversation ID but don't save it yet
         final uuid = const Uuid();
@@ -420,8 +406,9 @@ class ChatPageState extends State<ChatPage> {
           _geminiService.resetChat();
 
           // ✅ SEND SCHEDULE DATA - This is a new chat
-          if (_scheduleData != null) {
-            await _geminiService.setScheduleData(_scheduleData!);
+          final scheduleJson = _scheduleData;
+          if (scheduleJson.isNotEmpty && scheduleJson != '{}') {
+            await _geminiService.setScheduleData(scheduleJson);
           }
         } catch (e) {
           print('Error resetting chat or setting schedule data: $e');
@@ -638,9 +625,7 @@ class ChatPageState extends State<ChatPage> {
                             FilledButton(
                               onPressed: () async {
                                 Navigator.pop(context);
-                                // Fetch fresh data when starting a new chat
-                                await _fetchScheduleData();
-                                _startNewConversation();
+                                await _startNewConversation();
                                 setState(() {}); // Refresh UI
                               },
                               child: const Text('NEW CHAT'),
@@ -778,7 +763,6 @@ class ChatPageState extends State<ChatPage> {
             child: ElevatedButton.icon(
               onPressed: () async {
                 Navigator.pop(context); // Close drawer
-                await _fetchScheduleData();
                 await _startNewConversation();
                 setState(() {});
               },

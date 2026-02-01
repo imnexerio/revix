@@ -434,6 +434,36 @@ class UnifiedDatabaseService {
     return 'No schedule data available';
   }
 
+  /// Returns schedule data as proper JSON string for AI consumption
+  String getScheduleDataJson() {
+    if (_cachedRawData != null) {
+      try {
+        // Convert Map<Object?, Object?> to Map<String, dynamic> for JSON encoding
+        final jsonCompatible = _convertToJsonCompatible(_cachedRawData!);
+        return jsonEncode(jsonCompatible);
+      } catch (e) {
+        print('Error encoding schedule data to JSON: $e');
+        return '{}';
+      }
+    }
+    return '{}';
+  }
+
+  /// Recursively converts Map<Object?, Object?> to JSON-compatible Map<String, dynamic>
+  dynamic _convertToJsonCompatible(dynamic value) {
+    if (value is Map) {
+      return Map<String, dynamic>.fromEntries(
+        value.entries.map((e) => MapEntry(
+          e.key.toString(),
+          _convertToJsonCompatible(e.value),
+        )),
+      );
+    } else if (value is List) {
+      return value.map((e) => _convertToJsonCompatible(e)).toList();
+    }
+    return value;
+  }
+
   Future<Map<String, dynamic>> fetchCategoriesAndSubCategories() async {
     if (_cachedCategoriesData != null) {
       return _cachedCategoriesData!;
