@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
+import '../Utils/FirebaseDatabaseService.dart';
 import '../widgets/EntryDetailsModal.dart';
 import '../SchedulePage/shared_components/RecordSortingUtils.dart';
 import '../SchedulePage/shared_components/SortingBottomSheet.dart';
@@ -49,6 +50,16 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
     _gridAnimationController.value = 1.0;
 
     _loadSortPreferences();
+    _loadAvailableEntryTypes();
+  }
+
+  Future<void> _loadAvailableEntryTypes() async {
+    final types = await FirebaseDatabaseService().fetchCustomTrackingTypes();
+    if (mounted) {
+      setState(() {
+        _availableEntryTypes = types;
+      });
+    }
   }
 
   Future<void> _loadSortPreferences() async {
@@ -116,23 +127,6 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
     return true;
   }
   
-  void _updateAvailableEntryTypes(List<Map<String, dynamic>> records) {
-    final Set<String> entryTypes = {};
-    for (final record in records) {
-      final entryType = record['entry_type']?.toString();
-      if (entryType != null && entryType.isNotEmpty) {
-        entryTypes.add(entryType);
-      }
-    }
-    final newList = entryTypes.toList()..sort();
-    if (newList.length != _availableEntryTypes.length || 
-        !newList.every((e) => _availableEntryTypes.contains(e))) {
-      setState(() {
-        _availableEntryTypes = newList;
-      });
-    }
-  }
-
   @override
   void dispose() {
     _gridAnimationController.dispose();
@@ -208,13 +202,6 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
 
           final allRecords = snapshot.data?['allRecords'] as List<dynamic>? ?? [];
           final formattedRecords = _filterRecords(allRecords);
-          
-          // Update available entry types for filter
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _updateAvailableEntryTypes(formattedRecords);
-            }
-          });
           
           // Apply entry type filter
           final filteredRecords = _filterEntryTypes.isEmpty 
