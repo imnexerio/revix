@@ -14,12 +14,14 @@ import 'Utils/CustomThemeGenerator.dart';
 import 'HomePage/HomePage.dart';
 import 'HomeWidget/HomeWidgetManager.dart';
 import 'SchedulePage/TodayPage.dart';
+import 'SchedulePage/shared_components/SortingBottomSheet.dart';
 import 'SettingsPage/ProfileProvider.dart';
 import 'SettingsPage/SettingsPage.dart';
 import 'Utils/ThemeNotifier.dart';
 import 'Utils/SplashScreen.dart';
 import 'Utils/platform_utils.dart';
 import 'Utils/VersionChecker.dart';
+import 'widgets/EntryDetailsModal.dart';
 
 import 'firebase_options.dart';
 
@@ -241,6 +243,9 @@ class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<DetailsPageState> _detailsPageKey = GlobalKey<DetailsPageState>();
   final GlobalKey<TodayPageState> _schedulePageKey = GlobalKey<TodayPageState>();
   late final List<Widget> _widgetOptions;
+  
+  // Search state persistence
+  SearchState _lastSearchState = const SearchState();
 
   @override
   void initState() {
@@ -434,6 +439,76 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       },
     );
+  }
+
+  void _openSearch() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+      ),
+      builder: (BuildContext context) {
+        return SortingBottomSheet(
+          // Sorting parameters (not used in search mode but required)
+          currentSortField: 'reminder_time',
+          isAscending: true,
+          onSortApplied: (_, __) {},
+          // Search mode enabled
+          searchMode: true,
+          initialSearchQuery: _lastSearchState.query,
+          selectedCategories: _lastSearchState.filters.selectedCategories,
+          selectedSubCategories: _lastSearchState.filters.selectedSubCategories,
+          selectedEntryTypes: _lastSearchState.filters.selectedEntryTypes,
+          // Callbacks
+          onSearchStateChanged: (state) {
+            _lastSearchState = state;
+          },
+          onRecordSelected: (record) {
+            _navigateToRecord(record);
+          },
+        );
+      },
+    );
+  }
+
+  void _navigateToRecord(Map<String, dynamic> record) {
+    final category = record['category']?.toString() ?? '';
+    final subCategory = record['sub_category']?.toString() ?? '';
+    final recordTitle = record['record_title']?.toString() ?? '';
+    final details = record['details'] as Map<String, dynamic>? ?? {};
+    
+    // Switch to Details tab
+    setState(() {
+      _selectedIndex = 2;
+    });
+    
+    // Navigate to the specific category/subcategory in DetailsPage
+    _detailsPageKey.currentState?.navigateToRecord(
+      category: category,
+      subCategory: subCategory,
+    );
+    
+    // Show the entry details modal after a short delay to allow navigation
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (BuildContext context) {
+            return EntryDetailsModal(
+              entryTitle: recordTitle,
+              details: details,
+              selectedCategory: category,
+              selectedCategoryCode: subCategory,
+            );
+          },
+        );
+      }
+    });
   }
 
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, ThemeData theme) {
@@ -676,6 +751,44 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
+              // Search button
+              ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.surface.withOpacity(0.5),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.15),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _openSearch,
+                        borderRadius: BorderRadius.circular(28),
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          alignment: Alignment.center,
+                          child: Icon(Icons.search_rounded, color: theme.colorScheme.primary, size: 28),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               // Custom navigation bar with rounded corners - takes remaining space
               Expanded(
                 child: ClipRRect(

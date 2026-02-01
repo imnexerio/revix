@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'SortingComponents.dart';
 import 'RecordSortingUtils.dart';
@@ -37,8 +38,30 @@ class FilterData {
   }
 }
 
+/// Search state class to hold search query and filters for restoration
+class SearchState {
+  final String query;
+  final FilterData filters;
+  
+  const SearchState({
+    this.query = '',
+    this.filters = const FilterData(),
+  });
+  
+  SearchState copyWith({
+    String? query,
+    FilterData? filters,
+  }) {
+    return SearchState(
+      query: query ?? this.query,
+      filters: filters ?? this.filters,
+    );
+  }
+}
+
 /// Reusable sorting and filtering bottom sheet component
 /// Fetches filter options independently from services
+/// Can also be used as a search sheet when searchMode is enabled
 class SortingBottomSheet extends StatefulWidget {
   final String? currentSortField;
   final bool isAscending;
@@ -56,6 +79,12 @@ class SortingBottomSheet extends StatefulWidget {
   final bool showCategoryFilter;
   final bool showSubCategoryFilter;
   final bool showEntryTypeFilter;
+  
+  // Search mode parameters
+  final bool searchMode;
+  final String? initialSearchQuery;
+  final Function(Map<String, dynamic> record)? onRecordSelected;
+  final Function(SearchState searchState)? onSearchStateChanged;
 
   const SortingBottomSheet({
     Key? key,
@@ -69,6 +98,11 @@ class SortingBottomSheet extends StatefulWidget {
     this.showCategoryFilter = true,
     this.showSubCategoryFilter = true,
     this.showEntryTypeFilter = true,
+    // Search mode
+    this.searchMode = false,
+    this.initialSearchQuery,
+    this.onRecordSelected,
+    this.onSearchStateChanged,
   }) : super(key: key);
 
   @override
@@ -89,6 +123,13 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
   List<String> _availableSubCategories = [];
   List<String> _availableEntryTypes = [];
   bool _isLoadingFilters = true;
+  
+  // Search state
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _allRecords = [];
+  List<Map<String, dynamic>> _filteredRecords = [];
+  bool _isLoadingRecords = true;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -101,8 +142,132 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
     selectedSubCategories = Set.from(widget.selectedSubCategories);
     selectedEntryTypes = Set.from(widget.selectedEntryTypes);
     
+    // Initialize search query if provided
+    if (widget.searchMode && widget.initialSearchQuery != null) {
+      _searchController.text = widget.initialSearchQuery!;
+    }
+    
     // Fetch available filter options from services
     _loadFilterOptions();
+    
+    // Load records for search if in search mode
+    if (widget.searchMode) {
+      _loadAllRecords();
+    }
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+  
+  Future<void> _loadAllRecords() async {
+    try {
+      final service = UnifiedDatabaseService();
+      // Listen to the stream for records
+      service.allRecordsStream.listen((data) {
+        if (mounted) {
+          final records = (data['allRecords'] as List<dynamic>? ?? [])
+              .map((r) => Map<String, dynamic>.from(r))
+              .toList();
+          setState(() {
+            _allRecords = records;
+            _isLoadingRecords = false;
+            _filterRecords();
+          });
+        }
+      });
+      // Force a refresh
+      await service.forceDataReprocessing();
+    } catch (e) {
+      print('Error loading records for search: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingRecords = false;
+        });
+      }
+    }
+  }
+  
+  void _filterRecords() {
+    final query = _searchController.text.toLowerCase().trim();
+    
+    List<Map<String, dynamic>> results = _allRecords;
+    
+    // Apply text search
+    if (query.isNotEmpty) {
+      results = results.where((record) {
+        final title = (record['record_title'] ?? '').toString().toLowerCase();
+        final category = (record['category'] ?? '').toString().toLowerCase();
+        final subCategory = (record['sub_category'] ?? '').toString().toLowerCase();
+        final description = (record['details']?['description'] ?? '').toString().toLowerCase();
+        final entryType = (record['details']?['entry_type'] ?? '').toString().toLowerCase();
+        
+        return title.contains(query) ||
+               category.contains(query) ||
+               subCategory.contains(query) ||
+               description.contains(query) ||
+               entryType.contains(query);
+      }).toList();
+    }
+    
+    // Apply category filter
+    if (selectedCategories.isNotEmpty) {
+      results = results.where((r) => 
+        selectedCategories.contains(r['category']?.toString())
+      ).toList();
+    }
+    
+    // Apply subcategory filter
+    if (selectedSubCategories.isNotEmpty) {
+      results = results.where((r) => 
+        selectedSubCategories.contains(r['sub_category']?.toString())
+      ).toList();
+    }
+    
+    // Apply entry type filter
+    if (selectedEntryTypes.isNotEmpty) {
+      results = results.where((r) {
+        final entryType = r['details']?['entry_type']?.toString();
+        return entryType != null && selectedEntryTypes.contains(entryType);
+      }).toList();
+    }
+    
+    setState(() {
+      _filteredRecords = results;
+    });
+    
+    // Notify parent about search state change
+    _notifySearchStateChanged();
+  }
+  
+  void _onSearchChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _filterRecords();
+    });
+  }
+  
+  void _notifySearchStateChanged() {
+    widget.onSearchStateChanged?.call(SearchState(
+      query: _searchController.text,
+      filters: FilterData(
+        selectedCategories: Set.from(selectedCategories),
+        selectedSubCategories: Set.from(selectedSubCategories),
+        selectedEntryTypes: Set.from(selectedEntryTypes),
+      ),
+    ));
+  }
+  
+  void _onRecordTap(Map<String, dynamic> record) {
+    // Notify about search state before closing
+    _notifySearchStateChanged();
+    // Close the bottom sheet
+    Navigator.pop(context);
+    // Call the record selected callback
+    widget.onRecordSelected?.call(record);
   }
   
   Future<void> _loadFilterOptions() async {
@@ -172,6 +337,11 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    
+    // Use search mode UI if enabled
+    if (widget.searchMode) {
+      return _buildSearchUI(colorScheme);
+    }
     
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -350,6 +520,353 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
           ),
         ),
       ),
+      ),
+    );
+  }
+  
+  Widget _buildSearchUI(ColorScheme colorScheme) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Handle indicator
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colorScheme.onSurfaceVariant,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            margin: const EdgeInsets.only(bottom: 16),
+          ),
+          
+          // Search field
+          TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Search records...',
+              prefixIcon: Icon(Icons.search, color: colorScheme.primary),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        _filterRecords();
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
+              ),
+            ),
+            onChanged: _onSearchChanged,
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Filter chips row (collapsible)
+          if (_showFilterSection) ...[
+            ExpansionTile(
+              title: Row(
+                children: [
+                  Icon(Icons.filter_list, size: 20, color: colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Filters',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  if (_totalSelectedFilters > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$_totalSelectedFilters',
+                        style: TextStyle(
+                          color: colorScheme.onPrimaryContainer,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              trailing: _totalSelectedFilters > 0
+                  ? TextButton(
+                      onPressed: () {
+                        _clearAllFilters();
+                        _filterRecords();
+                      },
+                      child: Text(
+                        'Clear',
+                        style: TextStyle(color: colorScheme.error, fontSize: 12),
+                      ),
+                    )
+                  : null,
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 8),
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.25,
+                  ),
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                    child: SingleChildScrollView(
+                      child: _isLoadingFilters
+                          ? _buildFilterShimmer(colorScheme)
+                          : _buildFilterSections(colorScheme),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Divider(color: colorScheme.outlineVariant),
+          ],
+          
+          // Results count
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  _isLoadingRecords 
+                      ? 'Loading...' 
+                      : '${_filteredRecords.length} result${_filteredRecords.length != 1 ? 's' : ''}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Search results
+          Expanded(
+            child: _isLoadingRecords
+                ? Center(
+                    child: CircularProgressIndicator(color: colorScheme.primary),
+                  )
+                : _filteredRecords.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _searchController.text.isEmpty 
+                                  ? Icons.search 
+                                  : Icons.search_off,
+                              size: 48,
+                              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchController.text.isEmpty 
+                                  ? 'Start typing to search'
+                                  : 'No matching records found',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _filteredRecords.length,
+                        itemBuilder: (context, index) {
+                          return _buildSearchResultItem(
+                            _filteredRecords[index],
+                            colorScheme,
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSearchResultItem(Map<String, dynamic> record, ColorScheme colorScheme) {
+    final title = record['record_title'] ?? 'Untitled';
+    final category = record['category'] ?? '';
+    final subCategory = record['sub_category'] ?? '';
+    final entryType = record['details']?['entry_type'] ?? '';
+    final description = record['details']?['description'] ?? '';
+    final scheduledDate = record['details']?['scheduled_date'] ?? '';
+    final status = record['details']?['status'] ?? 'Enabled';
+    
+    final entryColor = EntryColors.generateColorFromString(entryType);
+    final isDisabled = status != 'Enabled';
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      elevation: 0,
+      color: isDisabled 
+          ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+          : colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _onRecordTap(record),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Entry type color indicator
+              Container(
+                width: 4,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: entryColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: isDisabled 
+                            ? colorScheme.onSurface.withOpacity(0.5)
+                            : colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    // Category path
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '$category · $subCategory',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Description preview if available
+                    if (description.isNotEmpty && description != 'No description available') ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              
+              // Right side info
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Entry type chip
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: entryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      entryType,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: entryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (scheduledDate.isNotEmpty && scheduledDate != 'Unspecified') ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      scheduledDate,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  if (isDisabled) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: colorScheme.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Disabled',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -570,6 +1087,11 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
       selectedSubCategories: Set.from(selectedSubCategories),
       selectedEntryTypes: Set.from(selectedEntryTypes),
     ));
+    
+    // Also re-filter search results if in search mode
+    if (widget.searchMode) {
+      _filterRecords();
+    }
   }
   
   void _clearAllFilters() {
