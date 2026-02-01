@@ -423,15 +423,19 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
             final itemColor = EntryColors.generateColorFromString(item);
             return FilterChip(
               avatar: Container(
-                width: 12,
-                height: 12,
+                width: 18,
+                height: 18,
                 decoration: BoxDecoration(
                   color: itemColor,
                   shape: BoxShape.circle,
                 ),
+                child: isSelected
+                    ? Icon(Icons.check, size: 12, color: Colors.white)
+                    : null,
               ),
               label: Text(item),
               selected: isSelected,
+              showCheckmark: false,
               onSelected: (selected) {
                 final newSet = Set<String>.from(selectedItems);
                 if (selected) {
@@ -442,7 +446,6 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                 onSelectionChanged(newSet);
               },
               selectedColor: itemColor.withOpacity(0.2),
-              checkmarkColor: itemColor,
               side: BorderSide(
                 color: isSelected ? itemColor : colorScheme.outline,
                 width: isSelected ? 2 : 1,
@@ -558,15 +561,19 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                 final itemColor = EntryColors.generateColorFromString(item);
                 return FilterChip(
                   avatar: Container(
-                    width: 12,
-                    height: 12,
+                    width: 18,
+                    height: 18,
                     decoration: BoxDecoration(
                       color: itemColor,
                       shape: BoxShape.circle,
                     ),
+                    child: isSelected
+                        ? Icon(Icons.check, size: 12, color: Colors.white)
+                        : null,
                   ),
                   label: Text(item),
                   selected: isSelected,
+                  showCheckmark: false,
                   onSelected: (selected) {
                     final newSet = Set<String>.from(selectedItems);
                     if (selected) {
@@ -577,7 +584,6 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                     onSelectionChanged(newSet);
                   },
                   selectedColor: itemColor.withOpacity(0.2),
-                  checkmarkColor: itemColor,
                   side: BorderSide(
                     color: isSelected ? itemColor : colorScheme.outline,
                     width: isSelected ? 2 : 1,
@@ -641,15 +647,19 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
             final categoryColor = EntryColors.generateColorFromString(category);
             return FilterChip(
               avatar: Container(
-                width: 12,
-                height: 12,
+                width: 18,
+                height: 18,
                 decoration: BoxDecoration(
                   color: categoryColor,
                   shape: BoxShape.circle,
                 ),
+                child: isSelected
+                    ? Icon(Icons.check, size: 12, color: Colors.white)
+                    : null,
               ),
               label: Text(category),
               selected: isSelected,
+              showCheckmark: false,
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
@@ -661,7 +671,6 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                 _applyFilterLive();
               },
               selectedColor: categoryColor.withOpacity(0.2),
-              checkmarkColor: categoryColor,
               side: BorderSide(
                 color: isSelected ? categoryColor : colorScheme.outline,
                 width: isSelected ? 2 : 1,
