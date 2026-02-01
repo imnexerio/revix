@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:revix/Utils/platform_utils.dart';
+import 'package:rxdart/rxdart.dart';
 import 'GuestAuthService.dart';
 import 'LocalDatabaseService.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
@@ -22,6 +23,15 @@ class FirebaseDatabaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseDatabase _database = FirebaseDatabase.instance;
   final LocalDatabaseService _localDatabase = LocalDatabaseService();
+  
+  // BehaviorSubject for entry types - caches last value and replays to new subscribers
+  final BehaviorSubject<List<String>> _entryTypesSubject = BehaviorSubject<List<String>>.seeded([]);
+  
+  // Stream getter for entry types
+  Stream<List<String>> get entryTypesStream => _entryTypesSubject.stream;
+  
+  // Synchronous getter for cached entry types
+  List<String> get currentEntryTypes => _entryTypesSubject.valueOrNull ?? [];
   
   // Cache for current user
   User? get currentUser => _auth.currentUser;
@@ -251,17 +261,20 @@ class FirebaseDatabaseService {
   }
   
   /// Fetch custom tracking types from profile data
+  /// Returns cached data immediately if available, then fetches fresh data
   Future<List<String>> fetchCustomTrackingTypes() async {
     try {
+      List<String> result = [];
+      
       if (await isGuestMode) {
         final profileData = await _localDatabase.getProfileData('custom_trackingType', defaultValue: []);
         if (PlatformUtils.instance.isAndroid ) {
           await HomeWidget.saveWidgetData(
               'trackingTypes', jsonEncode(profileData));
         }
-        return List<String>.from(profileData);
+        result = List<String>.from(profileData);
       } else {
-        if (currentUserId == null) return [];
+        if (currentUserId == null) return currentEntryTypes;
         
         DatabaseReference ref = _database.ref('users/$currentUserId/profile_data/custom_trackingType');
         DataSnapshot snapshot = await ref.get();
@@ -271,13 +284,17 @@ class FirebaseDatabaseService {
             await HomeWidget.saveWidgetData('trackingTypes',
                 jsonEncode(List<String>.from(snapshot.value as List)));
           }
-          return List<String>.from(snapshot.value as List);
+          result = List<String>.from(snapshot.value as List);
         }
-        return [];
       }
+      
+      // Update the BehaviorSubject with fresh data
+      _entryTypesSubject.add(result);
+      return result;
     } catch (e) {
       print('Error fetching custom tracking types: $e');
-      return [];
+      // Return cached data on error
+      return currentEntryTypes;
     }
   }
   

@@ -124,6 +124,10 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
   List<String> _availableEntryTypes = [];
   bool _isLoadingFilters = true;
   
+  // Stream subscriptions for live updates
+  StreamSubscription? _categoriesSubscription;
+  StreamSubscription? _entryTypesSubscription;
+  
   // Search state
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _allRecords = [];
@@ -160,6 +164,8 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
   void dispose() {
     _searchController.dispose();
     _debounceTimer?.cancel();
+    _categoriesSubscription?.cancel();
+    _entryTypesSubscription?.cancel();
     super.dispose();
   }
   
@@ -271,34 +277,70 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
   }
   
   Future<void> _loadFilterOptions() async {
-    try {
-      // Fetch data in parallel
-      final results = await Future.wait([
-        if (widget.showEntryTypeFilter) 
-          FirebaseDatabaseService().fetchCustomTrackingTypes()
-        else 
-          Future.value(<String>[]),
-        if (widget.showCategoryFilter || widget.showSubCategoryFilter)
-          UnifiedDatabaseService().loadCategoriesAndSubCategories()
-        else
-          Future.value(<String, dynamic>{'subjects': <String>[], 'subCategories': <String, List<String>>{}}),
-      ]);
-      
-      if (mounted) {
-        setState(() {
-          // Entry types from first result
-          if (widget.showEntryTypeFilter && results.isNotEmpty) {
-            _availableEntryTypes = List<String>.from(results[0] as List);
+    final firebaseService = FirebaseDatabaseService();
+    final unifiedService = UnifiedDatabaseService();
+    
+    // Step 1: Show cached data immediately (synchronous)
+    _showCachedData(firebaseService, unifiedService);
+    
+    // Step 2: Subscribe to streams for live updates
+    _subscribeToStreams(unifiedService, firebaseService);
+    
+    // Step 3: Trigger background refresh (non-blocking)
+    _triggerBackgroundRefresh(firebaseService, unifiedService);
+  }
+  
+  void _showCachedData(FirebaseDatabaseService firebaseService, UnifiedDatabaseService unifiedService) {
+    bool hasAnyData = false;
+    
+    // Get cached entry types
+    if (widget.showEntryTypeFilter) {
+      final cachedEntryTypes = firebaseService.currentEntryTypes;
+      if (cachedEntryTypes.isNotEmpty) {
+        _availableEntryTypes = cachedEntryTypes;
+        hasAnyData = true;
+      }
+    }
+    
+    // Get cached categories/subcategories
+    if (widget.showCategoryFilter || widget.showSubCategoryFilter) {
+      final cachedCatData = unifiedService.currentSubjectsData;
+      if (cachedCatData != null) {
+        if (widget.showCategoryFilter) {
+          _availableCategories = List<String>.from(cachedCatData['subjects'] ?? []);
+        }
+        if (widget.showSubCategoryFilter) {
+          final subCatMap = cachedCatData['subCategories'] as Map<String, dynamic>? ?? {};
+          final allSubCats = <String>{};
+          for (final subList in subCatMap.values) {
+            if (subList is List) {
+              allSubCats.addAll(subList.map((e) => e.toString()));
+            }
           }
-          
-          // Categories and subcategories from second result
-          if ((widget.showCategoryFilter || widget.showSubCategoryFilter) && results.length > 1) {
-            final catData = results[1] as Map<String, dynamic>;
+          _availableSubCategories = allSubCats.toList()..sort();
+        }
+        hasAnyData = true;
+      }
+    }
+    
+    // If we have cached data, stop showing loading immediately
+    if (hasAnyData && mounted) {
+      setState(() {
+        _isLoadingFilters = false;
+      });
+    }
+  }
+  
+  void _subscribeToStreams(UnifiedDatabaseService unifiedService, FirebaseDatabaseService firebaseService) {
+    // Subscribe to categories stream
+    if (widget.showCategoryFilter || widget.showSubCategoryFilter) {
+      _categoriesSubscription = unifiedService.subjectsStream.listen((catData) {
+        if (mounted) {
+          setState(() {
             if (widget.showCategoryFilter) {
               _availableCategories = List<String>.from(catData['subjects'] ?? []);
             }
             if (widget.showSubCategoryFilter) {
-              // Flatten all subcategories into a single list
               final subCatMap = catData['subCategories'] as Map<String, dynamic>? ?? {};
               final allSubCats = <String>{};
               for (final subList in subCatMap.values) {
@@ -308,18 +350,32 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
               }
               _availableSubCategories = allSubCats.toList()..sort();
             }
-          }
-          
-          _isLoadingFilters = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading filter options: $e');
-      if (mounted) {
-        setState(() {
-          _isLoadingFilters = false;
-        });
-      }
+            _isLoadingFilters = false;
+          });
+        }
+      });
+    }
+    
+    // Subscribe to entry types stream
+    if (widget.showEntryTypeFilter) {
+      _entryTypesSubscription = firebaseService.entryTypesStream.listen((entryTypes) {
+        if (mounted) {
+          setState(() {
+            _availableEntryTypes = entryTypes;
+            _isLoadingFilters = false;
+          });
+        }
+      });
+    }
+  }
+  
+  void _triggerBackgroundRefresh(FirebaseDatabaseService firebaseService, UnifiedDatabaseService unifiedService) {
+    // Trigger refresh in background - don't await
+    if (widget.showEntryTypeFilter) {
+      firebaseService.fetchCustomTrackingTypes();
+    }
+    if (widget.showCategoryFilter || widget.showSubCategoryFilter) {
+      unifiedService.loadCategoriesAndSubCategories();
     }
   }
   
