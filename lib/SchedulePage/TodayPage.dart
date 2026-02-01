@@ -27,13 +27,10 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
   String _currentSortField = 'reminder_time';
   bool _isAscending = true;
   
-  // Multi-filter state
+  // Multi-filter state (selected values only - available values fetched by SortingBottomSheet)
   Set<String> _filterCategories = {};
   Set<String> _filterSubCategories = {};
   Set<String> _filterEntryTypes = {};
-  List<String> _availableCategories = [];
-  List<String> _availableSubCategories = [];
-  List<String> _availableEntryTypes = [];
   
   // Animation controllers
   late AnimationController _fadeController;
@@ -138,15 +135,10 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
         currentSortField: _currentSortField,
         isAscending: _isAscending,
         onSortApplied: _applySorting,
-        filterData: FilterData(
-          availableCategories: _availableCategories,
-          availableSubCategories: _availableSubCategories,
-          availableEntryTypes: _availableEntryTypes,
-          selectedCategories: _filterCategories,
-          selectedSubCategories: _filterSubCategories,
-          selectedEntryTypes: _filterEntryTypes,
-        ),
-        onMultiFilterApplied: _applyMultiFilter,
+        selectedCategories: _filterCategories,
+        selectedSubCategories: _filterSubCategories,
+        selectedEntryTypes: _filterEntryTypes,
+        onFilterApplied: _applyFilter,
       ),
     );
   }
@@ -164,7 +156,7 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
     _gridAnimationController.forward();
   }
   
-  void _applyMultiFilter(FilterData filterData) {
+  void _applyFilter(FilterData filterData) {
     setState(() {
       _filterCategories = filterData.selectedCategories;
       _filterSubCategories = filterData.selectedSubCategories;
@@ -277,44 +269,6 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
               'todayAdded': <Map<String, dynamic>>[],
               'noreminderdate': <Map<String, dynamic>>[],
             };
-
-            // Extract unique values for all filter types
-            final Set<String> uniqueCategories = {};
-            final Set<String> uniqueSubCategories = {};
-            final Set<String> uniqueEntryTypes = {};
-            for (final timeCategory in data.values) {
-              for (final record in timeCategory) {
-                final category = record['category']?.toString();
-                if (category != null && category.isNotEmpty) {
-                  uniqueCategories.add(category);
-                }
-                final subCategory = record['sub_category']?.toString();
-                if (subCategory != null && subCategory.isNotEmpty) {
-                  uniqueSubCategories.add(subCategory);
-                }
-                final entryType = record['entry_type']?.toString();
-                if (entryType != null && entryType.isNotEmpty) {
-                  uniqueEntryTypes.add(entryType);
-                }
-              }
-            }
-            // Update available values for all filters
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                final newCategories = uniqueCategories.toList()..sort();
-                final newSubCategories = uniqueSubCategories.toList()..sort();
-                final newEntryTypes = uniqueEntryTypes.toList()..sort();
-                if (_availableCategories.length != newCategories.length ||
-                    _availableSubCategories.length != newSubCategories.length ||
-                    _availableEntryTypes.length != newEntryTypes.length) {
-                  setState(() {
-                    _availableCategories = newCategories;
-                    _availableSubCategories = newSubCategories;
-                    _availableEntryTypes = newEntryTypes;
-                  });
-                }
-              }
-            });
 
             final availableTimeCategories = _getAvailableCategories(data);
 

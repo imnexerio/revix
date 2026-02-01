@@ -2,34 +2,27 @@ import 'package:flutter/material.dart';
 import 'SortingComponents.dart';
 import 'RecordSortingUtils.dart';
 import '../../Utils/entry_colors.dart';
+import '../../Utils/FirebaseDatabaseService.dart';
+import '../../Utils/UnifiedDatabaseService.dart';
 
-/// Filter data class to hold all filter options
+/// Filter data class to hold selected filter options
 class FilterData {
-  final List<String> availableCategories;
-  final List<String> availableSubCategories;
-  final List<String> availableEntryTypes;
   final Set<String> selectedCategories;
   final Set<String> selectedSubCategories;
   final Set<String> selectedEntryTypes;
 
   const FilterData({
-    this.availableCategories = const [],
-    this.availableSubCategories = const [],
-    this.availableEntryTypes = const [],
     this.selectedCategories = const {},
     this.selectedSubCategories = const {},
     this.selectedEntryTypes = const {},
   });
   
-  bool get hasAnyAvailable => 
-      availableCategories.isNotEmpty || 
-      availableSubCategories.isNotEmpty || 
-      availableEntryTypes.isNotEmpty;
-  
   int get totalSelectedCount => 
       selectedCategories.length + 
       selectedSubCategories.length + 
       selectedEntryTypes.length;
+  
+  bool get hasAnySelected => totalSelectedCount > 0;
   
   FilterData copyWith({
     Set<String>? selectedCategories,
@@ -37,9 +30,6 @@ class FilterData {
     Set<String>? selectedEntryTypes,
   }) {
     return FilterData(
-      availableCategories: availableCategories,
-      availableSubCategories: availableSubCategories,
-      availableEntryTypes: availableEntryTypes,
       selectedCategories: selectedCategories ?? this.selectedCategories,
       selectedSubCategories: selectedSubCategories ?? this.selectedSubCategories,
       selectedEntryTypes: selectedEntryTypes ?? this.selectedEntryTypes,
@@ -48,30 +38,37 @@ class FilterData {
 }
 
 /// Reusable sorting and filtering bottom sheet component
+/// Fetches filter options independently from services
 class SortingBottomSheet extends StatefulWidget {
   final String? currentSortField;
   final bool isAscending;
   final Function(String field, bool ascending) onSortApplied;
   
-  // Legacy single filter parameters (for backward compatibility)
-  final List<String> availableCategories;
+  // Selected filters (passed from parent)
   final Set<String> selectedCategories;
-  final Function(Set<String> categories)? onFilterApplied;
+  final Set<String> selectedSubCategories;
+  final Set<String> selectedEntryTypes;
   
-  // New multi-filter parameters
-  final FilterData? filterData;
-  final Function(FilterData)? onMultiFilterApplied;
+  // Callback when filters change
+  final Function(FilterData)? onFilterApplied;
+  
+  // Control which filter sections to show
+  final bool showCategoryFilter;
+  final bool showSubCategoryFilter;
+  final bool showEntryTypeFilter;
 
   const SortingBottomSheet({
     Key? key,
     required this.currentSortField,
     required this.isAscending,
     required this.onSortApplied,
-    this.availableCategories = const [],
     this.selectedCategories = const {},
+    this.selectedSubCategories = const {},
+    this.selectedEntryTypes = const {},
     this.onFilterApplied,
-    this.filterData,
-    this.onMultiFilterApplied,
+    this.showCategoryFilter = true,
+    this.showSubCategoryFilter = true,
+    this.showEntryTypeFilter = true,
   }) : super(key: key);
 
   @override
@@ -82,16 +79,16 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
   late String selectedField;
   late bool isAscending;
   
-  // Multi-filter state
+  // Selected filter state
   late Set<String> selectedCategories;
   late Set<String> selectedSubCategories;
   late Set<String> selectedEntryTypes;
   
-  // Track if sort changed
-  // (no longer needed for live updates, but kept for reference)
-  
-  // Which filter section is expanded
-  int _expandedFilterIndex = -1;
+  // Available options (fetched from services)
+  List<String> _availableCategories = [];
+  List<String> _availableSubCategories = [];
+  List<String> _availableEntryTypes = [];
+  bool _isLoadingFilters = true;
 
   @override
   void initState() {
@@ -99,32 +96,77 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
     selectedField = widget.currentSortField ?? 'reminder_time';
     isAscending = widget.isAscending;
     
-    // Initialize from multi-filter data or legacy single filter
-    if (widget.filterData != null) {
-      selectedCategories = Set.from(widget.filterData!.selectedCategories);
-      selectedSubCategories = Set.from(widget.filterData!.selectedSubCategories);
-      selectedEntryTypes = Set.from(widget.filterData!.selectedEntryTypes);
-    } else {
-      selectedCategories = Set.from(widget.selectedCategories);
-      selectedSubCategories = {};
-      selectedEntryTypes = {};
+    // Initialize selected filters from widget
+    selectedCategories = Set.from(widget.selectedCategories);
+    selectedSubCategories = Set.from(widget.selectedSubCategories);
+    selectedEntryTypes = Set.from(widget.selectedEntryTypes);
+    
+    // Fetch available filter options from services
+    _loadFilterOptions();
+  }
+  
+  Future<void> _loadFilterOptions() async {
+    try {
+      // Fetch data in parallel
+      final results = await Future.wait([
+        if (widget.showEntryTypeFilter) 
+          FirebaseDatabaseService().fetchCustomTrackingTypes()
+        else 
+          Future.value(<String>[]),
+        if (widget.showCategoryFilter || widget.showSubCategoryFilter)
+          UnifiedDatabaseService().loadCategoriesAndSubCategories()
+        else
+          Future.value(<String, dynamic>{'subjects': <String>[], 'subCategories': <String, List<String>>{}}),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          // Entry types from first result
+          if (widget.showEntryTypeFilter && results.isNotEmpty) {
+            _availableEntryTypes = List<String>.from(results[0] as List);
+          }
+          
+          // Categories and subcategories from second result
+          if ((widget.showCategoryFilter || widget.showSubCategoryFilter) && results.length > 1) {
+            final catData = results[1] as Map<String, dynamic>;
+            if (widget.showCategoryFilter) {
+              _availableCategories = List<String>.from(catData['subjects'] ?? []);
+            }
+            if (widget.showSubCategoryFilter) {
+              // Flatten all subcategories into a single list
+              final subCatMap = catData['subCategories'] as Map<String, dynamic>? ?? {};
+              final allSubCats = <String>{};
+              for (final subList in subCatMap.values) {
+                if (subList is List) {
+                  allSubCats.addAll(subList.map((e) => e.toString()));
+                }
+              }
+              _availableSubCategories = allSubCats.toList()..sort();
+            }
+          }
+          
+          _isLoadingFilters = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading filter options: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingFilters = false;
+        });
+      }
     }
   }
   
-  bool get _useMultiFilter => widget.filterData != null && widget.onMultiFilterApplied != null;
-  
   bool get _showFilterSection {
-    if (_useMultiFilter) {
-      return widget.filterData!.hasAnyAvailable;
-    }
-    return widget.availableCategories.isNotEmpty && widget.onFilterApplied != null;
+    if (_isLoadingFilters) return true; // Show shimmer while loading
+    return _availableCategories.isNotEmpty || 
+           _availableSubCategories.isNotEmpty || 
+           _availableEntryTypes.isNotEmpty;
   }
   
   int get _totalSelectedFilters {
-    if (_useMultiFilter) {
-      return selectedCategories.length + selectedSubCategories.length + selectedEntryTypes.length;
-    }
-    return selectedCategories.length;
+    return selectedCategories.length + selectedSubCategories.length + selectedEntryTypes.length;
   }
 
   @override
@@ -237,17 +279,12 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
               ),
               
               // Filter section
-              if (_showFilterSection) ...[
+              if (_showFilterSection && widget.onFilterApplied != null) ...[
                 const SizedBox(height: 20),
                 Divider(color: colorScheme.outlineVariant),
                 const SizedBox(height: 12),
                 
-                Builder(
-                  builder: (context) {
-                    final totalFilters = selectedCategories.length + 
-                        selectedSubCategories.length + 
-                        selectedEntryTypes.length;
-                    return Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
@@ -256,7 +293,7 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                           'Filters',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        if (totalFilters > 0) ...[
+                        if (_totalSelectedFilters > 0) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -265,7 +302,7 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              '$totalFilters',
+                              '$_totalSelectedFilters',
                               style: TextStyle(
                                 color: colorScheme.onPrimaryContainer,
                                 fontSize: 12,
@@ -276,7 +313,7 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                         ],
                       ],
                     ),
-                    if (totalFilters > 0)
+                    if (_totalSelectedFilters > 0)
                       TextButton(
                         onPressed: _clearAllFilters,
                         child: Text(
@@ -288,18 +325,13 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
                         ),
                       ),
                   ],
-                );
-                  },
                 ),
                 const SizedBox(height: 8),
                 
-                if (_useMultiFilter) ...[
-                  // Multi-filter with expandable sections
-                  _buildMultiFilterSections(colorScheme),
-                ] else ...[
-                  // Legacy single category filter
-                  _buildLegacyCategoryFilter(colorScheme),
-                ],
+                if (_isLoadingFilters)
+                  _buildFilterShimmer(colorScheme)
+                else
+                  _buildFilterSections(colorScheme),
               ],
               
               const SizedBox(height: 24),
@@ -322,18 +354,61 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
     );
   }
   
-  Widget _buildMultiFilterSections(ColorScheme colorScheme) {
-    final filterData = widget.filterData!;
-    
+  Widget _buildFilterShimmer(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < 2; i++) ...[
+          Row(
+            children: [
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 120,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(3, (index) => Container(
+              width: 70 + (index * 10).toDouble(),
+              height: 32,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            )),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+  
+  Widget _buildFilterSections(ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Category filter
-        if (filterData.availableCategories.isNotEmpty)
+        if (widget.showCategoryFilter && _availableCategories.isNotEmpty)
           _buildFilterSection(
             title: 'Filter by Category',
             icon: Icons.folder_outlined,
-            availableItems: filterData.availableCategories,
+            availableItems: _availableCategories,
             selectedItems: selectedCategories,
             onSelectionChanged: (items) {
               setState(() {
@@ -345,11 +420,11 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
           ),
         
         // Subcategory filter
-        if (filterData.availableSubCategories.isNotEmpty)
+        if (widget.showSubCategoryFilter && _availableSubCategories.isNotEmpty)
           _buildFilterSection(
             title: 'Filter by Subcategory',
             icon: Icons.folder_open_outlined,
-            availableItems: filterData.availableSubCategories,
+            availableItems: _availableSubCategories,
             selectedItems: selectedSubCategories,
             onSelectionChanged: (items) {
               setState(() {
@@ -361,11 +436,11 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
           ),
         
         // Entry type filter
-        if (filterData.availableEntryTypes.isNotEmpty)
+        if (widget.showEntryTypeFilter && _availableEntryTypes.isNotEmpty)
           _buildFilterSection(
             title: 'Filter by Entry Type',
             icon: Icons.label_outline,
-            availableItems: filterData.availableEntryTypes,
+            availableItems: _availableEntryTypes,
             selectedItems: selectedEntryTypes,
             onSelectionChanged: (items) {
               setState(() {
@@ -490,249 +565,11 @@ class _SortingBottomSheetState extends State<SortingBottomSheet> {
   }
   
   void _applyFilterLive() {
-    if (_useMultiFilter) {
-      widget.onMultiFilterApplied?.call(FilterData(
-        availableCategories: widget.filterData!.availableCategories,
-        availableSubCategories: widget.filterData!.availableSubCategories,
-        availableEntryTypes: widget.filterData!.availableEntryTypes,
-        selectedCategories: Set.from(selectedCategories),
-        selectedSubCategories: Set.from(selectedSubCategories),
-        selectedEntryTypes: Set.from(selectedEntryTypes),
-      ));
-    } else {
-      widget.onFilterApplied?.call(Set.from(selectedCategories));
-    }
-  }
-  
-  Widget _buildFilterExpansionTile({
-    required int index,
-    required String title,
-    required IconData icon,
-    required List<String> availableItems,
-    required Set<String> selectedItems,
-    required Function(Set<String>) onSelectionChanged,
-    required ColorScheme colorScheme,
-  }) {
-    final isExpanded = _expandedFilterIndex == index;
-    final hasSelections = selectedItems.isNotEmpty;
-    
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {
-            setState(() {
-              _expandedFilterIndex = isExpanded ? -1 : index;
-            });
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: hasSelections 
-                  ? colorScheme.primaryContainer.withOpacity(0.3) 
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: hasSelections 
-                    ? colorScheme.primary.withOpacity(0.5) 
-                    : colorScheme.outlineVariant,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: hasSelections ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                if (hasSelections) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${selectedItems.length}',
-                      style: TextStyle(
-                        color: colorScheme.onPrimary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Icon(
-                  isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (isExpanded) ...[
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: availableItems.map((item) {
-                final isSelected = selectedItems.contains(item);
-                final itemColor = EntryColors.generateColorFromString(item);
-                return FilterChip(
-                  avatar: Container(
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: itemColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: isSelected
-                        ? Icon(Icons.check, size: 12, color: Colors.white)
-                        : null,
-                  ),
-                  label: Text(item),
-                  selected: isSelected,
-                  showCheckmark: false,
-                  onSelected: (selected) {
-                    final newSet = Set<String>.from(selectedItems);
-                    if (selected) {
-                      newSet.add(item);
-                    } else {
-                      newSet.remove(item);
-                    }
-                    onSelectionChanged(newSet);
-                  },
-                  selectedColor: itemColor.withOpacity(0.2),
-                  side: BorderSide(
-                    color: isSelected ? itemColor : colorScheme.outline,
-                    width: isSelected ? 2 : 1,
-                  ),
-                  labelStyle: TextStyle(
-                    color: isSelected ? itemColor : colorScheme.onSurface,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-  
-  Widget _buildLegacyCategoryFilter(ColorScheme colorScheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.folder_outlined, size: 18, color: colorScheme.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Filter by Category',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            if (selectedCategories.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${selectedCategories.length}',
-                  style: TextStyle(
-                    color: colorScheme.onPrimary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      selectedCategories.clear();
-                    });
-                    _applyFilterLive();
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: widget.availableCategories.map((category) {
-            final isSelected = selectedCategories.contains(category);
-            final categoryColor = EntryColors.generateColorFromString(category);
-            return FilterChip(
-              avatar: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: categoryColor,
-                  shape: BoxShape.circle,
-                ),
-                child: isSelected
-                    ? Icon(Icons.check, size: 12, color: Colors.white)
-                    : null,
-              ),
-              label: Text(category),
-              selected: isSelected,
-              showCheckmark: false,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    selectedCategories.add(category);
-                  } else {
-                    selectedCategories.remove(category);
-                  }
-                });
-                _applyFilterLive();
-              },
-              selectedColor: categoryColor.withOpacity(0.2),
-              side: BorderSide(
-                color: isSelected ? categoryColor : colorScheme.outline,
-                width: isSelected ? 2 : 1,
-              ),
-              labelStyle: TextStyle(
-                color: isSelected ? categoryColor : colorScheme.onSurface,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
+    widget.onFilterApplied?.call(FilterData(
+      selectedCategories: Set.from(selectedCategories),
+      selectedSubCategories: Set.from(selectedSubCategories),
+      selectedEntryTypes: Set.from(selectedEntryTypes),
+    ));
   }
   
   void _clearAllFilters() {

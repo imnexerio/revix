@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Utils/UnifiedDatabaseService.dart';
-import '../Utils/FirebaseDatabaseService.dart';
 import '../widgets/EntryDetailsModal.dart';
 import '../SchedulePage/shared_components/RecordSortingUtils.dart';
 import '../SchedulePage/shared_components/SortingBottomSheet.dart';
@@ -31,9 +30,8 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
   String currentSortField = 'reminder_time';
   bool isAscending = true;
   
-  // Filter state - only entry type is useful in details page
+  // Filter state - only entry type is useful in details page (category/subcategory already fixed)
   Set<String> _filterEntryTypes = {};
-  List<String> _availableEntryTypes = [];
 
   // Animation controller for grid
   late AnimationController _gridAnimationController;
@@ -50,16 +48,6 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
     _gridAnimationController.value = 1.0;
 
     _loadSortPreferences();
-    _loadAvailableEntryTypes();
-  }
-
-  Future<void> _loadAvailableEntryTypes() async {
-    final types = await FirebaseDatabaseService().fetchCustomTrackingTypes();
-    if (mounted) {
-      setState(() {
-        _availableEntryTypes = types;
-      });
-    }
   }
 
   Future<void> _loadSortPreferences() async {
@@ -97,20 +85,17 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
         currentSortField: currentSortField,
         isAscending: isAscending,
         onSortApplied: _applySorting,
-        filterData: FilterData(
-          availableCategories: const [],
-          availableSubCategories: const [],
-          availableEntryTypes: _availableEntryTypes,
-          selectedCategories: const {},
-          selectedSubCategories: const {},
-          selectedEntryTypes: _filterEntryTypes,
-        ),
-        onMultiFilterApplied: _applyMultiFilter,
+        // Only show entry type filter (category/subcategory are already selected in sidebar)
+        showCategoryFilter: false,
+        showSubCategoryFilter: false,
+        showEntryTypeFilter: true,
+        selectedEntryTypes: _filterEntryTypes,
+        onFilterApplied: _applyFilter,
       ),
     );
   }
   
-  void _applyMultiFilter(FilterData filterData) {
+  void _applyFilter(FilterData filterData) {
     setState(() {
       _filterEntryTypes = filterData.selectedEntryTypes;
     });
