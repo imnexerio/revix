@@ -411,10 +411,11 @@ packages:
   home_widget:
     dependency: "direct main"
     description:
-      name: home_widget
-      sha256: d794a73894012459a4c63b94a6dc2cb3ccaa6eb08fb15b974aa7ac642594aed5
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/home_widget"
+      ref: "fix/workmanager-append-chain-poisoning"
+      resolved-ref: "5a199e3d1092774f12424ae3002c21a695c02676"
+      url: "https://github.com/imnexerio/home_widget.git"
+    source: git
     version: "0.9.0"
   hooks:
     dependency: transitive
