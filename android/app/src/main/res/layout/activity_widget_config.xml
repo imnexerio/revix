@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Widget Transparency"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/text"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Preview box showing the transparency -->
+    <FrameLayout
+        android:layout_width="200dp"
+        android:layout_height="100dp"
+        android:layout_marginBottom="16dp">
+
+        <!-- Checkerboard-like hint to visualize transparency -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#CCCCCC" />
+
+        <View
+            android:id="@+id/transparency_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/preview_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Preview"
+            android:textSize="14sp"
+            android:textColor="@color/text" />
+    </FrameLayout>
+
+    <!-- Transparency percentage label -->
+    <TextView
+        android:id="@+id/transparency_value_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Opacity: 100%"
+        android:textSize="16sp"
+        android:textColor="@color/text"
+        android:layout_marginBottom="8dp" />
+
+    <!-- SeekBar for transparency -->
+    <SeekBar
+        android:id="@+id/transparency_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="100"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:layout_marginEnd="12dp" />
+
+        <Button
+            android:id="@+id/save_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save" />
+    </LinearLayout>
+
+</LinearLayout>
