@@ -201,22 +201,19 @@ class CounterWidget : AppWidgetProvider() {
                     android.graphics.Color.green(stickColor),
                     android.graphics.Color.blue(stickColor)
                 )
-                val fillEnd = (bitmapWidth * fillFraction.coerceIn(0f, 1f)).toInt().coerceAtLeast(1)
 
-                // Draw gradient over fill portion (replaces pixels, no stacking)
-                val gradientPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-                gradientPaint.shader = LinearGradient(
-                    0f, 0f, fillEnd.toFloat(), 0f,
-                    glowColor, bgColor, Shader.TileMode.CLAMP
+                // Simple 2-color gradient: glow at left edge, bg at a point proportional to fill
+                // The gradient end extends 20% past the fill point for a soft tail
+                val gradientEnd = (fillFraction + (1f - fillFraction) * 0.2f).coerceIn(0.01f, 1f)
+
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+                paint.shader = LinearGradient(
+                    0f, 0f, bitmapWidth.toFloat(), 0f,
+                    intArrayOf(glowColor, bgColor),
+                    floatArrayOf(0f, gradientEnd),
+                    Shader.TileMode.CLAMP
                 )
-                canvas.drawRect(0f, 0f, fillEnd.toFloat(), bitmapHeight.toFloat(), gradientPaint)
-
-                // Draw solid bg color only on the remaining area (right of gradient)
-                if (fillEnd < bitmapWidth) {
-                    val bgPaint = Paint()
-                    bgPaint.color = bgColor
-                    canvas.drawRect(fillEnd.toFloat(), 0f, bitmapWidth.toFloat(), bitmapHeight.toFloat(), bgPaint)
-                }
+                canvas.drawRect(0f, 0f, bitmapWidth.toFloat(), bitmapHeight.toFloat(), paint)
             }
 
             views.setImageViewBitmap(R.id.counter_widget_bg, bitmap)
