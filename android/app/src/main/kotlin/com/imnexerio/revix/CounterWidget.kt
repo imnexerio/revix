@@ -240,14 +240,14 @@ class CounterWidget : AppWidgetProvider() {
                     val counterText = formatCounterText(daysRemaining)
                     views.setTextViewText(R.id.counter_text, counterText)
 
-                    // Compute fill percentage from initiation date
-                    val dateInitiated = lookupDateInitiated(context, category, subCategory, recordTitle)
-                    fillFraction = if (!dateInitiated.isNullOrEmpty() && dateInitiated != "Unspecified") {
+                    // Compute fill percentage using current cycle: max(last_mark_done, start_timestamp) → scheduled_date
+                    val cycleStart = lookupCycleStartDate(context, category, subCategory, recordTitle)
+                    fillFraction = if (cycleStart != null) {
                         try {
-                            val initDate = LocalDate.parse(dateInitiated)
+                            val startDate = cycleStart
                             val schedDate = LocalDate.parse(scheduledDate)
                             val today = LocalDate.now()
-                            val totalDays = ChronoUnit.DAYS.between(initDate, schedDate).toInt()
+                            val totalDays = ChronoUnit.DAYS.between(startDate, schedDate).toInt()
                             val daysLeft = ChronoUnit.DAYS.between(today, schedDate).toInt()
                             if (totalDays > 0) {
                                 daysLeft.toFloat().coerceIn(0f, totalDays.toFloat()) / totalDays
@@ -281,7 +281,13 @@ class CounterWidget : AppWidgetProvider() {
             Log.d("CounterWidget", "Updated widget $appWidgetId: $category→$subCategory→$recordTitle (date: $scheduledDate, fill: ${(fillFraction * 100).toInt()}%)")
         }
 
-        private fun lookupDateInitiated(context: Context, category: String, subcategory: String, title: String): String? {
+        /**
+         * Returns the cycle start date as max(last_mark_done, start_timestamp).
+         * - last_mark_done: "yyyy-MM-dd" (or null if never done)
+         * - start_timestamp: "yyyy-MM-dd'T'HH:mm" (always present)
+         * Extracts date-only from start_timestamp before comparing.
+         */
+        private fun lookupCycleStartDate(context: Context, category: String, subcategory: String, title: String): LocalDate? {
             try {
                 val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
                 val allRecordsJson = prefs.getString("allRecords", "{}") ?: "{}"
@@ -290,11 +296,35 @@ class CounterWidget : AppWidgetProvider() {
                 val recordObject = allRecordsObject
                     .optJSONObject(category)
                     ?.optJSONObject(subcategory)
-                    ?.optJSONObject(title)
+                    ?.optJSONObject(title) ?: return null
 
-                return recordObject?.optString("date_initiated", "") ?: ""
+                // start_timestamp: "yyyy-MM-dd'T'HH:mm" → take first 10 chars for date
+                val startTimestamp = recordObject.optString("start_timestamp", "")
+                val startDate = if (startTimestamp.length >= 10) {
+                    LocalDate.parse(startTimestamp.substring(0, 10))
+                } else {
+                    null
+                }
+
+                // last_mark_done: "yyyy-MM-dd" or missing/null
+                val lastMarkDone = recordObject.optString("last_mark_done", "")
+                val lastDoneDate = if (lastMarkDone.isNotEmpty()) {
+                    LocalDate.parse(lastMarkDone)
+                } else {
+                    null
+                }
+
+                // Return whichever is more recent (current cycle start)
+                return when {
+                    lastDoneDate != null && startDate != null -> {
+                        if (lastDoneDate.isAfter(startDate)) lastDoneDate else startDate
+                    }
+                    lastDoneDate != null -> lastDoneDate
+                    startDate != null -> startDate
+                    else -> null
+                }
             } catch (e: Exception) {
-                Log.e("CounterWidget", "Error looking up date_initiated: ${e.message}")
+                Log.e("CounterWidget", "Error looking up cycle start date: ${e.message}")
                 return null
             }
         }
