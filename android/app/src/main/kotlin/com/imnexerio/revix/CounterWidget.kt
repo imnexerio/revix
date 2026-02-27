@@ -7,6 +7,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
 import android.util.Log
 import android.widget.RemoteViews
 import java.time.LocalDate
@@ -129,20 +134,21 @@ class CounterWidget : AppWidgetProvider() {
             try {
                 val views = RemoteViews(context.packageName, R.layout.counter_widget)
 
-                // Apply transparency setting
+                // Get transparency setting (used later for gradient bg)
                 val bgColor = WidgetConfigActivity.getBackgroundColorWithOpacity(context, appWidgetId)
-                views.setInt(R.id.counter_widget_container, "setBackgroundColor", bgColor)
 
                 // Validate widget record before displaying
                 when (val validationResult = validateWidgetRecord(context, appWidgetId)) {
                     is ValidationResult.NO_SELECTION -> {
                         showSelectionPrompt(views)
+                        applyGradientBackground(views, bgColor, 0, 0f)
                     }
                     
                     is ValidationResult.RECORD_DELETED -> {
                         Log.w("CounterWidget", "Record deleted for widget $appWidgetId, resetting")
                         resetWidgetPreferences(context, appWidgetId)
                         showSelectionPrompt(views)
+                        applyGradientBackground(views, bgColor, 0, 0f)
                     }
                     
                     is ValidationResult.DATE_CHANGED -> {
@@ -178,6 +184,41 @@ class CounterWidget : AppWidgetProvider() {
             views.setInt(R.id.entry_type_indicator, "setColorFilter", android.graphics.Color.parseColor("#666666"))
         }
 
+        private fun applyGradientBackground(views: RemoteViews, bgColor: Int, stickColor: Int, fillFraction: Float) {
+            val bitmapWidth = 500
+            val bitmapHeight = 50
+            val bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+
+            if (fillFraction <= 0f) {
+                // No fill — just solid bg color
+                canvas.drawColor(bgColor)
+            } else {
+                val bgAlpha = android.graphics.Color.alpha(bgColor)
+                // Stick color with same alpha as bg transparency
+                val glowColor = android.graphics.Color.argb(
+                    bgAlpha,
+                    android.graphics.Color.red(stickColor),
+                    android.graphics.Color.green(stickColor),
+                    android.graphics.Color.blue(stickColor)
+                )
+                val fillEnd = (bitmapWidth * fillFraction.coerceIn(0f, 1f)).toInt().coerceAtLeast(1)
+
+                // Draw base bg color
+                canvas.drawColor(bgColor)
+
+                // Draw gradient from stick color to transparent over the fill portion
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+                paint.shader = LinearGradient(
+                    0f, 0f, fillEnd.toFloat(), 0f,
+                    glowColor, bgColor, Shader.TileMode.CLAMP
+                )
+                canvas.drawRect(0f, 0f, fillEnd.toFloat(), bitmapHeight.toFloat(), paint)
+            }
+
+            views.setImageViewBitmap(R.id.counter_widget_bg, bitmap)
+        }
+
         private fun displayValidRecord(context: Context, views: RemoteViews, appWidgetId: Int, scheduledDate: String) {
             val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
             val recordTitle = prefs.getString(getRecordTitleKey(appWidgetId), "") ?: ""
@@ -188,25 +229,39 @@ class CounterWidget : AppWidgetProvider() {
             val entryType = lookupEntryType(context, category, subCategory, recordTitle)
             
             // Handle different date types
+            val fillFraction: Float
             when (scheduledDate) {
                 "Unspecified", "" -> {
-                    // Show infinity symbol with colorOnPrimary (special case)
                     views.setTextViewText(R.id.counter_text, "∞")
-//                    views.setTextColor(R.id.counter_text, context.getColor(R.color.colorOnPrimary))
+                    fillFraction = 1f // Full fill for unspecified
                 }
                 else -> {
-                    // Normal countdown calculation
                     val daysRemaining = calculateDaysRemaining(scheduledDate)
                     val counterText = formatCounterText(daysRemaining)
                     views.setTextViewText(R.id.counter_text, counterText)
-                    
-//                    if (daysRemaining < 0) {
-//                        val overdueColor = context.getColor(R.color.overdue)
-//                        views.setTextColor(R.id.counter_text, overdueColor)
-//                        views.setTextColor(R.id.category_text, overdueColor)
-//                        views.setTextColor(R.id.subcategory_text, overdueColor)
-//                        views.setTextColor(R.id.record_title, overdueColor)
-//                    }
+
+                    // Compute fill percentage from initiation date
+                    val dateInitiated = lookupDateInitiated(context, category, subCategory, recordTitle)
+                    fillFraction = if (!dateInitiated.isNullOrEmpty() && dateInitiated != "Unspecified") {
+                        try {
+                            val initDate = LocalDate.parse(dateInitiated)
+                            val schedDate = LocalDate.parse(scheduledDate)
+                            val today = LocalDate.now()
+                            val totalDays = ChronoUnit.DAYS.between(initDate, schedDate).toInt()
+                            val daysLeft = ChronoUnit.DAYS.between(today, schedDate).toInt()
+                            if (totalDays > 0) {
+                                daysLeft.toFloat().coerceIn(0f, totalDays.toFloat()) / totalDays
+                            } else {
+                                0f
+                            }
+                        } catch (e: Exception) {
+                            Log.e("CounterWidget", "Error computing fill: ${e.message}")
+                            0f
+                        }
+                    } else {
+                        // Fallback: 30-day window
+                        daysRemaining.coerceIn(0, 30).toFloat() / 30f
+                    }
                 }
             }
             
@@ -219,7 +274,29 @@ class CounterWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.subcategory_text, subCategory)
             views.setTextViewText(R.id.record_title, recordTitle)
 
-            Log.d("CounterWidget", "Updated widget $appWidgetId: $category→$subCategory→$recordTitle (date: $scheduledDate)")
+            // Apply gradient background (stick color → bg color, width = fill %)
+            val bgColor = WidgetConfigActivity.getBackgroundColorWithOpacity(context, appWidgetId)
+            applyGradientBackground(views, bgColor, stickColor, fillFraction)
+
+            Log.d("CounterWidget", "Updated widget $appWidgetId: $category→$subCategory→$recordTitle (date: $scheduledDate, fill: ${(fillFraction * 100).toInt()}%)")
+        }
+
+        private fun lookupDateInitiated(context: Context, category: String, subcategory: String, title: String): String? {
+            try {
+                val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                val allRecordsJson = prefs.getString("allRecords", "{}") ?: "{}"
+                val allRecordsObject = org.json.JSONObject(allRecordsJson)
+
+                val recordObject = allRecordsObject
+                    .optJSONObject(category)
+                    ?.optJSONObject(subcategory)
+                    ?.optJSONObject(title)
+
+                return recordObject?.optString("date_initiated", "") ?: ""
+            } catch (e: Exception) {
+                Log.e("CounterWidget", "Error looking up date_initiated: ${e.message}")
+                return null
+            }
         }
 
         private fun lookupEntryType(context: Context, category: String, subcategory: String, title: String): String {
