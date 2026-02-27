@@ -170,6 +170,17 @@
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
         <activity
+            android:name=".WidgetConfigActivity"
+            android:exported="false"
+            android:label="Widget Settings"
+            android:excludeFromRecents="true"
+            android:theme="@style/DialogWithCenteredTitle">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".CalendarViewActivity"
             android:exported="false"
             android:label="Calendar View (revix)"

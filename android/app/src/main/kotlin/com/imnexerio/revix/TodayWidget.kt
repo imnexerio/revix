@@ -48,6 +48,10 @@ class TodayWidget : AppWidgetProvider() {
                 val views = RemoteViews(context.packageName, R.layout.today_widget)
                 val sharedPreferences = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
 
+                // Apply transparency setting
+                val bgColor = WidgetConfigActivity.getBackgroundColorWithOpacity(context, appWidgetId)
+                views.setInt(R.id.today_widget_container, "setBackgroundColor", bgColor)
+
                 // Handle login status and timestamp display
                 setupWidgetHeader(context, views, sharedPreferences)
 
@@ -291,6 +295,9 @@ class TodayWidget : AppWidgetProvider() {
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        for (id in appWidgetIds) {
+            WidgetConfigActivity.deletePrefs(context, id)
+        }
         Log.d("TodayWidget", "Today widgets deleted: ${appWidgetIds.contentToString()}")
     }
 }

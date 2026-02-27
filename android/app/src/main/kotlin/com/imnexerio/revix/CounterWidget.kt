@@ -128,7 +128,11 @@ class CounterWidget : AppWidgetProvider() {
         ) {
             try {
                 val views = RemoteViews(context.packageName, R.layout.counter_widget)
-                
+
+                // Apply transparency setting
+                val bgColor = WidgetConfigActivity.getBackgroundColorWithOpacity(context, appWidgetId)
+                views.setInt(R.id.counter_widget_container, "setBackgroundColor", bgColor)
+
                 // Validate widget record before displaying
                 when (val validationResult = validateWidgetRecord(context, appWidgetId)) {
                     is ValidationResult.NO_SELECTION -> {
@@ -427,6 +431,9 @@ class CounterWidget : AppWidgetProvider() {
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         try {
+            for (id in appWidgetIds) {
+                WidgetConfigActivity.deletePrefs(context, id)
+            }
             val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
             val editor = prefs.edit()
 

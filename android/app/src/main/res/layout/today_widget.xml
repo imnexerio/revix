@@ -1,4 +1,5 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/today_widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="8dp"
@@ -42,6 +43,7 @@
         android:layout_below="@id/title_layout"
         android:divider="@color/colorOnPrimary"
         android:dividerHeight="1dp"
+        android:cacheColorHint="#00000000"
         android:padding="2dp"/>
     <TextView
         android:id="@+id/empty_view"
