@@ -136,19 +136,20 @@ class CounterWidget : AppWidgetProvider() {
 
                 // Get transparency setting (used later for gradient bg)
                 val bgColor = WidgetConfigActivity.getBackgroundColorWithOpacity(context, appWidgetId)
+                val progressGlowEnabled = WidgetConfigActivity.isProgressGlowEnabled(context, appWidgetId)
 
                 // Validate widget record before displaying
                 when (val validationResult = validateWidgetRecord(context, appWidgetId)) {
                     is ValidationResult.NO_SELECTION -> {
                         showSelectionPrompt(views)
-                        applyGradientBackground(views, bgColor, 0, 0f)
+                        applyGradientBackground(views, bgColor, 0, 0f, progressGlowEnabled)
                     }
                     
                     is ValidationResult.RECORD_DELETED -> {
                         Log.w("CounterWidget", "Record deleted for widget $appWidgetId, resetting")
                         resetWidgetPreferences(context, appWidgetId)
                         showSelectionPrompt(views)
-                        applyGradientBackground(views, bgColor, 0, 0f)
+                        applyGradientBackground(views, bgColor, 0, 0f, progressGlowEnabled)
                     }
                     
                     is ValidationResult.DATE_CHANGED -> {
@@ -184,17 +185,16 @@ class CounterWidget : AppWidgetProvider() {
             views.setInt(R.id.entry_type_indicator, "setColorFilter", android.graphics.Color.parseColor("#666666"))
         }
 
-        private fun applyGradientBackground(views: RemoteViews, bgColor: Int, stickColor: Int, fillFraction: Float) {
+        private fun applyGradientBackground(views: RemoteViews, bgColor: Int, stickColor: Int, fillFraction: Float, progressGlowEnabled: Boolean) {
             val bitmapWidth = 500
             val bitmapHeight = 50
             val bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
 
-            val bgAlpha = android.graphics.Color.alpha(bgColor)
-
-            if (fillFraction <= 0f) {
+            if (!progressGlowEnabled || fillFraction <= 0f) {
                 canvas.drawColor(bgColor)
             } else {
+                val bgAlpha = android.graphics.Color.alpha(bgColor)
                 val glowColor = android.graphics.Color.argb(
                     bgAlpha,
                     android.graphics.Color.red(stickColor),
@@ -276,7 +276,8 @@ class CounterWidget : AppWidgetProvider() {
 
             // Apply gradient background (stick color → bg color, width = fill %)
             val bgColor = WidgetConfigActivity.getBackgroundColorWithOpacity(context, appWidgetId)
-            applyGradientBackground(views, bgColor, stickColor, fillFraction)
+            val progressGlowEnabled = WidgetConfigActivity.isProgressGlowEnabled(context, appWidgetId)
+            applyGradientBackground(views, bgColor, stickColor, fillFraction, progressGlowEnabled)
 
             Log.d("CounterWidget", "Updated widget $appWidgetId: $category→$subCategory→$recordTitle (date: $scheduledDate, fill: ${(fillFraction * 100).toInt()}%)")
         }

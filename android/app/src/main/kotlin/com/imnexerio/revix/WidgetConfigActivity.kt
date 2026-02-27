@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.SeekBar
+import android.widget.Switch
 import android.widget.TextView
 import android.view.View
 
@@ -21,10 +22,22 @@ class WidgetConfigActivity : Activity() {
         private const val PREFS_NAME = "HomeWidgetPreferences"
 
         fun getOpacityKey(appWidgetId: Int) = "widget_opacity_$appWidgetId"
+        fun getProgressGlowKey(appWidgetId: Int) = "widget_progress_glow_$appWidgetId"
 
         fun getOpacity(context: Context, appWidgetId: Int): Int {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             return prefs.getInt(getOpacityKey(appWidgetId), 100)
+        }
+
+        fun isProgressGlowEnabled(context: Context, appWidgetId: Int): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(getProgressGlowKey(appWidgetId), true)
+        }
+
+        fun isCounterWidget(context: Context, appWidgetId: Int): Boolean {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val info = appWidgetManager.getAppWidgetInfo(appWidgetId) ?: return false
+            return info.provider.className == CounterWidget::class.java.name
         }
 
         fun getBackgroundColorWithOpacity(context: Context, appWidgetId: Int): Int {
@@ -38,7 +51,10 @@ class WidgetConfigActivity : Activity() {
 
         fun deletePrefs(context: Context, appWidgetId: Int) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().remove(getOpacityKey(appWidgetId)).apply()
+            prefs.edit()
+                .remove(getOpacityKey(appWidgetId))
+                .remove(getProgressGlowKey(appWidgetId))
+                .apply()
         }
     }
 
@@ -65,8 +81,17 @@ class WidgetConfigActivity : Activity() {
         val seekBar = findViewById<SeekBar>(R.id.transparency_seekbar)
         val valueText = findViewById<TextView>(R.id.transparency_value_text)
         val preview = findViewById<View>(R.id.transparency_preview)
+        val gradientToggle = findViewById<Switch>(R.id.gradient_toggle)
+        val gradientSection = findViewById<View>(R.id.gradient_section)
         val saveButton = findViewById<Button>(R.id.save_button)
         val cancelButton = findViewById<Button>(R.id.cancel_button)
+
+        // Show progress glow toggle only for CounterWidget
+        val isCounter = isCounterWidget(this, appWidgetId)
+        gradientSection.visibility = if (isCounter) View.VISIBLE else View.GONE
+        if (isCounter) {
+            gradientToggle.isChecked = isProgressGlowEnabled(this, appWidgetId)
+        }
 
         // Load existing opacity for this widget (default 100%)
         val currentOpacity = getOpacity(this, appWidgetId)
@@ -84,7 +109,7 @@ class WidgetConfigActivity : Activity() {
         })
 
         saveButton.setOnClickListener {
-            saveOpacity(seekBar.progress)
+            saveSettings(seekBar.progress, if (isCounter) gradientToggle.isChecked else true)
         }
 
         cancelButton.setOnClickListener {
@@ -100,12 +125,15 @@ class WidgetConfigActivity : Activity() {
         )
     }
 
-    private fun saveOpacity(opacity: Int) {
+    private fun saveSettings(opacity: Int, progressGlowEnabled: Boolean) {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putInt(getOpacityKey(appWidgetId), opacity).apply()
-        Log.d(TAG, "Saved opacity $opacity% for widget $appWidgetId")
+        prefs.edit()
+            .putInt(getOpacityKey(appWidgetId), opacity)
+            .putBoolean(getProgressGlowKey(appWidgetId), progressGlowEnabled)
+            .apply()
+        Log.d(TAG, "Saved opacity $opacity%, progressGlow=$progressGlowEnabled for widget $appWidgetId")
 
-        // Trigger a widget update so the new transparency takes effect immediately
+        // Trigger a widget update so the new settings take effect immediately
         WidgetUpdateManager.updateAllWidgets(this)
 
         // Return success
