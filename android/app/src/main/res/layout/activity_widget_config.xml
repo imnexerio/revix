@@ -39,7 +39,8 @@
             android:layout_gravity="center"
             android:text="Preview"
             android:textSize="14sp"
-            android:textColor="@color/text" />
+            android:textColor="@color/text"
+            android:background="@android:color/transparent" />
     </FrameLayout>
 
     <!-- Transparency percentage label -->
