@@ -190,12 +190,11 @@ class CounterWidget : AppWidgetProvider() {
             val bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
 
+            val bgAlpha = android.graphics.Color.alpha(bgColor)
+
             if (fillFraction <= 0f) {
-                // No fill — just solid bg color
                 canvas.drawColor(bgColor)
             } else {
-                val bgAlpha = android.graphics.Color.alpha(bgColor)
-                // Stick color with same alpha as bg transparency
                 val glowColor = android.graphics.Color.argb(
                     bgAlpha,
                     android.graphics.Color.red(stickColor),
@@ -204,16 +203,20 @@ class CounterWidget : AppWidgetProvider() {
                 )
                 val fillEnd = (bitmapWidth * fillFraction.coerceIn(0f, 1f)).toInt().coerceAtLeast(1)
 
-                // Draw base bg color
-                canvas.drawColor(bgColor)
-
-                // Draw gradient from stick color to transparent over the fill portion
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-                paint.shader = LinearGradient(
+                // Draw gradient over fill portion (replaces pixels, no stacking)
+                val gradientPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+                gradientPaint.shader = LinearGradient(
                     0f, 0f, fillEnd.toFloat(), 0f,
                     glowColor, bgColor, Shader.TileMode.CLAMP
                 )
-                canvas.drawRect(0f, 0f, fillEnd.toFloat(), bitmapHeight.toFloat(), paint)
+                canvas.drawRect(0f, 0f, fillEnd.toFloat(), bitmapHeight.toFloat(), gradientPaint)
+
+                // Draw solid bg color only on the remaining area (right of gradient)
+                if (fillEnd < bitmapWidth) {
+                    val bgPaint = Paint()
+                    bgPaint.color = bgColor
+                    canvas.drawRect(fillEnd.toFloat(), 0f, bitmapWidth.toFloat(), bitmapHeight.toFloat(), bgPaint)
+                }
             }
 
             views.setImageViewBitmap(R.id.counter_widget_bg, bitmap)
