@@ -68,6 +68,10 @@ class CalendarViewActivity : AppCompatActivity() {
     private var events = mutableMapOf<String, List<CalendarEvent>>()
     private lateinit var calendarPagerAdapter: CalendarPagerAdapter
     private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
+
+    // Reusable drawing objects to avoid allocations in dispatchDraw()
+    private val reusablePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val reusableRect = RectF()
     
     // ViewPager position mapping (position 12 = current month)
     private val INITIAL_POSITION = 12
@@ -97,7 +101,7 @@ class CalendarViewActivity : AppCompatActivity() {
         // Setup ViewPager2 with adapter
         calendarPagerAdapter = CalendarPagerAdapter()
         viewPager.adapter = calendarPagerAdapter
-        viewPager.offscreenPageLimit = 1 // Keep adjacent pages in memory
+        viewPager.offscreenPageLimit = 2 // Keep adjacent pages in memory for smooth swiping
         viewPager.setCurrentItem(INITIAL_POSITION, false)
         
         // Update header to show current month
@@ -110,7 +114,13 @@ class CalendarViewActivity : AppCompatActivity() {
             override fun onPageSelected(position: Int) {
                 super.onPageSelected(position)
                 updateHeader(position)
-                calendarPagerAdapter.notifyPageSelected(position)
+            }
+
+            override fun onPageScrollStateChanged(state: Int) {
+                super.onPageScrollStateChanged(state)
+                if (state == ViewPager2.SCROLL_STATE_IDLE) {
+                    calendarPagerAdapter.notifyPageSelected(viewPager.currentItem)
+                }
             }
         }
         viewPager.registerOnPageChangeCallback(pageChangeCallback!!)
@@ -600,7 +610,7 @@ class CalendarViewActivity : AppCompatActivity() {
             val container = object : FrameLayout(this) {
                 override fun dispatchDraw(canvas: Canvas) {
                     super.dispatchDraw(canvas) // Draw children (TextView) first
-                    
+
                     // Then draw rings on top
                     if (width > 0 && height > 0) {
                         val centerX = width / 2f
@@ -608,49 +618,48 @@ class CalendarViewActivity : AppCompatActivity() {
                         val size = minOf(width, height).toFloat()
                         val strokeWidth = 4.5f * density
                         val radius = (size / 2f) - (strokeWidth / 2f) - density
-                        
-                        val rectF = RectF(
+
+                        reusableRect.set(
                             centerX - radius,
                             centerY - radius,
                             centerX + radius,
                             centerY + radius
                         )
-                        
+
                         var startAngle = -90f
-                        
+
                         // Draw event rings
                         for ((index, segment) in segments.withIndex()) {
                             val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
                             val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
-                            
-                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                                style = Paint.Style.STROKE
-                                this.strokeWidth = currentStrokeWidth
-                                strokeCap = Paint.Cap.ROUND
-                                color = segment.color
-                                // Apply dimming to rings too
-                                if (isDimmed) {
-                                    alpha = 128 // 50% opacity
-                                }
+
+                            reusablePaint.reset()
+                            reusablePaint.isAntiAlias = true
+                            reusablePaint.style = Paint.Style.STROKE
+                            reusablePaint.strokeWidth = currentStrokeWidth
+                            reusablePaint.strokeCap = Paint.Cap.ROUND
+                            reusablePaint.color = segment.color
+                            if (isDimmed) {
+                                reusablePaint.alpha = 128
                             }
-                            
-                            canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
+
+                            canvas.drawArc(reusableRect, startAngle, sweepAngle, false, reusablePaint)
                             startAngle += sweepAngle
                         }
-                        
+
                         // Draw selection ring if selected (outermost ring)
                         if (isSelected) {
                             val selectionStrokeWidth = 5f * density
                             val selectionRadius = (size / 2f) - (selectionStrokeWidth / 2f) - (0.5f * density)
-                            
-                            val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                                style = Paint.Style.STROKE
-                                this.strokeWidth = selectionStrokeWidth
-                                strokeCap = Paint.Cap.ROUND
-                                color = getColor(R.color.colorOnPrimary)
-                            }
-                            
-                            canvas.drawCircle(centerX, centerY, selectionRadius, selectionPaint)
+
+                            reusablePaint.reset()
+                            reusablePaint.isAntiAlias = true
+                            reusablePaint.style = Paint.Style.STROKE
+                            reusablePaint.strokeWidth = selectionStrokeWidth
+                            reusablePaint.strokeCap = Paint.Cap.ROUND
+                            reusablePaint.color = getColor(R.color.colorOnPrimary)
+
+                            canvas.drawCircle(centerX, centerY, selectionRadius, reusablePaint)
                         }
                     }
                 }
@@ -680,7 +689,7 @@ class CalendarViewActivity : AppCompatActivity() {
                 val container = object : FrameLayout(this) {
                     override fun dispatchDraw(canvas: Canvas) {
                         super.dispatchDraw(canvas)
-                        
+
                         // Draw selection ring
                         if (width > 0 && height > 0) {
                             val centerX = width / 2f
@@ -688,22 +697,15 @@ class CalendarViewActivity : AppCompatActivity() {
                             val size = minOf(width, height).toFloat()
                             val strokeWidth = 4.5f * density
                             val radius = (size / 2f) - (strokeWidth / 2f) - density
-                            
-                            val rectF = RectF(
-                                centerX - radius,
-                                centerY - radius,
-                                centerX + radius,
-                                centerY + radius
-                            )
-                            
-                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                                style = Paint.Style.STROKE
-                                this.strokeWidth = strokeWidth
-                                strokeCap = Paint.Cap.ROUND
-                                color = getColor(R.color.colorOnPrimary)
-                            }
-                            
-                            canvas.drawCircle(centerX, centerY, radius, paint)
+
+                            reusablePaint.reset()
+                            reusablePaint.isAntiAlias = true
+                            reusablePaint.style = Paint.Style.STROKE
+                            reusablePaint.strokeWidth = strokeWidth
+                            reusablePaint.strokeCap = Paint.Cap.ROUND
+                            reusablePaint.color = getColor(R.color.colorOnPrimary)
+
+                            canvas.drawCircle(centerX, centerY, radius, reusablePaint)
                         }
                     }
                 }
