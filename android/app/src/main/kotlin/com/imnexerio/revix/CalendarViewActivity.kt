@@ -115,13 +115,6 @@ class CalendarViewActivity : AppCompatActivity() {
                 super.onPageSelected(position)
                 updateHeader(position)
             }
-
-            override fun onPageScrollStateChanged(state: Int) {
-                super.onPageScrollStateChanged(state)
-                if (state == ViewPager2.SCROLL_STATE_IDLE) {
-                    calendarPagerAdapter.notifyPageSelected(viewPager.currentItem)
-                }
-            }
         }
         viewPager.registerOnPageChangeCallback(pageChangeCallback!!)
         
@@ -129,14 +122,12 @@ class CalendarViewActivity : AppCompatActivity() {
         todayButton.setOnClickListener {
             val today = Calendar.getInstance()
             selectedDate.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
-            
-            // Immediately update events for today
+
             updateEventsList()
-            
-            // Then navigate to today's month (without animation to prevent spacing issues)
-            viewPager.post {
-                viewPager.setCurrentItem(INITIAL_POSITION, false)
-            }
+
+            viewPager.setCurrentItem(INITIAL_POSITION, false)
+            calendarPagerAdapter.notifyItemChanged(INITIAL_POSITION)
+            updateHeader(INITIAL_POSITION)
         }
     }
     
@@ -151,13 +142,16 @@ class CalendarViewActivity : AppCompatActivity() {
         val calendar = getCalendarForPosition(position)
         monthYearText.text = monthYearFormat.format(calendar.time)
         
-        // Update today button state
+        // Update today button state - disable only when today is already selected
         val today = Calendar.getInstance()
-        val isCurrentMonth = (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                              calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH))
-        
-        todayButton.isEnabled = !isCurrentMonth
-        todayButton.alpha = if (isCurrentMonth) 0.5f else 1.0f
+        val isTodaySelected = (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                               calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                               selectedDate.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                               selectedDate.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                               selectedDate.get(Calendar.DAY_OF_MONTH) == today.get(Calendar.DAY_OF_MONTH))
+
+        todayButton.isEnabled = !isTodaySelected
+        todayButton.alpha = if (isTodaySelected) 0.5f else 1.0f
     }
     
     private fun getCalendarForPosition(position: Int): Calendar {
@@ -432,11 +426,6 @@ class CalendarViewActivity : AppCompatActivity() {
             holder.bind(position)
         }
         
-        fun notifyPageSelected(position: Int) {
-            // Refresh the current page to update selected date highlight
-            notifyItemChanged(position)
-        }
-        
         inner class CalendarPageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             private val calendarGrid: GridLayout = itemView as GridLayout
             
@@ -515,10 +504,11 @@ class CalendarViewActivity : AppCompatActivity() {
                             dayCellView.layoutParams = layoutParams
                             
                             dayCellView.setOnClickListener {
-                                selectedDate.set(tempCalendar.get(Calendar.YEAR), 
+                                selectedDate.set(tempCalendar.get(Calendar.YEAR),
                                     tempCalendar.get(Calendar.MONTH), dayNumber)
                                 notifyItemChanged(adapterPosition)
                                 updateEventsList()
+                                updateHeader(viewPager.currentItem)
                             }
                             
                             calendarGrid.addView(dayCellView)
@@ -536,10 +526,11 @@ class CalendarViewActivity : AppCompatActivity() {
                             dayCellView.layoutParams = layoutParams
                             
                             dayCellView.setOnClickListener {
-                                // Navigate to previous month
-                                viewPager.setCurrentItem(adapterPosition - 1, true)
                                 selectedDate.set(prevMonthYear, prevMonth, prevMonthDay)
                                 updateEventsList()
+                                val targetPosition = adapterPosition - 1
+                                viewPager.setCurrentItem(targetPosition, true)
+                                calendarPagerAdapter.notifyItemChanged(targetPosition)
                             }
                             
                             calendarGrid.addView(dayCellView)
@@ -559,10 +550,11 @@ class CalendarViewActivity : AppCompatActivity() {
                             dayCellView.layoutParams = layoutParams
                             
                             dayCellView.setOnClickListener {
-                                // Navigate to next month
-                                viewPager.setCurrentItem(adapterPosition + 1, true)
                                 selectedDate.set(nextMonthYear, nextMonth, nextMonthDay)
                                 updateEventsList()
+                                val targetPosition = adapterPosition + 1
+                                viewPager.setCurrentItem(targetPosition, true)
+                                calendarPagerAdapter.notifyItemChanged(targetPosition)
                             }
                             
                             calendarGrid.addView(dayCellView)
