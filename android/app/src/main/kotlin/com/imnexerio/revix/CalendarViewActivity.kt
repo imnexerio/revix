@@ -40,6 +40,7 @@ class CalendarViewActivity : AppCompatActivity() {
                 "reviewed" -> android.graphics.Color.rgb(76, 175, 80) // Material Green
                 "scheduled" -> android.graphics.Color.rgb(255, 165, 0) // Orange
                 "missed" -> Color.RED
+                "skipped" -> android.graphics.Color.rgb(156, 39, 176) // Purple
                 else -> Color.GRAY
             }
         }
@@ -50,6 +51,7 @@ class CalendarViewActivity : AppCompatActivity() {
                 "reviewed" -> "🟢"
                 "scheduled" -> "🟠"
                 "missed" -> "🔴"
+                "skipped" -> "🟣"
                 else -> "⚪"
             }
         }
@@ -309,6 +311,30 @@ class CalendarViewActivity : AppCompatActivity() {
                 }
             }
         }
+
+        // Parse skipped_dates
+        val datesSkipped = recordObject.optJSONArray("skipped_dates")
+        if (datesSkipped != null) {
+            for (i in 0 until datesSkipped.length()) {
+                try {
+                    val dateStr = datesSkipped.getString(i)
+                    val date = parseDate(dateStr)
+                    if (date != null) {
+                        addEventToMap(eventsMap, date, CalendarEvent(
+                            type = "skipped",
+                            category = category,
+                            subCategory = subcategory,
+                            recordTitle = recordTitle,
+                            description = description,
+                            status = status,
+                            entryType = entryType
+                        ))
+                    }
+                } catch (e: Exception) {
+                    Log.e("CalendarViewActivity", "Error parsing skipped_dates: ${e.message}")
+                }
+            }
+        }
     }
     
     private fun parseDate(dateStr: String): Calendar? {
@@ -365,7 +391,7 @@ class CalendarViewActivity : AppCompatActivity() {
             
             // Create list with separators in order
             val groupedItems = mutableListOf<Any>()
-            val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed")
+            val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed", "skipped")
             
             for (type in typeOrder) {
                 val eventsOfType = eventsByType[type] ?: continue
