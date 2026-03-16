@@ -33,6 +33,14 @@ class _ScheduleTable extends State<ScheduleTable>
   bool isAscending = true;
   bool isExpanded = true;
   bool _prefsLoaded = false;
+  
+  // Multi-filter state
+  Set<String> _filterCategories = {};
+  Set<String> _filterSubCategories = {};
+  Set<String> _filterEntryTypes = {};
+  List<String> _availableCategories = [];
+  List<String> _availableSubCategories = [];
+  List<String> _availableEntryTypes = [];
 
   // Cache for sorted records to avoid unnecessary re-sorts
   final Map<String, List<Map<String, dynamic>>> _sortedRecordsCache = {};
@@ -50,6 +58,7 @@ class _ScheduleTable extends State<ScheduleTable>
   void initState() {
     super.initState();
     records = List.from(widget.initialRecords);
+    _updateAvailableCategories();
 
     // Initialize animation controller
     _animationController = AnimationController(
@@ -73,6 +82,29 @@ class _ScheduleTable extends State<ScheduleTable>
     // Load state from SharedPreferences
     _loadPersistedState();
   }
+  
+  void _updateAvailableCategories() {
+    final Set<String> categories = {};
+    final Set<String> subCategories = {};
+    final Set<String> entryTypes = {};
+    for (final record in widget.initialRecords) {
+      final category = record['category']?.toString();
+      if (category != null && category.isNotEmpty) {
+        categories.add(category);
+      }
+      final subCategory = record['sub_category']?.toString();
+      if (subCategory != null && subCategory.isNotEmpty) {
+        subCategories.add(subCategory);
+      }
+      final entryType = record['entry_type']?.toString();
+      if (entryType != null && entryType.isNotEmpty) {
+        entryTypes.add(entryType);
+      }
+    }
+    _availableCategories = categories.toList()..sort();
+    _availableSubCategories = subCategories.toList()..sort();
+    _availableEntryTypes = entryTypes.toList()..sort();
+  }
 
   Future<void> _loadPersistedState() async {
     try {
@@ -89,12 +121,20 @@ class _ScheduleTable extends State<ScheduleTable>
 
       // Load expansion state (use widget.initiallyExpanded as fallback)
       final loadedExpanded = prefs.getBool('${tableKey}_is_expanded') ?? widget.initiallyExpanded;
+      
+      // Load filter categories
+      final loadedFilters = prefs.getStringList('${tableKey}_filter_categories') ?? [];
+      final loadedSubCatFilters = prefs.getStringList('${tableKey}_filter_subcategories') ?? [];
+      final loadedEntryTypeFilters = prefs.getStringList('${tableKey}_filter_entrytypes') ?? [];
 
       // Update state with loaded values
       setState(() {
         currentSortField = loadedSortField;
         isAscending = loadedAscending;
         isExpanded = loadedExpanded;
+        _filterCategories = loadedFilters.toSet();
+        _filterSubCategories = loadedSubCatFilters.toSet();
+        _filterEntryTypes = loadedEntryTypeFilters.toSet();
         _prefsLoaded = true; // Mark that prefs have been loaded
       });
 
@@ -151,6 +191,11 @@ class _ScheduleTable extends State<ScheduleTable>
 
       // Save expansion state
       await prefs.setBool('${tableKey}_is_expanded', isExpanded);
+      
+      // Save filter categories
+      await prefs.setStringList('${tableKey}_filter_categories', _filterCategories.toList());
+      await prefs.setStringList('${tableKey}_filter_subcategories', _filterSubCategories.toList());
+      await prefs.setStringList('${tableKey}_filter_entrytypes', _filterEntryTypes.toList());
     } catch (e) {
       // Silently fail if we can't persist state
       debugPrint('Error persisting ScheduleTable state: $e');
@@ -163,6 +208,50 @@ class _ScheduleTable extends State<ScheduleTable>
     _sortedRecordsCache.clear();
     super.dispose();
   }
+  
+  void _applyMultiFilter(FilterData filterData) {
+    _sortedRecordsCache.clear(); // Clear cache when filter changes
+
+    setState(() {
+      _filterCategories = filterData.selectedCategories;
+      _filterSubCategories = filterData.selectedSubCategories;
+      _filterEntryTypes = filterData.selectedEntryTypes;
+    });
+
+    _persistState();
+  }
+  
+  bool _recordPassesFilters(Map<String, dynamic> record) {
+    // Category filter
+    if (_filterCategories.isNotEmpty) {
+      final category = record['category']?.toString();
+      if (category == null || !_filterCategories.contains(category)) {
+        return false;
+      }
+    }
+    // Subcategory filter
+    if (_filterSubCategories.isNotEmpty) {
+      final subCategory = record['sub_category']?.toString();
+      if (subCategory == null || !_filterSubCategories.contains(subCategory)) {
+        return false;
+      }
+    }
+    // Entry type filter
+    if (_filterEntryTypes.isNotEmpty) {
+      final entryType = record['entry_type']?.toString();
+      if (entryType == null || !_filterEntryTypes.contains(entryType)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  List<Map<String, dynamic>> _getFilteredRecords() {
+    if (_filterCategories.isEmpty && _filterSubCategories.isEmpty && _filterEntryTypes.isEmpty) {
+      return records;
+    }
+    return records.where(_recordPassesFilters).toList();
+  }
 
   @override
   void didUpdateWidget(ScheduleTable oldWidget) {
@@ -172,6 +261,8 @@ class _ScheduleTable extends State<ScheduleTable>
         records = List.from(widget.initialRecords);
         // Clear the cache when records change
         _sortedRecordsCache.clear();
+        // Update available categories
+        _updateAvailableCategories();
 
         // Reapply sorting if we had a sort field
         if (currentSortField != null && _prefsLoaded) {
@@ -318,6 +409,7 @@ class _ScheduleTable extends State<ScheduleTable>
                       onPressed: () {
                         showModalBottomSheet(
                           context: context,
+                          isScrollControlled: true,
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                           ),
@@ -325,6 +417,15 @@ class _ScheduleTable extends State<ScheduleTable>
                             currentSortField: currentSortField,
                             isAscending: isAscending,
                             onSortApplied: _applySorting,
+                            filterData: FilterData(
+                              availableCategories: _availableCategories,
+                              availableSubCategories: _availableSubCategories,
+                              availableEntryTypes: _availableEntryTypes,
+                              selectedCategories: _filterCategories,
+                              selectedSubCategories: _filterSubCategories,
+                              selectedEntryTypes: _filterEntryTypes,
+                            ),
+                            onMultiFilterApplied: _applyMultiFilter,
                           ),
                         );
                       },
@@ -349,6 +450,7 @@ class _ScheduleTable extends State<ScheduleTable>
               LayoutBuilder(
                 builder: (context, constraints) {
                   final crossAxisCount = _calculateColumns(constraints.maxWidth);
+                  final filteredRecords = _getFilteredRecords();
 
                   return GridView.builder(
                     shrinkWrap: true,
@@ -361,9 +463,9 @@ class _ScheduleTable extends State<ScheduleTable>
                       mainAxisSpacing: 8,
                       mainAxisExtent: 160,
                     ),
-                    itemCount: records.length,
+                    itemCount: filteredRecords.length,
                     itemBuilder: (context, index) {
-                      final record = records[index];
+                      final record = filteredRecords[index];
                       final bool isCompleted = record['date_initiated'] != null &&
                           record['date_initiated'].toString().isNotEmpty;
 
@@ -374,8 +476,8 @@ class _ScheduleTable extends State<ScheduleTable>
                         CurvedAnimation(
                           parent: _animationController,
                           curve: Interval(
-                            (index / records.length) * 0.5,
-                            (index / records.length) * 0.5 + 0.5,
+                            (index / filteredRecords.length) * 0.5,
+                            (index / filteredRecords.length) * 0.5 + 0.5,
                             curve: Curves.easeInOut,
                           ),
                         ),

@@ -40,6 +40,7 @@ class CalendarViewActivity : AppCompatActivity() {
                 "reviewed" -> android.graphics.Color.rgb(76, 175, 80) // Material Green
                 "scheduled" -> android.graphics.Color.rgb(255, 165, 0) // Orange
                 "missed" -> Color.RED
+                "skipped" -> android.graphics.Color.rgb(156, 39, 176) // Purple
                 else -> Color.GRAY
             }
         }
@@ -50,6 +51,7 @@ class CalendarViewActivity : AppCompatActivity() {
                 "reviewed" -> "🟢"
                 "scheduled" -> "🟠"
                 "missed" -> "🔴"
+                "skipped" -> "🟣"
                 else -> "⚪"
             }
         }
@@ -66,6 +68,10 @@ class CalendarViewActivity : AppCompatActivity() {
     private var events = mutableMapOf<String, List<CalendarEvent>>()
     private lateinit var calendarPagerAdapter: CalendarPagerAdapter
     private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
+
+    // Reusable drawing objects to avoid allocations in dispatchDraw()
+    private val reusablePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val reusableRect = RectF()
     
     // ViewPager position mapping (position 12 = current month)
     private val INITIAL_POSITION = 12
@@ -95,7 +101,10 @@ class CalendarViewActivity : AppCompatActivity() {
         // Setup ViewPager2 with adapter
         calendarPagerAdapter = CalendarPagerAdapter()
         viewPager.adapter = calendarPagerAdapter
-        viewPager.offscreenPageLimit = 1 // Keep adjacent pages in memory
+        viewPager.offscreenPageLimit = 2 // Keep adjacent pages in memory for smooth swiping
+        // Disable item animator to prevent measurement instability in floating dialog window
+        // when notifyItemChanged triggers pre-layout/post-layout animation passes
+        (viewPager.getChildAt(0) as? RecyclerView)?.itemAnimator = null
         viewPager.setCurrentItem(INITIAL_POSITION, false)
         
         // Update header to show current month
@@ -108,7 +117,6 @@ class CalendarViewActivity : AppCompatActivity() {
             override fun onPageSelected(position: Int) {
                 super.onPageSelected(position)
                 updateHeader(position)
-                calendarPagerAdapter.notifyPageSelected(position)
             }
         }
         viewPager.registerOnPageChangeCallback(pageChangeCallback!!)
@@ -117,14 +125,12 @@ class CalendarViewActivity : AppCompatActivity() {
         todayButton.setOnClickListener {
             val today = Calendar.getInstance()
             selectedDate.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
-            
-            // Immediately update events for today
+
             updateEventsList()
-            
-            // Then navigate to today's month (without animation to prevent spacing issues)
-            viewPager.post {
-                viewPager.setCurrentItem(INITIAL_POSITION, false)
-            }
+
+            viewPager.setCurrentItem(INITIAL_POSITION, false)
+            calendarPagerAdapter.notifyItemChanged(INITIAL_POSITION)
+            updateHeader(INITIAL_POSITION)
         }
     }
     
@@ -139,13 +145,16 @@ class CalendarViewActivity : AppCompatActivity() {
         val calendar = getCalendarForPosition(position)
         monthYearText.text = monthYearFormat.format(calendar.time)
         
-        // Update today button state
+        // Update today button state - disable only when today is already selected
         val today = Calendar.getInstance()
-        val isCurrentMonth = (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                              calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH))
-        
-        todayButton.isEnabled = !isCurrentMonth
-        todayButton.alpha = if (isCurrentMonth) 0.5f else 1.0f
+        val isTodaySelected = (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                               calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                               selectedDate.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                               selectedDate.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                               selectedDate.get(Calendar.DAY_OF_MONTH) == today.get(Calendar.DAY_OF_MONTH))
+
+        todayButton.isEnabled = !isTodaySelected
+        todayButton.alpha = if (isTodaySelected) 0.5f else 1.0f
     }
     
     private fun getCalendarForPosition(position: Int): Calendar {
@@ -309,6 +318,30 @@ class CalendarViewActivity : AppCompatActivity() {
                 }
             }
         }
+
+        // Parse skipped_dates
+        val datesSkipped = recordObject.optJSONArray("skipped_dates")
+        if (datesSkipped != null) {
+            for (i in 0 until datesSkipped.length()) {
+                try {
+                    val dateStr = datesSkipped.getString(i)
+                    val date = parseDate(dateStr)
+                    if (date != null) {
+                        addEventToMap(eventsMap, date, CalendarEvent(
+                            type = "skipped",
+                            category = category,
+                            subCategory = subcategory,
+                            recordTitle = recordTitle,
+                            description = description,
+                            status = status,
+                            entryType = entryType
+                        ))
+                    }
+                } catch (e: Exception) {
+                    Log.e("CalendarViewActivity", "Error parsing skipped_dates: ${e.message}")
+                }
+            }
+        }
     }
     
     private fun parseDate(dateStr: String): Calendar? {
@@ -365,7 +398,7 @@ class CalendarViewActivity : AppCompatActivity() {
             
             // Create list with separators in order
             val groupedItems = mutableListOf<Any>()
-            val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed")
+            val typeOrder = listOf("initiated", "reviewed", "scheduled", "missed", "skipped")
             
             for (type in typeOrder) {
                 val eventsOfType = eventsByType[type] ?: continue
@@ -394,11 +427,6 @@ class CalendarViewActivity : AppCompatActivity() {
         
         override fun onBindViewHolder(holder: CalendarPageViewHolder, position: Int) {
             holder.bind(position)
-        }
-        
-        fun notifyPageSelected(position: Int) {
-            // Refresh the current page to update selected date highlight
-            notifyItemChanged(position)
         }
         
         inner class CalendarPageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -479,10 +507,11 @@ class CalendarViewActivity : AppCompatActivity() {
                             dayCellView.layoutParams = layoutParams
                             
                             dayCellView.setOnClickListener {
-                                selectedDate.set(tempCalendar.get(Calendar.YEAR), 
+                                selectedDate.set(tempCalendar.get(Calendar.YEAR),
                                     tempCalendar.get(Calendar.MONTH), dayNumber)
                                 notifyItemChanged(adapterPosition)
                                 updateEventsList()
+                                updateHeader(viewPager.currentItem)
                             }
                             
                             calendarGrid.addView(dayCellView)
@@ -500,10 +529,11 @@ class CalendarViewActivity : AppCompatActivity() {
                             dayCellView.layoutParams = layoutParams
                             
                             dayCellView.setOnClickListener {
-                                // Navigate to previous month
-                                viewPager.setCurrentItem(adapterPosition - 1, true)
                                 selectedDate.set(prevMonthYear, prevMonth, prevMonthDay)
                                 updateEventsList()
+                                val targetPosition = adapterPosition - 1
+                                viewPager.setCurrentItem(targetPosition, true)
+                                calendarPagerAdapter.notifyItemChanged(targetPosition)
                             }
                             
                             calendarGrid.addView(dayCellView)
@@ -523,10 +553,11 @@ class CalendarViewActivity : AppCompatActivity() {
                             dayCellView.layoutParams = layoutParams
                             
                             dayCellView.setOnClickListener {
-                                // Navigate to next month
-                                viewPager.setCurrentItem(adapterPosition + 1, true)
                                 selectedDate.set(nextMonthYear, nextMonth, nextMonthDay)
                                 updateEventsList()
+                                val targetPosition = adapterPosition + 1
+                                viewPager.setCurrentItem(targetPosition, true)
+                                calendarPagerAdapter.notifyItemChanged(targetPosition)
                             }
                             
                             calendarGrid.addView(dayCellView)
@@ -574,7 +605,7 @@ class CalendarViewActivity : AppCompatActivity() {
             val container = object : FrameLayout(this) {
                 override fun dispatchDraw(canvas: Canvas) {
                     super.dispatchDraw(canvas) // Draw children (TextView) first
-                    
+
                     // Then draw rings on top
                     if (width > 0 && height > 0) {
                         val centerX = width / 2f
@@ -582,49 +613,48 @@ class CalendarViewActivity : AppCompatActivity() {
                         val size = minOf(width, height).toFloat()
                         val strokeWidth = 4.5f * density
                         val radius = (size / 2f) - (strokeWidth / 2f) - density
-                        
-                        val rectF = RectF(
+
+                        reusableRect.set(
                             centerX - radius,
                             centerY - radius,
                             centerX + radius,
                             centerY + radius
                         )
-                        
+
                         var startAngle = -90f
-                        
+
                         // Draw event rings
                         for ((index, segment) in segments.withIndex()) {
                             val sweepAngle = (segment.count.toFloat() / totalEvents) * 360f
                             val currentStrokeWidth = strokeWidth - (index * 0.2f * density).coerceAtMost(density)
-                            
-                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                                style = Paint.Style.STROKE
-                                this.strokeWidth = currentStrokeWidth
-                                strokeCap = Paint.Cap.ROUND
-                                color = segment.color
-                                // Apply dimming to rings too
-                                if (isDimmed) {
-                                    alpha = 128 // 50% opacity
-                                }
+
+                            reusablePaint.reset()
+                            reusablePaint.isAntiAlias = true
+                            reusablePaint.style = Paint.Style.STROKE
+                            reusablePaint.strokeWidth = currentStrokeWidth
+                            reusablePaint.strokeCap = Paint.Cap.ROUND
+                            reusablePaint.color = segment.color
+                            if (isDimmed) {
+                                reusablePaint.alpha = 128
                             }
-                            
-                            canvas.drawArc(rectF, startAngle, sweepAngle, false, paint)
+
+                            canvas.drawArc(reusableRect, startAngle, sweepAngle, false, reusablePaint)
                             startAngle += sweepAngle
                         }
-                        
+
                         // Draw selection ring if selected (outermost ring)
                         if (isSelected) {
                             val selectionStrokeWidth = 5f * density
                             val selectionRadius = (size / 2f) - (selectionStrokeWidth / 2f) - (0.5f * density)
-                            
-                            val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                                style = Paint.Style.STROKE
-                                this.strokeWidth = selectionStrokeWidth
-                                strokeCap = Paint.Cap.ROUND
-                                color = getColor(R.color.colorOnPrimary)
-                            }
-                            
-                            canvas.drawCircle(centerX, centerY, selectionRadius, selectionPaint)
+
+                            reusablePaint.reset()
+                            reusablePaint.isAntiAlias = true
+                            reusablePaint.style = Paint.Style.STROKE
+                            reusablePaint.strokeWidth = selectionStrokeWidth
+                            reusablePaint.strokeCap = Paint.Cap.ROUND
+                            reusablePaint.color = getColor(R.color.colorOnPrimary)
+
+                            canvas.drawCircle(centerX, centerY, selectionRadius, reusablePaint)
                         }
                     }
                 }
@@ -654,7 +684,7 @@ class CalendarViewActivity : AppCompatActivity() {
                 val container = object : FrameLayout(this) {
                     override fun dispatchDraw(canvas: Canvas) {
                         super.dispatchDraw(canvas)
-                        
+
                         // Draw selection ring
                         if (width > 0 && height > 0) {
                             val centerX = width / 2f
@@ -662,22 +692,15 @@ class CalendarViewActivity : AppCompatActivity() {
                             val size = minOf(width, height).toFloat()
                             val strokeWidth = 4.5f * density
                             val radius = (size / 2f) - (strokeWidth / 2f) - density
-                            
-                            val rectF = RectF(
-                                centerX - radius,
-                                centerY - radius,
-                                centerX + radius,
-                                centerY + radius
-                            )
-                            
-                            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                                style = Paint.Style.STROKE
-                                this.strokeWidth = strokeWidth
-                                strokeCap = Paint.Cap.ROUND
-                                color = getColor(R.color.colorOnPrimary)
-                            }
-                            
-                            canvas.drawCircle(centerX, centerY, radius, paint)
+
+                            reusablePaint.reset()
+                            reusablePaint.isAntiAlias = true
+                            reusablePaint.style = Paint.Style.STROKE
+                            reusablePaint.strokeWidth = strokeWidth
+                            reusablePaint.strokeCap = Paint.Cap.ROUND
+                            reusablePaint.color = getColor(R.color.colorOnPrimary)
+
+                            canvas.drawCircle(centerX, centerY, radius, reusablePaint)
                         }
                     }
                 }

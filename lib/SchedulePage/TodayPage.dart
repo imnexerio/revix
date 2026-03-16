@@ -27,6 +27,11 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
   String _currentSortField = 'reminder_time';
   bool _isAscending = true;
   
+  // Multi-filter state (selected values only - available values fetched by SortingBottomSheet)
+  Set<String> _filterCategories = {};
+  Set<String> _filterSubCategories = {};
+  Set<String> _filterEntryTypes = {};
+  
   // Animation controllers
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -81,12 +86,18 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
     final savedSidebarState = _prefs!.getBool(_sidebarVisibilityKey) ?? true;
     final savedSortField = _prefs!.getString('schedule_sortField') ?? 'reminder_time';
     final savedAscending = _prefs!.getBool('schedule_isAscending') ?? true;
+    final savedFilterCats = _prefs!.getStringList('schedule_filterCategories') ?? [];
+    final savedFilterSubCats = _prefs!.getStringList('schedule_filterSubCategories') ?? [];
+    final savedFilterTypes = _prefs!.getStringList('schedule_filterEntryTypes') ?? [];
     
     if (mounted) {
       setState(() {
         _isSidebarVisible = savedSidebarState;
         _currentSortField = savedSortField;
         _isAscending = savedAscending;
+        _filterCategories = savedFilterCats.toSet();
+        _filterSubCategories = savedFilterSubCats.toSet();
+        _filterEntryTypes = savedFilterTypes.toSet();
       });
     }
   }
@@ -108,11 +119,15 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
   // Expose sorting info for AppBar
   String get sortField => _currentSortField;
   bool get sortAscending => _isAscending;
+  Set<String> get filterCategories => _filterCategories;
+  int get activeFilterCount => 
+      _filterCategories.length + _filterSubCategories.length + _filterEntryTypes.length;
 
   // Method to show sorting bottom sheet (called from AppBar)
-  void showSortingSheet(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> showSortingSheet(BuildContext context) async {
+    await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -120,6 +135,10 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
         currentSortField: _currentSortField,
         isAscending: _isAscending,
         onSortApplied: _applySorting,
+        selectedCategories: _filterCategories,
+        selectedSubCategories: _filterSubCategories,
+        selectedEntryTypes: _filterEntryTypes,
+        onFilterApplied: _applyFilter,
       ),
     );
   }
@@ -135,6 +154,44 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
     _prefs?.setString('schedule_sortField', field);
     _prefs?.setBool('schedule_isAscending', ascending);
     _gridAnimationController.forward();
+  }
+  
+  void _applyFilter(FilterData filterData) {
+    setState(() {
+      _filterCategories = filterData.selectedCategories;
+      _filterSubCategories = filterData.selectedSubCategories;
+      _filterEntryTypes = filterData.selectedEntryTypes;
+    });
+
+    _prefs?.setStringList('schedule_filterCategories', filterData.selectedCategories.toList());
+    _prefs?.setStringList('schedule_filterSubCategories', filterData.selectedSubCategories.toList());
+    _prefs?.setStringList('schedule_filterEntryTypes', filterData.selectedEntryTypes.toList());
+  }
+  
+  // Check if record passes all active filters
+  bool _recordPassesFilters(Map<String, dynamic> record) {
+    // Category filter
+    if (_filterCategories.isNotEmpty) {
+      final category = record['category']?.toString();
+      if (category == null || !_filterCategories.contains(category)) {
+        return false;
+      }
+    }
+    // Subcategory filter
+    if (_filterSubCategories.isNotEmpty) {
+      final subCategory = record['sub_category']?.toString();
+      if (subCategory == null || !_filterSubCategories.contains(subCategory)) {
+        return false;
+      }
+    }
+    // Entry type filter
+    if (_filterEntryTypes.isNotEmpty) {
+      final entryType = record['entry_type']?.toString();
+      if (entryType == null || !_filterEntryTypes.contains(entryType)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void _showEntryDetails(BuildContext context, Map<String, dynamic> record) {
@@ -213,9 +270,9 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
               'noreminderdate': <Map<String, dynamic>>[],
             };
 
-            final availableCategories = _getAvailableCategories(data);
+            final availableTimeCategories = _getAvailableCategories(data);
 
-            if (availableCategories.isEmpty) {
+            if (availableTimeCategories.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -236,13 +293,23 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
             }
 
             // Auto-select first category if none selected
-            if (_selectedCategory == null || !availableCategories.contains(_selectedCategory)) {
-              _selectedCategory = availableCategories.first;
+            if (_selectedCategory == null || !availableTimeCategories.contains(_selectedCategory)) {
+              _selectedCategory = availableTimeCategories.first;
             }
 
             final selectedRecords = data[_selectedCategory] ?? [];
+            
+            // Apply filter first (empty filter = show all)
+            // Apply all active filters
+            final bool hasAnyFilter = _filterCategories.isNotEmpty || 
+                                       _filterSubCategories.isNotEmpty || 
+                                       _filterEntryTypes.isNotEmpty;
+            final filteredRecords = !hasAnyFilter
+                ? List<Map<String, dynamic>>.from(selectedRecords)
+                : selectedRecords.where(_recordPassesFilters).toList();
+            
             final sortedRecords = RecordSortingUtils.sortRecords(
-              records: List.from(selectedRecords),
+              records: filteredRecords,
               field: _currentSortField,
               ascending: _isAscending,
             );
@@ -265,12 +332,21 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
                                 scrollDirection: Axis.vertical,
                                 physics: const BouncingScrollPhysics(),
                                 cacheExtent: 100,
-                                itemCount: availableCategories.length,
+                                itemCount: availableTimeCategories.length,
                                 itemBuilder: (context, index) {
-                                  final category = availableCategories[index];
+                                  final category = availableTimeCategories[index];
                                   final displayName = _categoryDisplayNames[category] ?? category;
                                   final isSelected = _selectedCategory == category;
-                                  final count = data[category]?.length ?? 0;
+                                  // Calculate filtered count for this time category
+                                  final categoryRecords = data[category] ?? [];
+                                  final filteredCount = !hasAnyFilter
+                                      ? categoryRecords.length
+                                      : categoryRecords.where(_recordPassesFilters).length;
+                                  final totalCount = categoryRecords.length;
+                                  // Show filtered/total when filter is active
+                                  final countText = !hasAnyFilter 
+                                      ? '$totalCount' 
+                                      : '$filteredCount/$totalCount';
 
                                   return Container(
                                     margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -294,7 +370,7 @@ class TodayPageState extends State<TodayPage> with TickerProviderStateMixin {
                                           child: RotatedBox(
                                             quarterTurns: 3,
                                             child: Text(
-                                              '$displayName ($count)',
+                                              '$displayName ($countText)',
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               textAlign: TextAlign.center,

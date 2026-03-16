@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:revix/Utils/FirebaseDatabaseService.dart';
 
@@ -16,6 +17,7 @@ class TrackingTypeDropdown extends StatefulWidget {
 
 class _TrackingTypeDropdownState extends State<TrackingTypeDropdown> {
   List<DropdownMenuItem<String>> _dropdownItems = [];
+  StreamSubscription? _entryTypesSubscription;
 
   @override
   void initState() {
@@ -23,9 +25,33 @@ class _TrackingTypeDropdownState extends State<TrackingTypeDropdown> {
     _fetchFrequencies();
   }
 
+  @override
+  void dispose() {
+    _entryTypesSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _fetchFrequencies() async {
     final databaseService = FirebaseDatabaseService();
-    List<String> trackingTypes = await databaseService.fetchCustomTrackingTypes();
+    
+    // Step 1: Show cached data immediately
+    final cachedTypes = databaseService.currentEntryTypes;
+    if (cachedTypes.isNotEmpty) {
+      _updateDropdownItems(cachedTypes);
+    }
+    
+    // Step 2: Subscribe to stream for live updates
+    _entryTypesSubscription = databaseService.entryTypesStream.listen((types) {
+      if (mounted) {
+        _updateDropdownItems(types);
+      }
+    });
+    
+    // Step 3: Trigger background refresh
+    databaseService.fetchCustomTrackingTypes();
+  }
+  
+  void _updateDropdownItems(List<String> trackingTypes) {
     List<DropdownMenuItem<String>> items = trackingTypes.map((type) {
       return DropdownMenuItem<String>(
         value: type,

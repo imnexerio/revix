@@ -57,6 +57,14 @@ class DetailsPageState extends State<DetailsPage> {
     _sidebarKey.currentState?.showSortingSheet(context);
   }
 
+  // Method to navigate to a specific record (called from search)
+  void navigateToRecord({
+    required String category,
+    required String subCategory,
+  }) {
+    _sidebarKey.currentState?.selectCategory(category, subCategory);
+  }
+
   void _onSortingChanged(String sortField, bool isAscending) {
     setState(() {
       _currentSortField = sortField;
@@ -123,6 +131,30 @@ class _NavigationSidebarState extends State<_NavigationSidebar>
     } else {
       // If at subcategory level, delegate to EntryBar
       _entryBarKey.currentState?.showSortingSheet(context);
+    }
+  }
+  
+  // Method to select a specific category and subcategory (called from search)
+  void selectCategory(String category, String subCategory) {
+    if (_isTopLevel) {
+      // Select the category at top level
+      setState(() {
+        _selectedItem = category;
+      });
+      _controller.reset();
+      _controller.forward();
+      
+      // Wait for the nested sidebar to be built, then select subcategory
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _nestedSidebarKey.currentState?.selectCategory(category, subCategory);
+      });
+    } else {
+      // At subcategory level - select the subcategory
+      setState(() {
+        _selectedItem = subCategory;
+      });
+      _controller.reset();
+      _controller.forward();
     }
   }
 

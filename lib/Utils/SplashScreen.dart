@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../widgets/AnimatedSquareText.dart';
 import '../main.dart';
 import '../LoginSignupPage/LoginPage.dart';
@@ -174,16 +173,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ),
                           child: Text(
                             'Track • Analyze • Improve',
-                            textAlign: TextAlign.center, // Center the text within the container
-                            style: GoogleFonts.nunito(
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
                               color: colorScheme.primary.withOpacity(0.8),
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
                             ),
-                          ),
                         ),
                       ),
-                    );
+                    ));
                   },
                 ),
               ],

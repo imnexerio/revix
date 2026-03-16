@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AnimatedSquareText extends StatefulWidget {
   final String text;
@@ -215,7 +214,8 @@ class _AnimatedSquareTextState extends State<AnimatedSquareText>
                             opacity: animationValue,
                             child: Text(
                               letter,
-                              style: GoogleFonts.nunito(
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
                                 color: widget.textColor,
                                 fontWeight: widget.fontWeight,
                                 fontSize: widget.fontSize,
@@ -223,7 +223,8 @@ class _AnimatedSquareTextState extends State<AnimatedSquareText>
                                 height: 1.0,
                               ),
                             ),
-                          ),                        );
+                          ),
+                        );
                       },
                     );
                   }).toList(),

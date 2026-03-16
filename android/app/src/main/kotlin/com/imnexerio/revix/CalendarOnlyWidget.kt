@@ -41,6 +41,10 @@ class CalendarOnlyWidget : AppWidgetProvider() {
             try {
                 val views = RemoteViews(context.packageName, R.layout.calendar_only_widget)
 
+                // Apply transparency setting
+                val bgColor = WidgetConfigActivity.getBackgroundColorWithOpacity(context, appWidgetId)
+                views.setInt(R.id.calendar_only_widget_container, "setBackgroundColor", bgColor)
+
                 // Set current date in DD MMM YYYY format (4-letter month abbreviation)
                 val currentDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
                 views.setTextViewText(R.id.calendar_date_header, currentDate)
@@ -171,6 +175,9 @@ class CalendarOnlyWidget : AppWidgetProvider() {
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        for (id in appWidgetIds) {
+            WidgetConfigActivity.deletePrefs(context, id)
+        }
         Log.d("CalendarOnlyWidget", "Calendar-only widgets deleted: ${appWidgetIds.contentToString()}")
     }
 }

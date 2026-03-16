@@ -6,29 +6,54 @@ class ApiKeyManager {
   static const String apiKeyPrefKey = 'gemini_api_key';
   static const String geminiApiUrl = 'https://aistudio.google.com/apikey';
 
-  // Check if API key exists
-  static Future<bool> hasApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = prefs.getString(apiKeyPrefKey);
-    return key != null && key.isNotEmpty;
+  // Cached instances for performance
+  static SharedPreferences? _prefs;
+  static String? _cachedApiKey;
+  static bool _initialized = false;
+
+  // Initialize cache (call once at app startup)
+  static Future<void> initialize() async {
+    if (_initialized) return;
+    _prefs ??= await SharedPreferences.getInstance();
+    _cachedApiKey = _prefs!.getString(apiKeyPrefKey);
+    _initialized = true;
   }
 
-  // Get the saved API key
+  static Future<SharedPreferences> get _instance async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+
+  // Check if API key exists (sync if initialized)
+  static bool get hasApiKeySync => _cachedApiKey != null && _cachedApiKey!.isNotEmpty;
+
+  static Future<bool> hasApiKey() async {
+    if (_initialized) return hasApiKeySync;
+    await initialize();
+    return hasApiKeySync;
+  }
+
+  // Get the saved API key (sync if initialized)
+  static String? get apiKeySync => _cachedApiKey;
+
   static Future<String?> getApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(apiKeyPrefKey);
+    if (_initialized) return _cachedApiKey;
+    await initialize();
+    return _cachedApiKey;
   }
 
   // Save the API key
   static Future<void> saveApiKey(String apiKey) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _instance;
     await prefs.setString(apiKeyPrefKey, apiKey);
+    _cachedApiKey = apiKey; // Update cache immediately
   }
 
   // Delete the API key
   static Future<void> deleteApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _instance;
     await prefs.remove(apiKeyPrefKey);
+    _cachedApiKey = null; // Clear cache
   }
 
   // Show dialog to enter API key

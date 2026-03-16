@@ -112,6 +112,28 @@ class _StudyCalendarState extends State<StudyCalendar> {
         }
       }
 
+      // Add skipped dates
+      if (details.containsKey('skipped_dates') && details['skipped_dates'] is List) {
+        for (var dateStr in (details['skipped_dates'] as List)) {
+          final dateSkipped = DateTime.parse(dateStr.toString());
+          final key = DateTime(dateSkipped.year, dateSkipped.month, dateSkipped.day);
+
+          if (_events[key] == null) {
+            _events[key] = [];
+          }
+
+          _events[key]!.add({
+            'type': 'skipped',
+            'category': record['category'],
+            'sub_category': record['sub_category'],
+            'record_title': record['record_title'],
+            'description': details['description'],
+            'status': details['status'] ?? 'Enabled',
+            'entry_type': details['entry_type'],
+          });
+        }
+      }
+
       // Add scheduled dates
       if (details['date_initiated']!='Unspecified')
       if (details.containsKey('scheduled_date')) {
@@ -220,15 +242,31 @@ class _StudyCalendarState extends State<StudyCalendar> {
             ),
           ),
           const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 24,
+              runSpacing: 8,
               children: [
-                LegendItem( label: 'Initiated', color: Colors.blue, icon: Icons.school,),
-                LegendItem( label: 'Reviewed', color: Colors.green, icon: Icons.check_circle,),
-                LegendItem( label: 'Scheduled', color: Colors.orange, icon: Icons.event,),
-                LegendItem( label: 'Missed', color: Colors.red, icon: Icons.cancel,),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    LegendItem(label: 'Initiated', color: Colors.blue, icon: Icons.school),
+                    SizedBox(width: 12),
+                    LegendItem(label: 'Reviewed', color: Colors.green, icon: Icons.check_circle),
+                    SizedBox(width: 12),
+                    LegendItem(label: 'Scheduled', color: Colors.orange, icon: Icons.event),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    LegendItem(label: 'Missed', color: Colors.red, icon: Icons.cancel),
+                    SizedBox(width: 12),
+                    LegendItem(label: 'Skipped', color: Colors.purple, icon: Icons.skip_next),
+                  ],
+                ),
               ],
             ),
           ),
@@ -244,6 +282,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
     int revisedCount = 0;
     int scheduledCount = 0;
     int missedCount = 0;
+    int skippedCount = 0;
 
     for (var event in events) {
       switch (event['type']) {
@@ -259,11 +298,14 @@ class _StudyCalendarState extends State<StudyCalendar> {
         case 'missed':
           missedCount++;
           break;
+        case 'skipped':
+          skippedCount++;
+          break;
       }
     }
 
     // Calculate the total count of events
-    int totalEvents = learnedCount + revisedCount + scheduledCount + missedCount;
+    int totalEvents = learnedCount + revisedCount + scheduledCount + missedCount + skippedCount;
 
     // Create sorted list of event types by count
     final eventCounts = [
@@ -271,6 +313,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
       {'type': 'revised', 'count': revisedCount, 'color': Colors.green},
       {'type': 'scheduled', 'count': scheduledCount, 'color': Colors.orange},
       {'type': 'missed', 'count': missedCount, 'color': Colors.red},
+      {'type': 'skipped', 'count': skippedCount, 'color': Colors.purple},
     ];
 
     // Remove zero count events
@@ -347,6 +390,7 @@ class _StudyCalendarState extends State<StudyCalendar> {
       'revised': <Map<String, dynamic>>[],
       'scheduled': <Map<String, dynamic>>[],
       'missed': <Map<String, dynamic>>[],
+      'skipped': <Map<String, dynamic>>[],
     };
 
     for (var event in selectedEvents) {
@@ -368,6 +412,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
             _buildEventTypeSection('Scheduled', groupedEvents['scheduled']!, Colors.orange),
           if (groupedEvents['missed']!.isNotEmpty)
             _buildEventTypeSection('Missed', groupedEvents['missed']!, Colors.red),
+          if (groupedEvents['skipped']!.isNotEmpty)
+            _buildEventTypeSection('Skipped', groupedEvents['skipped']!, Colors.purple),
         ],
       ),
     );
@@ -526,6 +572,8 @@ class _StudyCalendarState extends State<StudyCalendar> {
         return Icons.cancel;
       case 'scheduled':
         return Icons.event;
+      case 'skipped':
+        return Icons.skip_next;
       default:
         return Icons.event_note;
     }

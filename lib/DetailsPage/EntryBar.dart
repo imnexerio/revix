@@ -29,6 +29,9 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
   // Sorting state
   String currentSortField = 'reminder_time';
   bool isAscending = true;
+  
+  // Filter state - only entry type is useful in details page (category/subcategory already fixed)
+  Set<String> _filterEntryTypes = {};
 
   // Animation controller for grid
   late AnimationController _gridAnimationController;
@@ -49,9 +52,11 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
 
   Future<void> _loadSortPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+    final loadedEntryTypeFilters = prefs.getStringList('details_filterEntryTypes') ?? [];
     setState(() {
       currentSortField = prefs.getString('details_sortField') ?? 'reminder_time';
       isAscending = prefs.getBool('details_isAscending') ?? true;
+      _filterEntryTypes = loadedEntryTypeFilters.toSet();
     });
     widget.onSortingChanged?.call(currentSortField, isAscending);
   }
@@ -60,16 +65,19 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('details_sortField', currentSortField);
     await prefs.setBool('details_isAscending', isAscending);
+    await prefs.setStringList('details_filterEntryTypes', _filterEntryTypes.toList());
   }
 
   // Expose sorting info for AppBar
   String get sortField => currentSortField;
   bool get sortAscending => isAscending;
+  int get activeFilterCount => _filterEntryTypes.length;
 
   // Method to show sorting bottom sheet (called from AppBar)
   void showSortingSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -77,10 +85,33 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
         currentSortField: currentSortField,
         isAscending: isAscending,
         onSortApplied: _applySorting,
+        // Only show entry type filter (category/subcategory are already selected in sidebar)
+        showCategoryFilter: false,
+        showSubCategoryFilter: false,
+        showEntryTypeFilter: true,
+        selectedEntryTypes: _filterEntryTypes,
+        onFilterApplied: _applyFilter,
       ),
     );
   }
-
+  
+  void _applyFilter(FilterData filterData) {
+    setState(() {
+      _filterEntryTypes = filterData.selectedEntryTypes;
+    });
+    _saveSortPreferences();
+  }
+  
+  bool _recordPassesFilters(Map<String, dynamic> record) {
+    if (_filterEntryTypes.isNotEmpty) {
+      final entryType = record['entry_type']?.toString();
+      if (entryType == null || !_filterEntryTypes.contains(entryType)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
   @override
   void dispose() {
     _gridAnimationController.dispose();
@@ -94,6 +125,7 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
             record['category'] == widget.selectedCategory &&
             record['sub_category'] == widget.selectedCategoryCode)
         .map<Map<String, dynamic>>((record) {
+          // record['details'] already contains entry_type and all other fields
           Map<String, dynamic> formattedRecord = Map<String, dynamic>.from(record['details']);
           formattedRecord['record_title'] = record['record_title'];
           return formattedRecord;
@@ -124,15 +156,12 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
   }
 
   void _applySorting(String field, bool ascending) {
-    _gridAnimationController.reset();
-
     setState(() {
       currentSortField = field;
       isAscending = ascending;
     });
 
     _saveSortPreferences();
-    _gridAnimationController.forward();
     widget.onSortingChanged?.call(field, ascending);
   }
 
@@ -158,10 +187,15 @@ class EntryBarState extends State<EntryBar> with SingleTickerProviderStateMixin 
 
           final allRecords = snapshot.data?['allRecords'] as List<dynamic>? ?? [];
           final formattedRecords = _filterRecords(allRecords);
+          
+          // Apply entry type filter
+          final filteredRecords = _filterEntryTypes.isEmpty 
+              ? formattedRecords 
+              : formattedRecords.where(_recordPassesFilters).toList();
 
           // Sort records
           final sortedRecords = RecordSortingUtils.sortRecords(
-            records: List.from(formattedRecords),
+            records: List.from(filteredRecords),
             field: currentSortField,
             ascending: isAscending,
           );

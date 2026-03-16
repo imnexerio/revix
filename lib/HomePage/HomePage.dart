@@ -97,22 +97,35 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
   Future<void> _loadAvailableEntryTypes() async {
     try {
       final databaseService = FirebaseDatabaseService();
+      
+      // Step 1: Show cached data immediately
+      final cachedTypes = databaseService.currentEntryTypes;
+      if (cachedTypes.isNotEmpty) {
+        _updateAvailableEntryTypes(cachedTypes);
+      }
+      
+      // Step 2: Fetch fresh data (will update stream, but also await for completion)
       final trackingTypes = await databaseService.fetchCustomTrackingTypes();
-      setState(() {
-        // Ensure 'All' is always the first option and then add other tracking types
-        List<String> types = ['All']; // Start with 'All'
-        if (trackingTypes.isNotEmpty) {
-          // Add all types except 'All' if it already exists in trackingTypes
-          types.addAll(trackingTypes.where((type) => type != 'All'));
-        }
-        _availableEntryTypes = types;
-      });
+      _updateAvailableEntryTypes(trackingTypes);
     } catch (e) {
       // Handle error, keeping default with 'All'
       setState(() {
         _availableEntryTypes = ['All'];
       });
     }
+  }
+  
+  void _updateAvailableEntryTypes(List<String> trackingTypes) {
+    if (!mounted) return;
+    setState(() {
+      // Ensure 'All' is always the first option and then add other tracking types
+      List<String> types = ['All']; // Start with 'All'
+      if (trackingTypes.isNotEmpty) {
+        // Add all types except 'All' if it already exists in trackingTypes
+        types.addAll(trackingTypes.where((type) => type != 'All'));
+      }
+      _availableEntryTypes = types;
+    });
   }
 
   // Cycle through available entry types

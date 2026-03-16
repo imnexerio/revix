@@ -11,7 +11,7 @@ class GeminiService {
   String? _currentScheduleData;
   bool _scheduleDataSent = false;
 
-  GeminiService({this.apiKey, this.modelName = 'gemini-2.5-flash-preview-05-20'}) {
+  GeminiService({this.apiKey, this.modelName = 'gemini-2.5-flash'}) {
     if (apiKey != null && apiKey!.isNotEmpty) {
       _model = GenerativeModel(
         model: modelName,

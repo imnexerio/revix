@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.2.9+8
+version: 1.2.9+14
 
 environment:
   sdk: ^3.5.4
@@ -52,10 +52,13 @@ dependencies:
   google_generative_ai: ^0.4.6
   flutter_markdown: ^0.7.6+2
   uuid: ^4.5.1
-  home_widget: ^0.9.0
+  home_widget:
+    git:
+      url: https://github.com/imnexerio/home_widget.git
+      ref: fix/workmanager-append-chain-poisoning
+      path: packages/home_widget
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  google_fonts: ^7.0.0
   file_picker: ^10.2.0
   rxdart: ^0.28.0
 
@@ -98,6 +101,15 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Nunito-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
   assets:
     - assets/icon/icon.png
     - assets/github.png

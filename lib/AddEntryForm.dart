@@ -58,29 +58,18 @@ class _AddEntryFormState extends State<AddEntryForm> {
   }
   Future<void> _loadCategoriesAndSubCategories() async {
     try {
-      // Get the singleton instance and use the loadCategoriesAndSubCategories method
+      // Get the singleton instance
       final service = UnifiedDatabaseService();
+      
+      // Step 1: Show cached data immediately if available
+      final cachedData = service.currentSubjectsData;
+      if (cachedData != null) {
+        _updateCategoriesState(cachedData);
+      }
+      
+      // Step 2: Fetch fresh data in background (non-blocking for UI if cached data shown)
       final data = await service.loadCategoriesAndSubCategories();
-
-      // Update state with the retrieved data
-      setState(() {
-        _categories = data['subjects'];
-        _subCategories = data['subCategories'];
-
-        // Set appropriate selection
-        if (_categories.isNotEmpty) {
-          _selectedCategory = _categories[0];
-          // Set default sub-category for the selected category
-          if (_subCategories[_categories[0]]?.isNotEmpty == true) {
-            _selectedCategoryCode = _subCategories[_categories[0]]![0];
-          }
-        } else {
-          _selectedCategory = 'DEFAULT_VALUE';
-        }
-      });
-
-      // No need to set up a listener here since this is part of a form
-      // that's not constantly visible in the UI
+      _updateCategoriesState(data);
 
     } catch (e) {
       customSnackBar_error(
@@ -88,6 +77,30 @@ class _AddEntryFormState extends State<AddEntryForm> {
         message: 'Error loading categories and sub categories: $e',
       );
     }
+  }
+  
+  void _updateCategoriesState(Map<String, dynamic> data) {
+    if (!mounted) return;
+    
+    setState(() {
+      _categories = List<String>.from(data['subjects'] ?? []);
+      _subCategories = Map<String, List<String>>.from(
+        (data['subCategories'] as Map?)?.map(
+          (key, value) => MapEntry(key.toString(), List<String>.from(value ?? [])),
+        ) ?? {},
+      );
+
+      // Set appropriate selection if not already set
+      if (_selectedCategory == 'DEFAULT_VALUE' && _categories.isNotEmpty) {
+        _selectedCategory = _categories[0];
+        // Set default sub-category for the selected category
+        if (_subCategories[_categories[0]]?.isNotEmpty == true) {
+          _selectedCategoryCode = _subCategories[_categories[0]]![0];
+        }
+      } else if (_categories.isEmpty) {
+        _selectedCategory = 'DEFAULT_VALUE';
+      }
+    });
   }
   Future<void> UpdateRecords(BuildContext context) async {
     try {
