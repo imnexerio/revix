@@ -102,6 +102,9 @@ class CalendarViewActivity : AppCompatActivity() {
         calendarPagerAdapter = CalendarPagerAdapter()
         viewPager.adapter = calendarPagerAdapter
         viewPager.offscreenPageLimit = 2 // Keep adjacent pages in memory for smooth swiping
+        // Disable item animator to prevent measurement instability in floating dialog window
+        // when notifyItemChanged triggers pre-layout/post-layout animation passes
+        (viewPager.getChildAt(0) as? RecyclerView)?.itemAnimator = null
         viewPager.setCurrentItem(INITIAL_POSITION, false)
         
         // Update header to show current month
