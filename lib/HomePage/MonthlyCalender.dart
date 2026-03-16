@@ -242,16 +242,31 @@ class _StudyCalendarState extends State<StudyCalendar> {
             ),
           ),
           const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 24,
+              runSpacing: 8,
               children: [
-                LegendItem( label: 'Initiated', color: Colors.blue, icon: Icons.school,),
-                LegendItem( label: 'Reviewed', color: Colors.green, icon: Icons.check_circle,),
-                LegendItem( label: 'Scheduled', color: Colors.orange, icon: Icons.event,),
-                LegendItem( label: 'Missed', color: Colors.red, icon: Icons.cancel,),
-                LegendItem( label: 'Skipped', color: Colors.purple, icon: Icons.skip_next,),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    LegendItem(label: 'Initiated', color: Colors.blue, icon: Icons.school),
+                    SizedBox(width: 12),
+                    LegendItem(label: 'Reviewed', color: Colors.green, icon: Icons.check_circle),
+                    SizedBox(width: 12),
+                    LegendItem(label: 'Scheduled', color: Colors.orange, icon: Icons.event),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    LegendItem(label: 'Missed', color: Colors.red, icon: Icons.cancel),
+                    SizedBox(width: 12),
+                    LegendItem(label: 'Skipped', color: Colors.purple, icon: Icons.skip_next),
+                  ],
+                ),
               ],
             ),
           ),
