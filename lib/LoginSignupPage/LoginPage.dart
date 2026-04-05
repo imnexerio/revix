@@ -12,6 +12,7 @@ import '../Utils/FirebaseDatabaseService.dart';
 import '../Utils/FirebaseAuthService.dart';
 import '../widgets/AnimatedSquareText.dart';
 import '../HomeWidget/HomeWidgetManager.dart';
+import '../Utils/platform_utils.dart';
 import 'SignupPage.dart';
 import '../Utils/UrlLauncher.dart';
 
@@ -122,8 +123,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setBool('isLoggedIn', true);
 
-          // Update home widget with login status
-          await HomeWidgetService.updateWidgetLoginStatus(true);
+          // Update home widget with login status (Android only)
+          if (PlatformUtils.instance.isAndroid) {
+            await HomeWidgetService.updateWidgetLoginStatus(true);
+          }
 
           // Fetch and apply the latest custom theme
           ThemeNotifier themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
@@ -166,8 +169,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       // Enable guest mode
       await GuestAuthService.enableGuestMode();
       
-      // Update home widget with login status for guest mode
-      await HomeWidgetService.updateWidgetLoginStatus(true);
+      // Update home widget with login status for guest mode (Android only)
+      if (PlatformUtils.instance.isAndroid) {
+        await HomeWidgetService.updateWidgetLoginStatus(true);
+      }
       
       // Initialize the local database with default data
       final localDb = LocalDatabaseService();
