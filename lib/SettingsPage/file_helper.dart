@@ -9,7 +9,7 @@ class FileHelper {
   static Future<String?> saveToFile(String data, String filename) async {
     try {
       // Use file_picker for all platforms - it handles web, mobile, and desktop
-      String? outputFile = await FilePicker.platform.saveFile(
+      String? outputFile = await FilePicker.saveFile(
         dialogTitle: 'Save your data backup',
         fileName: filename,
         type: FileType.custom,
@@ -57,7 +57,7 @@ class FileHelper {
   static Future<String?> pickAndReadFile() async {
     try {
       // Use file_picker for all platforms
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
         allowMultiple: false,
