@@ -90,7 +90,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void didUpdateWidget(SplashScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isInitialized != oldWidget.isInitialized && widget.isInitialized) {
-      _tryNavigate();
+      // Defer navigation to after the current build phase completes
+      // This prevents "setState() called during build" and "_debugLocked" errors
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _tryNavigate();
+      });
     }
   }
 
