@@ -1,4 +1,4 @@
-# revix
+﻿# revix
 
 A powerful Flutter-based task scheduling and productivity application integrated with Firebase for secure data storage and authentication, featuring AI-powered assistance for enhanced productivity.
 
@@ -82,7 +82,6 @@ Before getting started, ensure you have the following installed on your developm
 - **Firebase Core**: Backend infrastructure
 - **Firebase Database**: Real-time database
 - **Firebase Auth**: Authentication service
-- **Firebase Storage**: File storage
 
 ### AI Integration
 - **Gemini API**: AI-powered chat assistant
@@ -121,13 +120,10 @@ cd revix
    - Navigate to "Realtime Database" in the Firebase console
    - Click "Create Database"
    - Start in test mode, then switch to the rules below
-4. Set up Firebase Storage:
-   - Navigate to "Storage" in the Firebase console
-   - Click "Get started" and follow the setup wizard
-5. Enable Email/Password Authentication:
+4. Enable Email/Password Authentication:
    - Navigate to "Authentication" in the Firebase console
    - Under "Sign-in method", enable "Email/Password"
-6. Configure Flutter project with Firebase:
+5. Configure Flutter project with Firebase:
    ```sh
    # Install FlutterFire CLI if not already installed
    dart pub global activate flutterfire_cli
@@ -136,8 +132,8 @@ cd revix
    flutterfire configure
    ```
    - Select the Firebase project you created
-   - **Important**: Use `com.imnexerio.revix` as the Android package name
-7. Update Realtime Database Rules:
+   - **Important**: Use `com.imnexerio.revix` as the Android package name(if asked)
+6. Update Realtime Database Rules:
    ```json
    {
      "rules": {
