@@ -1,6 +1,6 @@
 [package]
 name = "revix"
-version = "1.2.10"
+version = "1.2.11"
 description = "A powerful task scheduling and productivity app with AI-powered assistance, built with Flutter and Firebase"
 authors = ["imnexerio"]
 license = "AGPL-3.0"
