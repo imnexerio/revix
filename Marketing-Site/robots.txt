@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://revix-website.web.app/sitemap.xml
+
+# Important pages for crawling
+Allow: /index.html
+Allow: /images/
+Allow: /style.css
+Allow: /script.js
+Allow: /manifest.json
+
+# Block unnecessary files
+Disallow: /*.json$
+Disallow: /firebase.json

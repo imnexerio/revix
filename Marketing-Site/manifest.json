@@ -1,0 +1,41 @@
+{
+  "name": "Revix - Opensource AI-Powered Task Tracking by imnexerio",
+  "short_name": "Revix",
+  "description": "Boost productivity with opensource cross-platform task tracking app by Santosh (imnexerio). Features scientific spaced revision, AI insights, and evidence-based improvements for enhanced learning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "education", "utilities", "opensource", "scientific"],
+  "lang": "en",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "images/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "images/screenshot-home-light.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Revix Dashboard - Light Theme"
+    },
+    {
+      "src": "images/screenshot-home-dark.png",
+      "sizes": "1280x720", 
+      "type": "image/png",
+      "label": "Revix Dashboard - Dark Theme"
+    }
+  ]
+}

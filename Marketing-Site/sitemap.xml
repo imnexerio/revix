@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://revix-website.web.app/</loc>
+    <lastmod>2025-09-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://revix-website.web.app/images/app-preview-light.png</image:loc>
+      <image:title>Revix App Interface Light Theme</image:title>
+      <image:caption>Task tracking dashboard in light theme</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://revix-website.web.app/images/app-preview-dark.png</image:loc>
+      <image:title>Revix App Interface Dark Theme</image:title>
+      <image:caption>Task tracking dashboard in dark theme</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://revix-website.web.app/images/screenshot-home-light.png</image:loc>
+      <image:title>Revix Home Dashboard Light</image:title>
+      <image:caption>Complete overview of tasks and progress</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://revix-website.web.app/images/screenshot-analytics-light.png</image:loc>
+      <image:title>Revix Analytics View</image:title>
+      <image:caption>Detailed performance analytics and insights</image:caption>
+    </image:image>
+  </url>
+</urlset>

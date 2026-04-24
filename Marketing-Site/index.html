@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>Revix - AI-Powered Task Tracking & Productivity App | Free Download</title>
+    <meta name="description" content="Boost productivity with Revix - the ultimate opensource cross-platform task tracking app by imnexerio (Santosh). Features AI insights, scientific spaced revision, smart scheduling, and detailed analytics. Evidence-based improvements for enhanced learning and performance. Free download for Android, iOS, Windows, macOS & Linux.">
+    <meta name="keywords" content="task tracker, productivity app, spaced repetition, AI assistant, study planner, schedule management, cross-platform, Android, iOS, Windows, macOS, Linux, free download, opensource, open source, imnexerio, santosh, improvements, scientific, evidence-based, research-backed, learning optimization, memory enhancement, study techniques, academic productivity, student tools, task organizer, habit tracker, goal tracking, performance analytics, data-driven insights">
+    <meta name="author" content="imnexerio, Santosh">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://revix-website.web.app/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://revix-website.web.app/">
+    <meta property="og:title" content="Revix - Opensource AI-Powered Task Tracking by imnexerio">
+    <meta property="og:description" content="Boost productivity with Revix - the ultimate opensource cross-platform task tracking app by Santosh (imnexerio). Features scientific spaced revision, AI insights, and evidence-based improvements for enhanced learning.">
+    <meta property="og:image" content="https://revix-website.web.app/images/app-preview-light.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Revix">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://revix-website.web.app/">
+    <meta property="twitter:title" content="Revix - Opensource AI-Powered Task Tracking by imnexerio">
+    <meta property="twitter:description" content="Boost productivity with Revix - the ultimate opensource cross-platform task tracking app by Santosh (imnexerio). Features scientific spaced revision, AI insights, and evidence-based improvements for enhanced learning.">
+    <meta property="twitter:image" content="https://revix-website.web.app/images/app-preview-light.png">
+    <meta property="twitter:creator" content="@imnexerio">
+    
+    <!-- Additional SEO -->
+    <meta name="theme-color" content="#6366f1">
+    <meta name="application-name" content="Revix">
+    <meta name="apple-mobile-web-app-title" content="Revix">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Revix",
+        "description": "Opensource AI-powered cross-platform task tracking and productivity app with scientific spaced revision, smart scheduling, and evidence-based improvements for enhanced learning and performance optimization.",
+        "url": "https://revix-website.web.app/",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": ["Android", "iOS", "Windows", "macOS", "Linux", "Web"],
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "creator": {
+            "@type": "Person",
+            "name": "Santosh (imnexerio)",
+            "url": "https://github.com/imnexerio",
+            "alternateName": ["imnexerio", "Santosh"]
+        },
+        "downloadUrl": "https://github.com/imnexerio/revix/releases",
+        "codeRepository": "https://github.com/imnexerio/revix",
+        "license": "https://github.com/imnexerio/revix/blob/main/LICENSE",
+        "programmingLanguage": "Cross-platform",
+        "featureList": [
+            "Scientific Spaced Revision System",
+            "AI-Powered Insights and Analytics", 
+            "Smart Dashboard with Performance Tracking",
+            "Intelligent Schedule Management",
+            "Cross-Platform Synchronization",
+            "Dark/Light Theme Support",
+            "Detailed Performance Analytics",
+            "Evidence-based Learning Improvements",
+            "Research-backed Study Techniques",
+            "Open Source Development"
+        ],
+        "screenshot": "https://revix-website.web.app/images/app-preview-light.png",
+        "keywords": "opensource, task tracker, scientific spaced repetition, AI assistant, productivity improvements, evidence-based learning, imnexerio, santosh"
+    }
+    </script>
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="script.js" as="script">
+    <link rel="preload" href="images/icon.png" as="image">
+    <link rel="preload" href="images/app-preview-light.png" as="image">
+    
+    <!-- Fonts (Optimized) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="images/icon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/icon.png">
+    <link rel="apple-touch-icon" href="images/icon.png">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="images/icon.png" alt="Revix App Logo - Task Tracking Software" class="logo-icon">
+                <span class="logo-text">Revix</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#screenshots" class="nav-link">Screenshots</a>
+                <a href="#download" class="nav-link">Download</a>
+            </div>
+            
+            <div class="nav-actions">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                    <span class="material-icons-outlined theme-icon" id="theme-icon">wb_sunny</span>
+                </button>
+                
+                <div class="nav-toggle" id="nav-toggle">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 3D Animated Background -->
+    <div class="animated-3d-background" id="animated-bg">
+        <!-- 3D elements will be dynamically generated -->
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Track Any Task 
+                    <span class="gradient-text">Easily</span>
+                </h1>
+                <h2 class="hero-subtitle">Opensource AI-Powered Cross-Platform Productivity App</h2>
+                <p class="hero-description">
+                    A revolutionary opensource application designed by imnexerio to transform how you organize your studies,
+                    manage your schedule, and boost productivity with AI-powered insights and scientifically-proven spaced revision techniques.
+                </p>
+                
+                <div class="hero-buttons">
+                    <a href="#download" class="btn btn-primary">
+                        <span class="material-icons-outlined">download</span>
+                        Get Started
+                    </a>
+                    <a href="#features" class="btn btn-secondary">
+                        <span class="material-icons-outlined">play_arrow</span>
+                        Learn More
+                    </a>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">10K+</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">4.8</div>
+                        <div class="stat-label">App Rating</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">100K+</div>
+                        <div class="stat-label">Tasks Tracked</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-image">
+                <div class="phone-mockup">
+                    <div class="screen">
+                        <img src="images/app-preview-light.png" alt="Revix App Interface Light Theme - Task Dashboard Preview" class="app-preview light-screenshot">
+                        <img src="images/app-preview-dark.png" alt="Revix App Interface Dark Theme - Task Dashboard Preview" class="app-preview dark-screenshot">
+                    </div>
+                </div>
+                
+                <!-- Floating Elements -->
+                <div class="floating-card card-1">
+                    <div class="card-icon">
+                        <span class="material-icons-outlined">home</span>
+                    </div>
+                    <div class="card-content">
+                        <h4>Dashboard</h4>
+                        <p>Beautiful overview</p>
+                    </div>
+                </div>
+                
+                <div class="floating-card card-2">
+                    <div class="card-icon">
+                        <span class="material-icons-outlined">auto_awesome</span>
+                    </div>
+                    <div class="card-content">
+                        <h4>AI Assistant</h4>
+                        <p>Smart insights</p>
+                    </div>
+                </div>
+                
+                <div class="floating-card card-3">
+                    <div class="card-icon">
+                        <span class="material-icons-outlined">today</span>
+                    </div>
+                    <div class="card-content">
+                        <h4>Schedule</h4>
+                        <p>Stay organized</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Animated Background -->
+        <div class="hero-bg">
+            <div class="bg-shape shape-1"></div>
+            <div class="bg-shape shape-2"></div>
+            <div class="bg-shape shape-3"></div>
+        </div>
+    </section>
+
+    <!-- Cross Platform Showcase Section -->
+    <section id="platforms" class="platforms">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Cross-Platform Task Tracking - One App, Every Device</h2>
+                <p class="section-description">
+                    Experience Revix seamlessly across all your devices with automatic data synchronization. 
+                    Pick up where you left off on Android, iOS, Windows, macOS, Linux, or web browser.
+                </p>
+            </div>
+            
+            <div class="platform-showcase">
+                <div class="platform-tabs">
+                    <button class="tab-btn active" data-platform="web">
+                        <span class="material-icons-outlined">language</span>
+                        Web
+                    </button>
+                    <button class="tab-btn" data-platform="android">
+                        <span class="material-icons-outlined">phone_android</span>
+                        Android
+                    </button>
+                    <button class="tab-btn" data-platform="ios">
+                        <span class="material-icons-outlined">phone_iphone</span>
+                        iOS
+                    </button>
+                    <button class="tab-btn" data-platform="windows">
+                        <span class="material-icons-outlined">computer</span>
+                        Windows
+                    </button>
+                    <button class="tab-btn" data-platform="macos">
+                        <span class="material-icons-outlined">laptop_mac</span>
+                        macOS
+                    </button>
+                    <button class="tab-btn" data-platform="linux">
+                        <span class="material-icons-outlined">desktop_windows</span>
+                        Linux
+                    </button>
+                </div>
+                
+                <div class="platform-content">
+                    <!-- Web Platform -->
+                    <div class="platform-view active" id="web-view">
+                        <div class="platform-screenshots">
+                            <div class="screenshot-container">
+                                <div class="screenshot-frame web-frame">
+                                    <div class="browser-bar">
+                                        <div class="browser-dots">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
+                                        </div>
+                                        <div class="browser-url">revix.app</div>
+                                    </div>
+                                    <img src="images/screenshot-home-light.png" alt="Revix Web Light Theme" class="platform-screenshot light-screenshot">
+                                    <img src="images/screenshot-home-dark.png" alt="Revix Web Dark Theme" class="platform-screenshot dark-screenshot">
+                                </div>
+                            </div>
+                            <div class="platform-info">
+                                <h3>Web Application</h3>
+                                <p>Access Revix from any browser. No installation required - just open and start tracking your tasks instantly.</p>
+                                <ul class="platform-features">
+                                    <li><span class="material-icons-outlined">check</span>Instant access</li>
+                                    <li><span class="material-icons-outlined">check</span>No installation needed</li>
+                                    <li><span class="material-icons-outlined">check</span>Cross-browser compatibility</li>
+                                    <li><span class="material-icons-outlined">check</span>Responsive design</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Android Platform -->
+                    <div class="platform-view" id="android-view">
+                        <div class="platform-screenshots">
+                            <div class="screenshot-container">
+                                <div class="screenshot-frame mobile-frame">
+                                    <img src="images/app-preview-light.png" alt="Revix Android Light Theme" class="platform-screenshot light-screenshot">
+                                    <img src="images/app-preview-dark.png" alt="Revix Android Dark Theme" class="platform-screenshot dark-screenshot">
+                                </div>
+                            </div>
+                            <div class="platform-info">
+                                <h3>Android Native</h3>
+                                <p>Optimized for Android devices with Material Design 3. Includes widgets, notifications, and deep system integration.</p>
+                                <ul class="platform-features">
+                                    <li><span class="material-icons-outlined">check</span>Material Design 3</li>
+                                    <li><span class="material-icons-outlined">check</span>Home screen widgets</li>
+                                    <li><span class="material-icons-outlined">check</span>Push notifications</li>
+                                    <li><span class="material-icons-outlined">check</span>Offline support</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- iOS Platform -->
+                    <div class="platform-view" id="ios-view">
+                        <div class="platform-screenshots">
+                            <div class="screenshot-container">
+                                <div class="screenshot-frame mobile-frame ios-frame">
+                                    <img src="images/app-preview-light.png" alt="Revix iOS Light Theme" class="platform-screenshot light-screenshot">
+                                    <img src="images/app-preview-dark.png" alt="Revix iOS Dark Theme" class="platform-screenshot dark-screenshot">
+                                </div>
+                            </div>
+                            <div class="platform-info">
+                                <h3>iOS Native</h3>
+                                <p>Beautiful iOS experience with Cupertino design. Includes Siri shortcuts, widgets, and seamless iCloud integration.</p>
+                                <ul class="platform-features">
+                                    <li><span class="material-icons-outlined">check</span>iOS design guidelines</li>
+                                    <li><span class="material-icons-outlined">check</span>Siri shortcuts</li>
+                                    <li><span class="material-icons-outlined">check</span>iOS widgets</li>
+                                    <li><span class="material-icons-outlined">check</span>iCloud sync</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Windows Platform -->
+                    <div class="platform-view" id="windows-view">
+                        <div class="platform-screenshots">
+                            <div class="screenshot-container">
+                                <div class="screenshot-frame desktop-frame">
+                                    <div class="window-bar">
+                                        <div class="window-controls">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
+                                        </div>
+                                        <div class="window-title">Revix</div>
+                                    </div>
+                                    <img src="images/screenshot-home-light.png" alt="Revix Windows Light Theme" class="platform-screenshot light-screenshot">
+                                    <img src="images/screenshot-home-dark.png" alt="Revix Windows Dark Theme" class="platform-screenshot dark-screenshot">
+                                </div>
+                            </div>
+                            <div class="platform-info">
+                                <h3>Windows Desktop</h3>
+                                <p>Full-featured desktop experience for Windows 10/11. Includes system tray, notifications, and keyboard shortcuts.</p>
+                                <ul class="platform-features">
+                                    <li><span class="material-icons-outlined">check</span>Native Windows UI</li>
+                                    <li><span class="material-icons-outlined">check</span>System tray integration</li>
+                                    <li><span class="material-icons-outlined">check</span>Keyboard shortcuts</li>
+                                    <li><span class="material-icons-outlined">check</span>Windows notifications</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- macOS Platform -->
+                    <div class="platform-view" id="macos-view">
+                        <div class="platform-screenshots">
+                            <div class="screenshot-container">
+                                <div class="screenshot-frame desktop-frame macos-frame">
+                                    <div class="browser-bar">
+                                        <div class="browser-dots">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
+                                        </div>
+                                        <div class="window-title">Revix</div>
+                                    </div>
+                                    <img src="images/screenshot-home-light.png" alt="Revix macOS Light Theme" class="platform-screenshot light-screenshot">
+                                    <img src="images/screenshot-home-dark.png" alt="Revix macOS Dark Theme" class="platform-screenshot dark-screenshot">
+                                </div>
+                            </div>
+                            <div class="platform-info">
+                                <h3>macOS Native</h3>
+                                <p>Beautiful macOS experience with native design. Includes menu bar integration, Spotlight search, and Touch Bar support.</p>
+                                <ul class="platform-features">
+                                    <li><span class="material-icons-outlined">check</span>Native macOS design</li>
+                                    <li><span class="material-icons-outlined">check</span>Menu bar integration</li>
+                                    <li><span class="material-icons-outlined">check</span>Spotlight search</li>
+                                    <li><span class="material-icons-outlined">check</span>Touch Bar support</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Linux Platform -->
+                    <div class="platform-view" id="linux-view">
+                        <div class="platform-screenshots">
+                            <div class="screenshot-container">
+                                <div class="screenshot-frame desktop-frame linux-frame">
+                                    <div class="window-bar">
+                                        <div class="window-title">Revix</div>
+                                        <div class="window-controls linux-controls">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
+                                        </div>
+                                    </div>
+                                    <img src="images/screenshot-home-light.png" alt="Revix Linux Light Theme" class="platform-screenshot light-screenshot">
+                                    <img src="images/screenshot-home-dark.png" alt="Revix Linux Dark Theme" class="platform-screenshot dark-screenshot">
+                                </div>
+                            </div>
+                            <div class="platform-info">
+                                <h3>Linux Desktop</h3>
+                                <p>Native Linux experience that works across all major distributions. Follows desktop environment guidelines and supports system theming.</p>
+                                <ul class="platform-features">
+                                    <li><span class="material-icons-outlined">check</span>Multi-distro support</li>
+                                    <li><span class="material-icons-outlined">check</span>System theme integration</li>
+                                    <li><span class="material-icons-outlined">check</span>Desktop notifications</li>
+                                    <li><span class="material-icons-outlined">check</span>AppImage package</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Powerful Productivity Features</h2>
+                <p class="section-description">
+                    Everything you need to track your progress, manage tasks effectively, and achieve your productivity goals with AI-powered insights.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <!-- Spaced Revision Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">refresh</span>
+                    </div>
+                    <h3 class="feature-title">Scientific Spaced Revision</h3>
+                    <p class="feature-description">
+                        Master any subject with scientifically-proven spaced repetition techniques. 
+                        Our evidence-based algorithm schedules reviews at optimal intervals for maximum retention and continuous improvements.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Smart scheduling
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Memory optimization
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Progress tracking
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dashboard Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">dashboard</span>
+                    </div>
+                    <h3 class="feature-title">Smart Dashboard</h3>
+                    <p class="feature-description">
+                        Get a comprehensive overview of your progress with beautiful charts, 
+                        statistics, and insights that help you stay on track.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Progress tracking
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Visual analytics
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Goal completion
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Schedule Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">event_note</span>
+                    </div>
+                    <h3 class="feature-title">Smart Scheduling</h3>
+                    <p class="feature-description">
+                        Organize your tasks and lectures with intelligent scheduling. 
+                        Never miss important deadlines or revision sessions.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Calendar integration
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Reminder system
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Progress calendar
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">analytics</span>
+                    </div>
+                    <h3 class="feature-title">Detailed Analytics</h3>
+                    <p class="feature-description">
+                        Dive deep into your performance with detailed analytics. 
+                        Track completion rates, identify patterns, and optimize your routine.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Performance metrics
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Trend analysis
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Custom reports
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Assistant Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">psychology</span>
+                    </div>
+                    <h3 class="feature-title">AI Assistant</h3>
+                    <p class="feature-description">
+                        Get personalized insights and recommendations from your AI-powered 
+                        assistant. Ask questions about your schedule and performance.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Smart insights
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Natural chat
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Custom advice
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cross Platform Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">devices</span>
+                    </div>
+                    <h3 class="feature-title">Cross Platform</h3>
+                    <p class="feature-description">
+                        Access your data anywhere. Revix works seamlessly across 
+                        Android, iOS, Web, Windows, macOS, and Linux.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Cloud sync
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Offline support
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            All platforms
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Customization Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">person</span>
+                    </div>
+                    <h3 class="feature-title">Profile Management</h3>
+                    <p class="feature-description">
+                        Make Revix truly yours with beautiful themes and customization options. 
+                        Choose from preset themes or create your own.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Multiple themes
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Custom colors
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Dark/Light mode
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Opensource Feature -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="material-icons-outlined">code</span>
+                    </div>
+                    <h3 class="feature-title">Opensource Development</h3>
+                    <p class="feature-description">
+                        Built with transparency and community in mind by imnexerio. Access the source code,
+                        contribute to continuous improvements, and customize Revix to your specific needs.
+                    </p>
+                    <div class="feature-highlights">
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Full transparency
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Community driven improvements
+                        </div>
+                        <div class="highlight">
+                            <span class="material-icons-outlined">check_circle</span>
+                            Customizable & scientific
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section id="screenshots" class="screenshots">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">App Screenshots - See Revix in Action</h2>
+                <p class="section-description">
+                    Beautiful, intuitive interface designed for maximum productivity with dark and light themes available.
+                </p>
+            </div>
+            
+            <div class="screenshots-carousel">
+                <div class="screenshot-item active">
+                    <div class="screenshot-image">
+                        <img src="images/screenshot-home-light.png" alt="Home Dashboard Light" class="carousel-screenshot light-screenshot">
+                        <img src="images/screenshot-home-dark.png" alt="Home Dashboard Dark" class="carousel-screenshot dark-screenshot">
+                    </div>
+                    <div class="screenshot-info">
+                        <h3>Smart Dashboard</h3>
+                        <p>Get a complete overview of your progress, completion rates, and upcoming tasks.</p>
+                    </div>
+                </div>
+                
+                <div class="screenshot-item">
+                    <div class="screenshot-image">
+                        <img src="images/screenshot-schedule-light.png" alt="Schedule View Light" class="carousel-screenshot light-screenshot">
+                        <img src="images/screenshot-schedule-dark.png" alt="Schedule View Dark" class="carousel-screenshot dark-screenshot">
+                    </div>
+                    <div class="screenshot-info">
+                        <h3>Schedule Management</h3>
+                        <p>Organize your lectures, revision sessions, and track your daily progress.</p>
+                    </div>
+                </div>
+                
+                <div class="screenshot-item">
+                    <div class="screenshot-image">
+                        <img src="images/screenshot-analytics-light.png" alt="Analytics View Light" class="carousel-screenshot light-screenshot">
+                        <img src="images/screenshot-analytics-dark.png" alt="Analytics View Dark" class="carousel-screenshot dark-screenshot">
+                    </div>
+                    <div class="screenshot-info">
+                        <h3>Detailed Analytics</h3>
+                        <p>Dive deep into your performance with charts, graphs, and detailed insights.</p>
+                    </div>
+                </div>
+                
+                <div class="screenshot-item">
+                    <div class="screenshot-image">
+                        <img src="images/screenshot-ai-light.png" alt="AI Assistant Light" class="carousel-screenshot light-screenshot">
+                        <img src="images/screenshot-ai-dark.png" alt="AI Assistant Dark" class="carousel-screenshot dark-screenshot">
+                    </div>
+                    <div class="screenshot-info">
+                        <h3>AI Assistant</h3>
+                        <p>Chat with your AI assistant to get insights and recommendations about your schedule.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="screenshot-nav">
+                <button class="nav-dot active" data-slide="0"></button>
+                <button class="nav-dot" data-slide="1"></button>
+                <button class="nav-dot" data-slide="2"></button>
+                <button class="nav-dot" data-slide="3"></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Download Revix - Free Task Tracking App</h2>
+                <p class="section-description">
+                    Download Revix now and take control of your productivity. 
+                    Available free on all platforms with cloud synchronization included.
+                </p>
+            </div>
+            
+            <!-- OS Detection Hero -->
+            <div class="download-hero" id="download-hero" style="display: none;">
+                <div class="hero-badge">Recommended for You</div>
+                <div class="hero-platform-icon">
+                    <span class="material-icons-outlined" id="hero-icon">computer</span>
+                </div>
+                <h3 id="hero-title">Download for Windows</h3>
+                <div class="hero-meta">
+                    <span class="hero-version" id="hero-version">v1.2.7</span>
+                    <span class="hero-separator">•</span>
+                    <span class="hero-size" id="hero-size">181 MB</span>
+                </div>
+                <a href="#" class="btn btn-primary btn-large" id="hero-download-btn">
+                    <span class="material-icons-outlined">download</span>
+                    Download Now
+                </a>
+                <p class="hero-hint">Or choose another platform below</p>
+            </div>
+            
+            <div class="download-content">
+                <!-- Tab Navigation -->
+                <div class="download-tabs">
+                    <button class="download-tab-btn active" data-category="all">
+                        <span class="material-icons-outlined">apps</span>
+                        All Platforms
+                    </button>
+                    <button class="download-tab-btn" data-category="mobile">
+                        <span class="material-icons-outlined">smartphone</span>
+                        Mobile
+                    </button>
+                    <button class="download-tab-btn" data-category="desktop">
+                        <span class="material-icons-outlined">computer</span>
+                        Desktop
+                    </button>
+                    <button class="download-tab-btn" data-category="web">
+                        <span class="material-icons-outlined">language</span>
+                        Web
+                    </button>
+                </div>
+                
+                <div class="download-grid" id="download-grid">
+                    <!-- Download options will be dynamically populated -->
+                    <div class="loading-downloads">
+                        <span class="material-icons-outlined">download</span>
+                        <p>Loading latest releases...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <img src="images/icon.png" alt="Revix" class="logo-icon">
+                        <span class="logo-text">Revix</span>
+                    </div>
+                    <p class="footer-description">
+                        Track any task easily with our opensource cross-platform productivity app by imnexerio.
+                        Boost your efficiency with scientific improvements and achieve your goals through evidence-based techniques.
+                    </p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Features</h3>
+                    <ul>
+                        <li><a href="#features">Spaced Revision</a></li>
+                        <li><a href="#features">Smart Dashboard</a></li>
+                        <li><a href="#features">AI Assistant</a></li>
+                        <li><a href="#features">Open Source</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Download</h3>
+                    <ul>
+                        <li><a href="#download">Android</a></li>
+                        <li><a href="#download">iOS</a></li>
+                        <li><a href="#download">Windows</a></li>
+                        <li><a href="#download">macOS</a></li>
+                        <li><a href="#download">Linux</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul>
+                        <li><a href="#" onclick="showComingSoon('Help Center')">Help Center</a></li>
+                        <li><a href="#" onclick="showComingSoon('Contact')">Contact Us</a></li>
+                        <li><a href="#" onclick="showComingSoon('Privacy')">Privacy Policy</a></li>
+                        <li><a href="#" onclick="showComingSoon('Terms')">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Revix. All rights reserved.</p>
+                <p>Made with ❤️ by <a href="https://github.com/imnexerio" target="_blank">imnexerio</a> for productivity enthusiasts seeking scientific improvements</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Coming Soon Modal -->
+    <div id="comingSoonModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-icon">
+                <span class="material-icons-outlined">upcoming</span>
+            </div>
+            <h3>Coming Soon!</h3>
+            <p id="modalMessage">This feature is coming soon. Stay tuned for updates!</p>
+            <button class="btn btn-primary" onclick="closeModal()">Got It</button>
+        </div>
+    </div>
+
+    <!-- Floating GitHub Icon -->
+    <a href="https://github.com/imnexerio/revix" target="_blank" class="floating-github-icon" aria-label="View on GitHub">
+        <span class="material-icons-outlined">code</span>
+    </a>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
