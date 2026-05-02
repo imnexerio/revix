@@ -619,13 +619,43 @@ function updateFormatInfo(platformKey) {
 }
 
 // Download selected format from dropdown
+function sanitizeDownloadUrl(url) {
+    if (typeof url !== 'string') {
+        return null;
+    }
+
+    const trimmed = url.trim();
+    if (trimmed === '') {
+        return null;
+    }
+
+    try {
+        const parsed = new URL(trimmed, window.location.origin);
+        const isHttp = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        const isRelative = !/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed);
+
+        if (isHttp || isRelative) {
+            return parsed.href;
+        }
+    } catch (e) {
+        return null;
+    }
+
+    return null;
+}
+
 function downloadSelectedFormat(platformKey, defaultUrl) {
     const select = document.getElementById(`format-select-${platformKey}`);
-    const downloadUrl = select ? select.value : defaultUrl;
+    const selectedUrl = select ? select.value : defaultUrl;
+    const safeUrl = sanitizeDownloadUrl(selectedUrl) || sanitizeDownloadUrl(defaultUrl);
+
+    if (!safeUrl) {
+        return;
+    }
     
     // Create temporary link and trigger download
     const link = document.createElement('a');
-    link.href = downloadUrl;
+    link.href = safeUrl;
     link.download = '';
     document.body.appendChild(link);
     link.click();
