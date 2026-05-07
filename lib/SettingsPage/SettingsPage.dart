@@ -105,12 +105,14 @@ class _SettingsPageContentState extends State<SettingsPageContent> with Automati
       databaseService.stopListening();
 
       // Stop auto-refresh before logout
-      try {
-        const platform = MethodChannel('com.imnexerio.revix/auto_refresh');
-        await platform.invokeMethod('stopAutoRefresh');
-        debugPrint('Auto-refresh stopped during logout');
-      } catch (e) {
-        debugPrint('Error stopping auto-refresh during logout: $e');
+      if (PlatformUtils.instance.isAndroid) {
+        try {
+          const platform = MethodChannel('com.imnexerio.revix/auto_refresh');
+          await platform.invokeMethod('stopAutoRefresh');
+          debugPrint('Auto-refresh stopped during logout');
+        } catch (e) {
+          debugPrint('Error stopping auto-refresh during logout: $e');
+        }
       }
 
       if (PlatformUtils.instance.isAndroid) {
