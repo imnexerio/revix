@@ -1193,22 +1193,29 @@ class _EntryDetailsModalState extends State<EntryDetailsModal> {
               recurrenceFrequency: recurrenceFrequency,
               onChanged: (String? newValue) async {
                 if (newValue != null) {
-                  setState(() {
-                    recurrenceFrequency = newValue;
-                    frequencyChanged = true; // Mark that frequency has been changed
+                  if (newValue == 'Custom') {
+                    setState(() {
+                      recurrenceFrequency = newValue;
+                      frequencyChanged = true; // Mark that frequency has been changed
+                    });
+                    // Await the selector so it completes before checking state
+                    await showCustomFrequencySelector();
+                    _checkForChanges();
+                  } else {
+                    setState(() {
+                      recurrenceFrequency = newValue;
+                      frequencyChanged = true; // Mark that frequency has been changed
 
-                    // If custom is selected, show custom options
-                    if (newValue == 'Custom') {
-                      // print('extractRecurrenceData: ${extractRecurrenceData(widget.details)}');
-                      showCustomFrequencySelector();
-                    } else {
-                      customFrequencyParams = Map<String, dynamic>.from(widget.details['recurrence_data']['custom_params']);
-                    }
-                  });
-                  _checkForChanges();
-                  
-                  // Calculate and update the next review date immediately
-                  await _calculateAndUpdateNextDate(newValue);
+                      // Safely handle null when retrieving custom params
+                      customFrequencyParams = Map<String, dynamic>.from(
+                          widget.details['recurrence_data']['custom_params'] ?? {}
+                      );
+                    });
+                    _checkForChanges();
+
+                    // Calculate and update the next review date immediately
+                    await _calculateAndUpdateNextDate(newValue);
+                  }
                 }
               },
             ),
