@@ -433,6 +433,211 @@
         </div>
     </section>
 
+    <!-- Science Behind Revix - Forgetting Curve Section -->
+    <section id="science" class="science-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">The Science Behind Spaced Revision</h2>
+                <p class="section-description">
+                    Revix is built on the Ebbinghaus Forgetting Curve — a scientifically-proven model showing how memory fades over time without review.
+                </p>
+            </div>
+
+            <div class="science-content">
+                <!-- Text Side -->
+                <div class="science-text">
+                    <div class="science-stat-card">
+                        <div class="science-stat-icon">
+                            <span class="material-icons-outlined">trending_down</span>
+                        </div>
+                        <div class="science-stat-info">
+                            <h4>Without Revision</h4>
+                            <p>You forget up to <strong>80%</strong> of new information within <strong>48 hours</strong>. The forgetting curve drops rapidly after learning.</p>
+                        </div>
+                    </div>
+
+                    <div class="science-stat-card accent">
+                        <div class="science-stat-icon accent">
+                            <span class="material-icons-outlined">trending_up</span>
+                        </div>
+                        <div class="science-stat-info">
+                            <h4>With Spaced Revision</h4>
+                            <p>Each review <strong>resets the curve</strong> and makes the decay slower. After 3–4 reviews, retention stays above <strong>90%</strong> long-term.</p>
+                        </div>
+                    </div>
+
+                    <div class="science-stat-card highlight">
+                        <div class="science-stat-icon highlight">
+                            <span class="material-icons-outlined">auto_awesome</span>
+                        </div>
+                        <div class="science-stat-info">
+                            <h4>Revix Does This Automatically</h4>
+                            <p>Our algorithm schedules each review at the <strong>optimal moment</strong> — right before you'd start forgetting — so you study less but remember more.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graph Side -->
+                <div class="science-graph" id="science-graph">
+                    <div class="graph-container">
+                        <svg id="forgetting-curve-svg" viewBox="0 0 800 450" preserveAspectRatio="xMidYMid meet">
+                            <!-- Grid lines -->
+                            <g class="graph-grid" opacity="0.15">
+                                <line x1="80" y1="108" x2="760" y2="108" stroke="currentColor" stroke-dasharray="4,6"/>
+                                <line x1="80" y1="176" x2="760" y2="176" stroke="currentColor" stroke-dasharray="4,6"/>
+                                <line x1="80" y1="244" x2="760" y2="244" stroke="currentColor" stroke-dasharray="4,6"/>
+                                <line x1="80" y1="312" x2="760" y2="312" stroke="currentColor" stroke-dasharray="4,6"/>
+                            </g>
+
+                            <!-- Axes -->
+                            <g class="graph-axes">
+                                <line x1="80" y1="40" x2="80" y2="385" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="75" y1="380" x2="760" y2="380" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </g>
+
+                            <!-- Y-axis labels -->
+                            <g class="graph-labels axis-labels" fill="currentColor">
+                                <text x="70" y="48" text-anchor="end" font-size="13" font-weight="600">100%</text>
+                                <text x="70" y="116" text-anchor="end" font-size="12">80%</text>
+                                <text x="70" y="184" text-anchor="end" font-size="12">60%</text>
+                                <text x="70" y="252" text-anchor="end" font-size="12">40%</text>
+                                <text x="70" y="320" text-anchor="end" font-size="12">20%</text>
+                                <text x="70" y="388" text-anchor="end" font-size="12">0%</text>
+                            </g>
+
+                            <!-- Axis titles -->
+                            <text class="graph-axis-title" x="30" y="210" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor" transform="rotate(-90, 30, 210)">MEMORY</text>
+                            <text class="graph-axis-title" x="420" y="430" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">TIME PASSED</text>
+
+                            <!-- With revision - Main curve (solid) -->
+                            <path id="forgetting-curve-with-revision"
+                                class="curve-path"
+                                d="M 80 44 C 110 60, 150 140, 220 230
+                                   L 220 70
+                                   C 245 80, 320 130, 420 195
+                                   L 420 55
+                                   C 445 60, 530 85, 600 130
+                                   L 600 48
+                                   C 620 52, 700 65, 760 85"
+                                fill="none"
+                                stroke="url(#revision-gradient)"
+                                stroke-width="4"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"/>
+
+                            <!-- Individual forgetting curves after each review (dashed, progressively flatter) -->
+                            <g class="review-forgetting-curves" opacity="0">
+                                <!-- Forgetting curve if user skips Review 1: continues dropping from (220, 230) -->
+                                <path class="review-decay-path"
+                                    d="M 220 230 C 280 280, 400 340, 550 360 C 650 368, 720 370, 760 372"
+                                    fill="none"
+                                    stroke="#6C63FF"
+                                    stroke-width="2.5"
+                                    stroke-dasharray="8,6"
+                                    stroke-linecap="round"
+                                    opacity="0.45"/>
+
+                                <!-- Forgetting curve if user skips Review 2: continues dropping from (420, 195) -->
+                                <path class="review-decay-path"
+                                    d="M 420 195 C 470 240, 560 300, 650 330 C 700 345, 740 352, 760 355"
+                                    fill="none"
+                                    stroke="#6C63FF"
+                                    stroke-width="2.5"
+                                    stroke-dasharray="8,6"
+                                    stroke-linecap="round"
+                                    opacity="0.35"/>
+
+                                <!-- Forgetting curve if user skips Review 3: continues dropping from (600, 130) -->
+                                <path class="review-decay-path"
+                                    d="M 600 130 C 630 160, 680 220, 720 255 C 740 270, 755 280, 760 285"
+                                    fill="none"
+                                    stroke="#6C63FF"
+                                    stroke-width="2.5"
+                                    stroke-dasharray="8,6"
+                                    stroke-linecap="round"
+                                    opacity="0.25"/>
+                            </g>
+
+                            <!-- Revision spike markers (vertical lines) -->
+                            <g class="revision-markers" opacity="0">
+                                <line x1="220" y1="70" x2="220" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+                                <line x1="420" y1="55" x2="420" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+                                <line x1="600" y1="48" x2="600" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+                            </g>
+
+                            <!-- Revision labels -->
+                            <g class="revision-labels" opacity="0">
+                                <g class="revision-label" transform="translate(220, 56)">
+                                    <text text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 1</text>
+                                </g>
+                                <g class="revision-label" transform="translate(420, 42)">
+                                    <text text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 2</text>
+                                </g>
+                                <g class="revision-label" transform="translate(600, 36)">
+                                    <text text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 3</text>
+                                </g>
+                            </g>
+
+                            <!-- Learn point -->
+                            <g class="learn-point" opacity="0">
+                                <circle cx="80" cy="44" r="7" fill="#00FFFC" stroke="#fff" stroke-width="2"/>
+                                <text x="95" y="30" font-size="13" font-weight="700" fill="#00FFFC">Learn Something New</text>
+                            </g>
+
+                            <!-- Forgetting curve label -->
+                            <g class="forgetting-label" opacity="0">
+                                <text x="560" y="310" font-size="14" font-weight="700" fill="url(#forgetting-gradient)">Forgetting Curves</text>
+                                <text x="560" y="328" font-size="11" fill="currentColor" opacity="0.5">(if you stop revising)</text>
+                                <path d="M 580 290 C 560 270, 530 265, 510 290" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4" marker-end="url(#arrowhead)"/>
+                            </g>
+
+                            <!-- Retention label -->
+                            <g class="retention-label" opacity="0">
+                                <text x="670" y="110" font-size="13" font-weight="700" fill="url(#revision-gradient)">~90%+ Retained</text>
+                                <path d="M 720 115 C 730 125, 740 100, 750 90" fill="none" stroke="#00FFFC" stroke-width="1.5" opacity="0.6"/>
+                            </g>
+
+                            <!-- Gradient definitions -->
+                            <defs>
+                                <linearGradient id="forgetting-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#6C63FF" stop-opacity="0.9"/>
+                                    <stop offset="100%" stop-color="#6C63FF" stop-opacity="0.4"/>
+                                </linearGradient>
+                                <linearGradient id="revision-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#00FFFC"/>
+                                    <stop offset="100%" stop-color="#00D4D1"/>
+                                </linearGradient>
+                                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                                    <polygon points="0 0, 8 3, 0 6" fill="currentColor" opacity="0.4"/>
+                                </marker>
+                                <!-- Glow filter for the with-revision curve -->
+                                <filter id="curve-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                                    <feMerge>
+                                        <feMergeNode in="blur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                            </defs>
+                        </svg>
+
+                        <!-- Legend -->
+                        <div class="graph-legend">
+                            <div class="legend-item">
+                                <span class="legend-line solid"></span>
+                                <span>With Revix spaced revision</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-line dashed"></span>
+                                <span>If you stop revising</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Features Section -->
     <section id="features" class="features">
         <div class="container">
@@ -442,7 +647,7 @@
                     Everything you need to track your progress, manage tasks effectively, and achieve your productivity goals with AI-powered insights.
                 </p>
             </div>
-            
+
             <div class="features-grid">
                 <!-- Spaced Revision Feature -->
                 <div class="feature-card">
@@ -451,7 +656,7 @@
                     </div>
                     <h3 class="feature-title">Scientific Spaced Revision</h3>
                     <p class="feature-description">
-                        Master any subject with scientifically-proven spaced repetition techniques. 
+                        Master any subject with scientifically-proven spaced repetition techniques.
                         Our evidence-based algorithm schedules reviews at optimal intervals for maximum retention and continuous improvements.
                     </p>
                     <div class="feature-highlights">
@@ -469,7 +674,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Dashboard Feature -->
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -477,7 +682,7 @@
                     </div>
                     <h3 class="feature-title">Smart Dashboard</h3>
                     <p class="feature-description">
-                        Get a comprehensive overview of your progress with beautiful charts, 
+                        Get a comprehensive overview of your progress with beautiful charts,
                         statistics, and insights that help you stay on track.
                     </p>
                     <div class="feature-highlights">
@@ -495,7 +700,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Schedule Feature -->
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -503,7 +708,7 @@
                     </div>
                     <h3 class="feature-title">Smart Scheduling</h3>
                     <p class="feature-description">
-                        Organize your tasks and lectures with intelligent scheduling. 
+                        Organize your tasks and lectures with intelligent scheduling.
                         Never miss important deadlines or revision sessions.
                     </p>
                     <div class="feature-highlights">
@@ -521,7 +726,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Analytics Feature -->
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -529,7 +734,7 @@
                     </div>
                     <h3 class="feature-title">Detailed Analytics</h3>
                     <p class="feature-description">
-                        Dive deep into your performance with detailed analytics. 
+                        Dive deep into your performance with detailed analytics.
                         Track completion rates, identify patterns, and optimize your routine.
                     </p>
                     <div class="feature-highlights">
@@ -547,7 +752,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- AI Assistant Feature -->
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -555,7 +760,7 @@
                     </div>
                     <h3 class="feature-title">AI Assistant</h3>
                     <p class="feature-description">
-                        Get personalized insights and recommendations from your AI-powered 
+                        Get personalized insights and recommendations from your AI-powered
                         assistant. Ask questions about your schedule and performance.
                     </p>
                     <div class="feature-highlights">
@@ -573,7 +778,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Cross Platform Feature -->
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -581,7 +786,7 @@
                     </div>
                     <h3 class="feature-title">Cross Platform</h3>
                     <p class="feature-description">
-                        Access your data anywhere. Revix works seamlessly across 
+                        Access your data anywhere. Revix works seamlessly across
                         Android, iOS, Web, Windows, macOS, and Linux.
                     </p>
                     <div class="feature-highlights">
@@ -599,7 +804,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Customization Feature -->
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -607,7 +812,7 @@
                     </div>
                     <h3 class="feature-title">Profile Management</h3>
                     <p class="feature-description">
-                        Make Revix truly yours with beautiful themes and customization options. 
+                        Make Revix truly yours with beautiful themes and customization options.
                         Choose from preset themes or create your own.
                     </p>
                     <div class="feature-highlights">
@@ -625,7 +830,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Opensource Feature -->
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -654,7 +859,6 @@
             </div>
         </div>
     </section>
-
     <!-- Screenshots Section -->
     <section id="screenshots" class="screenshots">
         <div class="container">

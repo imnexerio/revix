@@ -2249,3 +2249,393 @@ body {
     box-shadow: 0 8px 30px rgba(var(--primary-rgb), 0.6),
                 0 4px 15px rgba(0, 0, 0, 0.6);
 }
+
+/* ============================================
+   Science Behind Revix - Forgetting Curve
+   ============================================ */
+.science-section {
+    padding: var(--space-3xl) 0;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.science-content {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: var(--space-2xl);
+    align-items: center;
+    margin-top: var(--space-xl);
+}
+
+/* --- Text side --- */
+.science-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.science-stat-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-sm);
+}
+
+.science-stat-card:hover {
+    transform: translateX(6px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.science-stat-card.accent:hover {
+    border-color: #DA56FF;
+}
+
+.science-stat-card.highlight:hover {
+    border-color: var(--warning-color);
+}
+
+.science-stat-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(108, 99, 255, 0.15), rgba(108, 99, 255, 0.05));
+    color: #6C63FF;
+    font-size: 24px;
+}
+
+.science-stat-icon.accent {
+    background: linear-gradient(135deg, rgba(218, 86, 255, 0.15), rgba(218, 86, 255, 0.05));
+    color: #DA56FF;
+}
+
+.science-stat-icon.highlight {
+    background: linear-gradient(135deg, rgba(0, 255, 252, 0.15), rgba(0, 255, 252, 0.05));
+    color: var(--primary-color);
+}
+
+.science-stat-info h4 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.science-stat-info p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+}
+
+.science-stat-info strong {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* --- Graph side --- */
+.science-graph {
+    position: relative;
+}
+
+.graph-container {
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+/* Subtle glass shimmer on the graph card */
+.graph-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(var(--primary-rgb), 0.03),
+        transparent
+    );
+    transform: skewX(-20deg);
+    pointer-events: none;
+}
+
+.science-section.animated .graph-container::before {
+    animation: graph-shimmer 3s ease 2s forwards;
+}
+
+@keyframes graph-shimmer {
+    0% { left: -100%; }
+    100% { left: 150%; }
+}
+
+#forgetting-curve-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    color: var(--text-secondary);
+    font-family: var(--font-family);
+}
+
+/* --- SVG Path draw animation --- */
+.curve-path {
+    /* These will be set by JS after measuring path length */
+    stroke-dashoffset: 0;
+    transition: none;
+}
+
+.curve-path.hidden {
+    stroke-dashoffset: var(--path-length, 2000);
+}
+
+.curve-path.animate-draw {
+    animation: draw-curve 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes draw-curve {
+    from {
+        stroke-dashoffset: var(--path-length, 2000);
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Dashed path needs its own dasharray restored after draw animation */
+#forgetting-curve-no-revision.animate-draw {
+    animation: draw-curve-dashed 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes draw-curve-dashed {
+    from {
+        stroke-dashoffset: var(--path-length, 2000);
+        stroke-dasharray: var(--path-length, 2000);
+    }
+    to {
+        stroke-dashoffset: 0;
+        stroke-dasharray: var(--path-length, 2000);
+    }
+}
+
+/* After dashed draw completes, restore the original dash pattern */
+#forgetting-curve-no-revision.draw-complete {
+    stroke-dasharray: 10, 8;
+    stroke-dashoffset: 0;
+    transition: stroke-dasharray 0.6s ease;
+}
+
+/* Label fade-in animations */
+.science-section .learn-point,
+.science-section .revision-markers,
+.science-section .revision-labels,
+.science-section .review-forgetting-curves,
+.science-section .forgetting-label,
+.science-section .retention-label {
+    transition: opacity 0.6s ease;
+}
+
+.science-section.animated .learn-point {
+    animation: fade-in 0.5s ease 0.3s forwards;
+}
+
+.science-section.animated .revision-markers {
+    animation: fade-in 0.5s ease 1.8s forwards;
+}
+
+.science-section.animated .review-forgetting-curves {
+    animation: fade-in 0.8s ease 2.0s forwards;
+}
+
+.science-section.animated .revision-labels {
+    animation: fade-in 0.5s ease 2.0s forwards;
+}
+
+.science-section.animated .forgetting-label {
+    animation: fade-in 0.6s ease 2.3s forwards;
+}
+
+.science-section.animated .retention-label {
+    animation: fade-in 0.6s ease 2.8s forwards;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* --- Legend --- */
+.graph-legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xl);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-color);
+    margin-top: var(--space-md);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+}
+
+.legend-line {
+    display: inline-block;
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.legend-line.solid {
+    background: linear-gradient(90deg, #00FFFC, #00D4D1);
+}
+
+.legend-line.dashed {
+    background: repeating-linear-gradient(
+        90deg,
+        #6C63FF 0px,
+        #6C63FF 6px,
+        transparent 6px,
+        transparent 10px
+    );
+    opacity: 0.7;
+}
+
+/* --- Stat card entrance animation --- */
+.science-stat-card {
+    opacity: 0;
+    transform: translateX(-30px);
+}
+
+.science-section.animated .science-stat-card:nth-child(1) {
+    animation: slide-in-left 0.6s ease 0.2s forwards;
+}
+
+.science-section.animated .science-stat-card:nth-child(2) {
+    animation: slide-in-left 0.6s ease 0.5s forwards;
+}
+
+.science-section.animated .science-stat-card:nth-child(3) {
+    animation: slide-in-left 0.6s ease 0.8s forwards;
+}
+
+@keyframes slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Graph card entrance */
+.graph-container {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.science-section.animated .graph-container {
+    animation: slide-in-up 0.7s ease 0.3s forwards;
+}
+
+@keyframes slide-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   Responsive - Science Section
+   ============================================ */
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .science-content {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-lg);
+    }
+}
+
+/* Tablet portrait / Large phones */
+@media (max-width: 768px) {
+    .science-content {
+        grid-template-columns: 1fr;
+        gap: var(--space-xl);
+    }
+
+    .science-text {
+        order: 2;
+    }
+
+    .science-graph {
+        order: 1;
+    }
+
+    .graph-legend {
+        gap: var(--space-lg);
+    }
+
+    .science-stat-card {
+        padding: var(--space-md);
+    }
+
+    .science-stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 22px;
+    }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    .science-section {
+        padding: var(--space-2xl) 0;
+    }
+
+    .graph-container {
+        padding: var(--space-md) var(--space-sm) var(--space-sm);
+        border-radius: var(--radius-lg);
+    }
+
+    .graph-legend {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .science-stat-card {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+    }
+
+    .science-stat-icon {
+        margin-bottom: var(--space-xs);
+    }
+}

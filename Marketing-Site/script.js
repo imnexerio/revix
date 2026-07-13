@@ -1191,3 +1191,68 @@ function createAnimatedCubes(container, config) {
 }
 
 
+// ============================================
+// Forgetting Curve Animation
+// ============================================
+(function initForgettingCurveAnimation() {
+    const scienceSection = document.querySelector('.science-section');
+    if (!scienceSection) return;
+
+    const withRevisionPath = document.getElementById('forgetting-curve-with-revision');
+    if (!withRevisionPath) return;
+
+    // Measure path length once the SVG is in the DOM
+    function setupPaths() {
+        const length = withRevisionPath.getTotalLength();
+
+        // Store path length as CSS custom property for the animation
+        withRevisionPath.style.setProperty('--path-length', length);
+
+        // Set initial dasharray to full length (for the draw effect)
+        withRevisionPath.style.strokeDasharray = length;
+        withRevisionPath.style.strokeDashoffset = length;
+
+        // Mark as hidden (ready to animate)
+        withRevisionPath.classList.add('hidden');
+    }
+
+    // Trigger the draw animation
+    function animateCurves() {
+        // Add animated class to section (triggers CSS animations for labels, cards, etc.)
+        scienceSection.classList.add('animated');
+
+        // Animate the "with revision" curve
+        withRevisionPath.classList.remove('hidden');
+        withRevisionPath.classList.add('animate-draw');
+
+        // After the curve finishes drawing, keep it visible
+        withRevisionPath.addEventListener('animationend', function handler() {
+            withRevisionPath.classList.remove('animate-draw');
+            // Reset inline styles to keep the solid curve fully visible
+            const length = withRevisionPath.getTotalLength();
+            withRevisionPath.style.strokeDasharray = length;
+            withRevisionPath.style.strokeDashoffset = '0';
+            withRevisionPath.removeEventListener('animationend', handler);
+        });
+    }
+
+    // Use IntersectionObserver to trigger animation when section is in view
+    const scienceObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCurves();
+                scienceObserver.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.2,
+        rootMargin: '0px 0px -50px 0px'
+    });
+
+    // Setup and observe
+    // Use requestAnimationFrame to ensure SVG is rendered before measuring
+    requestAnimationFrame(() => {
+        setupPaths();
+        scienceObserver.observe(scienceSection);
+    });
+})();
