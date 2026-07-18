@@ -509,74 +509,85 @@
                             <text class="graph-axis-title" x="30" y="210" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor" transform="rotate(-90, 30, 210)">MEMORY</text>
                             <text class="graph-axis-title" x="420" y="430" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">TIME PASSED</text>
 
-                            <!-- With revision - Main curve (solid) -->
-                            <path id="forgetting-curve-with-revision"
-                                class="curve-path"
-                                d="M 80 44 C 110 60, 150 140, 220 230
-                                   L 220 70
-                                   C 245 80, 320 130, 420 195
-                                   L 420 55
-                                   C 445 60, 530 85, 600 130
-                                   L 600 48
-                                   C 620 52, 700 65, 760 85"
-                                fill="none"
-                                stroke="url(#revision-gradient)"
-                                stroke-width="4"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"/>
+                            <!-- === Segmented curves for sequential animation === -->
 
-                            <!-- Individual forgetting curves after each review (dashed, progressively flatter) -->
-                            <g class="review-forgetting-curves" opacity="0">
-                                <!-- Forgetting curve if user skips Review 1: continues dropping from (220, 230) -->
-                                <path class="review-decay-path"
-                                    d="M 220 230 C 280 280, 400 340, 550 360 C 650 368, 720 370, 760 372"
-                                    fill="none"
-                                    stroke="#6C63FF"
-                                    stroke-width="2.5"
-                                    stroke-dasharray="8,6"
-                                    stroke-linecap="round"
-                                    opacity="0.45"/>
+                            <!-- Segment 1: Initial decay after learning -->
+                            <path id="segment-1" class="curve-segment"
+                                d="M 80 44 C 110 60, 150 140, 220 230"
+                                fill="none" stroke="url(#revision-gradient)" stroke-width="4"
+                                stroke-linecap="round" stroke-linejoin="round"/>
 
-                                <!-- Forgetting curve if user skips Review 2: continues dropping from (420, 195) -->
-                                <path class="review-decay-path"
-                                    d="M 420 195 C 470 240, 560 300, 650 330 C 700 345, 740 352, 760 355"
-                                    fill="none"
-                                    stroke="#6C63FF"
-                                    stroke-width="2.5"
-                                    stroke-dasharray="8,6"
-                                    stroke-linecap="round"
-                                    opacity="0.35"/>
+                            <!-- Branch 1: What happens if you DON'T revise at this point -->
+                            <path id="branch-1" class="branch-path"
+                                d="M 220 230 C 280 280, 400 340, 550 360 C 650 368, 720 370, 760 372"
+                                fill="none" stroke="#6C63FF" stroke-width="2.5"
+                                stroke-dasharray="8,6" stroke-linecap="round" opacity="0"/>
 
-                                <!-- Forgetting curve if user skips Review 3: continues dropping from (600, 130) -->
-                                <path class="review-decay-path"
-                                    d="M 600 130 C 630 160, 680 220, 720 255 C 740 270, 755 280, 760 285"
-                                    fill="none"
-                                    stroke="#6C63FF"
-                                    stroke-width="2.5"
-                                    stroke-dasharray="8,6"
-                                    stroke-linecap="round"
-                                    opacity="0.25"/>
-                            </g>
+                            <!-- Spike 1: Review brings memory back up -->
+                            <path id="spike-1" class="spike-path"
+                                d="M 220 230 L 220 70"
+                                fill="none" stroke="url(#revision-gradient)" stroke-width="4"
+                                stroke-linecap="round"/>
 
-                            <!-- Revision spike markers (vertical lines) -->
-                            <g class="revision-markers" opacity="0">
+                            <!-- Review 1 marker + label -->
+                            <g id="review-marker-1" class="review-marker" opacity="0">
                                 <line x1="220" y1="70" x2="220" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
-                                <line x1="420" y1="55" x2="420" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
-                                <line x1="600" y1="48" x2="600" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+                                <text x="220" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 1</text>
                             </g>
 
-                            <!-- Revision labels -->
-                            <g class="revision-labels" opacity="0">
-                                <g class="revision-label" transform="translate(220, 56)">
-                                    <text text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 1</text>
-                                </g>
-                                <g class="revision-label" transform="translate(420, 42)">
-                                    <text text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 2</text>
-                                </g>
-                                <g class="revision-label" transform="translate(600, 36)">
-                                    <text text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 3</text>
-                                </g>
+                            <!-- Segment 2: Decay after review 1 -->
+                            <path id="segment-2" class="curve-segment"
+                                d="M 220 70 C 245 80, 320 130, 420 195"
+                                fill="none" stroke="url(#revision-gradient)" stroke-width="4"
+                                stroke-linecap="round" stroke-linejoin="round"/>
+
+                            <!-- Branch 2: What happens if you DON'T revise at this point -->
+                            <path id="branch-2" class="branch-path"
+                                d="M 420 195 C 470 240, 560 300, 650 330 C 700 345, 740 352, 760 355"
+                                fill="none" stroke="#6C63FF" stroke-width="2.5"
+                                stroke-dasharray="8,6" stroke-linecap="round" opacity="0"/>
+
+                            <!-- Spike 2: Review brings memory back up -->
+                            <path id="spike-2" class="spike-path"
+                                d="M 420 195 L 420 55"
+                                fill="none" stroke="url(#revision-gradient)" stroke-width="4"
+                                stroke-linecap="round"/>
+
+                            <!-- Review 2 marker + label -->
+                            <g id="review-marker-2" class="review-marker" opacity="0">
+                                <line x1="420" y1="55" x2="420" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+                                <text x="420" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 2</text>
                             </g>
+
+                            <!-- Segment 3: Decay after review 2 -->
+                            <path id="segment-3" class="curve-segment"
+                                d="M 420 55 C 445 60, 530 85, 600 130"
+                                fill="none" stroke="url(#revision-gradient)" stroke-width="4"
+                                stroke-linecap="round" stroke-linejoin="round"/>
+
+                            <!-- Branch 3: What happens if you DON'T revise at this point -->
+                            <path id="branch-3" class="branch-path"
+                                d="M 600 130 C 630 160, 680 220, 720 255 C 740 270, 755 280, 760 285"
+                                fill="none" stroke="#6C63FF" stroke-width="2.5"
+                                stroke-dasharray="8,6" stroke-linecap="round" opacity="0"/>
+
+                            <!-- Spike 3: Review brings memory back up -->
+                            <path id="spike-3" class="spike-path"
+                                d="M 600 130 L 600 48"
+                                fill="none" stroke="url(#revision-gradient)" stroke-width="4"
+                                stroke-linecap="round"/>
+
+                            <!-- Review 3 marker + label -->
+                            <g id="review-marker-3" class="review-marker" opacity="0">
+                                <line x1="600" y1="48" x2="600" y2="385" stroke="#DA56FF" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+                                <text x="600" y="36" text-anchor="middle" font-size="12" font-weight="700" fill="#DA56FF">↓ Review 3</text>
+                            </g>
+
+                            <!-- Segment 4: Final gentle decay (high retention) -->
+                            <path id="segment-4" class="curve-segment"
+                                d="M 600 48 C 620 52, 700 65, 760 85"
+                                fill="none" stroke="url(#revision-gradient)" stroke-width="4"
+                                stroke-linecap="round" stroke-linejoin="round"/>
 
                             <!-- Learn point -->
                             <g class="learn-point" opacity="0">
@@ -584,7 +595,7 @@
                                 <text x="95" y="30" font-size="13" font-weight="700" fill="#00FFFC">Learn Something New</text>
                             </g>
 
-                            <!-- Forgetting curve label -->
+                            <!-- Forgetting curves label -->
                             <g class="forgetting-label" opacity="0">
                                 <text x="560" y="310" font-size="14" font-weight="700" fill="url(#forgetting-gradient)">Forgetting Curves</text>
                                 <text x="560" y="328" font-size="11" fill="currentColor" opacity="0.5">(if you stop revising)</text>

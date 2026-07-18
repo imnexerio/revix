@@ -1192,67 +1192,157 @@ function createAnimatedCubes(container, config) {
 
 
 // ============================================
-// Forgetting Curve Animation
+// Forgetting Curve — Sequential Animation
 // ============================================
 (function initForgettingCurveAnimation() {
     const scienceSection = document.querySelector('.science-section');
     if (!scienceSection) return;
 
-    const withRevisionPath = document.getElementById('forgetting-curve-with-revision');
-    if (!withRevisionPath) return;
+    // Collect elements
+    const segments = [1, 2, 3, 4].map(i => document.getElementById(`segment-${i}`)).filter(Boolean);
+    const spikes = [1, 2, 3].map(i => document.getElementById(`spike-${i}`)).filter(Boolean);
+    const branches = [1, 2, 3].map(i => document.getElementById(`branch-${i}`)).filter(Boolean);
+    const markers = [1, 2, 3].map(i => document.getElementById(`review-marker-${i}`)).filter(Boolean);
 
-    // Measure path length once the SVG is in the DOM
-    function setupPaths() {
-        const length = withRevisionPath.getTotalLength();
+    const learnPoint = document.querySelector('.learn-point');
+    const forgettingLabel = document.querySelector('.forgetting-label');
+    const retentionLabel = document.querySelector('.retention-label');
 
-        // Store path length as CSS custom property for the animation
-        withRevisionPath.style.setProperty('--path-length', length);
+    if (segments.length === 0) return;
 
-        // Set initial dasharray to full length (for the draw effect)
-        withRevisionPath.style.strokeDasharray = length;
-        withRevisionPath.style.strokeDashoffset = length;
+    const branchOpacities = [0.5, 0.4, 0.3];
 
-        // Mark as hidden (ready to animate)
-        withRevisionPath.classList.add('hidden');
+    // --- Helpers ---
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    // Trigger the draw animation
-    function animateCurves() {
-        // Add animated class to section (triggers CSS animations for labels, cards, etc.)
-        scienceSection.classList.add('animated');
+    // Hide a path by setting dashoffset = total length (no transition)
+    function hidePath(path) {
+        path.style.transition = 'none';
+        const length = path.getTotalLength();
+        path.style.strokeDasharray = length;
+        path.style.strokeDashoffset = length;
+    }
 
-        // Animate the "with revision" curve
-        withRevisionPath.classList.remove('hidden');
-        withRevisionPath.classList.add('animate-draw');
-
-        // After the curve finishes drawing, keep it visible
-        withRevisionPath.addEventListener('animationend', function handler() {
-            withRevisionPath.classList.remove('animate-draw');
-            // Reset inline styles to keep the solid curve fully visible
-            const length = withRevisionPath.getTotalLength();
-            withRevisionPath.style.strokeDasharray = length;
-            withRevisionPath.style.strokeDashoffset = '0';
-            withRevisionPath.removeEventListener('animationend', handler);
+    // Draw a path over `duration` ms using CSS transition
+    function drawPath(path, duration) {
+        return new Promise(resolve => {
+            const length = path.getTotalLength();
+            path.style.strokeDasharray = length;
+            path.style.transition = `stroke-dashoffset ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+            path.getBoundingClientRect();
+            path.style.strokeDashoffset = '0';
+            setTimeout(resolve, duration);
         });
     }
 
-    // Use IntersectionObserver to trigger animation when section is in view
+    // Fade in an element's opacity
+    function fadeIn(el, duration) {
+        return new Promise(resolve => {
+            el.style.transition = `opacity ${duration}ms ease`;
+            el.getBoundingClientRect();
+            el.style.opacity = '1';
+            setTimeout(resolve, duration);
+        });
+    }
+
+    // Instantly hide an element (no transition)
+    function hideElement(el) {
+        el.style.transition = 'none';
+        el.style.opacity = '0';
+    }
+
+    // --- Reset everything to initial state for looping ---
+    function resetAll() {
+        segments.forEach(hidePath);
+        spikes.forEach(hidePath);
+        branches.forEach(b => hideElement(b));
+        markers.forEach(m => hideElement(m));
+        if (learnPoint) hideElement(learnPoint);
+        if (forgettingLabel) hideElement(forgettingLabel);
+        if (retentionLabel) hideElement(retentionLabel);
+    }
+
+    // --- Main sequential animation ---
+    async function animateSequence() {
+        // Trigger stat card slide-in animations (only first time)
+        scienceSection.classList.add('animated');
+
+        // 1. Show "Learn Something New" label
+        if (learnPoint) {
+            await fadeIn(learnPoint, 400);
+        }
+        await delay(300);
+
+        // 2. Draw initial decay (Segment 1)
+        await drawPath(segments[0], 1200);
+        await delay(150);
+
+        // 3. Fork at valley 1
+        fadeIn(branches[0], 600);
+        fadeIn(markers[0], 400);
+        await drawPath(spikes[0], 400);
+        await delay(200);
+
+        // 4. Draw decay after review 1 (Segment 2)
+        await drawPath(segments[1], 1000);
+        await delay(150);
+
+        // 5. Fork at valley 2
+        fadeIn(branches[1], 600);
+        fadeIn(markers[1], 400);
+        await drawPath(spikes[1], 400);
+        await delay(200);
+
+        // 6. Draw decay after review 2 (Segment 3)
+        await drawPath(segments[2], 1000);
+        await delay(150);
+
+        // 7. Fork at valley 3
+        fadeIn(branches[2], 600);
+        fadeIn(markers[2], 400);
+        await drawPath(spikes[2], 400);
+        await delay(200);
+
+        // 8. Draw final gentle decay (Segment 4)
+        await drawPath(segments[3], 800);
+
+        // 9. Show ending labels
+        await delay(300);
+        if (retentionLabel) fadeIn(retentionLabel, 600);
+        await delay(200);
+        if (forgettingLabel) fadeIn(forgettingLabel, 600);
+    }
+
+    // --- Looping animation ---
+    async function runLoop() {
+        while (true) {
+            resetAll();
+            // Small pause after reset so the blank state is visible briefly
+            await delay(400);
+            await animateSequence();
+            // Hold the completed state before restarting
+            await delay(3000);
+        }
+    }
+
+    // --- IntersectionObserver: start loop when section scrolls into view ---
     const scienceObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                animateCurves();
+                runLoop();
                 scienceObserver.unobserve(entry.target);
             }
         });
     }, {
-        threshold: 0.2,
+        threshold: 0.15,
         rootMargin: '0px 0px -50px 0px'
     });
 
-    // Setup and observe
-    // Use requestAnimationFrame to ensure SVG is rendered before measuring
+    // Ensure SVG is rendered before measuring path lengths
     requestAnimationFrame(() => {
-        setupPaths();
+        resetAll();
         scienceObserver.observe(scienceSection);
     });
 })();
