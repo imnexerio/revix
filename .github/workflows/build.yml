@@ -236,7 +236,7 @@ jobs:
 
       # Install Tauri CLI
       - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli@latest
+        run: npm install -g @tauri-apps/cli@^2.9.4
 
       # Build Tauri app (icons are already committed in src-tauri/icons/)
       - name: Build Tauri App
@@ -246,6 +246,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          tauriScript: tauri
           args: ${{ matrix.args }}
 
       # List built files for debugging
