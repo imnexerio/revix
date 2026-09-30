@@ -248,6 +248,45 @@ jobs:
         with:
           args: ${{ matrix.args }}
 
+      - name: Normalize AppImage .DirIcon
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          set -euo pipefail
+          APPIMAGETOOL=/tmp/appimagetool-x86_64.AppImage
+          curl -fsSL "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -o "$APPIMAGETOOL"
+          chmod +x "$APPIMAGETOOL"
+
+          for APPIMAGE in src-tauri/target/release/bundle/appimage/*.AppImage; do
+            [ -f "$APPIMAGE" ] || continue
+
+            WORKDIR="$(mktemp -d)"
+            cp "$APPIMAGE" "$WORKDIR/input.AppImage"
+            chmod +x "$WORKDIR/input.AppImage"
+            (
+              cd "$WORKDIR"
+              ./input.AppImage --appimage-extract >/dev/null
+            )
+
+            APPDIR="$WORKDIR/squashfs-root"
+            if [ -L "$APPDIR/.DirIcon" ]; then
+              TARGET="$(readlink "$APPDIR/.DirIcon" || true)"
+            else
+              TARGET=""
+            fi
+
+            if [ -z "$TARGET" ] || [[ "$TARGET" = /* ]] || [ ! -e "$APPDIR/.DirIcon" ]; then
+              for ICON in Revix.png revix.png; do
+                if [ -f "$APPDIR/$ICON" ]; then
+                  ln -sfn "$ICON" "$APPDIR/.DirIcon"
+                  break
+                fi
+              done
+            fi
+
+            ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run "$APPDIR" "$APPIMAGE"
+            rm -rf "$WORKDIR"
+          done
+
       # List built files for debugging
       - name: List Linux build outputs
         if: matrix.platform == 'ubuntu-22.04'
