@@ -48,7 +48,10 @@
         "depends": []
       },
       "appimage": {
-        "bundleMediaFramework": false
+        "bundleMediaFramework": false,
+        "files": {
+          ".DirIcon": "icons/icon.png"
+        }
       }
     },
     "macOS": {
